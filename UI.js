@@ -55,12 +55,17 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
   emptyMsg?.classList.add('hidden');
 
   combatants.forEach((c, i) => {
-    const isActive   = c.id === currentTurnId;
-    const isKO       = c.hpCurrent === 0;
-    const canEdit    = myUid === c.ownerUid || myUid === masterUid;
-    const hpPercent  = c.hpMax > 0 ? (c.hpCurrent / c.hpMax) * 100 : 0;
-    const conditions = c.conditions ? Object.keys(c.conditions) : [];
-    const hpClass    = hpPercent <= 25 ? 'hp-critical' : hpPercent <= 50 ? 'hp-low' : '';
+    const isActive      = c.id === currentTurnId;
+    const isKO          = c.hpCurrent === 0;
+    const canEdit       = myUid === c.ownerUid || myUid === masterUid;
+    const isMaster      = myUid === masterUid;
+    const isCreature    = c.type === 'creature';
+    const hpPercent     = c.hpMax > 0 ? (c.hpCurrent / c.hpMax) * 100 : 0;
+    const conditions    = c.conditions ? Object.keys(c.conditions) : [];
+    const hpClass       = hpPercent <= 25 ? 'hp-critical' : hpPercent <= 50 ? 'hp-low' : '';
+    // I giocatori vedono gli HP solo dei PG, non delle creature (a meno che il master non abbia attivato il suggerimento)
+    const showFullHp    = canEdit || !isCreature;
+    const showHint      = !canEdit && isCreature && c.showHealthHint;
 
     const targetOptions = [
       `<option value="">— Bersaglio —</option>`,
@@ -90,15 +95,31 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         ${canEdit ? `<button class="btn-remove" data-id="${c.id}" data-action="remove" aria-label="Rimuovi">×</button>` : ''}
       </div>
 
-      <div class="hp-section">
-        <div class="hp-header">
-          <span class="hp-label">HP</span>
-          <span class="hp-numbers ${hpClass}">${c.hpCurrent} / ${c.hpMax}</span>
+      ${showFullHp ? `
+        <div class="hp-section">
+          <div class="hp-header">
+            <span class="hp-label">HP</span>
+            <span class="hp-numbers ${hpClass}">${c.hpCurrent} / ${c.hpMax}</span>
+          </div>
+          <div class="hp-bar-container">
+            <div class="hp-bar" style="width:${hpPercent}%;background:${hpBarColor(hpPercent)}"></div>
+          </div>
+          ${isMaster && isCreature ? `
+            <button
+              class="btn-health-hint ${c.showHealthHint ? 'hint-active' : ''}"
+              data-id="${c.id}"
+              data-action="toggle-health-hint"
+              title="${c.showHealthHint ? 'I giocatori vedono lo stato di salute' : 'I giocatori non vedono lo stato di salute'}"
+            >
+              ${c.showHealthHint ? '👁 Stato salute visibile ai giocatori' : '👁 Nascondi stato salute ai giocatori'}
+            </button>
+          ` : ''}
         </div>
-        <div class="hp-bar-container">
-          <div class="hp-bar" style="width:${hpPercent}%;background:${hpBarColor(hpPercent)}"></div>
+      ` : showHint ? `
+        <div class="health-hint hint-${healthHintKey(hpPercent)}">
+          ${healthHintText(hpPercent)}
         </div>
-      </div>
+      ` : ''}
 
       ${canEdit ? `
         <div class="action-panel">
@@ -185,6 +206,11 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       if (input) input.value = '';
       return;
     }
+    if (action === 'toggle-health-hint') {
+      const c = list.querySelector(`[data-id="${id}"][data-action="toggle-health-hint"]`);
+      callbacks.onToggleHealthHint(id, c?.classList.contains('hint-active'));
+      return;
+    }
     if (action === 'remove')          { callbacks.onRemove(id); return; }
     if (action === 'open-conditions') { callbacks.onOpenConditions(id); return; }
     if (action === 'edit-initiative') { openInitiativeEdit(btn, id, callbacks.onInitiativeChange); return; }
@@ -243,6 +269,24 @@ export function renderConditionModal(combatantId, activeConditions, onToggle) {
   };
 
   modal.classList.remove('hidden');
+}
+
+function healthHintKey(percent) {
+  if (percent === 100) return 'full';
+  if (percent >= 75)   return 'good';
+  if (percent >= 50)   return 'hurt';
+  if (percent >= 25)   return 'bad';
+  if (percent > 0)     return 'critical';
+  return 'ko';
+}
+
+function healthHintText(percent) {
+  if (percent === 100) return '⚔ Nel pieno delle forze';
+  if (percent >= 75)   return '⚔ Leggermente ferito';
+  if (percent >= 50)   return '⚔ Ferito';
+  if (percent >= 25)   return '⚔ Gravemente ferito';
+  if (percent > 0)     return '⚔ In fin di vita';
+  return '☠ A terra';
 }
 
 function hpBarColor(percent) {

@@ -48,6 +48,10 @@ export class Combatant {
     );
   }
 
+  async setHealthHint(id, visible) {
+    await set(ref(this._db, `sessions/${this._code}/combatants/${id}/showHealthHint`), visible);
+  }
+
   async setAction(id, text) {
     await set(ref(this._db, `sessions/${this._code}/combatants/${id}/currentAction`), text || null);
   }

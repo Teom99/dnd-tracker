@@ -140,8 +140,9 @@ function _startListening() {
       onRemove:           (id)           => combatantManager.remove(id),
       onInitiativeChange: (id, val)      => combatantManager.setInitiative(id, val),
       onOpenConditions:   (id)           => _openConditionModal(id, data.combatants?.[id]?.conditions),
-      onSetAction:        (id, text)     => combatantManager.setAction(id, text),
-      onApplyToTarget:    (targetId, delta) => combatantManager.updateHp(targetId, delta),
+      onSetAction:          (id, text)        => combatantManager.setAction(id, text),
+      onApplyToTarget:      (targetId, delta) => combatantManager.updateHp(targetId, delta),
+      onToggleHealthHint:   (id, current)     => combatantManager.setHealthHint(id, !current),
     });
   });
 }
