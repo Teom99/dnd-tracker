@@ -18,6 +18,7 @@ const session = new Session(db, auth);
 let combatantManager = null;
 let tracker          = null;
 let myUid            = null;
+let myCombatantId    = null;
 let _snapshot        = null;   // ultimo snapshot Firebase ricevuto dal listener
 
 // ─── HOME: Crea sessione (master) ────────────────────────────────────────────
@@ -48,16 +49,23 @@ document.getElementById('form-join').addEventListener('submit', async (e) => {
     return;
   }
 
+  // Disabilita il bottone per evitare doppio invio
+  const submitBtn = e.target.querySelector('[type="submit"]');
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Caricamento...';
+
   try {
     myUid = await session.join(code);
     _initCombatManagers(code);
 
-    const combatantId = await combatantManager.add(name, initiative, hp, 'player', myUid);
-    localStorage.setItem('dnd_combatant_id', combatantId);
+    myCombatantId = await combatantManager.add(name, initiative, hp, 'player', myUid);
+    localStorage.setItem('dnd_combatant_id', myCombatantId);
 
     _enterCombatView(code, false);
   } catch (err) {
     UI.showError(err.message);
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Entra nella Sessione';
   }
 });
 
@@ -114,6 +122,16 @@ function closeConditionModal() {
   document.getElementById('condition-modal').classList.add('hidden');
 }
 
+function _exitToHome(errorMessage) {
+  localStorage.removeItem('dnd_session_code');
+  localStorage.removeItem('dnd_combatant_id');
+  myCombatantId = null;
+  myUid         = null;
+  _snapshot     = null;
+  UI.showView('view-home');
+  if (errorMessage) UI.showError(errorMessage);
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function _initCombatManagers(code) {
@@ -133,6 +151,13 @@ function _startListening() {
     const data = snap.val();
     if (!data) return;
     _snapshot = data;
+
+    // Se il proprio combattente è stato rimosso, torna alla home
+    const combatants = data.combatants || {};
+    if (!session.isMaster && myCombatantId && !combatants[myCombatantId]) {
+      _exitToHome('Il tuo personaggio è stato rimosso dalla sessione.');
+      return;
+    }
 
     const sorted = tracker.sortedCombatants(data.combatants);
     UI.renderRound(data.round ?? 1);
@@ -159,7 +184,8 @@ function _openConditionModal(combatantId, conditionsObj) {
 // ─── Auto-restore sessione dopo refresh ───────────────────────────────────────
 
 (async () => {
-  const savedCode = localStorage.getItem('dnd_session_code');
+  const savedCode         = localStorage.getItem('dnd_session_code');
+  const savedCombatantId  = localStorage.getItem('dnd_combatant_id');
   if (!savedCode) return;
 
   try {
@@ -170,7 +196,14 @@ function _openConditionModal(combatantId, conditionsObj) {
       return;
     }
 
-    myUid = uid;
+    // Un giocatore senza combatant ID salvato non può essere ripristinato correttamente
+    if (!session.isMaster && !savedCombatantId) {
+      localStorage.removeItem('dnd_session_code');
+      return;
+    }
+
+    myUid         = uid;
+    myCombatantId = savedCombatantId;
     _initCombatManagers(savedCode);
     _enterCombatView(savedCode, session.isMaster);
   } catch {
