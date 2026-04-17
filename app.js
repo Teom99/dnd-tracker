@@ -137,10 +137,11 @@ function _startListening() {
     const sorted = tracker.sortedCombatants(data.combatants);
     UI.renderRound(data.round ?? 1);
     UI.renderCombatantList(sorted, data.currentTurnId ?? null, myUid, session.masterUid, {
-      onHpChange:         (id, delta) => combatantManager.updateHp(id, delta),
-      onRemove:           (id)        => combatantManager.remove(id),
-      onInitiativeChange: (id, val)   => combatantManager.setInitiative(id, val),
-      onOpenConditions:   (id)        => _openConditionModal(id, data.combatants?.[id]?.conditions),
+      onRemove:           (id)           => combatantManager.remove(id),
+      onInitiativeChange: (id, val)      => combatantManager.setInitiative(id, val),
+      onOpenConditions:   (id)           => _openConditionModal(id, data.combatants?.[id]?.conditions),
+      onSetAction:        (id, text)     => combatantManager.setAction(id, text),
+      onApplyToTarget:    (targetId, delta) => combatantManager.updateHp(targetId, delta),
     });
   });
 }

@@ -48,6 +48,10 @@ export class Combatant {
     );
   }
 
+  async setAction(id, text) {
+    await set(ref(this._db, `sessions/${this._code}/combatants/${id}/currentAction`), text || null);
+  }
+
   async remove(id) {
     await remove(this._ref(id));
   }

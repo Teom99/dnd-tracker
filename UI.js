@@ -55,19 +55,24 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
   emptyMsg?.classList.add('hidden');
 
   combatants.forEach((c, i) => {
-    const isActive    = c.id === currentTurnId;
-    const isKO        = c.hpCurrent === 0;
-    const canEdit     = myUid === c.ownerUid || myUid === masterUid;
-    const hpPercent   = c.hpMax > 0 ? (c.hpCurrent / c.hpMax) * 100 : 0;
-    const conditions  = c.conditions ? Object.keys(c.conditions) : [];
-    const hpTextClass = hpPercent <= 25 ? 'hp-critical' : hpPercent <= 50 ? 'hp-low' : '';
+    const isActive   = c.id === currentTurnId;
+    const isKO       = c.hpCurrent === 0;
+    const canEdit    = myUid === c.ownerUid || myUid === masterUid;
+    const hpPercent  = c.hpMax > 0 ? (c.hpCurrent / c.hpMax) * 100 : 0;
+    const conditions = c.conditions ? Object.keys(c.conditions) : [];
+    const hpClass    = hpPercent <= 25 ? 'hp-critical' : hpPercent <= 50 ? 'hp-low' : '';
+
+    const targetOptions = [
+      `<option value="">— Bersaglio —</option>`,
+      `<option value="${c.id}">Sé stesso</option>`,
+      ...combatants
+        .filter(x => x.id !== c.id)
+        .map(x => `<option value="${x.id}">${escapeHtml(x.name)}</option>`)
+    ].join('');
 
     const li = document.createElement('li');
-    li.className = [
-      'combatant-card',
-      isActive ? 'active-turn' : '',
-      isKO     ? 'knocked-out' : '',
-    ].filter(Boolean).join(' ');
+    li.className = ['combatant-card', isActive ? 'active-turn' : '', isKO ? 'knocked-out' : '']
+      .filter(Boolean).join(' ');
 
     li.innerHTML = `
       <div class="card-header">
@@ -85,19 +90,53 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         ${canEdit ? `<button class="btn-remove" data-id="${c.id}" data-action="remove" aria-label="Rimuovi">×</button>` : ''}
       </div>
 
-      <div class="hp-row">
-        <div class="hp-bar-container" title="${c.hpCurrent}/${c.hpMax} HP">
+      <div class="hp-section">
+        <div class="hp-header">
+          <span class="hp-label">HP</span>
+          <span class="hp-numbers ${hpClass}">${c.hpCurrent} / ${c.hpMax}</span>
+        </div>
+        <div class="hp-bar-container">
           <div class="hp-bar" style="width:${hpPercent}%;background:${hpBarColor(hpPercent)}"></div>
         </div>
-        <span class="hp-text ${hpTextClass}">${c.hpCurrent} / ${c.hpMax} HP</span>
       </div>
 
       ${canEdit ? `
-        <div class="hp-controls">
-          <input type="number" class="hp-input" data-id="${c.id}" placeholder="Quantità" min="1" max="9999">
-          <button class="btn-damage" data-id="${c.id}" data-action="damage">− Danno</button>
-          <button class="btn-heal"   data-id="${c.id}" data-action="heal">+ Cura</button>
+        <div class="action-panel">
+          <div class="action-input-row">
+            <span class="action-icon-label">⚔</span>
+            <input
+              type="text"
+              class="action-input"
+              data-id="${c.id}"
+              placeholder="Arma o incantesimo (es. Ascia da guerra)"
+              value="${escapeHtml(c.currentAction || '')}"
+              autocomplete="off"
+            >
+          </div>
+          <div class="attack-row">
+            <select class="target-select" data-id="${c.id}">
+              ${targetOptions}
+            </select>
+            <div class="attack-controls">
+              <input
+                type="number"
+                class="attack-amount"
+                data-id="${c.id}"
+                placeholder="Qtà"
+                min="1"
+                max="9999"
+              >
+              <button class="btn-apply-damage" data-id="${c.id}" data-action="apply-damage">
+                <span class="btn-icon">🗡</span> Danno
+              </button>
+              <button class="btn-apply-heal" data-id="${c.id}" data-action="apply-heal">
+                <span class="btn-icon">✚</span> Cura
+              </button>
+            </div>
+          </div>
         </div>
+      ` : c.currentAction ? `
+        <div class="action-display">⚔ ${escapeHtml(c.currentAction)}</div>
       ` : ''}
 
       ${conditions.length > 0 ? `
@@ -118,9 +157,14 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
 
     list.appendChild(li);
 
-    if (isActive) {
-      li.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // Salva l'azione dichiarata su blur (blur non fa bubble, quindi listener diretto)
+    const actionInput = li.querySelector('.action-input');
+    if (actionInput) {
+      actionInput.addEventListener('blur',    () => callbacks.onSetAction(c.id, actionInput.value.trim()));
+      actionInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') actionInput.blur(); });
     }
+
+    if (isActive) li.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
 
   list.onclick = (e) => {
@@ -129,11 +173,13 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const id     = btn.dataset.id;
     const action = btn.dataset.action;
 
-    if (action === 'damage' || action === 'heal') {
-      const input = list.querySelector(`.hp-input[data-id="${id}"]`);
-      const amt   = parseInt(input?.value);
-      if (!amt || amt <= 0) return;
-      callbacks.onHpChange(id, action === 'damage' ? -amt : amt);
+    if (action === 'apply-damage' || action === 'apply-heal') {
+      const targetId = list.querySelector(`.target-select[data-id="${id}"]`)?.value;
+      const input    = list.querySelector(`.attack-amount[data-id="${id}"]`);
+      const amt      = parseInt(input?.value);
+      if (!targetId) { _flashError(btn, 'Scegli un bersaglio'); return; }
+      if (!amt || amt <= 0) { _flashError(btn, 'Inserisci una quantità'); return; }
+      callbacks.onApplyToTarget(targetId, action === 'apply-damage' ? -amt : amt);
       if (input) input.value = '';
       return;
     }
@@ -141,6 +187,13 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     if (action === 'open-conditions') { callbacks.onOpenConditions(id); return; }
     if (action === 'edit-initiative') { openInitiativeEdit(btn, id, callbacks.onInitiativeChange); return; }
   };
+}
+
+function _flashError(btn, message) {
+  const original = btn.textContent;
+  btn.textContent = message;
+  btn.style.opacity = '0.7';
+  setTimeout(() => { btn.textContent = original; btn.style.opacity = ''; }, 2000);
 }
 
 function openInitiativeEdit(btn, id, onInitiativeChange) {
@@ -157,7 +210,7 @@ function openInitiativeEdit(btn, id, onInitiativeChange) {
     if (!isNaN(val) && val !== parseInt(original)) onInitiativeChange(id, val);
   };
 
-  input.onblur   = confirm;
+  input.onblur    = confirm;
   input.onkeydown = (e) => {
     if (e.key === 'Enter')  { e.preventDefault(); input.blur(); }
     if (e.key === 'Escape') { input.value = original; input.blur(); }
