@@ -1,5 +1,5 @@
 import {
-  ref, set, get, push, remove, runTransaction
+  ref, set, get, push, remove, runTransaction, query, orderByChild, equalTo
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
 export class Combatant {
@@ -58,6 +58,17 @@ export class Combatant {
 
   async setAction(id, text) {
     await set(ref(this._db, `sessions/${this._code}/combatants/${id}/currentAction`), text || null);
+  }
+
+  async findByOwner(uid) {
+    const q    = query(this._ref(), orderByChild('ownerUid'), equalTo(uid));
+    const snap = await get(q);
+    if (!snap.exists()) return null;
+    const entries = Object.entries(snap.val());
+    // Restituisce solo i PG (non creature), prende il primo trovato
+    const pg = entries.find(([, v]) => v.type === 'player');
+    if (!pg) return null;
+    return { id: pg[0], ...pg[1] };
   }
 
   async remove(id) {
