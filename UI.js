@@ -122,16 +122,18 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
                 type="number"
                 class="attack-amount"
                 data-id="${c.id}"
-                placeholder="Qtà"
+                placeholder="Inserisci quantità..."
                 min="1"
                 max="9999"
               >
-              <button class="btn-apply-damage" data-id="${c.id}" data-action="apply-damage">
-                <span class="btn-icon">🗡</span> Danno
-              </button>
-              <button class="btn-apply-heal" data-id="${c.id}" data-action="apply-heal">
-                <span class="btn-icon">✚</span> Cura
-              </button>
+              <div class="attack-buttons">
+                <button class="btn-apply-damage" data-id="${c.id}" data-action="apply-damage">
+                  🗡 Infliggi Danno
+                </button>
+                <button class="btn-apply-heal" data-id="${c.id}" data-action="apply-heal">
+                  ✚ Applica Cura
+                </button>
+              </div>
             </div>
           </div>
         </div>
