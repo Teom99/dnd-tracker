@@ -64,9 +64,25 @@ document.getElementById('form-join').addEventListener('submit', async (e) => {
     _initCombatManagers(code);
     _initSheet(myUid);
 
-    myCombatantId = await combatantManager.add(name, initiative, hp, 'player', myUid);
-    localStorage.setItem('dnd_combatant_id', myCombatantId);
+    // Controlla se esiste già un PG di questo utente nella sessione
+    const existing = await combatantManager.findByOwner(myUid);
+    if (existing) {
+      const rejoin = confirm(
+        `Sei già presente in questa sessione con il personaggio "${existing.name}".\n\n` +
+        `OK → Rientra con "${existing.name}"\n` +
+        `Annulla → Rimuovi il vecchio e crea "${name}"`
+      );
+      if (rejoin) {
+        myCombatantId = existing.id;
+      } else {
+        await combatantManager.remove(existing.id);
+        myCombatantId = await combatantManager.add(name, initiative, hp, 'player', myUid);
+      }
+    } else {
+      myCombatantId = await combatantManager.add(name, initiative, hp, 'player', myUid);
+    }
 
+    localStorage.setItem('dnd_combatant_id', myCombatantId);
     _enterCombatView(code, false);
   } catch (err) {
     UI.showError(err.message);
@@ -209,6 +225,9 @@ function _initSheet(uid) {
     const sheetView = document.getElementById('view-character');
     if (sheetView && !sheetView.classList.contains('hidden')) {
       SheetUI.updateComputedValues(_sheetData);
+      SheetUI.renderSaveChecks(_sheetData.savingThrows);
+      SheetUI.renderSkillProfs(_sheetData.skills);
+      SheetUI.renderDeathSaves(_sheetData.deathSaves);
       SheetUI.renderSpellSlots(_sheetData.spellSlots, (lvl) => _sheet.useSpellSlot(lvl), (lvl) => _sheet.restoreSpellSlot(lvl));
       SheetUI.renderAttacks(_sheetData.attacks, _sheetData, (id) => _sheet.removeAttack(id));
       SheetUI.renderCantrips(_sheetData.cantrips, (id) => _sheet.removeCantrip(id));

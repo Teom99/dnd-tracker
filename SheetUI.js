@@ -114,7 +114,7 @@ export function updateComputedValues(data) {
 
 // ─── Death saves ────────────────────────────────────────────────────────────
 
-function renderDeathSaves(deathSaves) {
+export function renderDeathSaves(deathSaves) {
   const successes = deathSaves?.successes ?? 0;
   const failures  = deathSaves?.failures  ?? 0;
   ['successes', 'failures'].forEach(type => {
@@ -128,7 +128,7 @@ function renderDeathSaves(deathSaves) {
 
 // ─── Saving throw checkmarks ────────────────────────────────────────────────
 
-function renderSaveChecks(savingThrows) {
+export function renderSaveChecks(savingThrows) {
   document.querySelectorAll('.save-check').forEach(btn => {
     const ab      = btn.dataset.ability;
     const active  = !!(savingThrows?.[ab]);
@@ -139,7 +139,7 @@ function renderSaveChecks(savingThrows) {
 
 // ─── Skill proficiency icons ────────────────────────────────────────────────
 
-function renderSkillProfs(skills) {
+export function renderSkillProfs(skills) {
   const ICONS = ['○', '◑', '●'];
   document.querySelectorAll('.skill-prof').forEach(btn => {
     const level = skills?.[btn.dataset.skill] ?? 0;
