@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>D&D Combat Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════
+       VISTA HOME — crea o entra in una sessione
+  ═══════════════════════════════════════════════ -->
+  <div id="view-home" class="view">
+    <header class="home-header">
+      <h1>⚔ Combat Tracker ⚔</h1>
+      <p class="subtitle">Dungeons &amp; Dragons</p>
+    </header>
+
+    <div id="error-message" class="error-banner hidden"></div>
+
+    <section class="home-cards">
+
+      <!-- Card Master -->
+      <div class="home-card">
+        <h2>Sei il Master?</h2>
+        <p>Crea una nuova sessione e condividi il codice con i tuoi giocatori.</p>
+        <button id="btn-create-session" class="btn-primary">⚔ Crea Sessione</button>
+      </div>
+
+      <div class="divider">oppure</div>
+
+      <!-- Card Giocatore -->
+      <div class="home-card">
+        <h2>Sei un Giocatore?</h2>
+        <form id="form-join" novalidate>
+          <input
+            type="text"
+            id="input-session-code"
+            placeholder="Codice sessione (es. DRAG42)"
+            maxlength="6"
+            autocomplete="off"
+            spellcheck="false"
+            autocapitalize="characters"
+          >
+          <input
+            type="text"
+            id="input-pg-name"
+            placeholder="Nome del tuo personaggio"
+            maxlength="30"
+          >
+          <div class="input-row">
+            <input
+              type="number"
+              id="input-pg-hp"
+              placeholder="HP massimi"
+              min="1"
+              max="9999"
+            >
+            <input
+              type="number"
+              id="input-pg-initiative"
+              placeholder="Iniziativa (opz.)"
+              min="-10"
+              max="30"
+            >
+          </div>
+          <button type="submit" class="btn-primary">Entra nella Sessione</button>
+        </form>
+      </div>
+
+    </section>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       VISTA COMBAT — tracker real-time
+  ═══════════════════════════════════════════════ -->
+  <div id="view-combat" class="view hidden">
+
+    <header class="combat-header">
+      <div class="session-info">
+        <span class="session-label">Sessione:</span>
+        <span id="session-code-display" class="session-code"></span>
+        <button id="btn-copy-code" class="btn-copy" title="Copia codice">📋 Copia</button>
+      </div>
+      <span id="round-display" class="round-display">Round 1</span>
+    </header>
+
+    <div id="error-message-combat" class="error-banner hidden"></div>
+
+    <!-- Form aggiunta creatura (visibile solo al master) -->
+    <section id="master-add-form" class="master-panel hidden">
+      <h2>Aggiungi Creatura</h2>
+      <form id="form-add-creature" novalidate>
+        <input
+          type="text"
+          id="input-creature-name"
+          placeholder="Nome creatura"
+          maxlength="30"
+        >
+        <div class="input-row">
+          <input
+            type="number"
+            id="input-creature-hp"
+            placeholder="HP massimi"
+            min="1"
+            max="9999"
+          >
+          <input
+            type="number"
+            id="input-creature-initiative"
+            placeholder="Iniziativa"
+            min="-10"
+            max="30"
+          >
+        </div>
+        <button type="submit" class="btn-secondary">+ Aggiungi Creatura</button>
+      </form>
+    </section>
+
+    <!-- Lista combattenti -->
+    <main>
+      <ol id="combatant-list" class="combatant-list"></ol>
+      <p id="empty-list-msg" class="empty-msg hidden">
+        In attesa dei combattenti...<br>
+        <small>I giocatori possono entrare usando il codice sessione.</small>
+      </p>
+    </main>
+
+    <!-- Controlli turno (visibili solo al master) -->
+    <footer id="master-controls" class="master-controls hidden">
+      <button id="btn-next-turn" class="btn-primary btn-next">Turno Successivo ▶</button>
+      <button id="btn-reset" class="btn-danger">↺ Reset Incontro</button>
+    </footer>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       MODAL — selezione condizioni
+  ═══════════════════════════════════════════════ -->
+  <div id="condition-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Seleziona condizioni">
+    <div class="modal-content">
+      <h3>Condizioni</h3>
+      <p class="modal-hint">Tocca per attivare/disattivare</p>
+      <div id="condition-list" class="condition-grid"></div>
+      <button id="btn-close-modal" class="btn-secondary">Chiudi</button>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
