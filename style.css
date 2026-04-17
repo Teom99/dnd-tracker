@@ -770,3 +770,722 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
     padding: 0;
   }
 }
+
+/* ═══════════════════════════════════════════
+   COMBAT HEADER — aggiornamenti (exit + right)
+═══════════════════════════════════════════ */
+.combat-header-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+
+.btn-exit-session {
+  padding: 0.25rem 0.55rem;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-warm);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  min-height: 28px;
+  white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.btn-exit-session:hover { color: var(--red-bright); border-color: var(--red-bright); }
+
+/* ═══════════════════════════════════════════
+   SCHEDA PERSONAGGIO — header
+═══════════════════════════════════════════ */
+.sheet-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius);
+  padding: 0.65rem 0.9rem;
+  box-shadow: var(--shadow);
+}
+
+.sheet-header h1 {
+  flex: 1;
+  font-size: 1.2rem;
+  text-align: left;
+  margin: 0;
+}
+
+.btn-back {
+  padding: 0.35rem 0.65rem;
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-warm);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  min-height: 36px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.btn-back:hover { color: var(--gold); border-color: var(--gold); }
+
+/* ═══════════════════════════════════════════
+   SCHEDA PERSONAGGIO — body e sezioni
+═══════════════════════════════════════════ */
+.sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.sheet-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.sheet-section > summary {
+  font-family: 'Cinzel', serif;
+  font-size: 0.95rem;
+  color: var(--gold-light);
+  padding: 0.7rem 0.9rem;
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  user-select: none;
+  transition: background 0.15s;
+}
+
+.sheet-section > summary::-webkit-details-marker { display: none; }
+.sheet-section > summary::before { content: '▶'; font-size: 0.65rem; color: var(--text-muted); transition: transform 0.15s; }
+.sheet-section[open] > summary::before { transform: rotate(90deg); }
+.sheet-section > summary:hover { background: rgba(255,255,255,0.04); }
+
+.sheet-section-body {
+  padding: 0.75rem 0.9rem 0.9rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  border-top: 1px solid var(--border-warm);
+}
+
+/* ─── Field rows ─── */
+.field-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.field-row label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.field-row-inline {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.field-row-center {
+  align-items: center;
+  text-align: center;
+}
+
+.field-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.field-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.sheet-section-body input[type="text"],
+.sheet-section-body input[type="number"],
+.sheet-section-body textarea {
+  min-height: 40px;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.95rem;
+}
+
+.sheet-section-body textarea {
+  resize: vertical;
+  min-height: 60px;
+  line-height: 1.5;
+}
+
+.sheet-section-body select {
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  background: #12121f;
+  color: var(--text);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  font-family: inherit;
+  min-height: 40px;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.sheet-section-body select:focus { border-color: var(--gold); outline: none; }
+
+.input-small { max-width: 80px; }
+.input-big   { font-size: 1.4rem; font-weight: 700; text-align: center; min-height: 52px; }
+
+.input-select { max-width: 100%; }
+
+.hint-text {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-bottom: 0.25rem;
+}
+
+/* ─── Ability grid ─── */
+.ability-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.ability-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.35rem;
+}
+
+.ability-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ability-input {
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 700;
+  min-height: 44px;
+  width: 100%;
+}
+
+.ability-mod {
+  font-family: 'Cinzel', serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+/* ─── Computed big display ─── */
+.computed-big {
+  font-family: 'Cinzel', serif;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--gold);
+  display: block;
+  text-align: center;
+}
+
+/* ─── Saving throws ─── */
+.save-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.save-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.save-check {
+  background: transparent;
+  border: 1.5px solid var(--text-muted);
+  border-radius: 50%;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.save-check.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.15); }
+
+.save-name { flex: 1; font-size: 0.95rem; }
+.save-value { font-family: 'Cinzel', serif; font-size: 0.9rem; color: var(--gold-light); min-width: 2.5rem; text-align: right; }
+
+/* ─── Skills ─── */
+.skill-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.skill-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.skill-prof {
+  background: transparent;
+  border: 1.5px solid var(--text-muted);
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.skill-prof.active    { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.12); }
+.skill-prof.expertise { border-color: var(--gold-light); color: var(--gold-light); background: rgba(229,201,122,0.18); }
+
+.skill-name    { flex: 1; font-size: 0.9rem; }
+.skill-ability { font-size: 0.75rem; color: var(--text-muted); font-family: 'Cinzel', serif; min-width: 2.2rem; text-align: center; }
+.skill-total   { font-family: 'Cinzel', serif; font-size: 0.9rem; color: var(--gold-light); min-width: 2.5rem; text-align: right; }
+
+.passive-perception-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.4rem 0.5rem;
+  background: var(--bg-card-alt);
+  border-radius: 4px;
+  border: 1px solid var(--border-warm);
+  margin-top: 0.3rem;
+}
+
+.passive-label { font-size: 0.85rem; color: var(--text-muted); }
+.passive-value { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--gold); }
+
+/* ─── Death saves ─── */
+.death-saves-section {
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius);
+  padding: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.death-saves-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  text-align: center;
+}
+
+.death-saves-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.death-save-type {
+  font-size: 0.82rem;
+  min-width: 72px;
+  font-family: 'Cinzel', serif;
+}
+
+.death-save-type.success { color: var(--green); }
+.death-save-type.failure { color: var(--red-bright); }
+
+.death-save-pips { display: flex; gap: 0.5rem; }
+
+.death-pip {
+  background: transparent;
+  border: 1.5px solid var(--text-muted);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.death-pip[data-type="successes"].filled { border-color: var(--green); color: var(--green); background: rgba(74,124,89,0.2); }
+.death-pip[data-type="failures"].filled  { border-color: var(--red-bright); color: var(--red-bright); background: rgba(139,32,32,0.2); }
+
+/* ─── Attacks ─── */
+.attacks-list { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.attack-entry {
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-warm);
+  border-radius: 6px;
+  padding: 0.5rem 0.65rem;
+}
+
+.attack-row-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.attack-entry-name { flex: 1; font-size: 0.95rem; font-weight: 600; min-width: 0; }
+.attack-stat       { font-family: 'Cinzel', serif; font-size: 0.85rem; color: var(--gold); background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.3); border-radius: 4px; padding: 0.1rem 0.4rem; white-space: nowrap; }
+.attack-damage     { font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; }
+
+/* ─── Small remove button ─── */
+.btn-remove-sm {
+  background: transparent;
+  border: none;
+  color: #664444;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+  min-height: 28px;
+  min-width: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.btn-remove-sm:hover { color: var(--red-bright); background: rgba(139,32,32,0.2); }
+
+/* ─── Add forms ─── */
+.add-form {
+  background: rgba(0,0,0,0.2);
+  border: 1px dashed var(--border-warm);
+  border-radius: 6px;
+  padding: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.25rem;
+}
+
+.add-form h4 {
+  font-family: 'Cinzel', serif;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  margin-bottom: 0.1rem;
+}
+
+.add-form-inline {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.add-form-inline input { flex: 1; }
+
+.btn-sm {
+  padding: 0.35rem 0.7rem;
+  min-height: 36px;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 0.45rem 0.6rem;
+  background: #12121f;
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius);
+  min-height: 40px;
+  color: var(--text);
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  min-height: unset;
+  flex-shrink: 0;
+  accent-color: var(--gold);
+}
+
+/* ─── Magic stats ─── */
+.magic-stats { margin-bottom: 0.25rem; }
+.subsection-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 0.25rem;
+  border-bottom: 1px solid var(--border-warm);
+  padding-bottom: 0.2rem;
+}
+
+/* ─── Spell slots ─── */
+.spell-slots-list { display: flex; flex-direction: column; gap: 0.35rem; }
+
+.slot-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-warm);
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+}
+
+.slot-level {
+  font-family: 'Cinzel', serif;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  min-width: 1.6rem;
+}
+
+.slot-pips {
+  flex: 1;
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.slot-pip {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--text-muted);
+}
+
+.slot-pip.available { background: var(--gold); border-color: var(--gold); }
+.slot-pip.used      { background: transparent; border-color: #444; }
+.slot-none          { font-size: 0.8rem; color: var(--text-muted); }
+
+.slot-max-input {
+  width: 42px !important;
+  min-height: 32px !important;
+  padding: 0.2rem 0.3rem !important;
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.slot-buttons {
+  display: flex;
+  gap: 0.2rem;
+}
+
+.btn-slot-use,
+.btn-slot-restore {
+  background: var(--bg-card);
+  border: 1px solid var(--border-warm);
+  border-radius: 4px;
+  color: var(--text-muted);
+  width: 30px;
+  height: 30px;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s, border-color 0.15s;
+  padding: 0;
+}
+
+.btn-slot-use:hover     { color: var(--red-bright); border-color: var(--red-bright); }
+.btn-slot-restore:hover { color: var(--green); border-color: var(--green); }
+
+/* ─── Cantrips ─── */
+.cantrip-list { display: flex; flex-direction: column; gap: 0.3rem; }
+
+.cantrip-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-warm);
+  border-radius: 4px;
+  padding: 0.35rem 0.55rem;
+  font-size: 0.9rem;
+}
+
+/* ─── Spells by level ─── */
+.spell-level-block {
+  margin-top: 0.5rem;
+}
+
+.spell-level-header {
+  font-family: 'Cinzel', serif;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  margin-bottom: 0.25rem;
+  padding-bottom: 0.15rem;
+  border-bottom: 1px solid var(--border-warm);
+}
+
+.spell-level-entries { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.3rem; }
+
+.spell-entry {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-warm);
+  border-radius: 4px;
+  padding: 0.3rem 0.5rem;
+}
+
+.spell-prepared {
+  background: transparent;
+  border: 1.5px solid var(--text-muted);
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.spell-prepared.prepared { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.12); }
+
+.spell-name { flex: 1; font-size: 0.9rem; }
+
+/* ─── Inventory ─── */
+.inventory-list { display: flex; flex-direction: column; gap: 0.3rem; }
+
+.inventory-entry {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-warm);
+  border-radius: 4px;
+  padding: 0.35rem 0.55rem;
+  flex-wrap: wrap;
+}
+
+.item-qty   { font-family: 'Cinzel', serif; font-size: 0.8rem; color: var(--text-muted); min-width: 2rem; }
+.item-name  { flex: 1; font-size: 0.9rem; min-width: 0; }
+.item-notes { width: 100%; font-size: 0.8rem; color: var(--text-muted); font-style: italic; padding-left: 2.5rem; }
+
+/* ─── Currency ─── */
+.currency-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 0.4rem;
+}
+
+.currency-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.25rem;
+}
+
+.currency-block label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.72rem;
+  color: var(--gold-light);
+  letter-spacing: 0.06em;
+}
+
+.currency-block input {
+  text-align: center;
+  padding: 0.2rem;
+  min-height: 36px;
+  font-size: 0.9rem;
+  width: 100%;
+}
+
+/* ─── Empty hints ─── */
+.empty-hint {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  padding: 0.4rem;
+}
+
+/* ─── Sheet button on combat card ─── */
+.btn-sheet {
+  width: 100%;
+  padding: 0.3rem 0.6rem;
+  background: transparent;
+  border: 1px dashed var(--gold);
+  color: var(--gold);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-family: 'Cinzel', serif;
+  min-height: 34px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-sheet:hover { background: rgba(201,168,76,0.12); }
+
+/* ─── CA badge on combat card ─── */
+.ac-badge {
+  font-size: 0.78rem;
+  font-family: 'Cinzel', serif;
+  color: #7ab4e0;
+  background: rgba(26,58,92,0.5);
+  border: 1px solid #2a5a8c;
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  white-space: nowrap;
+}
+
+@media (min-width: 600px) {
+  .ability-grid { grid-template-columns: repeat(6, 1fr); }
+  .field-grid-3 { grid-template-columns: repeat(3, 1fr); }
+}

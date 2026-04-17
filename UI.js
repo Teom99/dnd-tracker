@@ -42,7 +42,7 @@ export function renderMasterPanel(isMaster) {
   document.getElementById('master-controls')?.classList.toggle('hidden', !isMaster);
 }
 
-export function renderCombatantList(combatants, currentTurnId, myUid, masterUid, callbacks) {
+export function renderCombatantList(combatants, currentTurnId, myUid, masterUid, callbacks, acMap = {}) {
   const list     = document.getElementById('combatant-list');
   const emptyMsg = document.getElementById('empty-list-msg');
 
@@ -60,12 +60,13 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const canEdit       = myUid === c.ownerUid || myUid === masterUid;
     const isMaster      = myUid === masterUid;
     const isCreature    = c.type === 'creature';
+    const isOwnCard     = myUid === c.ownerUid && !isCreature;
     const hpPercent     = c.hpMax > 0 ? (c.hpCurrent / c.hpMax) * 100 : 0;
     const conditions    = c.conditions ? Object.keys(c.conditions) : [];
     const hpClass       = hpPercent <= 25 ? 'hp-critical' : hpPercent <= 50 ? 'hp-low' : '';
-    // I giocatori vedono gli HP solo dei PG, non delle creature (a meno che il master non abbia attivato il suggerimento)
     const showFullHp    = canEdit || !isCreature;
     const showHint      = !canEdit && isCreature && c.showHealthHint;
+    const ac            = acMap[c.ownerUid] ?? c.armorClass ?? null;
 
     const targetOptions = [
       `<option value="">— Bersaglio —</option>`,
@@ -85,6 +86,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         <div class="card-name-block">
           <span class="combatant-name">${escapeHtml(c.name)}${isKO ? ' ☠' : ''}</span>
           <span class="type-badge ${c.type}">${c.type === 'player' ? 'PG' : 'CR'}</span>
+          ${ac !== null ? `<span class="ac-badge">CA ${ac}</span>` : ''}
         </div>
         <div class="initiative-block">
           ${canEdit
@@ -111,7 +113,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
               data-action="toggle-health-hint"
               title="${c.showHealthHint ? 'I giocatori vedono lo stato di salute' : 'I giocatori non vedono lo stato di salute'}"
             >
-              ${c.showHealthHint ? '👁 Stato salute visibile ai giocatori' : '👁 Nascondi stato salute ai giocatori'}
+              ${c.showHealthHint ? '👁 Stato salute visibile ai giocatori' : '👁 Stato di salute nascosto ai giocatori'}
             </button>
           ` : ''}
         </div>
@@ -176,6 +178,10 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
           ${conditions.length > 0 ? '✎ Modifica condizioni' : '+ Condizioni'}
         </button>
       ` : ''}
+
+      ${isOwnCard ? `
+        <button class="btn-sheet" data-id="${c.id}" data-action="open-sheet">📜 Scheda Personaggio</button>
+      ` : ''}
     `;
 
     list.appendChild(li);
@@ -214,6 +220,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     if (action === 'remove')          { callbacks.onRemove(id); return; }
     if (action === 'open-conditions') { callbacks.onOpenConditions(id); return; }
     if (action === 'edit-initiative') { openInitiativeEdit(btn, id, callbacks.onInitiativeChange); return; }
+    if (action === 'open-sheet')      { callbacks.onOpenSheet?.(); return; }
   };
 }
 
