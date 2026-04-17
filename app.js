@@ -407,9 +407,12 @@ function _updateHomeAuthUI(user) {
 // ─── Avvio: ripristina auth state, poi eventuale auto-restore sessione ────────
 
 (async () => {
-  // Aspetta che Firebase Auth ripristini lo stato dal browser (IndexedDB)
-  // prima di prendere qualsiasi decisione sull'identità dell'utente
-  await session.ensureAuth();
+  // Aspetta che Firebase Auth ripristini lo stato dal browser (IndexedDB).
+  // Il try/catch garantisce che _updateHomeAuthUI venga chiamato anche se
+  // authStateReady fallisce, evitando una schermata completamente vuota.
+  try {
+    await session.ensureAuth();
+  } catch { /* nessun auth state ripristinato — gestito come utente non autenticato */ }
   _updateHomeAuthUI(auth.currentUser);
 
   const savedCode        = localStorage.getItem('dnd_session_code');
