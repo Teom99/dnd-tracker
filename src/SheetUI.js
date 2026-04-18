@@ -195,33 +195,34 @@ export function renderSpellSlots(slots, onSetUsed, onSetMax) {
       <div class="slot-row" data-level="${lvl}">
         <span class="slot-level">${lvl}°</span>
         <div class="slot-counter">
-          <button class="btn-slot-adj" data-level="${lvl}" data-type="used" data-delta="-1" ${used <= 0 ? 'disabled' : ''}>−</button>
+          <button class="btn-slot-adj" data-level="${lvl}" data-delta="-1" ${used <= 0 ? 'disabled' : ''}>−</button>
           <span class="slot-count used">${used}</span>
-          <button class="btn-slot-adj" data-level="${lvl}" data-type="used" data-delta="1"  ${used >= max ? 'disabled' : ''}>+</button>
+          <button class="btn-slot-adj" data-level="${lvl}" data-delta="1"  ${used >= max ? 'disabled' : ''}>+</button>
           <span class="slot-sep">usati</span>
         </div>
         <span class="slot-slash">/</span>
-        <div class="slot-counter">
-          <button class="btn-slot-adj" data-level="${lvl}" data-type="max" data-delta="-1" ${max <= 0 ? 'disabled' : ''}>−</button>
-          <span class="slot-count max">${max}</span>
-          <button class="btn-slot-adj" data-level="${lvl}" data-type="max"  data-delta="1" ${max >= 9 ? 'disabled' : ''}>+</button>
-          <span class="slot-sep">max</span>
-        </div>
+        <input type="number" class="slot-max-input" data-level="${lvl}" min="0" max="9" value="${max}" title="Slot massimi">
       </div>`;
   }).join('');
 
   container.onclick = (e) => {
     const btn = e.target.closest('.btn-slot-adj');
     if (!btn || btn.disabled) return;
-    const lvl   = btn.dataset.level;
-    const type  = btn.dataset.type;
+    const lvl  = btn.dataset.level;
     const delta = parseInt(btn.dataset.delta);
-    const row   = container.querySelector(`.slot-row[data-level="${lvl}"]`);
-    const used  = parseInt(row.querySelector('.slot-count.used').textContent);
-    const max   = parseInt(row.querySelector('.slot-count.max').textContent);
-    if (type === 'used') onSetUsed(lvl, Math.max(0, Math.min(max, used + delta)));
-    else                 onSetMax(lvl,  Math.max(0, Math.min(9,   max  + delta)));
+    const row  = container.querySelector(`.slot-row[data-level="${lvl}"]`);
+    const used = parseInt(row.querySelector('.slot-count.used').textContent);
+    const max  = parseInt(row.querySelector('.slot-max-input').value) || 0;
+    onSetUsed(lvl, Math.max(0, Math.min(max, used + delta)));
   };
+
+  container.querySelectorAll('.slot-max-input').forEach(input => {
+    input.addEventListener('change', () => {
+      const val = Math.max(0, Math.min(9, parseInt(input.value) || 0));
+      input.value = val;
+      onSetMax(input.dataset.level, val);
+    });
+  });
 }
 
 // ─── Cantrips ────────────────────────────────────────────────────────────────

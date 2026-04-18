@@ -1641,7 +1641,6 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   font-weight: 700;
 }
 .slot-count.used { color: var(--red-bright); }
-.slot-count.max  { color: var(--gold); }
 
 .slot-sep {
   font-size: 0.7rem;
@@ -1653,6 +1652,14 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   font-size: 0.85rem;
   color: var(--text-muted);
   padding: 0 0.1rem;
+}
+
+.slot-max-input {
+  width: 42px !important;
+  min-height: 28px !important;
+  padding: 0.15rem 0.3rem !important;
+  text-align: center;
+  font-size: 0.9rem;
 }
 
 .btn-slot-adj {
