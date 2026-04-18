@@ -1,18 +1,19 @@
 ## Da fare
 
-- Refactor struttura progetto (cartelle src/, separare state da handlers in app.js)
-- Il master dovrebbe poter caricare immagini da mostrare al party (aggiungere/rimuovere a piacimento)
-- Ogni aggiornamento Firebase causa un re-render che riporta tutti in cima alla pagina — da evitare (es. aggiornare solo i nodi DOM che cambiano invece di fare innerHTML completo)
-- Bug inventario nella scheda personaggio: eliminazione oggetti non funziona + dopo il primo add il form smette di funzionare
-- Le creature e pg possono settare le proprie resistenze ai danni. Quando viene fatto un danno, questo viene dimezzato in automatico in base alle resistenze.
-- Nel menù a tendina per la scelta del bersaglio, mettere un indicazione grafica per far differenziare amici da nemici
-- La Griglia di battaglia va centrata nello schermo, ora è tutto spostata sulla sinistra dello schermo
-- Nella griglia di battaglia, quando clicco su un token per vedere la distanza dagli altri personaggi, la distanza è poco visibile in quanto va sopra il cerchio 
+- CHORE: Refactor struttura progetto (cartelle src/, separare state da handlers in app.js)
+- FEAT: Il master dovrebbe poter caricare immagini da mostrare al party (aggiungere/rimuovere a piacimento)
+- FEAT: Le creature e pg possono settare le proprie resistenze ai danni. Quando viene fatto un danno, questo viene dimezzato in automatico in base alle resistenze.
+- FIX: Nella griglia di battaglia, quando clicco su un token per vedere la distanza dagli altri personaggi, la distanza è poco visibile in quanto va sopra il cerchio 
 - BUG: a volte quando un giocatore modifica o fa un update di qualcosa nella pagina è capitato che la vita di un player andasse a 1/1
 - BUG: quando un giocatore è a terra non è possibile selezionarlo come bersaglio per una cura
+- BUG: probabile problema nel multithreading, capita spesso che per degli eventi che accadono in contemporanea uno di questi non sortisca effetto.
+
 
 ## Fatto
 
+- Ogni aggiornamento Firebase causa un re-render che riporta tutti in cima alla pagina — da evitare (es. aggiornare solo i nodi DOM che cambiano invece di fare innerHTML completo)
+- La Griglia di battaglia va centrata nello schermo, ora è tutto spostata sulla sinistra dello schermo
+- Nel menù a tendina per la scelta del bersaglio, mettere un indicazione grafica per far differenziare amici da nemici
 - Tasto "Fine Turno" sotto alla card del giocatore attivo
 - I player vedono gli HP degli altri player
 - Token selector bar per posizionare creature/player sulla griglia
