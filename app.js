@@ -215,6 +215,9 @@ function _exitToHome(errorMessage) {
   _snapshot     = null;
   _sheetData    = null;
   _acMap        = {};
+  // Ripristina il bottone join nel caso fosse rimasto bloccato su "Caricamento..."
+  const submitBtn = document.querySelector('#form-join [type="submit"]');
+  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Entra nella Sessione'; }
   UI.showView('view-home');
   if (errorMessage) UI.showError(errorMessage);
 }
