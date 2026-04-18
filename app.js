@@ -305,7 +305,8 @@ function _startListening() {
       onToggleHealthHint:   (id, current)     => combatantManager.setHealthHint(id, !current),
       onSetMaxHp:           (id, val)        => combatantManager.setMaxHp(id, val),
       onOpenSheet:          ()               => _openCharacterSheet(),
-    }, _acMap);
+      onDeathSave:          (type, count)   => _sheet?.setField(`deathSaves/${type}`, count),
+    }, _acMap, _sheetData?.deathSaves ?? null);
 
     _renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null);
   });

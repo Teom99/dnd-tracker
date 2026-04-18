@@ -42,7 +42,7 @@ export function renderMasterPanel(isMaster) {
   document.getElementById('master-controls')?.classList.toggle('hidden', !isMaster);
 }
 
-export function renderCombatantList(combatants, currentTurnId, myUid, masterUid, callbacks, acMap = {}) {
+export function renderCombatantList(combatants, currentTurnId, myUid, masterUid, callbacks, acMap = {}, myDeathSaves = null) {
   const list     = document.getElementById('combatant-list');
   const emptyMsg = document.getElementById('empty-list-msg');
 
@@ -68,6 +68,8 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const showHint      = !isOwnCard && !isMaster && isCreature && c.showHealthHint;
     const canEditMaxHp  = isOwnCard || (isMaster && isCreature);
     const ac            = acMap[c.ownerUid] ?? c.armorClass ?? null;
+    const successes     = isOwnCard && isKO ? (myDeathSaves?.successes ?? 0) : 0;
+    const failures      = isOwnCard && isKO ? (myDeathSaves?.failures  ?? 0) : 0;
 
     const targetOptions = [
       `<option value="">— Bersaglio —</option>`,
@@ -190,6 +192,19 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         <button class="btn-sheet" data-id="${c.id}" data-action="open-sheet">📜 Scheda Personaggio</button>
       ` : ''}
 
+      ${isOwnCard && isKO ? `
+        <div class="death-saves-inline">
+          <div class="ds-row">
+            <span class="ds-label">Successi</span>
+            ${[0,1,2].map(i => `<button class="ds-pip${i < successes ? ' filled' : ''}" data-action="death-save" data-type="successes" data-index="${i}">${i < successes ? '●' : '○'}</button>`).join('')}
+          </div>
+          <div class="ds-row">
+            <span class="ds-label">Fallimenti</span>
+            ${[0,1,2].map(i => `<button class="ds-pip${i < failures ? ' filled' : ''}" data-action="death-save" data-type="failures" data-index="${i}">${i < failures ? '●' : '○'}</button>`).join('')}
+          </div>
+        </div>
+      ` : ''}
+
       ${isActive && isOwnCard ? `
         <button class="btn-end-turn" data-id="${c.id}" data-action="end-turn">✓ Fine Turno</button>
       ` : ''}
@@ -229,6 +244,13 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       return;
     }
     if (action === 'end-turn')        { callbacks.onEndTurn?.(); return; }
+    if (action === 'death-save') {
+      const type   = btn.dataset.type;
+      const index  = parseInt(btn.dataset.index);
+      const filled = btn.classList.contains('filled');
+      callbacks.onDeathSave?.(type, filled ? index : index + 1);
+      return;
+    }
     if (action === 'remove')          { callbacks.onRemove(id); return; }
     if (action === 'open-conditions') { callbacks.onOpenConditions(id); return; }
     if (action === 'edit-initiative') { openInitiativeEdit(btn, id, callbacks.onInitiativeChange); return; }

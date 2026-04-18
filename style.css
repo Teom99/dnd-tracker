@@ -1684,6 +1684,43 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 
 .btn-sheet:hover { background: rgba(201,168,76,0.12); }
 
+/* ─── Death saves inline nella card KO ─── */
+.death-saves-inline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.5rem 0.6rem;
+  background: rgba(139, 32, 32, 0.15);
+  border: 1px solid rgba(139, 32, 32, 0.4);
+  border-radius: 6px;
+}
+
+.ds-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.ds-label {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  width: 5rem;
+  flex-shrink: 0;
+}
+
+.ds-pip {
+  background: transparent;
+  border: none;
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 0 0.1rem;
+  line-height: 1;
+  color: var(--text-muted);
+  transition: color 0.15s;
+}
+.ds-pip:hover { color: var(--text-primary); }
+.ds-pip.filled { color: #dc2626; }
+
 .btn-end-turn {
   width: 100%;
   padding: 0.4rem 0.6rem;
