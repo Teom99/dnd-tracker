@@ -196,7 +196,7 @@ export function renderSpellSlots(slots, onSetUsed, onSetMax) {
         <span class="slot-level">${lvl}°</span>
         <div class="slot-counter">
           <button class="btn-slot-adj" data-level="${lvl}" data-delta="-1" ${used <= 0 ? 'disabled' : ''}>−</button>
-          <span class="slot-count${max > 0 && used === 0 ? ' used' : ''}">${used}</span>
+          <span class="slot-count slot-used-val${max > 0 && used === 0 ? ' used' : ''}">${used}</span>
           <button class="btn-slot-adj" data-level="${lvl}" data-delta="1"  ${used >= max ? 'disabled' : ''}>+</button>
           <span class="slot-sep">usati</span>
         </div>
@@ -211,7 +211,7 @@ export function renderSpellSlots(slots, onSetUsed, onSetMax) {
     const lvl  = btn.dataset.level;
     const delta = parseInt(btn.dataset.delta);
     const row  = container.querySelector(`.slot-row[data-level="${lvl}"]`);
-    const used = parseInt(row.querySelector('.slot-count.used').textContent);
+    const used = parseInt(row.querySelector('.slot-used-val').textContent);
     const max  = parseInt(row.querySelector('.slot-max-input').value) || 0;
     onSetUsed(lvl, Math.max(0, Math.min(max, used + delta)));
   };
