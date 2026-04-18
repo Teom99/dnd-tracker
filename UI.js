@@ -55,7 +55,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
   emptyMsg?.classList.add('hidden');
 
   combatants.forEach((c, i) => {
-    const isActive      = c.id === currentTurnId;
+    const isActive      = c.id === currentTurnId && c.hpCurrent > 0;
     const isKO          = c.hpCurrent === 0;
     const canEdit       = myUid === c.ownerUid || myUid === masterUid;
     const isMaster      = myUid === masterUid;
@@ -64,7 +64,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const hpPercent     = c.hpMax > 0 ? (c.hpCurrent / c.hpMax) * 100 : 0;
     const conditions    = c.conditions ? Object.keys(c.conditions) : [];
     const hpClass       = hpPercent <= 25 ? 'hp-critical' : hpPercent <= 50 ? 'hp-low' : '';
-    const showFullHp    = isOwnCard || (isMaster && isCreature);
+    const showFullHp    = isOwnCard || (isMaster && isCreature) || (!isMaster && !isCreature);
     const showHint      = !isOwnCard && !isMaster && isCreature && c.showHealthHint;
     const canEditMaxHp  = isOwnCard || (isMaster && isCreature);
     const ac            = acMap[c.ownerUid] ?? c.armorClass ?? null;
@@ -73,7 +73,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       `<option value="">— Bersaglio —</option>`,
       `<option value="${c.id}">Sé stesso</option>`,
       ...combatants
-        .filter(x => x.id !== c.id)
+        .filter(x => x.id !== c.id && x.hpCurrent > 0)
         .map(x => `<option value="${x.id}">${escapeHtml(x.name)}</option>`)
     ].join('');
 
@@ -189,6 +189,10 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       ${isOwnCard ? `
         <button class="btn-sheet" data-id="${c.id}" data-action="open-sheet">📜 Scheda Personaggio</button>
       ` : ''}
+
+      ${isActive && isOwnCard ? `
+        <button class="btn-end-turn" data-id="${c.id}" data-action="end-turn">✓ Fine Turno</button>
+      ` : ''}
     `;
 
     list.appendChild(li);
@@ -224,6 +228,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       callbacks.onToggleHealthHint(id, c?.classList.contains('hint-active'));
       return;
     }
+    if (action === 'end-turn')        { callbacks.onEndTurn?.(); return; }
     if (action === 'remove')          { callbacks.onRemove(id); return; }
     if (action === 'open-conditions') { callbacks.onOpenConditions(id); return; }
     if (action === 'edit-initiative') { openInitiativeEdit(btn, id, callbacks.onInitiativeChange); return; }

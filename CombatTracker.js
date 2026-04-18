@@ -13,20 +13,21 @@ export class CombatTracker {
 
   // Avanza al turno successivo. Se currentTurnId è null, parte dal primo combattente.
   async nextTurn(combatants, currentTurnId, currentRound) {
-    if (combatants.length === 0) return;
+    const alive = combatants.filter(c => c.hpCurrent > 0);
+    if (alive.length === 0) return;
 
-    const currentIndex = combatants.findIndex(c => c.id === currentTurnId);
+    const currentIndex = alive.findIndex(c => c.id === currentTurnId);
 
     if (currentIndex === -1) {
-      await this._session.setCurrentTurnId(combatants[0].id);
+      await this._session.setCurrentTurnId(alive[0].id);
       return;
     }
 
-    const nextIndex = (currentIndex + 1) % combatants.length;
+    const nextIndex = (currentIndex + 1) % alive.length;
     if (nextIndex === 0) {
       await this._session.setRound(currentRound + 1);
     }
-    await this._session.setCurrentTurnId(combatants[nextIndex].id);
+    await this._session.setCurrentTurnId(alive[nextIndex].id);
   }
 
   async reset() {

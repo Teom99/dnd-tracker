@@ -119,11 +119,10 @@ document.getElementById('form-join').addEventListener('submit', async (e) => {
 
   const code       = document.getElementById('input-session-code').value.trim().toUpperCase();
   const name       = document.getElementById('input-pg-name').value.trim();
-  const hp         = document.getElementById('input-pg-hp').value;
   const initiative = document.getElementById('input-pg-initiative').value || '0';
 
-  if (!code || !name || !hp) {
-    UI.showError('Inserisci codice sessione, nome personaggio e HP massimi.');
+  if (!code || !name) {
+    UI.showError('Inserisci codice sessione e nome personaggio.');
     return;
   }
 
@@ -165,10 +164,10 @@ document.getElementById('form-join').addEventListener('submit', async (e) => {
         charId = existingCharId;
       } else {
         await combatantManager.remove(existing.id);
-        myCombatantId = await combatantManager.add(name, initiative, hp, 'player', myUid, charId);
+        myCombatantId = await combatantManager.add(name, initiative, 1, 'player', myUid, charId);
       }
     } else {
-      myCombatantId = await combatantManager.add(name, initiative, hp, 'player', myUid, charId);
+      myCombatantId = await combatantManager.add(name, initiative, 1, 'player', myUid, charId);
     }
 
     _selectedJoinCharId = null;
@@ -297,6 +296,7 @@ function _startListening() {
     const sorted = tracker.sortedCombatants(data.combatants);
     UI.renderRound(data.round ?? 1);
     UI.renderCombatantList(sorted, data.currentTurnId ?? null, myUid, session.masterUid, {
+      onEndTurn:          async ()       => { const sorted = tracker.sortedCombatants(_snapshot.combatants); await tracker.nextTurn(sorted, _snapshot.currentTurnId, _snapshot.round); },
       onRemove:           (id)           => _removeCombatant(id),
       onInitiativeChange: (id, val)      => combatantManager.setInitiative(id, val),
       onOpenConditions:   (id)           => _openConditionModal(id, data.combatants?.[id]?.conditions),
@@ -499,6 +499,40 @@ function _renderGrid(gridPos, combatants, currentTurnId) {
     },
     (id, col, row) => session.setGridPosition(id, col, row)
   );
+  _renderTokenBar(gridPos, combatants);
+}
+
+function _renderTokenBar(gridPos, combatants) {
+  const bar = document.getElementById('grid-token-bar');
+  if (!bar) return;
+  const pos  = gridPos   || {};
+  const comb = combatants || {};
+
+  const entries = Object.entries(comb).filter(([id, c]) => {
+    if (session.isMaster) return c.type === 'creature';
+    return id === myCombatantId;
+  });
+
+  if (entries.length === 0) { bar.innerHTML = ''; return; }
+
+  bar.innerHTML = entries.map(([id, c]) => {
+    const placed   = pos[id] != null;
+    const selected = id === _selectedGridTokenId;
+    const ko       = c.hpCurrent === 0;
+    return `<button
+      class="grid-token-chip${selected ? ' selected' : ''}${ko ? ' ko' : ''}"
+      data-token-id="${id}"
+      title="${placed ? 'Riposiziona' : 'Posiziona sulla griglia'}"
+    >${(c.name || '?').slice(0, 2).toUpperCase()}${placed ? '' : ' +'}</button>`;
+  }).join('');
+
+  bar.onclick = (e) => {
+    const btn = e.target.closest('[data-token-id]');
+    if (!btn) return;
+    const id = btn.dataset.tokenId;
+    _selectedGridTokenId = _selectedGridTokenId === id ? null : id;
+    if (_snapshot) _renderGrid(_snapshot.grid || {}, _snapshot.combatants || {}, _snapshot.currentTurnId ?? null);
+  };
 }
 
 function _updateHomeAuthUI(user) {

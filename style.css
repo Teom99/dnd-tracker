@@ -1684,6 +1684,21 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 
 .btn-sheet:hover { background: rgba(201,168,76,0.12); }
 
+.btn-end-turn {
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  background: #1a3a1a;
+  border: 1px solid #4a7c59;
+  color: #7ec89a;
+  border-radius: 4px;
+  font-family: 'Cinzel', serif;
+  font-size: 0.85rem;
+  cursor: pointer;
+  min-height: 36px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-end-turn:hover { background: #1f4a1f; border-color: #7ec89a; }
+
 /* ─── CA badge on combat card ─── */
 .ac-badge {
   font-size: 0.78rem;
@@ -1832,6 +1847,8 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .grid-header {
@@ -1851,6 +1868,28 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   color: var(--text-muted);
   font-style: italic;
 }
+
+.grid-token-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  min-height: 0;
+}
+
+.grid-token-chip {
+  padding: 0.25rem 0.6rem;
+  background: #12122a;
+  border: 1px solid #2a2040;
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-family: 'Cinzel', serif;
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+.grid-token-chip:hover { border-color: var(--border-warm); color: var(--text-primary); }
+.grid-token-chip.selected { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.1); }
+.grid-token-chip.ko { opacity: 0.4; }
 
 .grid-container {
   overflow-x: auto;

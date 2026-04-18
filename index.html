@@ -109,22 +109,13 @@
             placeholder="Nome del tuo personaggio"
             maxlength="30"
           >
-          <div class="input-row">
-            <input
-              type="number"
-              id="input-pg-hp"
-              placeholder="HP massimi"
-              min="1"
-              max="9999"
-            >
-            <input
-              type="number"
-              id="input-pg-initiative"
-              placeholder="Iniziativa (opz.)"
-              min="-10"
-              max="30"
-            >
-          </div>
+          <input
+            type="number"
+            id="input-pg-initiative"
+            placeholder="Iniziativa (opz.)"
+            min="-10"
+            max="30"
+          >
           <button type="submit" class="btn-primary">Entra nella Sessione</button>
         </form>
       </div>
@@ -199,8 +190,9 @@
     <section id="grid-section" class="grid-section">
       <div class="grid-header">
         <span class="grid-title">Griglia di Battaglia</span>
-        <span class="grid-hint">1 esagono = 1,5 m · Tocca il tuo token per selezionarlo, poi tocca la destinazione</span>
+        <span class="grid-hint">1 esagono = 1,5 m · Seleziona un token, poi tocca la destinazione</span>
       </div>
+      <div id="grid-token-bar" class="grid-token-bar"></div>
       <div id="grid-container" class="grid-container"></div>
     </section>
 
