@@ -184,35 +184,43 @@ export function renderAttacks(attacks, data, onRemove) {
 
 // ─── Spell Slots ─────────────────────────────────────────────────────────────
 
-export function renderSpellSlots(slots, onUse, onRestore) {
+export function renderSpellSlots(slots, onSetUsed, onSetMax) {
   const container = document.getElementById('spell-slots-list');
   if (!container) return;
   container.innerHTML = SPELL_LEVELS.map(lvl => {
-    const s   = slots?.[lvl] || {};
+    const s    = slots?.[lvl] || {};
     const max  = s.max  ?? 0;
     const used = s.used ?? 0;
-    const avail = Math.max(0, max - used);
-    const pips = Array.from({ length: max }, (_, i) =>
-      `<span class="slot-pip ${i < avail ? 'available' : 'used'}"></span>`
-    ).join('');
+    const pips = max > 0
+      ? Array.from({ length: max }, (_, i) => {
+          const isUsed = i < used;
+          return `<button class="slot-pip ${isUsed ? 'used' : 'available'}" data-level="${lvl}" data-index="${i}" title="${isUsed ? 'Usato — clicca per recuperare' : 'Disponibile — clicca per usare'}"></button>`;
+        }).join('')
+      : '<span class="slot-none">—</span>';
     return `
       <div class="slot-row" data-level="${lvl}">
         <span class="slot-level">${lvl}°</span>
-        <div class="slot-pips">${pips || '<span class="slot-none">—</span>'}</div>
-        <input type="number" class="slot-max-input" data-path="spellSlots/${lvl}/max" data-number min="0" max="9" value="${max}" title="Slot massimi livello ${lvl}">
-        <div class="slot-buttons">
-          <button class="btn-slot-use"     data-level="${lvl}" title="Usa slot">−</button>
-          <button class="btn-slot-restore" data-level="${lvl}" title="Recupera slot">+</button>
-        </div>
+        <div class="slot-pips">${pips}</div>
+        <input type="number" class="slot-max-input" data-level="${lvl}" min="0" max="9" value="${max}" title="Numero massimo di slot">
       </div>`;
   }).join('');
 
   container.onclick = (e) => {
-    const use = e.target.closest('.btn-slot-use');
-    if (use) { onUse(use.dataset.level); return; }
-    const restore = e.target.closest('.btn-slot-restore');
-    if (restore) { onRestore(restore.dataset.level); return; }
+    const pip = e.target.closest('.slot-pip');
+    if (!pip) return;
+    const lvl   = pip.dataset.level;
+    const index = parseInt(pip.dataset.index);
+    const isUsed = pip.classList.contains('used');
+    onSetUsed(lvl, isUsed ? index : index + 1);
   };
+
+  container.querySelectorAll('.slot-max-input').forEach(input => {
+    input.addEventListener('change', () => {
+      const val = Math.max(0, Math.min(9, parseInt(input.value) || 0));
+      input.value = val;
+      onSetMax(input.dataset.level, val);
+    });
+  });
 }
 
 // ─── Cantrips ────────────────────────────────────────────────────────────────

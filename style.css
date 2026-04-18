@@ -1626,14 +1626,18 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .slot-pip {
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   border: 1.5px solid var(--text-muted);
+  cursor: pointer;
+  padding: 0;
+  transition: transform 0.1s, opacity 0.15s;
 }
+.slot-pip:hover { transform: scale(1.2); opacity: 0.85; }
 
 .slot-pip.available { background: var(--gold); border-color: var(--gold); }
-.slot-pip.used      { background: transparent; border-color: #444; }
+.slot-pip.used      { background: transparent; border-color: #555; }
 .slot-none          { font-size: 0.8rem; color: var(--text-muted); }
 
 .slot-max-input {
@@ -1643,31 +1647,6 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   text-align: center;
   font-size: 0.85rem;
 }
-
-.slot-buttons {
-  display: flex;
-  gap: 0.2rem;
-}
-
-.btn-slot-use,
-.btn-slot-restore {
-  background: var(--bg-card);
-  border: 1px solid var(--border-warm);
-  border-radius: 4px;
-  color: var(--text-muted);
-  width: 30px;
-  height: 30px;
-  font-size: 1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.15s, border-color 0.15s;
-  padding: 0;
-}
-
-.btn-slot-use:hover     { color: var(--red-bright); border-color: var(--red-bright); }
-.btn-slot-restore:hover { color: var(--green); border-color: var(--green); }
 
 /* ─── Cantrips ─── */
 .cantrip-list { display: flex; flex-direction: column; gap: 0.3rem; }

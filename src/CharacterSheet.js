@@ -37,20 +37,12 @@ export class CharacterSheet {
     );
   }
 
-  async useSpellSlot(level) {
-    const maxSnap = await get(this._ref(`spellSlots/${level}/max`));
-    const max = maxSnap.val() ?? 0;
-    await runTransaction(
-      this._ref(`spellSlots/${level}/used`),
-      (current) => Math.min(max, (current ?? 0) + 1)
-    );
-  }
-
-  async restoreSpellSlot(level) {
-    await runTransaction(
-      this._ref(`spellSlots/${level}/used`),
-      (current) => Math.max(0, (current ?? 0) - 1)
-    );
+  async setSpellSlotsUsed(level, count) {
+    await runTransaction(this._ref(`spellSlots/${level}`), (current) => {
+      if (current == null) return current;
+      const max = current.max ?? 0;
+      return { ...current, used: Math.max(0, Math.min(max, count)) };
+    });
   }
 
   async addCantrip(name) {
