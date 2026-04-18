@@ -230,6 +230,7 @@ document.getElementById('btn-exit-session').addEventListener('click', () => {
 // ─── SCHEDA: Torna indietro ───────────────────────────────────────────────────
 
 document.getElementById('btn-back-to-combat').addEventListener('click', () => {
+  if (_isSheetEmbedded()) return;
   UI.showView(_sheetReturnView);
   if (_sheetReturnView === 'view-home') _loadCharacterLibrary();
 });
@@ -263,6 +264,7 @@ function _exitToHome(errorMessage) {
   if (gridContainer) gridContainer.innerHTML = '';
   const submitBtn = document.querySelector('#form-join [type="submit"]');
   if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Entra nella Sessione'; }
+  document.body.classList.remove('in-combat', 'has-sheet');
   UI.showView('view-home');
   if (errorMessage) UI.showError(errorMessage);
 }
@@ -277,6 +279,7 @@ function _enterCombatView(code, isMaster) {
   UI.renderMasterPanel(isMaster);
   if (isMaster) _populateCreaturePicker();
   _sheetReturnView = 'view-combat';
+  document.body.classList.add('in-combat');
   _startListening();
   UI.showView('view-combat');
 }
@@ -293,20 +296,24 @@ function _startListening() {
       return;
     }
 
-    const sorted = tracker.sortedCombatants(data.combatants);
+    const sorted   = tracker.sortedCombatants(data.combatants);
+    const creatures = sorted.filter(c => c.type === 'creature');
+    const players   = sorted.filter(c => c.type === 'player');
     UI.renderRound(data.round ?? 1);
-    UI.renderCombatantList(sorted, data.currentTurnId ?? null, myUid, session.masterUid, {
-      onEndTurn:          async ()       => { const sorted = tracker.sortedCombatants(_snapshot.combatants); await tracker.nextTurn(sorted); },
-      onRemove:           (id)           => _removeCombatant(id),
-      onInitiativeChange: (id, val)      => combatantManager.setInitiative(id, val),
-      onOpenConditions:   (id)           => _openConditionModal(id, data.combatants?.[id]?.conditions),
-      onSetAction:          (id, text)        => combatantManager.setAction(id, text),
-      onApplyToTarget:      (targetId, delta) => combatantManager.updateHp(targetId, delta),
-      onToggleHealthHint:   (id, current)     => combatantManager.setHealthHint(id, !current),
-      onSetMaxHp:           (id, val)        => combatantManager.setMaxHp(id, val),
-      onOpenSheet:          ()               => _openCharacterSheet(),
-      onDeathSave:          async (type, count) => _onDeathSave(type, count),
-    }, _acMap, _sheetData?.deathSaves ?? null);
+    const _callbacks = {
+      onEndTurn:          async ()              => { const s = tracker.sortedCombatants(_snapshot.combatants); await tracker.nextTurn(s); },
+      onRemove:           (id)                  => _removeCombatant(id),
+      onInitiativeChange: (id, val)             => combatantManager.setInitiative(id, val),
+      onOpenConditions:   (id)                  => _openConditionModal(id, data.combatants?.[id]?.conditions),
+      onSetAction:        (id, text)            => combatantManager.setAction(id, text),
+      onApplyToTarget:    (targetId, delta)     => combatantManager.updateHp(targetId, delta),
+      onToggleHealthHint: (id, current)         => combatantManager.setHealthHint(id, !current),
+      onSetMaxHp:         (id, val)             => combatantManager.setMaxHp(id, val),
+      onOpenSheet:        ()                    => _openCharacterSheet(),
+      onDeathSave:        async (type, count)   => _onDeathSave(type, count),
+    };
+    UI.renderCombatantList(creatures, data.currentTurnId ?? null, myUid, session.masterUid, _callbacks, _acMap, null,                          'creature-list', 'empty-creatures-msg');
+    UI.renderCombatantList(players,   data.currentTurnId ?? null, myUid, session.masterUid, _callbacks, _acMap, _sheetData?.deathSaves ?? null, 'player-list',   'empty-players-msg');
 
     _renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null);
   });
@@ -339,19 +346,23 @@ function _setupSheetListener() {
     // Re-render combatant list subito se siamo in combat, così i death saves appaiono senza aspettare il prossimo evento sessione
     const combatView = document.getElementById('view-combat');
     if (combatView && !combatView.classList.contains('hidden') && _snapshot) {
-      const sorted = tracker.sortedCombatants(_snapshot.combatants);
-      UI.renderCombatantList(sorted, _snapshot.currentTurnId ?? null, myUid, session.masterUid, {
-        onEndTurn:          async ()       => { const s = tracker.sortedCombatants(_snapshot.combatants); await tracker.nextTurn(s); },
-        onRemove:           (id)           => _removeCombatant(id),
-        onInitiativeChange: (id, val)      => combatantManager.setInitiative(id, val),
-        onOpenConditions:   (id)           => _openConditionModal(id, _snapshot.combatants?.[id]?.conditions),
-        onSetAction:        (id, text)     => combatantManager.setAction(id, text),
-        onApplyToTarget:    (targetId, delta) => combatantManager.updateHp(targetId, delta),
-        onToggleHealthHint: (id, current)  => combatantManager.setHealthHint(id, !current),
-        onSetMaxHp:         (id, val)      => combatantManager.setMaxHp(id, val),
-        onOpenSheet:        ()             => _openCharacterSheet(),
+      const sorted2    = tracker.sortedCombatants(_snapshot.combatants);
+      const creatures2 = sorted2.filter(c => c.type === 'creature');
+      const players2   = sorted2.filter(c => c.type === 'player');
+      const cb2 = {
+        onEndTurn:          async ()            => { const s = tracker.sortedCombatants(_snapshot.combatants); await tracker.nextTurn(s); },
+        onRemove:           (id)                => _removeCombatant(id),
+        onInitiativeChange: (id, val)           => combatantManager.setInitiative(id, val),
+        onOpenConditions:   (id)                => _openConditionModal(id, _snapshot.combatants?.[id]?.conditions),
+        onSetAction:        (id, text)          => combatantManager.setAction(id, text),
+        onApplyToTarget:    (targetId, delta)   => combatantManager.updateHp(targetId, delta),
+        onToggleHealthHint: (id, current)       => combatantManager.setHealthHint(id, !current),
+        onSetMaxHp:         (id, val)           => combatantManager.setMaxHp(id, val),
+        onOpenSheet:        ()                  => _openCharacterSheet(),
         onDeathSave:        async (type, count) => _onDeathSave(type, count),
-      }, _acMap, _sheetData?.deathSaves ?? null);
+      };
+      UI.renderCombatantList(creatures2, _snapshot.currentTurnId ?? null, myUid, session.masterUid, cb2, _acMap, null,                          'creature-list', 'empty-creatures-msg');
+      UI.renderCombatantList(players2,   _snapshot.currentTurnId ?? null, myUid, session.masterUid, cb2, _acMap, _sheetData?.deathSaves ?? null, 'player-list',   'empty-players-msg');
     }
 
     const sheetView = document.getElementById('view-character');
@@ -373,7 +384,12 @@ function _initSheet(uid, charId) {
   if (!charId) return;
   myCurrentCharId = charId;
   _sheet = new CharacterSheet(db, uid, charId);
+  document.body.classList.add('has-sheet');
   _setupSheetListener();
+}
+
+function _isSheetEmbedded() {
+  return window.matchMedia('(min-width: 1200px)').matches && document.body.classList.contains('has-sheet');
 }
 
 function _openCharacterSheet() {
@@ -388,7 +404,7 @@ function _openCharacterSheet() {
   SheetUI.renderSpellsByLevel(_sheetData?.spells, (lvl, id) => _sheet.removeSpell(lvl, id), (lvl, id) => _sheet.toggleSpellPrepared(lvl, id), (lvl, name) => _sheet.addSpell(lvl, name));
   SheetUI.renderInventory(_sheetData?.inventory, (id) => _sheet.removeInventoryItem(id));
   _bindSheetEvents();
-  UI.showView('view-character');
+  if (!_isSheetEmbedded()) UI.showView('view-character');
 }
 
 async function _openLibrarySheet(charId) {

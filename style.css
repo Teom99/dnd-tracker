@@ -485,6 +485,57 @@ form { display: flex; flex-direction: column; gap: 0.6rem; }
 }
 
 .master-panel form { display: flex; flex-direction: column; gap: 0.6rem; }
+.master-panel-title { font-family: 'Cinzel', serif; font-size: 0.95rem; margin-bottom: 0.4rem; }
+
+/* ═══════════════════════════════════════════
+   LAYOUT 2 COLONNE COMBAT
+═══════════════════════════════════════════ */
+.combat-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 700px) {
+  .combat-cols { grid-template-columns: 1fr; }
+}
+
+.col-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding-bottom: 0.4rem;
+  margin-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-warm);
+}
+
+/* ─── Layout 3 colonne su desktop: Creature | Giocatori | Scheda ─── */
+@media (min-width: 1200px) {
+  body.in-combat.has-sheet {
+    display: grid;
+    grid-template-columns: 1fr 370px;
+    min-height: 100vh;
+  }
+  body.in-combat.has-sheet #view-combat {
+    grid-column: 1;
+    overflow-y: auto;
+    max-height: 100vh;
+  }
+  body.in-combat.has-sheet #view-character {
+    grid-column: 2;
+    grid-row: 1;
+    display: block !important;
+    max-height: 100vh;
+    overflow-y: auto;
+    border-left: 1px solid var(--border-warm);
+    background: var(--bg-card);
+  }
+  body.in-combat.has-sheet .sheet-header { display: none; }
+  body.in-combat.has-sheet .btn-sheet    { display: none; }
+}
 
 /* ═══════════════════════════════════════════
    COMBATANT LIST

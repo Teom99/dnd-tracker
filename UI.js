@@ -42,9 +42,10 @@ export function renderMasterPanel(isMaster) {
   document.getElementById('master-controls')?.classList.toggle('hidden', !isMaster);
 }
 
-export function renderCombatantList(combatants, currentTurnId, myUid, masterUid, callbacks, acMap = {}, myDeathSaves = null) {
-  const list     = document.getElementById('combatant-list');
-  const emptyMsg = document.getElementById('empty-list-msg');
+export function renderCombatantList(combatants, currentTurnId, myUid, masterUid, callbacks, acMap = {}, myDeathSaves = null, listId = 'combatant-list', emptyMsgId = 'empty-list-msg') {
+  const list     = document.getElementById(listId);
+  const emptyMsg = document.getElementById(emptyMsgId);
+  if (!list) return;
 
   list.innerHTML = '';
 

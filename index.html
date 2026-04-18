@@ -142,49 +142,58 @@
 
     <div id="error-message-combat" class="error-banner hidden"></div>
 
-    <!-- Form aggiunta creatura (visibile solo al master) -->
-    <section id="master-add-form" class="master-panel hidden">
-      <h2>Aggiungi Creatura</h2>
-      <form id="form-add-creature" novalidate>
-        <div id="creature-library-picker" class="char-picker hidden">
-          <p class="char-picker-label">Dalla libreria:</p>
-          <div id="creature-library-list" class="char-picker-list"></div>
-          <p class="or-divider">oppure inserisci manualmente:</p>
-        </div>
-        <input
-          type="text"
-          id="input-creature-name"
-          placeholder="Nome creatura"
-          maxlength="30"
-        >
-        <div class="input-row">
-          <input
-            type="number"
-            id="input-creature-hp"
-            placeholder="HP massimi"
-            min="1"
-            max="9999"
-          >
-          <input
-            type="number"
-            id="input-creature-initiative"
-            placeholder="Iniziativa"
-            min="-10"
-            max="30"
-          >
-        </div>
-        <button type="submit" class="btn-secondary">+ Aggiungi Creatura</button>
-      </form>
-    </section>
+    <!-- Due colonne: Creature | Giocatori -->
+    <div class="combat-cols">
 
-    <!-- Lista combattenti -->
-    <main>
-      <ol id="combatant-list" class="combatant-list"></ol>
-      <p id="empty-list-msg" class="empty-msg hidden">
-        In attesa dei combattenti...<br>
-        <small>I giocatori possono entrare usando il codice sessione.</small>
-      </p>
-    </main>
+      <div class="combat-col" id="col-creatures">
+        <h2 class="col-title">Creature</h2>
+        <section id="master-add-form" class="master-panel hidden">
+          <h3 class="master-panel-title">Aggiungi Creatura</h3>
+          <form id="form-add-creature" novalidate>
+            <div id="creature-library-picker" class="char-picker hidden">
+              <p class="char-picker-label">Dalla libreria:</p>
+              <div id="creature-library-list" class="char-picker-list"></div>
+              <p class="or-divider">oppure inserisci manualmente:</p>
+            </div>
+            <input
+              type="text"
+              id="input-creature-name"
+              placeholder="Nome creatura"
+              maxlength="30"
+            >
+            <div class="input-row">
+              <input
+                type="number"
+                id="input-creature-hp"
+                placeholder="HP massimi"
+                min="1"
+                max="9999"
+              >
+              <input
+                type="number"
+                id="input-creature-initiative"
+                placeholder="Iniziativa"
+                min="-10"
+                max="30"
+              >
+            </div>
+            <button type="submit" class="btn-secondary">+ Aggiungi</button>
+          </form>
+        </section>
+        <ol id="creature-list" class="combatant-list"></ol>
+        <p id="empty-creatures-msg" class="empty-msg hidden">Nessuna creatura.</p>
+      </div>
+
+      <div class="combat-col" id="col-players">
+        <h2 class="col-title">Giocatori</h2>
+        <ol id="player-list" class="combatant-list"></ol>
+        <p id="empty-players-msg" class="empty-msg hidden">
+          In attesa dei giocatori...<br>
+          <small>Entra usando il codice sessione.</small>
+        </p>
+      </div>
+
+    </div>
 
     <!-- Griglia di battaglia -->
     <section id="grid-section" class="grid-section">
