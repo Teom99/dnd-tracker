@@ -312,7 +312,18 @@ function _startListening() {
       onInitiativeChange: (id, val)             => combatantManager.setInitiative(id, val),
       onOpenConditions:   (id)                  => _openConditionModal(id, data.combatants?.[id]?.conditions),
       onSetAction:        (id, text)            => combatantManager.setAction(id, text),
-      onApplyToTarget:    (targetId, delta)     => combatantManager.updateHp(targetId, delta),
+      onApplyToTarget:    async (targetId, delta) => {
+        await combatantManager.updateHp(targetId, delta);
+        // Mostra notifica se il target è il personaggio dell'utente corrente
+        if (targetId === myCombatantId) {
+          const amount = Math.abs(delta);
+          if (delta < 0) {
+            UI.showNotification(`🗡 Hai ricevuto ${amount} danni!`, 'damage');
+          } else if (delta > 0) {
+            UI.showNotification(`✚ Hai ricevuto ${amount} punti vita!`, 'heal');
+          }
+        }
+      },
       onToggleHealthHint: (id, current)         => combatantManager.setHealthHint(id, !current),
       onSetMaxHp:         (id, val)             => combatantManager.setMaxHp(id, val),
       onOpenSheet:        ()                    => _openCharacterSheet(),
@@ -362,7 +373,18 @@ function _setupSheetListener() {
         onInitiativeChange: (id, val)           => combatantManager.setInitiative(id, val),
         onOpenConditions:   (id)                => _openConditionModal(id, _snapshot.combatants?.[id]?.conditions),
         onSetAction:        (id, text)          => combatantManager.setAction(id, text),
-        onApplyToTarget:    (targetId, delta)   => combatantManager.updateHp(targetId, delta),
+        onApplyToTarget:    async (targetId, delta) => {
+          await combatantManager.updateHp(targetId, delta);
+          // Mostra notifica se il target è il personaggio dell'utente corrente
+          if (targetId === myCombatantId) {
+            const amount = Math.abs(delta);
+            if (delta < 0) {
+              UI.showNotification(`🗡 Hai ricevuto ${amount} danni!`, 'damage');
+            } else if (delta > 0) {
+              UI.showNotification(`✚ Hai ricevuto ${amount} punti vita!`, 'heal');
+            }
+          }
+        },
         onToggleHealthHint: (id, current)       => combatantManager.setHealthHint(id, !current),
         onSetMaxHp:         (id, val)           => combatantManager.setMaxHp(id, val),
         onOpenSheet:        ()                  => _openCharacterSheet(),
