@@ -10,7 +10,7 @@ import { state }             from './src/state.js';
 import { initCombatManagers, exitToHome, closeConditionModal } from './src/core.js';
 import { CharacterSheet } from './src/CharacterSheet.js';
 import { renderGrid }        from './src/grid.js';
-import { initSheet, setupSheetListener, openCharacterSheet, onDeathSave, makeCallbacks } from './src/sheet.js';
+import { initSheet, setupSheetListener, makeCallbacks } from './src/sheet.js';
 import { updateHomeAuthUI, loadCharacterLibrary, populateJoinPicker, populateCreaturePicker, saveUserSession, loadUserSessions } from './src/home.js';
 
 // --- Firebase init ---

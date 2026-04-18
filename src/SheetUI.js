@@ -105,11 +105,12 @@ export function updateComputedValues(data) {
   if (pp) pp.textContent = String(10 + skillTotal(d, 'perception'));
 
   // Spell stats
-  const castMod = spellcastingMod(d);
-  const dcEl    = document.getElementById('spell-save-dc');
-  const abEl    = document.getElementById('spell-attack-bonus');
-  if (dcEl) dcEl.textContent   = castMod !== null ? String(8 + profBonus(d) + castMod) : '—';
-  if (abEl) abEl.textContent   = castMod !== null ? signed(profBonus(d) + castMod)     : '—';
+  const castMod  = spellcastingMod(d);
+  const extraMod = d.spellBonusModifier ?? 0;
+  const dcEl     = document.getElementById('spell-save-dc');
+  const abEl     = document.getElementById('spell-attack-bonus');
+  if (dcEl) dcEl.textContent = castMod !== null ? String(8 + profBonus(d) + castMod + extraMod) : '—';
+  if (abEl) abEl.textContent = castMod !== null ? signed(profBonus(d) + castMod + extraMod)     : '—';
 }
 
 // ─── Death saves ────────────────────────────────────────────────────────────
