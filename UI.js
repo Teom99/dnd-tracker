@@ -62,40 +62,41 @@ export function showNotification(message, type = 'info') {
   }, 3000);
 }
 
-export function addEventLog(message, type = 'info') {
+export function renderLogs(logsObj) {
   const logContainer = document.getElementById('event-log');
   if (!logContainer) return;
   
-  const entry = document.createElement('div');
-  entry.className = `event-entry event-${type}`;
+  // Rendi vuoto il container per riscriverlo
+  logContainer.innerHTML = '';
   
-  const timestamp = new Date().toLocaleTimeString('it-IT', { 
-    hour: '2-digit', 
-    minute: '2-digit',
-    second: '2-digit'
-  });
+  if (!logsObj) return;
+
+  // Ordina i log per timestamp crescente
+  const logsArray = Object.values(logsObj).sort((a, b) => a.timestamp - b.timestamp);
   
-  entry.innerHTML = `
-    <div class="event-timestamp">${timestamp}</div>
-    <div>${message}</div>
-  `;
-  
-  logContainer.appendChild(entry);
-  
+  // Teniamo solo gli ultimi 100 per non appesantire il DOM
+  const recentLogs = logsArray.slice(-100);
+
+  for (const log of recentLogs) {
+    const entry = document.createElement('div');
+    entry.className = `event-entry event-${log.type || 'info'}`;
+    
+    const d = new Date(log.timestamp);
+    const timestamp = d.toLocaleTimeString('it-IT', { 
+      hour: '2-digit', 
+      minute: '2-digit',
+      second: '2-digit'
+    });
+    
+    entry.innerHTML = `
+      <div class="event-timestamp">${timestamp}</div>
+      <div>${escapeHtml(log.message)}</div>
+    `;
+    logContainer.appendChild(entry);
+  }
+
   // Scroll automatico al fondo
   logContainer.scrollTop = logContainer.scrollHeight;
-  
-  // Mantieni solo gli ultimi 50 eventi per evitare overflow
-  while (logContainer.children.length > 50) {
-    logContainer.removeChild(logContainer.firstChild);
-  }
-}
-
-export function clearEventLog() {
-  const logContainer = document.getElementById('event-log');
-  if (logContainer) {
-    logContainer.innerHTML = '';
-  }
 }
 
 export function renderSessionCode(code) {
@@ -353,7 +354,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       const amt      = parseInt(input?.value);
       if (!targetId) { _flashError(btn, 'Scegli un bersaglio'); return; }
       if (!amt || amt <= 0) { _flashError(btn, 'Inserisci una quantità'); return; }
-      callbacks.onApplyToTarget(targetId, action === 'apply-damage' ? -amt : amt);
+      callbacks.onApplyToTarget(id, targetId, action === 'apply-damage' ? -amt : amt);
       if (input) input.value = '';
       return;
     }

@@ -34,6 +34,7 @@ let _selectedJoinCharId     = null;
 let _selectedCreatureCharId = null;
 let _sheetReturnView        = 'view-combat';
 let _selectedGridTokenId    = null;
+let _prevSessionSnapshot     = null;
 
 // ─── HOME: Auth ───────────────────────────────────────────────────────────────
 
@@ -207,10 +208,14 @@ document.getElementById('form-add-creature').addEventListener('submit', async (e
 document.getElementById('btn-next-turn').addEventListener('click', async () => {
   if (!_snapshot) return;
   const sorted = tracker.sortedCombatants(_snapshot.combatants);
-  const nextActive = sorted.find(c => c.hpCurrent > 0);
+  const active = sorted.filter(c => c.hpCurrent > 0 || c.type === 'player');
+  if (active.length === 0) return;
+  const currentId = _snapshot.currentTurnId ?? null;
+  const currentIdx = active.findIndex(c => c.id === currentId);
+  const nextActive = currentIdx === -1 ? active[0] : active[(currentIdx + 1) % active.length];
   await tracker.nextTurn(sorted);
   if (nextActive) {
-    UI.addEventLog(`È il turno di ${nextActive.name}!`, 'turn');
+    await session.addLogEvent(`È il turno di ${nextActive.name}!`, 'turn', { actor: nextActive.name });
   }
 });
 
@@ -218,8 +223,7 @@ document.getElementById('btn-reset').addEventListener('click', async () => {
   if (!confirm('Sei sicuro di voler resettare l\'incontro?\nTutti i combattenti verranno rimossi.')) return;
   await combatantManager.removeAll();
   await tracker.reset();
-  UI.addEventLog('Incontro resettato - tutti i combattenti rimossi', 'turn');
-  UI.addEventLog('Incontro resettato - tutti i combattenti rimossi', 'turn');
+  await session.addLogEvent('Incontro resettato - tutti i combattenti rimossi', 'turn');
 });
 
 document.getElementById('btn-copy-code').addEventListener('click', () => {
@@ -237,7 +241,7 @@ document.getElementById('btn-exit-session').addEventListener('click', () => {
 
 document.getElementById('btn-clear-log').addEventListener('click', () => {
   if (confirm('Sei sicuro di voler cancellare tutto il log degli eventi?')) {
-    UI.clearEventLog();
+    session.clearLogs();
   }
 });
 
@@ -311,93 +315,16 @@ function _startListening() {
     if (!data) return;
     _snapshot = data;
 
+    // Log condiviso: render realtime per tutti i partecipanti.
+    UI.renderLogs(data.logs || {});
+
     const combatants = data.combatants || {};
     if (!session.isMaster && myCombatantId && !combatants[myCombatantId]) {
       _exitToHome('Il tuo personaggio è stato rimosso dalla sessione.');
       return;
     }
 
-    // Controlla se è iniziato un nuovo round
-    if (_snapshot && _snapshot.round !== data.round) {
-      UI.addEventLog(`Inizio del Round ${data.round}`, 'turn');
-    }
-
-    // Controlla se è iniziato un nuovo round
-    if (_snapshot && _snapshot.round !== data.round) {
-      UI.addEventLog(`Inizio del Round ${data.round}`, 'turn');
-    }
-
-    // Controlla cambio turno
-    if (_snapshot && _snapshot.currentTurnId !== data.currentTurnId && data.currentTurnId && combatants[data.currentTurnId]) {
-      const combatant = combatants[data.currentTurnId];
-      UI.addEventLog(`Turno di ${combatant.name}`, 'turn');
-    }
-
-    // Controlla combattenti nuovi
-    if (_snapshot && _snapshot.combatants) {
-      Object.keys(combatants).forEach(id => {
-        if (!_snapshot.combatants[id]) {
-          const combatant = combatants[id];
-          const typeText = combatant.type === 'player' ? 'giocatore' : 'creatura';
-          UI.addEventLog(`${combatant.name} (${typeText}) è entrato in combattimento`, 'turn');
-        }
-      });
-      // Controlla combattenti rimossi
-      Object.keys(_snapshot.combatants).forEach(id => {
-        if (!combatants[id]) {
-          const combatant = _snapshot.combatants[id];
-          const typeText = combatant.type === 'player' ? 'giocatore' : 'creatura';
-          UI.addEventLog(`${combatant.name} (${typeText}) è uscito dal combattimento`, 'turn');
-        }
-      });
-    }
-
-    // Controlla cambiamenti HP per notifiche e log eventi
-    if (_snapshot && _snapshot.combatants) {
-      Object.entries(combatants).forEach(([id, combatant]) => {
-        const prevCombatant = _snapshot.combatants[id];
-        if (prevCombatant && prevCombatant.hpCurrent !== combatant.hpCurrent) {
-          const delta = combatant.hpCurrent - prevCombatant.hpCurrent;
-          const amount = Math.abs(delta);
-          
-          if (delta < 0) {
-            UI.addEventLog(`${combatant.name} ha ricevuto ${amount} danni`, 'damage');
-          } else if (delta > 0) {
-            UI.addEventLog(`${combatant.name} ha ricevuto ${amount} punti vita`, 'heal');
-          }
-        }
-        
-        // Controlla se è andato KO
-        if (prevCombatant && prevCombatant.hpCurrent > 0 && combatant.hpCurrent <= 0) {
-          UI.addEventLog(`${combatant.name} è caduto KO!`, 'ko');
-        }
-        
-        // Controlla se è stato revive
-        if (prevCombatant && prevCombatant.hpCurrent <= 0 && combatant.hpCurrent > 0) {
-          UI.addEventLog(`${combatant.name} è stato rianimato!`, 'revive');
-        }
-        
-        // Controlla cambiamenti condizioni
-        if (prevCombatant && combatant.conditions) {
-          const prevConditions = prevCombatant.conditions || {};
-          const currentConditions = combatant.conditions;
-          
-          // Condizioni aggiunte
-          Object.keys(currentConditions).forEach(cond => {
-            if (currentConditions[cond] && !prevConditions[cond]) {
-              UI.addEventLog(`${combatant.name} ha subito la condizione: ${cond}`, 'condition');
-            }
-          });
-          
-          // Condizioni rimosse
-          Object.keys(prevConditions).forEach(cond => {
-            if (prevConditions[cond] && !currentConditions[cond]) {
-              UI.addEventLog(`${combatant.name} non ha più la condizione: ${cond}`, 'condition');
-            }
-          });
-        }
-      });
-    }
+    // Niente scrittura log nel listener snapshot per evitare duplicati tra client.
 
     // Controlla se l'HP del proprio personaggio è cambiato per mostrare notifiche
     if (myCombatantId && combatants[myCombatantId]) {
@@ -424,7 +351,19 @@ function _startListening() {
       onInitiativeChange: (id, val)             => combatantManager.setInitiative(id, val),
       onOpenConditions:   (id)                  => _openConditionModal(id, data.combatants?.[id]?.conditions),
       onSetAction:        (id, text)            => combatantManager.setAction(id, text),
-      onApplyToTarget:    (targetId, delta)     => combatantManager.updateHp(targetId, delta),
+      onApplyToTarget:    async (sourceId, targetId, delta) => {
+        const actor = data.combatants?.[sourceId]?.name ?? 'Qualcuno';
+        const target = data.combatants?.[targetId]?.name ?? 'bersaglio';
+        const amount = Math.abs(delta);
+        await combatantManager.updateHp(targetId, delta);
+        await session.addActionLog({
+          actor,
+          target,
+          action: delta < 0 ? 'ha colpito' : 'ha curato',
+          amount,
+          type: delta < 0 ? 'damage' : 'heal'
+        });
+      },
       onToggleHealthHint: (id, current)         => combatantManager.setHealthHint(id, !current),
       onSetMaxHp:         (id, val)             => combatantManager.setMaxHp(id, val),
       onOpenSheet:        ()                    => _openCharacterSheet(),
@@ -474,7 +413,19 @@ function _setupSheetListener() {
         onInitiativeChange: (id, val)           => combatantManager.setInitiative(id, val),
         onOpenConditions:   (id)                => _openConditionModal(id, _snapshot.combatants?.[id]?.conditions),
         onSetAction:        (id, text)          => combatantManager.setAction(id, text),
-        onApplyToTarget:    (targetId, delta)   => combatantManager.updateHp(targetId, delta),
+        onApplyToTarget:    async (sourceId, targetId, delta) => {
+          const actor = _snapshot.combatants?.[sourceId]?.name ?? 'Qualcuno';
+          const target = _snapshot.combatants?.[targetId]?.name ?? 'bersaglio';
+          const amount = Math.abs(delta);
+          await combatantManager.updateHp(targetId, delta);
+          await session.addActionLog({
+            actor,
+            target,
+            action: delta < 0 ? 'ha colpito' : 'ha curato',
+            amount,
+            type: delta < 0 ? 'damage' : 'heal'
+          });
+        },
         onToggleHealthHint: (id, current)       => combatantManager.setHealthHint(id, !current),
         onSetMaxHp:         (id, val)           => combatantManager.setMaxHp(id, val),
         onOpenSheet:        ()                  => _openCharacterSheet(),

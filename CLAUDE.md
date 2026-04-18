@@ -15,14 +15,14 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | `style.css` | Tema fantasy dark (Cinzel/Crimson Text, sfondo `#0f0f1a`, oro `#c9a84c`) |
 | `config.js` | `FIREBASE_CONFIG` — da non committare con dati reali |
 | `app.js` | Entry point: stato globale, event listeners, listener Firebase real-time |
-| `Session.js` | Create/join/restore sessione, auth, `nextTurnAtomic` (runTransaction) |
+| `Session.js` | Create/join/restore sessione, auth, `nextTurnAtomic` (runTransaction), log eventi (`addLogEvent`, `addActionLog`, `clearLogs`) |
 | `Combatant.js` | CRUD combattenti: add/updateHp/setMaxHp/toggleCondition/remove |
 | `CombatTracker.js` | `nextTurn(combatants)`, `sortedCombatants()`, `reset()` |
 | `CharacterLibrary.js` | CRUD libreria personaggi/creature per utente (`characters/{uid}/{charId}/`) |
 | `CharacterSheet.js` | Scheda PG: lettura/scrittura su `characters/{uid}/{charId}/` |
-| `UI.js` | Render lista combattenti, modal condizioni, death saves inline |
+| `UI.js` | Render lista combattenti, modal condizioni, death saves inline, render log (`renderLogs`) |
 | `SheetUI.js` | Render scheda personaggio (abilità, slot, incantesimi, inventario) |
-| `GridUI.js` | Griglia esagonale SVG (punta in alto, odd-r offset, 20×12, 1 hex = 1m) |
+| `GridUI.js` | Griglia esagonale SVG (punta in alto, odd-r offset, 20x12, 1 hex = 1m) |
 
 ---
 
@@ -35,13 +35,17 @@ sessions/{code}/
                     conditions/{name: true}, ownerUid, charId, armorClass,
                     currentAction, showHealthHint
   grid/{combatantId}/  col, row
+  logs/{logId}/
+    message, type, actor, target, amount, createdByUid,
+    timestamp (serverTimestamp), clientTimestamp
 
 characters/{uid}/{charId}/
   name, type, armorClass, hpMax, abilities/{str,dex,...}, skills/,
   savingThrows/, spellSlots/, spells/, cantrips/, attacks/,
   inventory/, deathSaves/{successes, failures}, tempHp, hitDiceUsed, ...
 
-userSessions/{uid}/{code}/  combatantId, name, type, charId  (per rejoin)
+userSessions/{uid}/{code}/
+  combatantId, characterName, role, charId, lastSeen
 ```
 
 **Firebase Security Rules** (impostare manualmente in Console):
@@ -56,7 +60,7 @@ userSessions/{uid}/{code}/  combatantId, name, type, charId  (per rejoin)
 ## Stato implementazione
 
 ### Completato
-- Auth Google + anonima con fallback, upgrade anonimo → Google
+- Auth Google + anonima con fallback, upgrade anonimo -> Google
 - Sessioni: crea (master), join (player), rejoin automatico al reload
 - Libreria personaggi/creature dalla home (CRUD, `characters/{uid}/{charId}/`)
 - Picker libreria nel form join e nel form aggiungi creatura
@@ -72,7 +76,9 @@ userSessions/{uid}/{code}/  combatantId, name, type, charId  (per rejoin)
 - `nextTurn` atomico con `runTransaction` (no race condition)
 - I player KO restano nel turno per death saves; creature KO saltate
 - Notifiche popup per danni/cure ricevuti dal proprio personaggio
-- Log eventi in tempo reale: danni, cure, KO, revive, cambi turno/round, condizioni, entrata/uscita combattenti, reset incontro
+- Log eventi condivisi e realtime su Firebase (`sessions/{code}/logs`)
+- Log azioni attaccante->bersaglio (es. "A ha colpito B infliggendogli N danni")
+- Cancellazione log condivisa (`session.clearLogs`)
 - Favicon emoji drago SVG inline
 
 ### Bug noti non ancora risolti
@@ -86,7 +92,7 @@ userSessions/{uid}/{code}/  combatantId, name, type, charId  (per rejoin)
 ## Pattern ricorrenti da rispettare
 
 **Aggiungere un'azione a una card combattente:**
-1. Aggiungere `data-action="nome"` al bottone in `UI.js` → `renderCombatantList` (template HTML)
+1. Aggiungere `data-action="nome"` al bottone in `UI.js` -> `renderCombatantList` (template HTML)
 2. Aggiungere handler in `list.onclick` delegation nello stesso file
 3. Aggiungere callback `onNome` all'oggetto callbacks passato da `app.js`
 4. Implementare la logica in `app.js`
@@ -105,5 +111,7 @@ userSessions/{uid}/{code}/  combatantId, name, type, charId  (per rejoin)
 
 - `app.js` è il file più grande e complesso — contiene tutto lo stato globale (`myUid`, `myCombatantId`, `_snapshot`, `_sheet`, `_sheetData`, `_acMap`, `_library`, ecc.)
 - Il listener Firebase `session.listen()` in `_startListening()` riceve l'intero nodo sessione ad ogni aggiornamento e ri-renderizza tutto — non fare operazioni costose qui
+- Regola log realtime: nel listener fare solo render (`UI.renderLogs`), non scrivere nuovi log per diff snapshot
+- Scrivere log solo nelle azioni utente (es. `onApplyToTarget`, cambio turno, reset) per evitare duplicati multi-client
 - `_sheetReturnView` controlla dove torna il tasto "indietro" dalla scheda (combat o home)
 - `_sheetBound` flag su elementi DOM per evitare listener duplicati su re-render

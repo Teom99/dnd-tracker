@@ -1,4 +1,4 @@
-import { ref, set, get, onValue, runTransaction } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { ref, set, get, onValue, runTransaction, push, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import {
   signInAnonymously, signInWithPopup, GoogleAuthProvider
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -51,7 +51,8 @@ export class Session {
       masterUid:     uid,
       round:         1,
       currentTurnId: null,
-      combatants:    {}
+      combatants:    {},
+      logs:          {}
     });
 
     this.code      = code;
@@ -120,6 +121,42 @@ export class Session {
 
   async clearGridPosition(combatantId) {
     await set(ref(this._db, `sessions/${this.code}/grid/${combatantId}`), null);
+  }
+
+  async addLogEvent(message, type = 'info', meta = {}) {
+    if (!this.code) return;
+    const newRef = push(ref(this._db, `sessions/${this.code}/logs`));
+    await set(newRef, {
+      message,
+      type,
+      actor: meta.actor ?? null,
+      target: meta.target ?? null,
+      amount: Number.isFinite(meta.amount) ? meta.amount : null,
+      createdByUid: this.currentUid,
+      timestamp: serverTimestamp(),
+      clientTimestamp: Date.now()
+    });
+  }
+
+  // Helper per messaggi azione comuni (danno/cura/etc.)
+  async addActionLog({ actor, target, action, amount, type = 'info' }) {
+    if (!actor || !action) return;
+    const hasTarget = Boolean(target);
+    const hasAmount = Number.isFinite(amount);
+    const verb = action.trim();
+    const amountPart = hasAmount
+      ? (type === 'heal' ? ` curandolo di ${amount}` : ` infliggendogli ${amount} danni`)
+      : '';
+    const message = hasTarget
+      ? `${actor} ${verb} ${target}${amountPart}`
+      : `${actor} ${verb}${amountPart}`;
+
+    await this.addLogEvent(message, type, { actor, target: target ?? null, amount: hasAmount ? amount : null });
+  }
+
+  async clearLogs() {
+    if (!this.code) return;
+    await set(ref(this._db, `sessions/${this.code}/logs`), null);
   }
 
   _generateCode() {
