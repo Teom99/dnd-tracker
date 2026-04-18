@@ -1,40 +1,27 @@
 import { initializeApp }      from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getDatabase, ref, set, get, remove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getDatabase, ref, get, remove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import { getAuth }            from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 import { FIREBASE_CONFIG }   from './config.js';
-import { Session }           from './Session.js';
-import { Combatant }         from './Combatant.js';
-import { CombatTracker }     from './CombatTracker.js';
-import { CharacterSheet }    from './CharacterSheet.js';
-import { CharacterLibrary }  from './CharacterLibrary.js';
-import * as UI               from './UI.js';
-import * as SheetUI          from './SheetUI.js';
-import * as GridUI           from './GridUI.js';
+import { Session }           from './src/Session.js';
+import { CharacterLibrary }  from './src/CharacterLibrary.js';
+import * as UI               from './src/UI.js';
+import { state }             from './src/state.js';
+import { initCombatManagers, exitToHome, closeConditionModal } from './src/core.js';
+import { CharacterSheet } from './src/CharacterSheet.js';
+import { renderGrid }        from './src/grid.js';
+import { initSheet, setupSheetListener, openCharacterSheet, onDeathSave, makeCallbacks } from './src/sheet.js';
+import { updateHomeAuthUI, loadCharacterLibrary, populateJoinPicker, populateCreaturePicker, saveUserSession, loadUserSessions } from './src/home.js';
 
 // --- Firebase init ---
-const app  = initializeApp(FIREBASE_CONFIG);
-const db   = getDatabase(app);
-const auth = getAuth(app);
+const firebaseApp = initializeApp(FIREBASE_CONFIG);
+const db          = getDatabase(firebaseApp);
+const auth        = getAuth(firebaseApp);
 
-// --- App state ---
-const session = new Session(db, auth);
-let combatantManager        = null;
-let tracker                 = null;
-let myUid                   = null;
-let myCombatantId           = null;
-let myCurrentCharId         = null;
-let _snapshot               = null;
-let _sheet                  = null;
-let _sheetData              = null;
-let _acMap                  = {};
-let _lastKnownHp            = null;
-let _library                = null;
-let _selectedJoinCharId     = null;
-let _selectedCreatureCharId = null;
-let _sheetReturnView        = 'view-combat';
-let _selectedGridTokenId    = null;
-let _prevSessionSnapshot     = null;
+// --- Inject Firebase instances into shared state ---
+state.db   = db;
+state.auth = auth;
+state.session = new Session(db, auth);
 
 // ─── HOME: Auth ───────────────────────────────────────────────────────────────
 
@@ -43,8 +30,8 @@ document.getElementById('btn-google-signin').addEventListener('click', async () 
   btn.disabled = true;
   btn.textContent = 'Accesso in corso...';
   try {
-    await session.signInWithGoogle();
-    _updateHomeAuthUI(auth.currentUser);
+    await state.session.signInWithGoogle();
+    updateHomeAuthUI(auth.currentUser);
   } catch (err) {
     if (err.code !== 'auth/popup-closed-by-user') {
       UI.showError('Errore accesso Google: ' + err.message);
@@ -56,25 +43,25 @@ document.getElementById('btn-google-signin').addEventListener('click', async () 
 
 document.getElementById('btn-anon-signin').addEventListener('click', async () => {
   try {
-    await session.signInAnonymous();
-    _updateHomeAuthUI(auth.currentUser);
+    await state.session.signInAnonymous();
+    updateHomeAuthUI(auth.currentUser);
   } catch (err) {
     UI.showError('Errore: ' + err.message);
   }
 });
 
 document.getElementById('btn-sign-out').addEventListener('click', async () => {
-  await session.signOut();
-  _library = null;
-  _updateHomeAuthUI(null);
+  await state.session.signOut();
+  state.library = null;
+  updateHomeAuthUI(null);
 });
 
 document.getElementById('btn-upgrade-google').addEventListener('click', async () => {
   const btn = document.getElementById('btn-upgrade-google');
   btn.disabled = true;
   try {
-    await session.signInWithGoogle();
-    _updateHomeAuthUI(auth.currentUser);
+    await state.session.signInWithGoogle();
+    updateHomeAuthUI(auth.currentUser);
   } catch (err) {
     if (err.code !== 'auth/popup-closed-by-user') {
       UI.showError('Errore accesso Google: ' + err.message);
@@ -88,26 +75,26 @@ document.getElementById('btn-upgrade-google').addEventListener('click', async ()
 document.getElementById('btn-create-player').addEventListener('click', async () => {
   const name = prompt('Nome del personaggio:');
   if (!name?.trim()) return;
-  await _library.create(name.trim(), 'player');
-  _loadCharacterLibrary();
-  _populateJoinPicker();
+  await state.library.create(name.trim(), 'player');
+  loadCharacterLibrary();
+  populateJoinPicker();
 });
 
 document.getElementById('btn-create-creature').addEventListener('click', async () => {
   const name = prompt('Nome della creatura:');
   if (!name?.trim()) return;
-  await _library.create(name.trim(), 'creature');
-  _loadCharacterLibrary();
+  await state.library.create(name.trim(), 'creature');
+  loadCharacterLibrary();
 });
 
 // ─── HOME: Crea sessione (master) ─────────────────────────────────────────────
 
 document.getElementById('btn-create-session').addEventListener('click', async () => {
   try {
-    const code = await session.create();
-    myUid = session.currentUid;
-    _initCombatManagers(code);
-    await _saveUserSession(myUid, code, null, null, 'master', null);
+    const code = await state.session.create();
+    state.myUid = state.session.currentUid;
+    initCombatManagers(code);
+    await saveUserSession(state.myUid, code, null, null, 'master', null);
     _enterCombatView(code, true);
   } catch (err) {
     UI.showError('Errore nella creazione della sessione: ' + err.message);
@@ -133,19 +120,18 @@ document.getElementById('form-join').addEventListener('submit', async (e) => {
   submitBtn.textContent = 'Caricamento...';
 
   try {
-    myUid = await session.join(code);
-    _initCombatManagers(code);
+    state.myUid = await state.session.join(code);
+    initCombatManagers(code);
 
-    // Determina charId: usa quello selezionato dal picker, o crea voce nuova in libreria
-    let charId = _selectedJoinCharId ?? null;
+    let charId = state.selectedJoinCharId ?? null;
     if (!charId) {
-      if (!_library && auth.currentUser) _library = new CharacterLibrary(db, auth.currentUser.uid);
-      if (_library) charId = await _library.create(name, 'player');
+      if (!state.library && auth.currentUser) state.library = new CharacterLibrary(db, auth.currentUser.uid);
+      if (state.library) charId = await state.library.create(name, 'player');
     }
 
-    _initSheet(myUid, charId);
+    initSheet(state.myUid, charId);
 
-    const existing = await combatantManager.findByOwner(myUid);
+    const existing = await state.combatantManager.findByOwner(state.myUid);
     let savedCharName = name;
     if (existing) {
       const rejoin = confirm(
@@ -154,28 +140,27 @@ document.getElementById('form-join').addEventListener('submit', async (e) => {
         `Annulla → Rimuovi il vecchio e crea "${name}"`
       );
       if (rejoin) {
-        myCombatantId = existing.id;
+        state.myCombatantId = existing.id;
         savedCharName = existing.name;
-        // Ripristina il charId del combattente esistente se diverso
         const existingCharId = existing.charId ?? charId;
         if (existingCharId !== charId) {
-          myCurrentCharId = existingCharId;
-          _sheet = new CharacterSheet(db, myUid, existingCharId);
-          _setupSheetListener();
+          state.myCurrentCharId = existingCharId;
+          state.sheet = new CharacterSheet(db, state.myUid, existingCharId);
+          setupSheetListener();
         }
         charId = existingCharId;
       } else {
-        await combatantManager.remove(existing.id);
-        myCombatantId = await combatantManager.add(name, initiative, 1, 'player', myUid, charId);
+        await state.combatantManager.remove(existing.id);
+        state.myCombatantId = await state.combatantManager.add(name, initiative, 1, 'player', state.myUid, charId);
       }
     } else {
-      myCombatantId = await combatantManager.add(name, initiative, 1, 'player', myUid, charId);
+      state.myCombatantId = await state.combatantManager.add(name, initiative, 1, 'player', state.myUid, charId);
     }
 
-    _selectedJoinCharId = null;
-    localStorage.setItem('dnd_combatant_id', myCombatantId);
-    await _saveUserSession(myUid, code, myCombatantId, savedCharName, 'player', charId);
-    _lastKnownHp = null; // Reset per il nuovo personaggio
+    state.selectedJoinCharId = null;
+    localStorage.setItem('dnd_combatant_id', state.myCombatantId);
+    await saveUserSession(state.myUid, code, state.myCombatantId, savedCharName, 'player', charId);
+    state.lastKnownHp = null;
     _enterCombatView(code, false);
   } catch (err) {
     UI.showError(err.message);
@@ -195,9 +180,9 @@ document.getElementById('form-add-creature').addEventListener('submit', async (e
 
   if (!name || !hp) return;
 
-  const charId = _selectedCreatureCharId ?? null;
-  await combatantManager.add(name, initiative, hp, 'creature', myUid, charId);
-  _selectedCreatureCharId = null;
+  const charId = state.selectedCreatureCharId ?? null;
+  await state.combatantManager.add(name, initiative, hp, 'creature', state.myUid, charId);
+  state.selectedCreatureCharId = null;
   document.querySelectorAll('#creature-library-list .char-pick-btn').forEach(b => b.classList.remove('selected'));
   e.target.reset();
   document.getElementById('input-creature-name').focus();
@@ -206,28 +191,28 @@ document.getElementById('form-add-creature').addEventListener('submit', async (e
 // ─── COMBAT: Turno, Reset, Copia, Esci ───────────────────────────────────────
 
 document.getElementById('btn-next-turn').addEventListener('click', async () => {
-  if (!_snapshot) return;
-  const sorted = tracker.sortedCombatants(_snapshot.combatants);
+  if (!state.snapshot) return;
+  const sorted = state.tracker.sortedCombatants(state.snapshot.combatants);
   const active = sorted.filter(c => c.hpCurrent > 0 || c.type === 'player');
   if (active.length === 0) return;
-  const currentId = _snapshot.currentTurnId ?? null;
+  const currentId  = state.snapshot.currentTurnId ?? null;
   const currentIdx = active.findIndex(c => c.id === currentId);
   const nextActive = currentIdx === -1 ? active[0] : active[(currentIdx + 1) % active.length];
-  await tracker.nextTurn(sorted);
+  await state.tracker.nextTurn(sorted);
   if (nextActive) {
-    await session.addLogEvent(`È il turno di ${nextActive.name}!`, 'turn', { actor: nextActive.name });
+    await state.session.addLogEvent(`È il turno di ${nextActive.name}!`, 'turn', { actor: nextActive.name });
   }
 });
 
 document.getElementById('btn-reset').addEventListener('click', async () => {
   if (!confirm('Sei sicuro di voler resettare l\'incontro?\nTutti i combattenti verranno rimossi.')) return;
-  await combatantManager.removeAll();
-  await tracker.reset();
-  await session.addLogEvent('Incontro resettato - tutti i combattenti rimossi', 'turn');
+  await state.combatantManager.removeAll();
+  await state.tracker.reset();
+  await state.session.addLogEvent('Incontro resettato - tutti i combattenti rimossi', 'turn');
 });
 
 document.getElementById('btn-copy-code').addEventListener('click', () => {
-  navigator.clipboard.writeText(session.code).then(() => {
+  navigator.clipboard.writeText(state.session.code).then(() => {
     const btn = document.getElementById('btn-copy-code');
     btn.textContent = '✓ Copiato';
     setTimeout(() => (btn.textContent = '📋 Copia'), 2000);
@@ -236,12 +221,12 @@ document.getElementById('btn-copy-code').addEventListener('click', () => {
 
 document.getElementById('btn-exit-session').addEventListener('click', () => {
   if (!confirm('Sei sicuro di voler uscire dalla sessione?')) return;
-  _exitToHome();
+  exitToHome();
 });
 
 document.getElementById('btn-clear-log').addEventListener('click', () => {
   if (confirm('Sei sicuro di voler cancellare tutto il log degli eventi?')) {
-    session.clearLogs();
+    state.session.clearLogs();
   }
 });
 
@@ -249,11 +234,12 @@ document.getElementById('btn-clear-log').addEventListener('click', () => {
 
 document.getElementById('btn-back-to-combat').addEventListener('click', () => {
   document.body.classList.remove('sheet-only');
-  if (_isSheetEmbedded()) return;
-  if (_sheetReturnView === 'view-home') {
+  const embedded = window.matchMedia('(min-width: 1100px)').matches && document.body.classList.contains('has-sheet');
+  if (embedded) return;
+  if (state.sheetReturnView === 'view-home') {
     document.body.classList.remove('has-sheet');
     UI.showView('view-home');
-    _loadCharacterLibrary();
+    loadCharacterLibrary();
   } else {
     UI.showView('view-combat');
   }
@@ -266,71 +252,43 @@ document.getElementById('condition-modal').addEventListener('click', (e) => {
   if (e.target === document.getElementById('condition-modal')) closeConditionModal();
 });
 
-function closeConditionModal() {
-  document.getElementById('condition-modal').classList.add('hidden');
-}
+// ─── Rejoin via evento custom da home.js ─────────────────────────────────────
 
-// ─── Core helpers ─────────────────────────────────────────────────────────────
+document.addEventListener('dnd:rejoin', (e) => {
+  const { code, combatantId, role, charId } = e.detail;
+  _rejoinSession(code, combatantId, role, charId);
+});
 
-function _exitToHome(errorMessage) {
-  localStorage.removeItem('dnd_session_code');
-  localStorage.removeItem('dnd_combatant_id');
-  myCombatantId           = null;
-  myUid                   = null;
-  myCurrentCharId         = null;
-  _snapshot               = null;
-  _sheetData              = null;
-  _acMap                  = {};
-  _lastKnownHp            = null;
-  _selectedCreatureCharId = null;
-  _sheetReturnView        = 'view-combat';
-  _selectedGridTokenId    = null;
-  const gridContainer = document.getElementById('grid-container');
-  if (gridContainer) gridContainer.innerHTML = '';
-  const submitBtn = document.querySelector('#form-join [type="submit"]');
-  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Entra nella Sessione'; }
-  document.body.classList.remove('in-combat', 'has-sheet', 'sheet-only');
-  UI.showView('view-home');
-  if (errorMessage) UI.showError(errorMessage);
-}
-
-function _initCombatManagers(code) {
-  combatantManager = new Combatant(db, code);
-  tracker          = new CombatTracker(session);
-}
+// ─── Core orchestration ───────────────────────────────────────────────────────
 
 function _enterCombatView(code, isMaster) {
   UI.renderSessionCode(code);
   UI.renderMasterPanel(isMaster);
-  if (isMaster) _populateCreaturePicker();
-  _sheetReturnView = 'view-combat';
+  if (isMaster) populateCreaturePicker();
+  state.sheetReturnView = 'view-combat';
   document.body.classList.add('in-combat');
   _startListening();
   UI.showView('view-combat');
 }
 
 function _startListening() {
-  session.listen((snap) => {
+  state.session.listen((snap) => {
     const data = snap.val();
     if (!data) return;
-    _snapshot = data;
+    state.snapshot = data;
 
-    // Log condiviso: render realtime per tutti i partecipanti.
     UI.renderLogs(data.logs || {});
 
     const combatants = data.combatants || {};
-    if (!session.isMaster && myCombatantId && !combatants[myCombatantId]) {
-      _exitToHome('Il tuo personaggio è stato rimosso dalla sessione.');
+    if (!state.session.isMaster && state.myCombatantId && !combatants[state.myCombatantId]) {
+      exitToHome('Il tuo personaggio è stato rimosso dalla sessione.');
       return;
     }
 
-    // Niente scrittura log nel listener snapshot per evitare duplicati tra client.
-
-    // Controlla se l'HP del proprio personaggio è cambiato per mostrare notifiche
-    if (myCombatantId && combatants[myCombatantId]) {
-      const currentHp = combatants[myCombatantId].hpCurrent;
-      if (_lastKnownHp !== null && _lastKnownHp !== currentHp) {
-        const delta = currentHp - _lastKnownHp;
+    if (state.myCombatantId && combatants[state.myCombatantId]) {
+      const currentHp = combatants[state.myCombatantId].hpCurrent;
+      if (state.lastKnownHp !== null && state.lastKnownHp !== currentHp) {
+        const delta  = currentHp - state.lastKnownHp;
         const amount = Math.abs(delta);
         if (delta < 0) {
           UI.showNotification(`🗡 Hai ricevuto ${amount} danni!`, 'damage');
@@ -338,562 +296,28 @@ function _startListening() {
           UI.showNotification(`✚ Hai ricevuto ${amount} punti vita!`, 'heal');
         }
       }
-      _lastKnownHp = currentHp;
+      state.lastKnownHp = currentHp;
     }
 
-    const sorted   = tracker.sortedCombatants(data.combatants);
+    const sorted   = state.tracker.sortedCombatants(data.combatants);
     const creatures = sorted.filter(c => c.type === 'creature');
     const players   = sorted.filter(c => c.type === 'player');
     UI.renderRound(data.round ?? 1);
-    const _callbacks = {
-      onEndTurn:          async ()              => { const s = tracker.sortedCombatants(_snapshot.combatants); await tracker.nextTurn(s); },
-      onRemove:           (id)                  => _removeCombatant(id),
-      onInitiativeChange: (id, val)             => combatantManager.setInitiative(id, val),
-      onOpenConditions:   (id)                  => _openConditionModal(id, data.combatants?.[id]?.conditions),
-      onSetAction:        (id, text)            => combatantManager.setAction(id, text),
-      onApplyToTarget:    async (sourceId, targetId, delta) => {
-        const actor = data.combatants?.[sourceId]?.name ?? 'Qualcuno';
-        const target = data.combatants?.[targetId]?.name ?? 'bersaglio';
-        const amount = Math.abs(delta);
-        await combatantManager.updateHp(targetId, delta);
-        await session.addActionLog({
-          actor,
-          target,
-          action: delta < 0 ? 'ha colpito' : 'ha curato',
-          amount,
-          type: delta < 0 ? 'damage' : 'heal'
-        });
-      },
-      onToggleHealthHint: (id, current)         => combatantManager.setHealthHint(id, !current),
-      onSetMaxHp:         (id, val)             => combatantManager.setMaxHp(id, val),
-      onOpenSheet:        ()                    => _openCharacterSheet(),
-      onDeathSave:        async (type, count)   => _onDeathSave(type, count),
-    };
-    UI.renderCombatantList(creatures, data.currentTurnId ?? null, myUid, session.masterUid, _callbacks, _acMap, null,                          'creature-list', 'empty-creatures-msg', sorted);
-    UI.renderCombatantList(players,   data.currentTurnId ?? null, myUid, session.masterUid, _callbacks, _acMap, _sheetData?.deathSaves ?? null, 'player-list',   'empty-players-msg', sorted);
+    const callbacks = makeCallbacks();
+    UI.renderCombatantList(creatures, data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, null,                               'creature-list', 'empty-creatures-msg', sorted);
+    UI.renderCombatantList(players,   data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, state.sheetData?.deathSaves ?? null, 'player-list',   'empty-players-msg', sorted);
 
-    _renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null, sorted);
+    renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null, sorted);
   });
-}
-
-async function _onDeathSave(type, count) {
-  if (!_sheet) return;
-  await _sheet.setField(`deathSaves/${type}`, count);
-  if (type === 'successes' && count >= 3) {
-    // 3 successi: il giocatore si stabilizza e torna in partita con 1 HP
-    await combatantManager.updateHp(myCombatantId, 1);
-    await _sheet.setField('deathSaves/successes', 0);
-    await _sheet.setField('deathSaves/failures', 0);
-  }
-}
-
-function _setupSheetListener() {
-  if (!_sheet) return;
-  let _sheetPopulated = false;
-  _sheet.listen((snap) => {
-    _sheetData = snap.val() || {};
-    const ac = _sheetData.armorClass ?? null;
-    if (ac !== null && myCombatantId) {
-      _acMap[myUid] = ac;
-      combatantManager.setArmorClass(myCombatantId, ac);
-    }
-    const hpMax = _sheetData.hpMax ?? null;
-    if (hpMax !== null && myCombatantId) {
-      combatantManager.setMaxHp(myCombatantId, hpMax);
-    }
-    // Re-render combatant list subito se siamo in combat, così i death saves appaiono senza aspettare il prossimo evento sessione
-    const combatView = document.getElementById('view-combat');
-    if (combatView && !combatView.classList.contains('hidden') && _snapshot) {
-      const sorted2    = tracker.sortedCombatants(_snapshot.combatants);
-      const creatures2 = sorted2.filter(c => c.type === 'creature');
-      const players2   = sorted2.filter(c => c.type === 'player');
-      const cb2 = {
-        onEndTurn:          async ()            => { const s = tracker.sortedCombatants(_snapshot.combatants); await tracker.nextTurn(s); },
-        onRemove:           (id)                => _removeCombatant(id),
-        onInitiativeChange: (id, val)           => combatantManager.setInitiative(id, val),
-        onOpenConditions:   (id)                => _openConditionModal(id, _snapshot.combatants?.[id]?.conditions),
-        onSetAction:        (id, text)          => combatantManager.setAction(id, text),
-        onApplyToTarget:    async (sourceId, targetId, delta) => {
-          const actor = _snapshot.combatants?.[sourceId]?.name ?? 'Qualcuno';
-          const target = _snapshot.combatants?.[targetId]?.name ?? 'bersaglio';
-          const amount = Math.abs(delta);
-          await combatantManager.updateHp(targetId, delta);
-          await session.addActionLog({
-            actor,
-            target,
-            action: delta < 0 ? 'ha colpito' : 'ha curato',
-            amount,
-            type: delta < 0 ? 'damage' : 'heal'
-          });
-        },
-        onToggleHealthHint: (id, current)       => combatantManager.setHealthHint(id, !current),
-        onSetMaxHp:         (id, val)           => combatantManager.setMaxHp(id, val),
-        onOpenSheet:        ()                  => _openCharacterSheet(),
-        onDeathSave:        async (type, count) => _onDeathSave(type, count),
-      };
-      UI.renderCombatantList(creatures2, _snapshot.currentTurnId ?? null, myUid, session.masterUid, cb2, _acMap, null,                          'creature-list', 'empty-creatures-msg', sorted2);
-      UI.renderCombatantList(players2,   _snapshot.currentTurnId ?? null, myUid, session.masterUid, cb2, _acMap, _sheetData?.deathSaves ?? null, 'player-list',   'empty-players-msg', sorted2);
-    }
-
-    // Populate inputs once (on first data load) and bind events; after that just update computed/lists
-    if (!_sheetPopulated) {
-      _sheetPopulated = true;
-      SheetUI.populateSheet(_sheetData);
-      _bindSheetEvents();
-    }
-    SheetUI.updateComputedValues(_sheetData);
-    SheetUI.renderSaveChecks(_sheetData.savingThrows);
-    SheetUI.renderSkillProfs(_sheetData.skills);
-    SheetUI.renderDeathSaves(_sheetData.deathSaves);
-    SheetUI.renderSpellSlots(_sheetData.spellSlots, (lvl) => _sheet.useSpellSlot(lvl), (lvl) => _sheet.restoreSpellSlot(lvl));
-    SheetUI.renderAttacks(_sheetData.attacks, _sheetData, (id) => _sheet.removeAttack(id));
-    SheetUI.renderCantrips(_sheetData.cantrips, (id) => _sheet.removeCantrip(id));
-    SheetUI.renderSpellsByLevel(_sheetData.spells, (lvl, id) => _sheet.removeSpell(lvl, id), (lvl, id) => _sheet.toggleSpellPrepared(lvl, id), (lvl, name) => _sheet.addSpell(lvl, name));
-    SheetUI.renderInventory(_sheetData.inventory, (id) => _sheet.removeInventoryItem(id));
-  });
-}
-
-function _initSheet(uid, charId) {
-  if (!charId) return;
-  myCurrentCharId = charId;
-  _sheet = new CharacterSheet(db, uid, charId);
-  document.body.classList.add('has-sheet');
-  _setupSheetListener();
-}
-
-function _isSheetEmbedded() {
-  return window.matchMedia('(min-width: 1100px)').matches && document.body.classList.contains('has-sheet');
-}
-
-function _openCharacterSheet() {
-  if (!_sheet) return;
-  _sheetReturnView = 'view-combat';
-  SheetUI.populateSheet(_sheetData);
-  SheetUI.renderSpellSlots(_sheetData?.spellSlots, (lvl) => _sheet.useSpellSlot(lvl), (lvl) => _sheet.restoreSpellSlot(lvl));
-  SheetUI.renderAttacks(_sheetData?.attacks, _sheetData, (id) => _sheet.removeAttack(id));
-  SheetUI.renderCantrips(_sheetData?.cantrips, (id) => _sheet.removeCantrip(id));
-  SheetUI.renderSpellsByLevel(_sheetData?.spells, (lvl, id) => _sheet.removeSpell(lvl, id), (lvl, id) => _sheet.toggleSpellPrepared(lvl, id), (lvl, name) => _sheet.addSpell(lvl, name));
-  SheetUI.renderInventory(_sheetData?.inventory, (id) => _sheet.removeInventoryItem(id));
-  _bindSheetEvents();
-  // On mobile: show only the sheet column; on desktop: already visible as 3rd column
-  if (!_isSheetEmbedded()) {
-    document.body.classList.add('sheet-only');
-    UI.showView('view-combat');
-  }
-}
-
-async function _openLibrarySheet(charId) {
-  try {
-    const uid = auth.currentUser?.uid;
-    if (!uid) return;
-    myCurrentCharId = charId;
-    _sheet = new CharacterSheet(db, uid, charId);
-    _sheetData = (await _library.getOne(charId)) || {};
-    _setupSheetListener();
-    _sheetReturnView = 'view-home';
-    document.body.classList.add('has-sheet', 'sheet-only');
-    SheetUI.populateSheet(_sheetData);
-    SheetUI.renderSpellSlots(_sheetData?.spellSlots, (lvl) => _sheet.useSpellSlot(lvl), (lvl) => _sheet.restoreSpellSlot(lvl));
-    SheetUI.renderAttacks(_sheetData?.attacks, _sheetData, (id) => _sheet.removeAttack(id));
-    SheetUI.renderCantrips(_sheetData?.cantrips, (id) => _sheet.removeCantrip(id));
-    SheetUI.renderSpellsByLevel(_sheetData?.spells, (lvl, id) => _sheet.removeSpell(lvl, id), (lvl, id) => _sheet.toggleSpellPrepared(lvl, id), (lvl, name) => _sheet.addSpell(lvl, name));
-    SheetUI.renderInventory(_sheetData?.inventory, (id) => _sheet.removeInventoryItem(id));
-    _bindSheetEvents();
-    UI.showView('view-combat');
-  } catch (err) {
-    UI.showError('Errore apertura scheda: ' + err.message);
-  }
-}
-
-function _bindSheetEvents() {
-  const view = document.getElementById('view-character');
-
-  view.querySelectorAll('[data-path]').forEach(el => {
-    if (el._sheetBound) return;
-    el._sheetBound = true;
-    const save = () => {
-      const path  = el.dataset.path;
-      const value = el.dataset.number !== undefined ? (parseInt(el.value) || 0) : el.value;
-      _sheet.setField(path, value);
-    };
-    el.addEventListener('blur',   save);
-    el.addEventListener('change', save);
-  });
-
-  view.querySelectorAll('.skill-prof').forEach(btn => {
-    if (btn._sheetBound) return;
-    btn._sheetBound = true;
-    btn.addEventListener('click', () => {
-      const skill   = btn.dataset.skill;
-      const current = parseInt(btn.dataset.level ?? '0');
-      _sheet.setSkill(skill, (current + 1) % 3);
-    });
-  });
-
-  view.querySelectorAll('.save-check').forEach(btn => {
-    if (btn._sheetBound) return;
-    btn._sheetBound = true;
-    btn.addEventListener('click', () => _sheet.toggleSavingThrow(btn.dataset.ability));
-  });
-
-  SheetUI.bindDeathSaves((type, count) => {
-    _sheet.setField(`deathSaves/${type}`, count);
-  });
-
-  const attackForm = document.getElementById('form-add-attack');
-  if (attackForm && !attackForm._sheetBound) {
-    attackForm._sheetBound = true;
-    attackForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = document.getElementById('attack-name')?.value.trim();
-      if (!name) return;
-      await _sheet.addAttack({
-        name,
-        damageFormula:       document.getElementById('attack-formula')?.value.trim(),
-        damageType:          document.getElementById('attack-type')?.value.trim(),
-        ability:             document.getElementById('attack-ability')?.value,
-        proficient:          document.getElementById('attack-proficient')?.checked,
-        attackBonusOverride: document.getElementById('attack-bonus-override')?.value.trim() || null,
-        damageBonusOverride: document.getElementById('attack-dmg-override')?.value.trim() || null,
-      });
-      attackForm.reset();
-    });
-  }
-
-  const cantripForm = document.getElementById('form-add-cantrip');
-  if (cantripForm && !cantripForm._sheetBound) {
-    cantripForm._sheetBound = true;
-    cantripForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = document.getElementById('cantrip-name')?.value.trim();
-      if (name) { await _sheet.addCantrip(name); document.getElementById('cantrip-name').value = ''; }
-    });
-  }
-
-  const itemForm = document.getElementById('form-add-item');
-  if (itemForm && !itemForm._sheetBound) {
-    itemForm._sheetBound = true;
-    itemForm.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = document.getElementById('item-name')?.value.trim();
-      if (!name) return;
-      await _sheet.addInventoryItem(
-        name,
-        document.getElementById('item-qty')?.value,
-        document.getElementById('item-notes')?.value.trim()
-      );
-      itemForm.reset();
-      document.getElementById('item-qty').value = '1';
-    });
-  }
-}
-
-function _openConditionModal(combatantId, conditionsObj) {
-  const active = conditionsObj ? Object.keys(conditionsObj) : [];
-  UI.renderConditionModal(
-    combatantId,
-    active,
-    (id, cond) => combatantManager.toggleCondition(id, cond)
-  );
-}
-
-async function _removeCombatant(id) {
-  await session.clearGridPosition(id);
-  await combatantManager.remove(id);
-}
-
-function _renderGrid(gridPos, combatants, currentTurnId, sortedCombatants) {
-  const container = document.getElementById('grid-container');
-  if (!container) return;
-
-  GridUI.renderInitiativeList(
-    document.getElementById('grid-initiative-list'),
-    sortedCombatants,
-    gridPos,
-    myCombatantId,
-    _selectedGridTokenId,
-    currentTurnId,
-    session.isMaster,
-    (id) => {
-      _selectedGridTokenId = id;
-      if (_snapshot) {
-        const sorted = tracker.sortedCombatants(_snapshot.combatants);
-        _renderGrid(_snapshot.grid || {}, _snapshot.combatants || {}, _snapshot.currentTurnId ?? null, sorted);
-      }
-    }
-  );
-
-  GridUI.renderGrid(
-    container,
-    gridPos,
-    combatants,
-    myCombatantId,
-    session.isMaster,
-    _selectedGridTokenId,
-    currentTurnId,
-    (id) => {
-      _selectedGridTokenId = id;
-      if (_snapshot) {
-        const sorted = tracker.sortedCombatants(_snapshot.combatants);
-        _renderGrid(_snapshot.grid || {}, _snapshot.combatants || {}, _snapshot.currentTurnId ?? null, sorted);
-      }
-    },
-    (id, col, row) => session.setGridPosition(id, col, row)
-  );
-  _renderTokenBar(gridPos, combatants);
-}
-
-function _renderTokenBar(gridPos, combatants) {
-  const bar = document.getElementById('grid-token-bar');
-  if (!bar) return;
-  const pos  = gridPos   || {};
-  const comb = combatants || {};
-
-  const entries = Object.entries(comb).filter(([id, c]) => {
-    if (session.isMaster) return c.type === 'creature';
-    return id === myCombatantId;
-  });
-
-  if (entries.length === 0) { bar.innerHTML = ''; return; }
-
-  bar.innerHTML = entries.map(([id, c]) => {
-    const placed   = pos[id] != null;
-    const selected = id === _selectedGridTokenId;
-    const ko       = c.hpCurrent === 0;
-    return `<button
-      class="grid-token-chip${selected ? ' selected' : ''}${ko ? ' ko' : ''}"
-      data-token-id="${id}"
-      title="${placed ? 'Riposiziona' : 'Posiziona sulla griglia'}"
-    >${(c.name || '?').slice(0, 2).toUpperCase()}${placed ? '' : ' +'}</button>`;
-  }).join('');
-
-  bar.onclick = (e) => {
-    const btn = e.target.closest('[data-token-id]');
-    if (!btn) return;
-    const id = btn.dataset.tokenId;
-    _selectedGridTokenId = _selectedGridTokenId === id ? null : id;
-    if (_snapshot) {
-      const sorted = tracker.sortedCombatants(_snapshot.combatants);
-      _renderGrid(_snapshot.grid || {}, _snapshot.combatants || {}, _snapshot.currentTurnId ?? null, sorted);
-    }
-  };
-}
-
-function _updateHomeAuthUI(user) {
-  const authPanel   = document.getElementById('auth-panel');
-  const homeCards   = document.getElementById('home-cards');
-  const userInfoBar = document.getElementById('user-info-bar');
-  const displayName = document.getElementById('user-display-name');
-  const upgradeBtn  = document.getElementById('btn-upgrade-google');
-  const signOutBtn  = document.getElementById('btn-sign-out');
-  const libSection  = document.getElementById('character-library-section');
-  const prevSection = document.getElementById('character-preview-section');
-
-  if (!user) {
-    authPanel?.classList.remove('hidden');
-    homeCards?.classList.add('hidden');
-    userInfoBar?.classList.add('hidden');
-    libSection?.classList.add('hidden');
-    prevSection?.classList.add('hidden');
-    return;
-  }
-
-  authPanel?.classList.add('hidden');
-  homeCards?.classList.remove('hidden');
-  userInfoBar?.classList.remove('hidden');
-  prevSection?.classList.add('hidden');
-
-  if (session.isGoogleUser) {
-    if (displayName) displayName.textContent = session.displayName ?? '';
-    upgradeBtn?.classList.add('hidden');
-    signOutBtn?.classList.remove('hidden');
-  } else {
-    if (displayName) displayName.textContent = 'Ospite';
-    upgradeBtn?.classList.remove('hidden');
-    signOutBtn?.classList.add('hidden');
-  }
-
-  _library = new CharacterLibrary(db, user.uid);
-  _loadUserSessions(user.uid);
-  _loadCharacterLibrary();
-  _populateJoinPicker();
-}
-
-async function _loadCharacterLibrary() {
-  const section = document.getElementById('character-library-section');
-  const list    = document.getElementById('character-library-list');
-  if (!section || !list || !_library) return;
-
-  let chars = {};
-  try {
-    chars = await _library.getAll();
-  } catch {
-    list.innerHTML = '<p class="empty-hint">Errore di permessi — aggiungi le regole Firebase per "characters".</p>';
-    section.classList.remove('hidden');
-    return;
-  }
-  const entries = Object.entries(chars);
-
-  if (entries.length === 0) {
-    list.innerHTML = '<p class="empty-hint">Nessun personaggio. Creane uno!</p>';
-  } else {
-    list.innerHTML = entries.map(([id, c]) => `
-      <div class="char-lib-entry">
-        <div class="char-lib-info">
-          <span class="char-lib-name">${_esc(c.name)}</span>
-          <span class="char-lib-badge ${c.type === 'player' ? 'badge-player' : 'badge-creature'}">${c.type === 'player' ? 'PG' : 'Creatura'}</span>
-        </div>
-        <div class="char-lib-actions">
-          <button class="btn-secondary btn-sm" data-action="open-sheet" data-id="${id}">📜 Apri</button>
-          <button class="btn-remove-sm" data-action="delete-char" data-id="${id}" aria-label="Elimina">×</button>
-        </div>
-      </div>
-    `).join('');
-  }
-
-  section.classList.remove('hidden');
-
-  list.onclick = (e) => {
-    const openBtn = e.target.closest('[data-action="open-sheet"]');
-    if (openBtn) { _openLibrarySheet(openBtn.dataset.id); return; }
-    const delBtn = e.target.closest('[data-action="delete-char"]');
-    if (delBtn) { _deleteLibraryChar(delBtn.dataset.id); }
-  };
-}
-
-async function _deleteLibraryChar(charId) {
-  if (!confirm('Eliminare questo personaggio? I dati della scheda saranno persi.')) return;
-  await _library.delete(charId);
-  _loadCharacterLibrary();
-  _populateJoinPicker();
-}
-
-async function _populateJoinPicker() {
-  const picker = document.getElementById('join-char-picker');
-  const list   = document.getElementById('join-char-list');
-  if (!picker || !list || !_library) return;
-
-  let chars = {};
-  try { chars = await _library.getAll(); } catch { return; }
-  const players = Object.entries(chars).filter(([, c]) => c.type === 'player');
-
-  if (players.length === 0) {
-    picker.classList.add('hidden');
-    return;
-  }
-
-  list.innerHTML = players.map(([id, c]) => `
-    <button class="char-pick-btn" data-id="${id}" data-name="${_esc(c.name)}">${_esc(c.name)}</button>
-  `).join('');
-
-  list.onclick = (e) => {
-    const btn = e.target.closest('.char-pick-btn');
-    if (!btn) return;
-    _selectedJoinCharId = btn.dataset.id;
-    document.getElementById('input-pg-name').value = btn.dataset.name;
-    list.querySelectorAll('.char-pick-btn').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-  };
-
-  picker.classList.remove('hidden');
-}
-
-async function _populateCreaturePicker() {
-  const picker = document.getElementById('creature-library-picker');
-  const list   = document.getElementById('creature-library-list');
-  if (!picker || !list || !_library) return;
-
-  let chars = {};
-  try { chars = await _library.getAll(); } catch { return; }
-  const creatures = Object.entries(chars).filter(([, c]) => c.type === 'creature');
-
-  if (creatures.length === 0) {
-    picker.classList.add('hidden');
-    return;
-  }
-
-  list.innerHTML = creatures.map(([id, c]) => `
-    <button class="char-pick-btn" data-id="${id}" data-name="${_esc(c.name)}">${_esc(c.name)}</button>
-  `).join('');
-
-  list.onclick = (e) => {
-    const btn = e.target.closest('.char-pick-btn');
-    if (!btn) return;
-    _selectedCreatureCharId = btn.dataset.id;
-    document.getElementById('input-creature-name').value = btn.dataset.name;
-    list.querySelectorAll('.char-pick-btn').forEach(b => b.classList.remove('selected'));
-    btn.classList.add('selected');
-  };
-
-  picker.classList.remove('hidden');
-}
-
-async function _saveUserSession(uid, code, combatantId, characterName, role, charId = null) {
-  await set(ref(db, `userSessions/${uid}/${code}`), {
-    combatantId:   combatantId ?? null,
-    characterName: characterName ?? null,
-    role,
-    charId:        charId ?? null,
-    lastSeen:      Date.now(),
-  });
-}
-
-async function _loadUserSessions(uid) {
-  const section = document.getElementById('user-sessions-section');
-  const list    = document.getElementById('user-sessions-list');
-  if (!section || !list) return;
-
-  const snap = await get(ref(db, `userSessions/${uid}`));
-  if (!snap.exists()) { section.classList.add('hidden'); return; }
-
-  const entries = Object.entries(snap.val());
-  const active  = [];
-
-  await Promise.all(entries.map(async ([code, data]) => {
-    const sessionSnap = await get(ref(db, `sessions/${code}`));
-    if (sessionSnap.exists()) {
-      active.push({ code, ...data });
-    } else {
-      await remove(ref(db, `userSessions/${uid}/${code}`));
-    }
-  }));
-
-  active.sort((a, b) => (b.lastSeen ?? 0) - (a.lastSeen ?? 0));
-
-  if (active.length === 0) { section.classList.add('hidden'); return; }
-
-  section.classList.remove('hidden');
-  list.innerHTML = active.map(s => `
-    <div class="session-entry">
-      <div class="session-entry-info">
-        <span class="session-entry-code">${s.code}</span>
-        ${s.characterName ? `<span class="session-entry-char">— ${_esc(s.characterName)}</span>` : ''}
-        <span class="session-entry-role">${s.role === 'master' ? '⚔ Master' : '🧙 PG'}</span>
-      </div>
-      <button class="btn-rejoin btn-secondary btn-sm"
-              data-code="${s.code}"
-              data-combatant-id="${s.combatantId ?? ''}"
-              data-role="${s.role}"
-              data-char-id="${s.charId ?? ''}">
-        Rientra →
-      </button>
-    </div>
-  `).join('');
-
-  list.onclick = (e) => {
-    const btn = e.target.closest('.btn-rejoin');
-    if (!btn) return;
-    _rejoinSession(btn.dataset.code, btn.dataset.combatantId || null, btn.dataset.role, btn.dataset.charId || null);
-  };
 }
 
 async function _rejoinSession(code, savedCombatantId, role, savedCharId = null) {
   try {
-    const uid = await session.restore(code);
+    const uid = await state.session.restore(code);
     if (!uid) {
       UI.showError('La sessione non è più disponibile.');
       await remove(ref(db, `userSessions/${uid}/${code}`));
-      await _loadUserSessions(myUid || auth.currentUser?.uid);
+      await loadUserSessions(state.myUid || auth.currentUser?.uid);
       return;
     }
     const isMaster = role === 'master';
@@ -901,58 +325,53 @@ async function _rejoinSession(code, savedCombatantId, role, savedCharId = null) 
       UI.showError('Non è possibile recuperare il personaggio.');
       return;
     }
-    myUid         = uid;
-    myCombatantId = savedCombatantId || null;
-    _lastKnownHp   = null; // Reset per il rejoin
+    state.myUid         = uid;
+    state.myCombatantId = savedCombatantId || null;
+    state.lastKnownHp   = null;
     localStorage.setItem('dnd_session_code', code);
     if (savedCombatantId) localStorage.setItem('dnd_combatant_id', savedCombatantId);
-    _initCombatManagers(code);
-    if (!isMaster) _initSheet(uid, savedCharId);
+    initCombatManagers(code);
+    if (!isMaster) initSheet(uid, savedCharId);
     _enterCombatView(code, isMaster);
   } catch (err) {
     UI.showError('Errore nel rientro: ' + err.message);
   }
 }
 
-function _esc(str) {
-  return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
 // ─── Avvio ────────────────────────────────────────────────────────────────────
 
 (async () => {
   try {
-    await session.ensureAuth();
+    await state.session.ensureAuth();
   } catch { /* nessun auth state — gestito come non autenticato */ }
-  _updateHomeAuthUI(auth.currentUser);
+  updateHomeAuthUI(auth.currentUser);
 
   const savedCode        = localStorage.getItem('dnd_session_code');
   const savedCombatantId = localStorage.getItem('dnd_combatant_id');
   if (!savedCode) return;
 
   try {
-    const uid = await session.restore(savedCode);
+    const uid = await state.session.restore(savedCode);
     if (!uid) {
       localStorage.removeItem('dnd_session_code');
       localStorage.removeItem('dnd_combatant_id');
       return;
     }
 
-    if (!session.isMaster && !savedCombatantId) {
+    if (!state.session.isMaster && !savedCombatantId) {
       localStorage.removeItem('dnd_session_code');
       return;
     }
 
-    // Recupera charId dalla sessione salvata
     let savedCharId = null;
     const userSessionSnap = await get(ref(db, `userSessions/${uid}/${savedCode}`));
     if (userSessionSnap.exists()) savedCharId = userSessionSnap.val().charId ?? null;
 
-    myUid         = uid;
-    myCombatantId = savedCombatantId;
-    _initCombatManagers(savedCode);
-    if (!session.isMaster) _initSheet(uid, savedCharId);
-    _enterCombatView(savedCode, session.isMaster);
+    state.myUid         = uid;
+    state.myCombatantId = savedCombatantId;
+    initCombatManagers(savedCode);
+    if (!state.session.isMaster) initSheet(uid, savedCharId);
+    _enterCombatView(savedCode, state.session.isMaster);
   } catch {
     localStorage.removeItem('dnd_session_code');
     localStorage.removeItem('dnd_combatant_id');
