@@ -4,7 +4,6 @@
 - Il master dovrebbe poter caricare immagini da mostrare al party (aggiungere/rimuovere a piacimento)
 - Ogni aggiornamento Firebase causa un re-render che riporta tutti in cima alla pagina — da evitare (es. aggiornare solo i nodi DOM che cambiano invece di fare innerHTML completo)
 - Bug inventario nella scheda personaggio: eliminazione oggetti non funziona + dopo il primo add il form smette di funzionare
-- Nel menù a tendina per la scelta del bersaglio, mettere un indicazione grafica per far differenziare amici da nemici
 
 ## Fatto
 
