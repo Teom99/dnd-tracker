@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>D&D Combat Tracker</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
@@ -65,6 +66,16 @@
         <div id="user-sessions-list" class="user-sessions-list"></div>
       </div>
 
+      <!-- Libreria personaggi (visibile dopo autenticazione) -->
+      <div id="character-library-section" class="home-card hidden">
+        <h2>I tuoi personaggi</h2>
+        <div id="character-library-list" class="char-library-list"></div>
+        <div class="char-library-actions">
+          <button id="btn-create-player" class="btn-secondary btn-sm">+ Nuovo PG</button>
+          <button id="btn-create-creature" class="btn-secondary btn-sm">+ Nuova Creatura</button>
+        </div>
+      </div>
+
       <!-- Card Master -->
       <div class="home-card">
         <h2>Sei il Master?</h2>
@@ -87,6 +98,11 @@
             spellcheck="false"
             autocapitalize="characters"
           >
+          <div id="join-char-picker" class="char-picker hidden">
+            <p class="char-picker-label">Scegli dalla libreria:</p>
+            <div id="join-char-list" class="char-picker-list"></div>
+            <p class="or-divider">oppure inserisci nuovo:</p>
+          </div>
           <input
             type="text"
             id="input-pg-name"
@@ -139,6 +155,11 @@
     <section id="master-add-form" class="master-panel hidden">
       <h2>Aggiungi Creatura</h2>
       <form id="form-add-creature" novalidate>
+        <div id="creature-library-picker" class="char-picker hidden">
+          <p class="char-picker-label">Dalla libreria:</p>
+          <div id="creature-library-list" class="char-picker-list"></div>
+          <p class="or-divider">oppure inserisci manualmente:</p>
+        </div>
         <input
           type="text"
           id="input-creature-name"

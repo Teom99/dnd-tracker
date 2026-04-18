@@ -3,13 +3,14 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
 export class CharacterSheet {
-  constructor(db, uid) {
-    this._db  = db;
-    this._uid = uid;
+  constructor(db, uid, charId) {
+    this._db     = db;
+    this._uid    = uid;
+    this._charId = charId;
   }
 
   _ref(path = '') {
-    const base = `sheets/${this._uid}`;
+    const base = `characters/${this._uid}/${this._charId}`;
     return ref(this._db, path ? `${base}/${path}` : base);
   }
 

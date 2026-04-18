@@ -1679,3 +1679,122 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   .ability-grid { grid-template-columns: repeat(6, 1fr); }
   .field-grid-3 { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* ═══════════════════════════════════════════
+   LIBRERIA PERSONAGGI
+═══════════════════════════════════════════ */
+.char-library-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.char-lib-entry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-warm);
+  border-radius: 6px;
+  padding: 0.5rem 0.65rem;
+}
+
+.char-lib-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  flex: 1;
+}
+
+.char-lib-name {
+  font-size: 0.95rem;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.char-lib-badge {
+  font-size: 0.72rem;
+  font-family: 'Cinzel', serif;
+  padding: 0.1rem 0.4rem;
+  border-radius: 3px;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.badge-player   { background: #1a3a5c; color: #7ab4e0; border: 1px solid #2a5a8c; }
+.badge-creature { background: #3a1a1a; color: #e07070; border: 1px solid #6b2020; }
+
+.char-lib-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
+.char-library-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+  flex-wrap: wrap;
+}
+
+/* ═══════════════════════════════════════════
+   CHARACTER PICKER (join form + creature form)
+═══════════════════════════════════════════ */
+.char-picker {
+  background: rgba(0,0,0,0.2);
+  border: 1px dashed var(--border-warm);
+  border-radius: 6px;
+  padding: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.char-picker-label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.char-picker-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.char-pick-btn {
+  padding: 0.3rem 0.7rem;
+  background: var(--bg-card-alt);
+  color: var(--text);
+  border: 1px solid var(--border-warm);
+  border-radius: 99px;
+  cursor: pointer;
+  font-size: 0.88rem;
+  font-family: inherit;
+  min-height: 34px;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+
+.char-pick-btn:hover   { border-color: var(--gold); color: var(--gold); }
+.char-pick-btn.selected {
+  background: rgba(201,168,76,0.15);
+  border-color: var(--gold);
+  color: var(--gold-light);
+  font-weight: 600;
+}
+
+.or-divider {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+  margin: 0.1rem 0;
+}

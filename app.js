@@ -2,13 +2,14 @@ import { initializeApp }      from 'https://www.gstatic.com/firebasejs/10.12.0/f
 import { getDatabase, ref, set, get, remove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import { getAuth }            from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
-import { FIREBASE_CONFIG } from './config.js';
-import { Session }         from './Session.js';
-import { Combatant }       from './Combatant.js';
-import { CombatTracker }   from './CombatTracker.js';
-import { CharacterSheet }  from './CharacterSheet.js';
-import * as UI             from './UI.js';
-import * as SheetUI        from './SheetUI.js';
+import { FIREBASE_CONFIG }   from './config.js';
+import { Session }           from './Session.js';
+import { Combatant }         from './Combatant.js';
+import { CombatTracker }     from './CombatTracker.js';
+import { CharacterSheet }    from './CharacterSheet.js';
+import { CharacterLibrary }  from './CharacterLibrary.js';
+import * as UI               from './UI.js';
+import * as SheetUI          from './SheetUI.js';
 
 // --- Firebase init ---
 const app  = initializeApp(FIREBASE_CONFIG);
@@ -17,16 +18,21 @@ const auth = getAuth(app);
 
 // --- App state ---
 const session = new Session(db, auth);
-let combatantManager = null;
-let tracker          = null;
-let myUid            = null;
-let myCombatantId    = null;
-let _snapshot        = null;   // ultimo snapshot Firebase ricevuto dal listener
-let _sheet           = null;   // CharacterSheet instance (solo per giocatori)
-let _sheetData       = null;   // ultimo snapshot sheets/{uid}
-let _acMap           = {};     // { uid: armorClass } — alimentato da _sheetData dei propri PG
+let combatantManager        = null;
+let tracker                 = null;
+let myUid                   = null;
+let myCombatantId           = null;
+let myCurrentCharId         = null;
+let _snapshot               = null;
+let _sheet                  = null;
+let _sheetData              = null;
+let _acMap                  = {};
+let _library                = null;
+let _selectedJoinCharId     = null;
+let _selectedCreatureCharId = null;
+let _sheetReturnView        = 'view-combat';
 
-// ─── HOME: Auth — Accedi con Google ──────────────────────────────────────────
+// ─── HOME: Auth ───────────────────────────────────────────────────────────────
 
 document.getElementById('btn-google-signin').addEventListener('click', async () => {
   const btn = document.getElementById('btn-google-signin');
@@ -55,6 +61,7 @@ document.getElementById('btn-anon-signin').addEventListener('click', async () =>
 
 document.getElementById('btn-sign-out').addEventListener('click', async () => {
   await session.signOut();
+  _library = null;
   _updateHomeAuthUI(null);
 });
 
@@ -72,14 +79,31 @@ document.getElementById('btn-upgrade-google').addEventListener('click', async ()
   }
 });
 
-// ─── HOME: Crea sessione (master) ────────────────────────────────────────────
+// ─── HOME: Libreria personaggi ────────────────────────────────────────────────
+
+document.getElementById('btn-create-player').addEventListener('click', async () => {
+  const name = prompt('Nome del personaggio:');
+  if (!name?.trim()) return;
+  await _library.create(name.trim(), 'player');
+  _loadCharacterLibrary();
+  _populateJoinPicker();
+});
+
+document.getElementById('btn-create-creature').addEventListener('click', async () => {
+  const name = prompt('Nome della creatura:');
+  if (!name?.trim()) return;
+  await _library.create(name.trim(), 'creature');
+  _loadCharacterLibrary();
+});
+
+// ─── HOME: Crea sessione (master) ─────────────────────────────────────────────
 
 document.getElementById('btn-create-session').addEventListener('click', async () => {
   try {
     const code = await session.create();
     myUid = session.currentUid;
     _initCombatManagers(code);
-    await _saveUserSession(myUid, code, null, null, 'master');
+    await _saveUserSession(myUid, code, null, null, 'master', null);
     _enterCombatView(code, true);
   } catch (err) {
     UI.showError('Errore nella creazione della sessione: ' + err.message);
@@ -101,7 +125,6 @@ document.getElementById('form-join').addEventListener('submit', async (e) => {
     return;
   }
 
-  // Disabilita il bottone per evitare doppio invio
   const submitBtn = e.target.querySelector('[type="submit"]');
   submitBtn.disabled = true;
   submitBtn.textContent = 'Caricamento...';
@@ -109,9 +132,16 @@ document.getElementById('form-join').addEventListener('submit', async (e) => {
   try {
     myUid = await session.join(code);
     _initCombatManagers(code);
-    _initSheet(myUid);
 
-    // Controlla se esiste già un PG di questo utente nella sessione
+    // Determina charId: usa quello selezionato dal picker, o crea voce nuova in libreria
+    let charId = _selectedJoinCharId ?? null;
+    if (!charId) {
+      if (!_library && auth.currentUser) _library = new CharacterLibrary(db, auth.currentUser.uid);
+      if (_library) charId = await _library.create(name, 'player');
+    }
+
+    _initSheet(myUid, charId);
+
     const existing = await combatantManager.findByOwner(myUid);
     let savedCharName = name;
     if (existing) {
@@ -123,16 +153,25 @@ document.getElementById('form-join').addEventListener('submit', async (e) => {
       if (rejoin) {
         myCombatantId = existing.id;
         savedCharName = existing.name;
+        // Ripristina il charId del combattente esistente se diverso
+        const existingCharId = existing.charId ?? charId;
+        if (existingCharId !== charId) {
+          myCurrentCharId = existingCharId;
+          _sheet = new CharacterSheet(db, myUid, existingCharId);
+          _setupSheetListener();
+        }
+        charId = existingCharId;
       } else {
         await combatantManager.remove(existing.id);
-        myCombatantId = await combatantManager.add(name, initiative, hp, 'player', myUid);
+        myCombatantId = await combatantManager.add(name, initiative, hp, 'player', myUid, charId);
       }
     } else {
-      myCombatantId = await combatantManager.add(name, initiative, hp, 'player', myUid);
+      myCombatantId = await combatantManager.add(name, initiative, hp, 'player', myUid, charId);
     }
 
+    _selectedJoinCharId = null;
     localStorage.setItem('dnd_combatant_id', myCombatantId);
-    await _saveUserSession(myUid, code, myCombatantId, savedCharName, 'player');
+    await _saveUserSession(myUid, code, myCombatantId, savedCharName, 'player', charId);
     _enterCombatView(code, false);
   } catch (err) {
     UI.showError(err.message);
@@ -152,12 +191,15 @@ document.getElementById('form-add-creature').addEventListener('submit', async (e
 
   if (!name || !hp) return;
 
-  await combatantManager.add(name, initiative, hp, 'creature', myUid);
+  const charId = _selectedCreatureCharId ?? null;
+  await combatantManager.add(name, initiative, hp, 'creature', myUid, charId);
+  _selectedCreatureCharId = null;
+  document.querySelectorAll('#creature-library-list .char-pick-btn').forEach(b => b.classList.remove('selected'));
   e.target.reset();
   document.getElementById('input-creature-name').focus();
 });
 
-// ─── COMBAT: Avanza turno (solo master) ───────────────────────────────────────
+// ─── COMBAT: Turno, Reset, Copia, Esci ───────────────────────────────────────
 
 document.getElementById('btn-next-turn').addEventListener('click', async () => {
   if (!_snapshot) return;
@@ -165,15 +207,11 @@ document.getElementById('btn-next-turn').addEventListener('click', async () => {
   await tracker.nextTurn(sorted, _snapshot.currentTurnId, _snapshot.round);
 });
 
-// ─── COMBAT: Reset incontro (solo master) ─────────────────────────────────────
-
 document.getElementById('btn-reset').addEventListener('click', async () => {
   if (!confirm('Sei sicuro di voler resettare l\'incontro?\nTutti i combattenti verranno rimossi.')) return;
   await combatantManager.removeAll();
   await tracker.reset();
 });
-
-// ─── COMBAT: Copia codice sessione ────────────────────────────────────────────
 
 document.getElementById('btn-copy-code').addEventListener('click', () => {
   navigator.clipboard.writeText(session.code).then(() => {
@@ -183,20 +221,19 @@ document.getElementById('btn-copy-code').addEventListener('click', () => {
   });
 });
 
-// ─── COMBAT: Esci dalla sessione ─────────────────────────────────────────────
-
 document.getElementById('btn-exit-session').addEventListener('click', () => {
   if (!confirm('Sei sicuro di voler uscire dalla sessione?')) return;
   _exitToHome();
 });
 
-// ─── SCHEDA: Torna al combattimento ──────────────────────────────────────────
+// ─── SCHEDA: Torna indietro ───────────────────────────────────────────────────
 
 document.getElementById('btn-back-to-combat').addEventListener('click', () => {
-  UI.showView('view-combat');
+  UI.showView(_sheetReturnView);
+  if (_sheetReturnView === 'view-home') _loadCharacterLibrary();
 });
 
-// ─── MODAL Condizioni: chiudi ─────────────────────────────────────────────────
+// ─── MODAL Condizioni ─────────────────────────────────────────────────────────
 
 document.getElementById('btn-close-modal').addEventListener('click', closeConditionModal);
 document.getElementById('condition-modal').addEventListener('click', (e) => {
@@ -207,22 +244,24 @@ function closeConditionModal() {
   document.getElementById('condition-modal').classList.add('hidden');
 }
 
+// ─── Core helpers ─────────────────────────────────────────────────────────────
+
 function _exitToHome(errorMessage) {
   localStorage.removeItem('dnd_session_code');
   localStorage.removeItem('dnd_combatant_id');
-  myCombatantId = null;
-  myUid         = null;
-  _snapshot     = null;
-  _sheetData    = null;
-  _acMap        = {};
-  // Ripristina il bottone join nel caso fosse rimasto bloccato su "Caricamento..."
+  myCombatantId           = null;
+  myUid                   = null;
+  myCurrentCharId         = null;
+  _snapshot               = null;
+  _sheetData              = null;
+  _acMap                  = {};
+  _selectedCreatureCharId = null;
+  _sheetReturnView        = 'view-combat';
   const submitBtn = document.querySelector('#form-join [type="submit"]');
   if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Entra nella Sessione'; }
   UI.showView('view-home');
   if (errorMessage) UI.showError(errorMessage);
 }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function _initCombatManagers(code) {
   combatantManager = new Combatant(db, code);
@@ -232,6 +271,8 @@ function _initCombatManagers(code) {
 function _enterCombatView(code, isMaster) {
   UI.renderSessionCode(code);
   UI.renderMasterPanel(isMaster);
+  if (isMaster) _populateCreaturePicker();
+  _sheetReturnView = 'view-combat';
   _startListening();
   UI.showView('view-combat');
 }
@@ -242,7 +283,6 @@ function _startListening() {
     if (!data) return;
     _snapshot = data;
 
-    // Se il proprio combattente è stato rimosso, torna alla home
     const combatants = data.combatants || {};
     if (!session.isMaster && myCombatantId && !combatants[myCombatantId]) {
       _exitToHome('Il tuo personaggio è stato rimosso dalla sessione.');
@@ -263,18 +303,15 @@ function _startListening() {
   });
 }
 
-function _initSheet(uid) {
-  _sheet = new CharacterSheet(db, uid);
+function _setupSheetListener() {
+  if (!_sheet) return;
   _sheet.listen((snap) => {
     _sheetData = snap.val() || {};
-    // Sync AC to combat card display
     const ac = _sheetData.armorClass ?? null;
-    if (ac !== null) {
-      _acMap[uid] = ac;
-      // Also sync to the combatant node so others can see it
-      if (myCombatantId) combatantManager.setArmorClass(myCombatantId, ac);
+    if (ac !== null && myCombatantId) {
+      _acMap[myUid] = ac;
+      combatantManager.setArmorClass(myCombatantId, ac);
     }
-    // If sheet view is open, update computed values
     const sheetView = document.getElementById('view-character');
     if (sheetView && !sheetView.classList.contains('hidden')) {
       SheetUI.updateComputedValues(_sheetData);
@@ -290,8 +327,18 @@ function _initSheet(uid) {
   });
 }
 
+function _initSheet(uid, charId) {
+  if (!charId) return;
+  myCurrentCharId = charId;
+  _sheet = new CharacterSheet(db, uid, charId);
+  _setupSheetListener();
+}
+
 function _openCharacterSheet() {
   if (!_sheet) return;
+  _sheetReturnView = 'view-combat';
+  const backBtn = document.getElementById('btn-back-to-combat');
+  if (backBtn) backBtn.textContent = '← Combattimento';
   SheetUI.populateSheet(_sheetData);
   SheetUI.renderSpellSlots(_sheetData?.spellSlots, (lvl) => _sheet.useSpellSlot(lvl), (lvl) => _sheet.restoreSpellSlot(lvl));
   SheetUI.renderAttacks(_sheetData?.attacks, _sheetData, (id) => _sheet.removeAttack(id));
@@ -302,10 +349,33 @@ function _openCharacterSheet() {
   UI.showView('view-character');
 }
 
+async function _openLibrarySheet(charId) {
+  try {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+    myCurrentCharId = charId;
+    _sheet = new CharacterSheet(db, uid, charId);
+    _sheetData = (await _library.getOne(charId)) || {};
+    _setupSheetListener();
+    _sheetReturnView = 'view-home';
+    const backBtn = document.getElementById('btn-back-to-combat');
+    if (backBtn) backBtn.textContent = '← Libreria';
+    SheetUI.populateSheet(_sheetData);
+    SheetUI.renderSpellSlots(_sheetData?.spellSlots, (lvl) => _sheet.useSpellSlot(lvl), (lvl) => _sheet.restoreSpellSlot(lvl));
+    SheetUI.renderAttacks(_sheetData?.attacks, _sheetData, (id) => _sheet.removeAttack(id));
+    SheetUI.renderCantrips(_sheetData?.cantrips, (id) => _sheet.removeCantrip(id));
+    SheetUI.renderSpellsByLevel(_sheetData?.spells, (lvl, id) => _sheet.removeSpell(lvl, id), (lvl, id) => _sheet.toggleSpellPrepared(lvl, id), (lvl, name) => _sheet.addSpell(lvl, name));
+    SheetUI.renderInventory(_sheetData?.inventory, (id) => _sheet.removeInventoryItem(id));
+    _bindSheetEvents();
+    UI.showView('view-character');
+  } catch (err) {
+    UI.showError('Errore apertura scheda: ' + err.message);
+  }
+}
+
 function _bindSheetEvents() {
   const view = document.getElementById('view-character');
 
-  // Generic blur-save for all [data-path] inputs/textareas/selects
   view.querySelectorAll('[data-path]').forEach(el => {
     if (el._sheetBound) return;
     el._sheetBound = true;
@@ -314,36 +384,30 @@ function _bindSheetEvents() {
       const value = el.dataset.number !== undefined ? (parseInt(el.value) || 0) : el.value;
       _sheet.setField(path, value);
     };
-    el.addEventListener('blur',    save);
-    el.addEventListener('change',  save);
+    el.addEventListener('blur',   save);
+    el.addEventListener('change', save);
   });
 
-  // Spell slot max inputs (blur handled above via data-path)
-
-  // Skill proficiency cycle buttons
   view.querySelectorAll('.skill-prof').forEach(btn => {
     if (btn._sheetBound) return;
     btn._sheetBound = true;
     btn.addEventListener('click', () => {
-      const skill = btn.dataset.skill;
+      const skill   = btn.dataset.skill;
       const current = parseInt(btn.dataset.level ?? '0');
       _sheet.setSkill(skill, (current + 1) % 3);
     });
   });
 
-  // Saving throw toggle
   view.querySelectorAll('.save-check').forEach(btn => {
     if (btn._sheetBound) return;
     btn._sheetBound = true;
     btn.addEventListener('click', () => _sheet.toggleSavingThrow(btn.dataset.ability));
   });
 
-  // Death save pips
   SheetUI.bindDeathSaves((type, count) => {
     _sheet.setField(`deathSaves/${type}`, count);
   });
 
-  // Add attack form
   const attackForm = document.getElementById('form-add-attack');
   if (attackForm && !attackForm._sheetBound) {
     attackForm._sheetBound = true;
@@ -364,7 +428,6 @@ function _bindSheetEvents() {
     });
   }
 
-  // Add cantrip form
   const cantripForm = document.getElementById('form-add-cantrip');
   if (cantripForm && !cantripForm._sheetBound) {
     cantripForm._sheetBound = true;
@@ -375,7 +438,6 @@ function _bindSheetEvents() {
     });
   }
 
-  // Add inventory item form
   const itemForm = document.getElementById('form-add-item');
   if (itemForm && !itemForm._sheetBound) {
     itemForm._sheetBound = true;
@@ -404,23 +466,28 @@ function _openConditionModal(combatantId, conditionsObj) {
 }
 
 function _updateHomeAuthUI(user) {
-  const authPanel     = document.getElementById('auth-panel');
-  const homeCards     = document.getElementById('home-cards');
-  const userInfoBar   = document.getElementById('user-info-bar');
-  const displayName   = document.getElementById('user-display-name');
-  const upgradeBtn    = document.getElementById('btn-upgrade-google');
-  const signOutBtn    = document.getElementById('btn-sign-out');
+  const authPanel   = document.getElementById('auth-panel');
+  const homeCards   = document.getElementById('home-cards');
+  const userInfoBar = document.getElementById('user-info-bar');
+  const displayName = document.getElementById('user-display-name');
+  const upgradeBtn  = document.getElementById('btn-upgrade-google');
+  const signOutBtn  = document.getElementById('btn-sign-out');
+  const libSection  = document.getElementById('character-library-section');
+  const prevSection = document.getElementById('character-preview-section');
 
   if (!user) {
     authPanel?.classList.remove('hidden');
     homeCards?.classList.add('hidden');
     userInfoBar?.classList.add('hidden');
+    libSection?.classList.add('hidden');
+    prevSection?.classList.add('hidden');
     return;
   }
 
   authPanel?.classList.add('hidden');
   homeCards?.classList.remove('hidden');
   userInfoBar?.classList.remove('hidden');
+  prevSection?.classList.add('hidden');
 
   if (session.isGoogleUser) {
     if (displayName) displayName.textContent = session.displayName ?? '';
@@ -432,16 +499,119 @@ function _updateHomeAuthUI(user) {
     signOutBtn?.classList.add('hidden');
   }
 
+  _library = new CharacterLibrary(db, user.uid);
   _loadUserSessions(user.uid);
-  _loadCharacterPreview(user.uid);
+  _loadCharacterLibrary();
+  _populateJoinPicker();
 }
 
-async function _saveUserSession(uid, code, combatantId, characterName, role) {
+async function _loadCharacterLibrary() {
+  const section = document.getElementById('character-library-section');
+  const list    = document.getElementById('character-library-list');
+  if (!section || !list || !_library) return;
+
+  const chars   = await _library.getAll();
+  const entries = Object.entries(chars);
+
+  if (entries.length === 0) {
+    list.innerHTML = '<p class="empty-hint">Nessun personaggio. Creane uno!</p>';
+  } else {
+    list.innerHTML = entries.map(([id, c]) => `
+      <div class="char-lib-entry">
+        <div class="char-lib-info">
+          <span class="char-lib-name">${_esc(c.name)}</span>
+          <span class="char-lib-badge ${c.type === 'player' ? 'badge-player' : 'badge-creature'}">${c.type === 'player' ? 'PG' : 'Creatura'}</span>
+        </div>
+        <div class="char-lib-actions">
+          <button class="btn-secondary btn-sm" data-action="open-sheet" data-id="${id}">📜 Apri</button>
+          <button class="btn-remove-sm" data-action="delete-char" data-id="${id}" aria-label="Elimina">×</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  section.classList.remove('hidden');
+
+  list.onclick = (e) => {
+    const openBtn = e.target.closest('[data-action="open-sheet"]');
+    if (openBtn) { _openLibrarySheet(openBtn.dataset.id); return; }
+    const delBtn = e.target.closest('[data-action="delete-char"]');
+    if (delBtn) { _deleteLibraryChar(delBtn.dataset.id); }
+  };
+}
+
+async function _deleteLibraryChar(charId) {
+  if (!confirm('Eliminare questo personaggio? I dati della scheda saranno persi.')) return;
+  await _library.delete(charId);
+  _loadCharacterLibrary();
+  _populateJoinPicker();
+}
+
+async function _populateJoinPicker() {
+  const picker = document.getElementById('join-char-picker');
+  const list   = document.getElementById('join-char-list');
+  if (!picker || !list || !_library) return;
+
+  const chars   = await _library.getAll();
+  const players = Object.entries(chars).filter(([, c]) => c.type === 'player');
+
+  if (players.length === 0) {
+    picker.classList.add('hidden');
+    return;
+  }
+
+  list.innerHTML = players.map(([id, c]) => `
+    <button class="char-pick-btn" data-id="${id}" data-name="${_esc(c.name)}">${_esc(c.name)}</button>
+  `).join('');
+
+  list.onclick = (e) => {
+    const btn = e.target.closest('.char-pick-btn');
+    if (!btn) return;
+    _selectedJoinCharId = btn.dataset.id;
+    document.getElementById('input-pg-name').value = btn.dataset.name;
+    list.querySelectorAll('.char-pick-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  };
+
+  picker.classList.remove('hidden');
+}
+
+async function _populateCreaturePicker() {
+  const picker = document.getElementById('creature-library-picker');
+  const list   = document.getElementById('creature-library-list');
+  if (!picker || !list || !_library) return;
+
+  const chars     = await _library.getAll();
+  const creatures = Object.entries(chars).filter(([, c]) => c.type === 'creature');
+
+  if (creatures.length === 0) {
+    picker.classList.add('hidden');
+    return;
+  }
+
+  list.innerHTML = creatures.map(([id, c]) => `
+    <button class="char-pick-btn" data-id="${id}" data-name="${_esc(c.name)}">${_esc(c.name)}</button>
+  `).join('');
+
+  list.onclick = (e) => {
+    const btn = e.target.closest('.char-pick-btn');
+    if (!btn) return;
+    _selectedCreatureCharId = btn.dataset.id;
+    document.getElementById('input-creature-name').value = btn.dataset.name;
+    list.querySelectorAll('.char-pick-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+  };
+
+  picker.classList.remove('hidden');
+}
+
+async function _saveUserSession(uid, code, combatantId, characterName, role, charId = null) {
   await set(ref(db, `userSessions/${uid}/${code}`), {
     combatantId:   combatantId ?? null,
     characterName: characterName ?? null,
     role,
-    lastSeen: Date.now(),
+    charId:        charId ?? null,
+    lastSeen:      Date.now(),
   });
 }
 
@@ -465,7 +635,6 @@ async function _loadUserSessions(uid) {
     }
   }));
 
-  // Ordina per lastSeen decrescente
   active.sort((a, b) => (b.lastSeen ?? 0) - (a.lastSeen ?? 0));
 
   if (active.length === 0) { section.classList.add('hidden'); return; }
@@ -481,7 +650,8 @@ async function _loadUserSessions(uid) {
       <button class="btn-rejoin btn-secondary btn-sm"
               data-code="${s.code}"
               data-combatant-id="${s.combatantId ?? ''}"
-              data-role="${s.role}">
+              data-role="${s.role}"
+              data-char-id="${s.charId ?? ''}">
         Rientra →
       </button>
     </div>
@@ -490,35 +660,11 @@ async function _loadUserSessions(uid) {
   list.onclick = (e) => {
     const btn = e.target.closest('.btn-rejoin');
     if (!btn) return;
-    _rejoinSession(btn.dataset.code, btn.dataset.combatantId || null, btn.dataset.role);
+    _rejoinSession(btn.dataset.code, btn.dataset.combatantId || null, btn.dataset.role, btn.dataset.charId || null);
   };
 }
 
-async function _loadCharacterPreview(uid) {
-  const section = document.getElementById('character-preview-section');
-  const preview = document.getElementById('character-preview');
-  if (!section || !preview) return;
-
-  const snap = await get(ref(db, `sheets/${uid}`));
-  if (!snap.exists()) { section.classList.add('hidden'); return; }
-
-  const d = snap.val();
-  const charName = d.characterName || '—';
-  const cls      = [d.class, d.subclass].filter(Boolean).join(' — ') || '—';
-  const level    = d.level ? `Liv. ${d.level}` : '';
-  const race     = d.race || '';
-  const ac       = d.armorClass ? `CA ${d.armorClass}` : '';
-
-  const tags = [race, cls, level, ac].filter(Boolean);
-
-  preview.innerHTML = `
-    <div class="char-preview-name">${_esc(charName)}</div>
-    ${tags.length ? `<div class="char-preview-tags">${tags.map(t => `<span class="char-preview-tag">${_esc(t)}</span>`).join('')}</div>` : ''}
-  `;
-  section.classList.remove('hidden');
-}
-
-async function _rejoinSession(code, savedCombatantId, role) {
+async function _rejoinSession(code, savedCombatantId, role, savedCharId = null) {
   try {
     const uid = await session.restore(code);
     if (!uid) {
@@ -537,7 +683,7 @@ async function _rejoinSession(code, savedCombatantId, role) {
     localStorage.setItem('dnd_session_code', code);
     if (savedCombatantId) localStorage.setItem('dnd_combatant_id', savedCombatantId);
     _initCombatManagers(code);
-    if (!isMaster) _initSheet(uid);
+    if (!isMaster) _initSheet(uid, savedCharId);
     _enterCombatView(code, isMaster);
   } catch (err) {
     UI.showError('Errore nel rientro: ' + err.message);
@@ -545,18 +691,15 @@ async function _rejoinSession(code, savedCombatantId, role) {
 }
 
 function _esc(str) {
-  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return String(str ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// ─── Avvio: ripristina auth state, poi eventuale auto-restore sessione ────────
+// ─── Avvio ────────────────────────────────────────────────────────────────────
 
 (async () => {
-  // Aspetta che Firebase Auth ripristini lo stato dal browser (IndexedDB).
-  // Il try/catch garantisce che _updateHomeAuthUI venga chiamato anche se
-  // authStateReady fallisce, evitando una schermata completamente vuota.
   try {
     await session.ensureAuth();
-  } catch { /* nessun auth state ripristinato — gestito come utente non autenticato */ }
+  } catch { /* nessun auth state — gestito come non autenticato */ }
   _updateHomeAuthUI(auth.currentUser);
 
   const savedCode        = localStorage.getItem('dnd_session_code');
@@ -576,10 +719,15 @@ function _esc(str) {
       return;
     }
 
+    // Recupera charId dalla sessione salvata
+    let savedCharId = null;
+    const userSessionSnap = await get(ref(db, `userSessions/${uid}/${savedCode}`));
+    if (userSessionSnap.exists()) savedCharId = userSessionSnap.val().charId ?? null;
+
     myUid         = uid;
     myCombatantId = savedCombatantId;
     _initCombatManagers(savedCode);
-    if (!session.isMaster) _initSheet(uid);
+    if (!session.isMaster) _initSheet(uid, savedCharId);
     _enterCombatView(savedCode, session.isMaster);
   } catch {
     localStorage.removeItem('dnd_session_code');

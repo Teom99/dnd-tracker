@@ -13,7 +13,7 @@ export class Combatant {
     return ref(this._db, path ? `${base}/${path}` : base);
   }
 
-  async add(name, initiative, hpMax, type, ownerUid) {
+  async add(name, initiative, hpMax, type, ownerUid, charId = null) {
     const newRef = push(this._ref());
     await set(newRef, {
       name,
@@ -22,7 +22,8 @@ export class Combatant {
       hpCurrent:  parseInt(hpMax)      || 1,
       type,
       conditions: {},
-      ownerUid
+      ownerUid,
+      charId: charId ?? null,
     });
     return newRef.key;
   }
