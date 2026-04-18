@@ -22,7 +22,7 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | `CharacterSheet.js` | Scheda PG: lettura/scrittura su `characters/{uid}/{charId}/` |
 | `UI.js` | Render lista combattenti, modal condizioni, death saves inline |
 | `SheetUI.js` | Render scheda personaggio (abilità, slot, incantesimi, inventario) |
-| `GridUI.js` | Griglia esagonale SVG (punta in alto, odd-r offset, 20×12, 1 hex = 1.5m) |
+| `GridUI.js` | Griglia esagonale SVG (punta in alto, odd-r offset, 20×12, 1 hex = 1m) |
 
 ---
 
@@ -65,18 +65,20 @@ userSessions/{uid}/{code}/  combatantId, name, type, charId  (per rejoin)
 - Visibilità HP: master vede solo creature · player vede tutti i PG · hint opzionale su creature
 - HP max editabile inline (card combat) e dalla scheda PG, con sync automatico al combattente
 - CA sincronizzata dalla scheda al combattente in real-time
-- Griglia esagonale con token selector bar, selezione + posizionamento, distanze in metri
+- Griglia esagonale con token selector bar, selezione + posizionamento, distanze in metri (1m per hex, centrata)
+- Token giocatore evidenziati in verde
 - Tasto "Fine Turno" sulla card del giocatore attivo
 - Death saves inline nella card quando KO: 3 successi = revive a 1 HP
 - `nextTurn` atomico con `runTransaction` (no race condition)
 - I player KO restano nel turno per death saves; creature KO saltate
+- Notifiche popup per danni/cure ricevuti dal proprio personaggio
+- Log eventi in tempo reale: danni, cure, KO, revive, cambi turno/round, condizioni, entrata/uscita combattenti, reset incontro
 - Favicon emoji drago SVG inline
 
 ### Bug noti non ancora risolti
 - **Inventario nella scheda**: eliminazione oggetti non funziona + dopo il primo add il form smette di funzionare
 
 ### Da implementare (backlog)
-- **C2** — Layout 3 colonne in combat: Creature | Player | Scheda sempre visibile — feature invasiva, richiede pianificazione prima di toccare il codice
 - **C3** — Refactor struttura progetto (cartelle `src/`, separare state da handlers in `app.js`)
 
 ---

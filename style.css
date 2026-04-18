@@ -2066,6 +2066,96 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 .grid-container::-webkit-scrollbar-track { background: transparent; }
 .grid-container::-webkit-scrollbar-thumb { background: var(--border-warm); border-radius: 2px; }
 
+/* ═══════════════════════════════════════════
+   AREA BATTAGLIA (griglia + log)
+═══════════════════════════════════════════ */
+.battle-area {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 1rem;
+  align-items: start;
+}
+
+/* ═══════════════════════════════════════════
+   LOG EVENTI
+═══════════════════════════════════════════ */
+.event-log-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius);
+  padding: 0.75rem 0.9rem;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  height: fit-content;
+  max-height: calc(100vh - 200px);
+}
+
+.event-log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.event-log-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.95rem;
+  color: var(--gold-light);
+}
+
+.btn-clear-log {
+  background: transparent;
+  border: 1px solid var(--border-warm);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.2rem 0.4rem;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.btn-clear-log:hover { color: var(--red-bright); border-color: var(--red-bright); }
+
+.event-log {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  max-height: 400px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-warm) transparent;
+}
+
+.event-log::-webkit-scrollbar       { width: 4px; }
+.event-log::-webkit-scrollbar-track { background: transparent; }
+.event-log::-webkit-scrollbar-thumb { background: var(--border-warm); border-radius: 2px; }
+
+.event-entry {
+  font-size: 0.85rem;
+  color: var(--text);
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  border-left: 3px solid;
+  background: rgba(0,0,0,0.2);
+  line-height: 1.4;
+}
+
+.event-entry.damage { border-color: #e07070; background: rgba(224,112,112,0.1); }
+.event-entry.heal   { border-color: #70c070; background: rgba(112,192,112,0.1); }
+.event-entry.turn   { border-color: var(--gold); background: rgba(201,168,76,0.1); }
+.event-entry.ko     { border-color: #888; background: rgba(136,136,136,0.1); }
+.event-entry.revive { border-color: #4aba4a; background: rgba(74,186,74,0.1); }
+.event-entry.condition { border-color: #a070e0; background: rgba(160,112,224,0.1); }
+
+.event-timestamp {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.2rem;
+  font-style: italic;
+}
+
 /* ─── SVG elementi ─── */
 .hex-svg {
   display: block;

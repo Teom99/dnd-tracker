@@ -62,6 +62,42 @@ export function showNotification(message, type = 'info') {
   }, 3000);
 }
 
+export function addEventLog(message, type = 'info') {
+  const logContainer = document.getElementById('event-log');
+  if (!logContainer) return;
+  
+  const entry = document.createElement('div');
+  entry.className = `event-entry event-${type}`;
+  
+  const timestamp = new Date().toLocaleTimeString('it-IT', { 
+    hour: '2-digit', 
+    minute: '2-digit',
+    second: '2-digit'
+  });
+  
+  entry.innerHTML = `
+    <div class="event-timestamp">${timestamp}</div>
+    <div>${message}</div>
+  `;
+  
+  logContainer.appendChild(entry);
+  
+  // Scroll automatico al fondo
+  logContainer.scrollTop = logContainer.scrollHeight;
+  
+  // Mantieni solo gli ultimi 50 eventi per evitare overflow
+  while (logContainer.children.length > 50) {
+    logContainer.removeChild(logContainer.firstChild);
+  }
+}
+
+export function clearEventLog() {
+  const logContainer = document.getElementById('event-log');
+  if (logContainer) {
+    logContainer.innerHTML = '';
+  }
+}
+
 export function renderSessionCode(code) {
   const el = document.getElementById('session-code-display');
   if (el) el.textContent = code;

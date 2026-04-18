@@ -7,11 +7,13 @@ Un tracker di combattimento interattivo per Dungeons & Dragons 5e, progettato pe
 - **Autenticazione multi-utente**: Accedi con Google o continua come ospite per partecipare a sessioni collaborative
 - **Sessioni multiplayer**: Un Dungeon Master può creare sessioni e i giocatori possono unirsi con i loro personaggi
 - **Gestione dei combattimenti**: Tracker dei turni, iniziativa, punti vitali e status dei combattenti
-- **Griglia di battaglia**: Posiziona i tuoi token e quelli delle creature sulla griglia
+- **Griglia di battaglia**: Posiziona i tuoi token e quelli delle creature sulla griglia (1m per hex, orientamento punta in alto)
 - **Schede personaggio**: Visualizza e gestisci i dettagli del tuo personaggio (classe, livello, abilità, ecc.)
 - **Libreria personaggi**: Salva e carica i tuoi personaggi per sessioni future
 - **Gestione delle creature**: Il master può aggiungere e controllare creature nemiche
 - **Sincronizzazione in tempo reale**: Tutti i partecipanti vedono gli aggiornamenti istantaneamente grazie a Firebase
+- **Notifiche eventi**: Ricevi notifiche per danni/cure subiti dal tuo personaggio
+- **Log eventi**: Traccia tutti gli eventi di combattimento in tempo reale (danni, cure, KO, revive, cambi turno, condizioni)
 
 ## Struttura del Progetto
 
@@ -75,11 +77,22 @@ Un tracker di combattimento interattivo per Dungeons & Dragons 5e, progettato pe
 - Interfaccia interattiva per il posizionamento dei token
 - Visibilità sincronizzata tra master e giocatori
 - Supporto per creature e personaggi giocanti
+- Token del giocatore evidenziati in verde
 
 ### Schede Personaggio
 - Visualizzazione dei dettagli del personaggio
 - Gestione dei punti vita
 - Tracciamento delle abilità e dei dettagli di classe
+
+### Notifiche e Log Eventi
+- **Notifiche**: Popup per danni/cure subiti dal proprio personaggio
+- **Log Eventi**: Cronologia in tempo reale di tutti gli eventi di combattimento
+  - Danni e cure ricevuti
+  - KO e revive dei combattenti
+  - Cambi turno e round
+  - Applicazione/rimozione condizioni
+  - Entrata/uscita combattenti
+  - Reset dell'incontro
 
 ## Tecnologie Utilizzate
 

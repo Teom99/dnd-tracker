@@ -433,15 +433,27 @@
 
     </div><!-- /.combat-cols -->
 
-    <!-- Griglia di battaglia -->
-    <section id="grid-section" class="grid-section">
-      <div class="grid-header">
-        <span class="grid-title">Griglia di Battaglia</span>
-        <span class="grid-hint">1 esagono = 1 m · Seleziona un token, poi tocca la destinazione</span>
-      </div>
-      <div id="grid-token-bar" class="grid-token-bar"></div>
-      <div id="grid-container" class="grid-container"></div>
-    </section>
+    <!-- Griglia di battaglia e Log eventi -->
+    <div class="battle-area">
+      <!-- Griglia di battaglia -->
+      <section id="grid-section" class="grid-section">
+        <div class="grid-header">
+          <span class="grid-title">Griglia di Battaglia</span>
+          <span class="grid-hint">1 esagono = 1 m · Seleziona un token, poi tocca la destinazione</span>
+        </div>
+        <div id="grid-token-bar" class="grid-token-bar"></div>
+        <div id="grid-container" class="grid-container"></div>
+      </section>
+
+      <!-- Log eventi -->
+      <section id="event-log-section" class="event-log-section">
+        <div class="event-log-header">
+          <span class="event-log-title">📜 Log Eventi</span>
+          <button id="btn-clear-log" class="btn-clear-log" title="Cancella log">🗑</button>
+        </div>
+        <div id="event-log" class="event-log"></div>
+      </section>
+    </div>
 
     <!-- Controlli turno (visibili solo al master) -->
     <footer id="master-controls" class="master-controls hidden">

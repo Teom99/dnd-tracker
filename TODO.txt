@@ -18,5 +18,7 @@
 - Aggiornamenti concorrenti gestiti con runTransaction (no race condition)
 - Tiri salvezza da morte nella card combat quando il PG è a 0 HP; 3 successi = revive a 1 HP
 - Rimossa la possibilità di settare HP massimi al join (si settano dalla scheda/card)
+- Notifiche per danni/cure ricevuti dal proprio personaggio
+- Log eventi in tempo reale per danni, cure, KO, revive, cambi turno, condizioni, entrata/uscita combattenti, reset incontro
 - La Griglia di battaglia va centrata nello schermo, ora è tutto spostata sulla sinistra dello schermo
 - Nella griglia di battaglia, quando clicco su un token per vedere la distanza dagli altri personaggi, la distanza è poco visibile in quanto va sopra il cerchio 
