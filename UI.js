@@ -64,8 +64,9 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const hpPercent     = c.hpMax > 0 ? (c.hpCurrent / c.hpMax) * 100 : 0;
     const conditions    = c.conditions ? Object.keys(c.conditions) : [];
     const hpClass       = hpPercent <= 25 ? 'hp-critical' : hpPercent <= 50 ? 'hp-low' : '';
-    const showFullHp    = canEdit || !isCreature;
-    const showHint      = !canEdit && isCreature && c.showHealthHint;
+    const showFullHp    = isOwnCard || (isMaster && isCreature);
+    const showHint      = !isOwnCard && !isMaster && isCreature && c.showHealthHint;
+    const canEditMaxHp  = isOwnCard || (isMaster && isCreature);
     const ac            = acMap[c.ownerUid] ?? c.armorClass ?? null;
 
     const targetOptions = [
@@ -101,7 +102,13 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         <div class="hp-section">
           <div class="hp-header">
             <span class="hp-label">HP</span>
-            <span class="hp-numbers ${hpClass}">${c.hpCurrent} / ${c.hpMax}</span>
+            <span class="hp-numbers ${hpClass}">
+              ${c.hpCurrent} /
+              ${canEditMaxHp
+                ? `<button class="hp-max-btn" data-id="${c.id}" data-action="edit-hp-max" title="Modifica HP massimi">${c.hpMax}</button>`
+                : c.hpMax
+              }
+            </span>
           </div>
           <div class="hp-bar-container">
             <div class="hp-bar" style="width:${hpPercent}%;background:${hpBarColor(hpPercent)}"></div>
@@ -220,6 +227,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     if (action === 'remove')          { callbacks.onRemove(id); return; }
     if (action === 'open-conditions') { callbacks.onOpenConditions(id); return; }
     if (action === 'edit-initiative') { openInitiativeEdit(btn, id, callbacks.onInitiativeChange); return; }
+    if (action === 'edit-hp-max')     { openHpMaxEdit(btn, id, callbacks.onSetMaxHp); return; }
     if (action === 'open-sheet')      { callbacks.onOpenSheet?.(); return; }
   };
 }
@@ -243,6 +251,33 @@ function openInitiativeEdit(btn, id, onInitiativeChange) {
     btn.textContent = isNaN(val) ? original : String(val);
     input.replaceWith(btn);
     if (!isNaN(val) && val !== parseInt(original)) onInitiativeChange(id, val);
+  };
+
+  input.onblur    = confirm;
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter')  { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { input.value = original; input.blur(); }
+  };
+
+  btn.replaceWith(input);
+  input.focus();
+  input.select();
+}
+
+function openHpMaxEdit(btn, id, onSetMaxHp) {
+  const original = btn.textContent.trim();
+  const input    = document.createElement('input');
+  input.type      = 'number';
+  input.value     = original;
+  input.className = 'hp-max-edit-input';
+  input.min       = '1';
+  input.max       = '9999';
+
+  const confirm = () => {
+    const val = parseInt(input.value);
+    btn.textContent = isNaN(val) ? original : String(val);
+    input.replaceWith(btn);
+    if (!isNaN(val) && val !== parseInt(original)) onSetMaxHp(id, val);
   };
 
   input.onblur    = confirm;

@@ -303,6 +303,7 @@ function _startListening() {
       onSetAction:          (id, text)        => combatantManager.setAction(id, text),
       onApplyToTarget:      (targetId, delta) => combatantManager.updateHp(targetId, delta),
       onToggleHealthHint:   (id, current)     => combatantManager.setHealthHint(id, !current),
+      onSetMaxHp:           (id, val)        => combatantManager.setMaxHp(id, val),
       onOpenSheet:          ()               => _openCharacterSheet(),
     }, _acMap);
 

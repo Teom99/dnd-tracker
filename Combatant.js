@@ -61,6 +61,16 @@ export class Combatant {
     await set(ref(this._db, `sessions/${this._code}/combatants/${id}/currentAction`), text || null);
   }
 
+  async setMaxHp(id, val) {
+    const hp = Math.max(1, parseInt(val) || 1);
+    await set(ref(this._db, `sessions/${this._code}/combatants/${id}/hpMax`), hp);
+    // Cap current HP to new max
+    await runTransaction(
+      ref(this._db, `sessions/${this._code}/combatants/${id}/hpCurrent`),
+      (current) => Math.min(current ?? 0, hp)
+    );
+  }
+
   async findByOwner(uid) {
     const q    = query(this._ref(), orderByChild('ownerUid'), equalTo(uid));
     const snap = await get(q);
