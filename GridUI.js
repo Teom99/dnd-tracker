@@ -1,5 +1,5 @@
 // Griglia esagonale punta-in-alto, offset dispari per riga (odd-r)
-// 1 esagono = 1,5 m (standard D&D 5e)
+// 1 esagono = 1 m
 
 export const GRID_COLS = 20;
 export const GRID_ROWS = 12;
@@ -35,7 +35,7 @@ export function hexDistance(c1, r1, c2, r2) {
 }
 
 function fmtM(d) {
-  const m = d * 1.5;
+  const m = d * 1;
   return m === Math.floor(m) ? `${m}m` : `${m.toFixed(1)}m`;
 }
 
