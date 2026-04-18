@@ -488,13 +488,39 @@ form { display: flex; flex-direction: column; gap: 0.6rem; }
 .master-panel-title { font-family: 'Cinzel', serif; font-size: 0.95rem; margin-bottom: 0.4rem; }
 
 /* ═══════════════════════════════════════════
-   LAYOUT 2 COLONNE COMBAT
+   LAYOUT 3 COLONNE COMBAT
 ═══════════════════════════════════════════ */
 .combat-cols {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
   align-items: start;
+}
+
+/* 3 colonne su schermi larghi quando la scheda è disponibile */
+@media (min-width: 1100px) {
+  body.has-sheet .combat-cols {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+  body.has-sheet #col-sheet {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+/* Nasconde la colonna scheda di default (mobile / senza scheda) */
+#col-sheet {
+  display: none;
+}
+
+/* Su mobile con scheda: mostra la scheda a tutta larghezza (sheet-only mode) */
+body.sheet-only .combat-cols > :not(#col-sheet) {
+  display: none;
+}
+body.sheet-only #col-sheet {
+  display: flex;
+  flex-direction: column;
+  grid-column: 1 / -1;
 }
 
 @media (max-width: 700px) {
@@ -512,29 +538,36 @@ form { display: flex; flex-direction: column; gap: 0.6rem; }
   border-bottom: 1px solid var(--border-warm);
 }
 
-/* ─── Layout 3 colonne su desktop: Creature | Giocatori | Scheda ─── */
-@media (min-width: 1200px) {
-  body.in-combat.has-sheet {
-    display: grid;
-    grid-template-columns: 1fr 370px;
-    min-height: 100vh;
-  }
-  body.in-combat.has-sheet #view-combat {
-    grid-column: 1;
+/* Header interno alla colonna scheda */
+.col-sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Bottone "← Indietro" visibile solo in mobile sheet-only mode */
+.sheet-back-btn {
+  display: none;
+}
+body.sheet-only .sheet-back-btn {
+  display: inline-flex;
+}
+
+/* Nascondi btn-sheet quando la scheda è già embedded nella colonna */
+@media (min-width: 1100px) {
+  body.has-sheet .btn-sheet { display: none; }
+}
+
+/* Scheda embedded: scroll indipendente nella colonna 3 */
+@media (min-width: 1100px) {
+  body.has-sheet:not(.sheet-only) #col-sheet {
+    max-height: calc(100vh - 80px);
     overflow-y: auto;
-    max-height: 100vh;
+    position: sticky;
+    top: 0;
   }
-  body.in-combat.has-sheet #view-character {
-    grid-column: 2;
-    grid-row: 1;
-    display: block !important;
-    max-height: 100vh;
-    overflow-y: auto;
-    border-left: 1px solid var(--border-warm);
-    background: var(--bg-card);
-  }
-  body.in-combat.has-sheet .sheet-header { display: none; }
-  body.in-combat.has-sheet .btn-sheet    { display: none; }
 }
 
 /* ═══════════════════════════════════════════

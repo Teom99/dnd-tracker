@@ -193,7 +193,245 @@
         </p>
       </div>
 
-    </div>
+      <!-- Col 3: Scheda personaggio (visibile solo ai player) -->
+      <div class="combat-col" id="col-sheet">
+        <div id="view-character">
+          <div class="col-sheet-header">
+            <h2 class="col-title">Scheda Personaggio</h2>
+            <button id="btn-back-to-combat" class="btn-back sheet-back-btn">← Indietro</button>
+          </div>
+          <div id="error-message-sheet" class="error-banner hidden"></div>
+          <div class="sheet-body">
+
+            <details class="sheet-section" open>
+              <summary>📖 Informazioni Base</summary>
+              <div class="sheet-section-body">
+                <div class="field-row">
+                  <label>Nome personaggio</label>
+                  <input type="text" data-path="characterName" maxlength="40" placeholder="—">
+                </div>
+                <div class="field-grid-2">
+                  <div class="field-row"><label>Razza</label><input type="text" data-path="race" maxlength="30" placeholder="—"></div>
+                  <div class="field-row"><label>Classe</label><input type="text" data-path="class" maxlength="30" placeholder="—"></div>
+                  <div class="field-row"><label>Sottoclasse</label><input type="text" data-path="subclass" maxlength="30" placeholder="—"></div>
+                  <div class="field-row"><label>Livello</label><input type="number" data-path="level" data-number min="1" max="20" placeholder="1"></div>
+                  <div class="field-row"><label>Background</label><input type="text" data-path="background" maxlength="30" placeholder="—"></div>
+                  <div class="field-row"><label>Allineamento</label><input type="text" data-path="alignment" maxlength="20" placeholder="—"></div>
+                </div>
+                <div class="field-row"><label>Punti Esperienza</label><input type="number" data-path="xp" data-number min="0" placeholder="0"></div>
+              </div>
+            </details>
+
+            <details class="sheet-section" open>
+              <summary>💪 Caratteristiche</summary>
+              <div class="sheet-section-body">
+                <div class="ability-grid">
+                  <div class="ability-block"><div class="ability-label">FOR</div><input type="number" class="ability-input" data-path="abilities/str" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-str">+0</div></div>
+                  <div class="ability-block"><div class="ability-label">DES</div><input type="number" class="ability-input" data-path="abilities/dex" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-dex">+0</div></div>
+                  <div class="ability-block"><div class="ability-label">COS</div><input type="number" class="ability-input" data-path="abilities/con" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-con">+0</div></div>
+                  <div class="ability-block"><div class="ability-label">INT</div><input type="number" class="ability-input" data-path="abilities/int" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-int">+0</div></div>
+                  <div class="ability-block"><div class="ability-label">SAG</div><input type="number" class="ability-input" data-path="abilities/wis" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-wis">+0</div></div>
+                  <div class="ability-block"><div class="ability-label">CAR</div><input type="number" class="ability-input" data-path="abilities/cha" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-cha">+0</div></div>
+                </div>
+                <div class="field-row field-row-inline"><label>Bonus Competenza</label><input type="number" data-path="proficiencyBonus" data-number min="2" max="6" placeholder="2" class="input-small"></div>
+              </div>
+            </details>
+
+            <details class="sheet-section">
+              <summary>🛡 Statistiche Combattimento</summary>
+              <div class="sheet-section-body">
+                <div class="field-grid-3">
+                  <div class="field-row field-row-center"><label>Classe Armatura</label><input type="number" data-path="armorClass" data-number min="0" max="30" placeholder="10" class="input-big"></div>
+                  <div class="field-row field-row-center"><label>Velocità (m)</label><input type="number" data-path="speed" data-number min="0" placeholder="9" class="input-big"></div>
+                  <div class="field-row field-row-center"><label>Mod. Iniziativa</label><input type="number" data-path="initiativeMod" data-number min="-10" max="20" placeholder="0" class="input-big"></div>
+                </div>
+                <div class="field-grid-2">
+                  <div class="field-row field-row-center"><label>HP Massimi</label><input type="number" data-path="hpMax" data-number min="1" placeholder="0" class="input-big"></div>
+                  <div class="field-row field-row-center"><label>HP Temporanei</label><input type="number" data-path="tempHp" data-number min="0" placeholder="0" class="input-big"></div>
+                </div>
+                <div class="field-grid-2">
+                  <div class="field-row field-row-center"><label>Dadi Vita usati</label><input type="number" data-path="hitDiceUsed" data-number min="0" placeholder="0" class="input-big"></div>
+                </div>
+                <div class="field-row field-row-inline">
+                  <label>Tipo Dado Vita</label>
+                  <select data-path="hitDiceType" class="input-select">
+                    <option value="d6">d6</option><option value="d8">d8</option><option value="d10">d10</option><option value="d12">d12</option>
+                  </select>
+                </div>
+                <div class="death-saves-section">
+                  <div class="death-saves-label">Tiri Salvezza Morte</div>
+                  <div class="death-saves-row">
+                    <span class="death-save-type success">Successi</span>
+                    <div class="death-save-pips" id="death-successes">
+                      <button class="death-pip" data-type="successes" data-index="0">○</button>
+                      <button class="death-pip" data-type="successes" data-index="1">○</button>
+                      <button class="death-pip" data-type="successes" data-index="2">○</button>
+                    </div>
+                  </div>
+                  <div class="death-saves-row">
+                    <span class="death-save-type failure">Fallimenti</span>
+                    <div class="death-save-pips" id="death-failures">
+                      <button class="death-pip" data-type="failures" data-index="0">○</button>
+                      <button class="death-pip" data-type="failures" data-index="1">○</button>
+                      <button class="death-pip" data-type="failures" data-index="2">○</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </details>
+
+            <details class="sheet-section">
+              <summary>🎯 Tiri Salvezza</summary>
+              <div class="sheet-section-body">
+                <div class="save-list">
+                  <div class="save-row"><button class="save-check" data-ability="str">○</button><span class="save-name">Forza</span><span class="save-value" id="save-str">+0</span></div>
+                  <div class="save-row"><button class="save-check" data-ability="dex">○</button><span class="save-name">Destrezza</span><span class="save-value" id="save-dex">+0</span></div>
+                  <div class="save-row"><button class="save-check" data-ability="con">○</button><span class="save-name">Costituzione</span><span class="save-value" id="save-con">+0</span></div>
+                  <div class="save-row"><button class="save-check" data-ability="int">○</button><span class="save-name">Intelligenza</span><span class="save-value" id="save-int">+0</span></div>
+                  <div class="save-row"><button class="save-check" data-ability="wis">○</button><span class="save-name">Saggezza</span><span class="save-value" id="save-wis">+0</span></div>
+                  <div class="save-row"><button class="save-check" data-ability="cha">○</button><span class="save-name">Carisma</span><span class="save-value" id="save-cha">+0</span></div>
+                </div>
+              </div>
+            </details>
+
+            <details class="sheet-section">
+              <summary>🎯 Abilità</summary>
+              <div class="sheet-section-body">
+                <p class="hint-text">Tocca ○ per competenza, ◑ per expertise, ● per rimuovere</p>
+                <div class="skill-list">
+                  <div class="skill-row"><button class="skill-prof" data-skill="acrobatics">○</button><span class="skill-name">Acrobazia</span><span class="skill-ability">DES</span><span class="skill-total" id="skill-acrobatics">+0</span></div>
+                  <div class="skill-row"><button class="skill-prof" data-skill="animalHandling">○</button><span class="skill-name">Addestrare Animali</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-animalHandling">+0</span></div>
+                  <div class="skill-row"><button class="skill-prof" data-skill="arcana">○</button><span class="skill-name">Arcano</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-arcana">+0</span></div>
+                  <div class="skill-row"><button class="skill-prof" data-skill="athletics">○</button><span class="skill-name">Atletica</span><span class="skill-ability">FOR</span><span class="skill-total" id="skill-athletics">+0</span></div>
+                  <div class="skill-row"><button class="skill-prof" data-skill="deception">○</button><span class="skill-name">Inganno</span><span class="skill-ability">CAR</span><span class="skill-total" id="skill-deception">+0</span></div>
+                  <div class="skill-row"><button class="skill-prof" data-skill="history">○</button><span class="skill-name">Storia</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-history">+0</span></div>
+                  <div class="skill-row"><button class="skill-prof" data-skill="insight">○</button><span class="skill-name">Intuizione</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-insight">+0</span></div>
+                  <div class="skill-row"><button class="skill-prof" data-skill="intimidation">○</button><span class="skill-name">Intimidire</span><span class="skill-ability">CAR</span><span class="skill-total" id="skill-intimidation">+0</span></div>
+                  <div class="skill-row"><button class="skill-prof" data-skill="investigation">○</button><span class="skill-name">Investigare</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-investigation">+0</span></div>
+                  <div class="skill-row"><button class="skill-prof" data-skill="medicine">○</button><span class="skill-name">Medicina</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-medicine">+0</span></div>
+                  <div class="skill-row"><button class="skill-prof" data-skill="nature">○</button><span class="skill-name">Natura</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-nature">+0</span></div>
+                  <div class="skill-row"><button class="skill-prof" data-skill="perception">○</button><span class="skill-name">Percezione</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-perception">+0</span></div>
+                  <div class="skill-row"><button class="skill-prof" data-skill="performance">○</button><span class="skill-name">Intrattenere</span><span class="skill-ability">CAR</span><span class="skill-total" id="skill-performance">+0</span></div>
+                  <div class="skill-row"><button class="skill-prof" data-skill="persuasion">○</button><span class="skill-name">Persuasione</span><span class="skill-ability">CAR</span><span class="skill-total" id="skill-persuasion">+0</span></div>
+                  <div class="skill-row"><button class="skill-prof" data-skill="religion">○</button><span class="skill-name">Religione</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-religion">+0</span></div>
+                  <div class="skill-row"><button class="skill-prof" data-skill="sleightOfHand">○</button><span class="skill-name">Rapidità di Mano</span><span class="skill-ability">DES</span><span class="skill-total" id="skill-sleightOfHand">+0</span></div>
+                  <div class="skill-row"><button class="skill-prof" data-skill="stealth">○</button><span class="skill-name">Furtività</span><span class="skill-ability">DES</span><span class="skill-total" id="skill-stealth">+0</span></div>
+                  <div class="skill-row"><button class="skill-prof" data-skill="survival">○</button><span class="skill-name">Sopravvivenza</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-survival">+0</span></div>
+                </div>
+                <div class="passive-perception-row">
+                  <span class="passive-label">Percezione Passiva</span>
+                  <span id="passive-perception" class="passive-value">10</span>
+                </div>
+              </div>
+            </details>
+
+            <details class="sheet-section">
+              <summary>⚔ Attacchi</summary>
+              <div class="sheet-section-body">
+                <div id="attacks-list" class="attacks-list"></div>
+                <form id="form-add-attack" class="add-form" novalidate>
+                  <h4>Aggiungi Attacco</h4>
+                  <input type="text" id="attack-name" placeholder="Nome (es. Spada lunga)" maxlength="30">
+                  <div class="field-grid-2">
+                    <input type="text" id="attack-formula" placeholder="Danno (es. 1d8)" maxlength="20">
+                    <input type="text" id="attack-type" placeholder="Tipo (es. taglio)" maxlength="20">
+                  </div>
+                  <div class="field-grid-2">
+                    <select id="attack-ability" class="input-select">
+                      <option value="str">FOR</option><option value="dex">DES</option><option value="con">COS</option>
+                      <option value="int">INT</option><option value="wis">SAG</option><option value="cha">CAR</option>
+                      <option value="manual">Manuale</option>
+                    </select>
+                    <label class="checkbox-label"><input type="checkbox" id="attack-proficient"> Competenza</label>
+                  </div>
+                  <div class="field-grid-2">
+                    <input type="text" id="attack-bonus-override" placeholder="Bonus attacco (sovrascrivi)" maxlength="10">
+                    <input type="text" id="attack-dmg-override" placeholder="Mod. danni (sovrascrivi)" maxlength="10">
+                  </div>
+                  <button type="submit" class="btn-secondary">+ Aggiungi Attacco</button>
+                </form>
+              </div>
+            </details>
+
+            <details class="sheet-section">
+              <summary>✨ Magia</summary>
+              <div class="sheet-section-body">
+                <div class="field-grid-3 magic-stats">
+                  <div class="field-row field-row-center"><label>Caratteristica</label><select data-path="spellcastingAbility" class="input-select"><option value="">—</option><option value="int">INT</option><option value="wis">SAG</option><option value="cha">CAR</option></select></div>
+                  <div class="field-row field-row-center"><label>CD Tiro Salvezza</label><span id="spell-save-dc" class="computed-big">—</span></div>
+                  <div class="field-row field-row-center"><label>Bonus Attacco</label><span id="spell-attack-bonus" class="computed-big">—</span></div>
+                </div>
+                <h4 class="subsection-title">Slot Incantesimo</h4>
+                <div id="spell-slots-list" class="spell-slots-list"></div>
+                <h4 class="subsection-title">Trucchetti</h4>
+                <div id="cantrips-list" class="cantrip-list"></div>
+                <form id="form-add-cantrip" class="add-form-inline" novalidate>
+                  <input type="text" id="cantrip-name" placeholder="Nome trucchetto" maxlength="40">
+                  <button type="submit" class="btn-secondary btn-sm">+ Aggiungi</button>
+                </form>
+                <div id="spells-by-level"></div>
+              </div>
+            </details>
+
+            <details class="sheet-section">
+              <summary>🎒 Inventario</summary>
+              <div class="sheet-section-body">
+                <div class="currency-grid">
+                  <div class="currency-block"><label>MR</label><input type="number" data-path="currency/cp" data-number min="0" placeholder="0"></div>
+                  <div class="currency-block"><label>MA</label><input type="number" data-path="currency/sp" data-number min="0" placeholder="0"></div>
+                  <div class="currency-block"><label>ME</label><input type="number" data-path="currency/ep" data-number min="0" placeholder="0"></div>
+                  <div class="currency-block"><label>MO</label><input type="number" data-path="currency/gp" data-number min="0" placeholder="0"></div>
+                  <div class="currency-block"><label>MP</label><input type="number" data-path="currency/pp" data-number min="0" placeholder="0"></div>
+                </div>
+                <div id="inventory-list" class="inventory-list"></div>
+                <form id="form-add-item" class="add-form" novalidate>
+                  <div class="field-grid-2">
+                    <input type="text" id="item-name" placeholder="Nome oggetto" maxlength="40">
+                    <input type="number" id="item-qty" placeholder="Qtà" min="1" value="1" class="input-small">
+                  </div>
+                  <input type="text" id="item-notes" placeholder="Note (opz.)" maxlength="200">
+                  <button type="submit" class="btn-secondary">+ Aggiungi Oggetto</button>
+                </form>
+              </div>
+            </details>
+
+            <details class="sheet-section">
+              <summary>🌟 Caratteristiche &amp; Capacità</summary>
+              <div class="sheet-section-body">
+                <textarea data-path="features" placeholder="Capacità di classe, tratti razziali, imprese..." rows="6"></textarea>
+              </div>
+            </details>
+
+            <details class="sheet-section">
+              <summary>💬 Personalità</summary>
+              <div class="sheet-section-body">
+                <div class="field-row"><label>Tratti caratteriali</label><textarea data-path="personalityTraits" placeholder="—" rows="2"></textarea></div>
+                <div class="field-row"><label>Ideali</label><textarea data-path="ideals" placeholder="—" rows="2"></textarea></div>
+                <div class="field-row"><label>Legami</label><textarea data-path="bonds" placeholder="—" rows="2"></textarea></div>
+                <div class="field-row"><label>Difetti</label><textarea data-path="flaws" placeholder="—" rows="2"></textarea></div>
+              </div>
+            </details>
+
+            <details class="sheet-section">
+              <summary>🔤 Lingue &amp; Competenze</summary>
+              <div class="sheet-section-body">
+                <div class="field-row"><label>Lingue conosciute</label><textarea data-path="languages" placeholder="—" rows="2"></textarea></div>
+                <div class="field-row"><label>Altre competenze e strumenti</label><textarea data-path="otherProficiencies" placeholder="—" rows="2"></textarea></div>
+              </div>
+            </details>
+
+            <details class="sheet-section">
+              <summary>📝 Note</summary>
+              <div class="sheet-section-body">
+                <textarea data-path="notes" placeholder="Note libere..." rows="6"></textarea>
+              </div>
+            </details>
+
+          </div><!-- /.sheet-body -->
+        </div><!-- /#view-character -->
+      </div><!-- /#col-sheet -->
+
+    </div><!-- /.combat-cols -->
 
     <!-- Griglia di battaglia -->
     <section id="grid-section" class="grid-section">
@@ -224,408 +462,6 @@
       <button id="btn-close-modal" class="btn-secondary">Chiudi</button>
     </div>
   </div>
-
-  <!-- ═══════════════════════════════════════════════
-       VISTA SCHEDA PERSONAGGIO — D&D 5e completa
-  ═══════════════════════════════════════════════ -->
-  <div id="view-character" class="view hidden">
-
-    <header class="sheet-header">
-      <button id="btn-back-to-combat" class="btn-back">← Combattimento</button>
-      <h1>Scheda Personaggio</h1>
-    </header>
-
-    <div id="error-message-sheet" class="error-banner hidden"></div>
-
-    <div class="sheet-body">
-
-      <!-- ─── INFORMAZIONI BASE ─────────────────────────── -->
-      <details class="sheet-section" open>
-        <summary>📖 Informazioni Base</summary>
-        <div class="sheet-section-body">
-          <div class="field-row">
-            <label>Nome personaggio</label>
-            <input type="text" data-path="characterName" maxlength="40" placeholder="—">
-          </div>
-          <div class="field-grid-2">
-            <div class="field-row">
-              <label>Razza</label>
-              <input type="text" data-path="race" maxlength="30" placeholder="—">
-            </div>
-            <div class="field-row">
-              <label>Classe</label>
-              <input type="text" data-path="class" maxlength="30" placeholder="—">
-            </div>
-            <div class="field-row">
-              <label>Sottoclasse</label>
-              <input type="text" data-path="subclass" maxlength="30" placeholder="—">
-            </div>
-            <div class="field-row">
-              <label>Livello</label>
-              <input type="number" data-path="level" data-number min="1" max="20" placeholder="1">
-            </div>
-            <div class="field-row">
-              <label>Background</label>
-              <input type="text" data-path="background" maxlength="30" placeholder="—">
-            </div>
-            <div class="field-row">
-              <label>Allineamento</label>
-              <input type="text" data-path="alignment" maxlength="20" placeholder="—">
-            </div>
-          </div>
-          <div class="field-row">
-            <label>Punti Esperienza</label>
-            <input type="number" data-path="xp" data-number min="0" placeholder="0">
-          </div>
-        </div>
-      </details>
-
-      <!-- ─── CARATTERISTICHE ──────────────────────────── -->
-      <details class="sheet-section" open>
-        <summary>💪 Caratteristiche</summary>
-        <div class="sheet-section-body">
-          <div class="ability-grid">
-            <div class="ability-block">
-              <div class="ability-label">FOR</div>
-              <input type="number" class="ability-input" data-path="abilities/str" data-number min="1" max="30" placeholder="10">
-              <div class="ability-mod" id="mod-str">+0</div>
-            </div>
-            <div class="ability-block">
-              <div class="ability-label">DES</div>
-              <input type="number" class="ability-input" data-path="abilities/dex" data-number min="1" max="30" placeholder="10">
-              <div class="ability-mod" id="mod-dex">+0</div>
-            </div>
-            <div class="ability-block">
-              <div class="ability-label">COS</div>
-              <input type="number" class="ability-input" data-path="abilities/con" data-number min="1" max="30" placeholder="10">
-              <div class="ability-mod" id="mod-con">+0</div>
-            </div>
-            <div class="ability-block">
-              <div class="ability-label">INT</div>
-              <input type="number" class="ability-input" data-path="abilities/int" data-number min="1" max="30" placeholder="10">
-              <div class="ability-mod" id="mod-int">+0</div>
-            </div>
-            <div class="ability-block">
-              <div class="ability-label">SAG</div>
-              <input type="number" class="ability-input" data-path="abilities/wis" data-number min="1" max="30" placeholder="10">
-              <div class="ability-mod" id="mod-wis">+0</div>
-            </div>
-            <div class="ability-block">
-              <div class="ability-label">CAR</div>
-              <input type="number" class="ability-input" data-path="abilities/cha" data-number min="1" max="30" placeholder="10">
-              <div class="ability-mod" id="mod-cha">+0</div>
-            </div>
-          </div>
-          <div class="field-row field-row-inline">
-            <label>Bonus Competenza</label>
-            <input type="number" data-path="proficiencyBonus" data-number min="2" max="6" placeholder="2" class="input-small">
-          </div>
-        </div>
-      </details>
-
-      <!-- ─── STATISTICHE COMBATTIMENTO ────────────────── -->
-      <details class="sheet-section">
-        <summary>🛡 Statistiche Combattimento</summary>
-        <div class="sheet-section-body">
-          <div class="field-grid-3">
-            <div class="field-row field-row-center">
-              <label>Classe Armatura</label>
-              <input type="number" data-path="armorClass" data-number min="0" max="30" placeholder="10" class="input-big">
-            </div>
-            <div class="field-row field-row-center">
-              <label>Velocità (m)</label>
-              <input type="number" data-path="speed" data-number min="0" placeholder="9" class="input-big">
-            </div>
-            <div class="field-row field-row-center">
-              <label>Mod. Iniziativa</label>
-              <input type="number" data-path="initiativeMod" data-number min="-10" max="20" placeholder="0" class="input-big">
-            </div>
-          </div>
-          <div class="field-grid-2">
-            <div class="field-row field-row-center">
-              <label>HP Massimi</label>
-              <input type="number" data-path="hpMax" data-number min="1" placeholder="0" class="input-big">
-            </div>
-            <div class="field-row field-row-center">
-              <label>HP Temporanei</label>
-              <input type="number" data-path="tempHp" data-number min="0" placeholder="0" class="input-big">
-            </div>
-          </div>
-          <div class="field-grid-2">
-            <div class="field-row field-row-center">
-              <label>Dadi Vita usati</label>
-              <input type="number" data-path="hitDiceUsed" data-number min="0" placeholder="0" class="input-big">
-            </div>
-          </div>
-          <div class="field-row field-row-inline">
-            <label>Tipo Dado Vita</label>
-            <select data-path="hitDiceType" class="input-select">
-              <option value="d6">d6</option>
-              <option value="d8">d8</option>
-              <option value="d10">d10</option>
-              <option value="d12">d12</option>
-            </select>
-          </div>
-          <div class="death-saves-section">
-            <div class="death-saves-label">Tiri Salvezza Morte</div>
-            <div class="death-saves-row">
-              <span class="death-save-type success">Successi</span>
-              <div class="death-save-pips" id="death-successes">
-                <button class="death-pip" data-type="successes" data-index="0" aria-label="Successo 1">○</button>
-                <button class="death-pip" data-type="successes" data-index="1" aria-label="Successo 2">○</button>
-                <button class="death-pip" data-type="successes" data-index="2" aria-label="Successo 3">○</button>
-              </div>
-            </div>
-            <div class="death-saves-row">
-              <span class="death-save-type failure">Fallimenti</span>
-              <div class="death-save-pips" id="death-failures">
-                <button class="death-pip" data-type="failures" data-index="0" aria-label="Fallimento 1">○</button>
-                <button class="death-pip" data-type="failures" data-index="1" aria-label="Fallimento 2">○</button>
-                <button class="death-pip" data-type="failures" data-index="2" aria-label="Fallimento 3">○</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </details>
-
-      <!-- ─── TIRI SALVEZZA ────────────────────────────── -->
-      <details class="sheet-section">
-        <summary>🎯 Tiri Salvezza</summary>
-        <div class="sheet-section-body">
-          <div class="save-list">
-            <div class="save-row">
-              <button class="save-check" data-ability="str" aria-label="Competenza Forza">○</button>
-              <span class="save-name">Forza</span>
-              <span class="save-value" id="save-str">+0</span>
-            </div>
-            <div class="save-row">
-              <button class="save-check" data-ability="dex" aria-label="Competenza Destrezza">○</button>
-              <span class="save-name">Destrezza</span>
-              <span class="save-value" id="save-dex">+0</span>
-            </div>
-            <div class="save-row">
-              <button class="save-check" data-ability="con" aria-label="Competenza Costituzione">○</button>
-              <span class="save-name">Costituzione</span>
-              <span class="save-value" id="save-con">+0</span>
-            </div>
-            <div class="save-row">
-              <button class="save-check" data-ability="int" aria-label="Competenza Intelligenza">○</button>
-              <span class="save-name">Intelligenza</span>
-              <span class="save-value" id="save-int">+0</span>
-            </div>
-            <div class="save-row">
-              <button class="save-check" data-ability="wis" aria-label="Competenza Saggezza">○</button>
-              <span class="save-name">Saggezza</span>
-              <span class="save-value" id="save-wis">+0</span>
-            </div>
-            <div class="save-row">
-              <button class="save-check" data-ability="cha" aria-label="Competenza Carisma">○</button>
-              <span class="save-name">Carisma</span>
-              <span class="save-value" id="save-cha">+0</span>
-            </div>
-          </div>
-        </div>
-      </details>
-
-      <!-- ─── ABILITÀ ───────────────────────────────────── -->
-      <details class="sheet-section">
-        <summary>🎯 Abilità</summary>
-        <div class="sheet-section-body">
-          <p class="hint-text">Tocca ○ per competenza, ◑ per expertise, ● per rimuovere</p>
-          <div class="skill-list">
-            <div class="skill-row"><button class="skill-prof" data-skill="acrobatics">○</button><span class="skill-name">Acrobazia</span><span class="skill-ability">DES</span><span class="skill-total" id="skill-acrobatics">+0</span></div>
-            <div class="skill-row"><button class="skill-prof" data-skill="animalHandling">○</button><span class="skill-name">Addestrare Animali</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-animalHandling">+0</span></div>
-            <div class="skill-row"><button class="skill-prof" data-skill="arcana">○</button><span class="skill-name">Arcano</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-arcana">+0</span></div>
-            <div class="skill-row"><button class="skill-prof" data-skill="athletics">○</button><span class="skill-name">Atletica</span><span class="skill-ability">FOR</span><span class="skill-total" id="skill-athletics">+0</span></div>
-            <div class="skill-row"><button class="skill-prof" data-skill="deception">○</button><span class="skill-name">Inganno</span><span class="skill-ability">CAR</span><span class="skill-total" id="skill-deception">+0</span></div>
-            <div class="skill-row"><button class="skill-prof" data-skill="history">○</button><span class="skill-name">Storia</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-history">+0</span></div>
-            <div class="skill-row"><button class="skill-prof" data-skill="insight">○</button><span class="skill-name">Intuizione</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-insight">+0</span></div>
-            <div class="skill-row"><button class="skill-prof" data-skill="intimidation">○</button><span class="skill-name">Intimidire</span><span class="skill-ability">CAR</span><span class="skill-total" id="skill-intimidation">+0</span></div>
-            <div class="skill-row"><button class="skill-prof" data-skill="investigation">○</button><span class="skill-name">Investigare</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-investigation">+0</span></div>
-            <div class="skill-row"><button class="skill-prof" data-skill="medicine">○</button><span class="skill-name">Medicina</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-medicine">+0</span></div>
-            <div class="skill-row"><button class="skill-prof" data-skill="nature">○</button><span class="skill-name">Natura</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-nature">+0</span></div>
-            <div class="skill-row"><button class="skill-prof" data-skill="perception">○</button><span class="skill-name">Percezione</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-perception">+0</span></div>
-            <div class="skill-row"><button class="skill-prof" data-skill="performance">○</button><span class="skill-name">Intrattenere</span><span class="skill-ability">CAR</span><span class="skill-total" id="skill-performance">+0</span></div>
-            <div class="skill-row"><button class="skill-prof" data-skill="persuasion">○</button><span class="skill-name">Persuasione</span><span class="skill-ability">CAR</span><span class="skill-total" id="skill-persuasion">+0</span></div>
-            <div class="skill-row"><button class="skill-prof" data-skill="religion">○</button><span class="skill-name">Religione</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-religion">+0</span></div>
-            <div class="skill-row"><button class="skill-prof" data-skill="sleightOfHand">○</button><span class="skill-name">Rapidità di Mano</span><span class="skill-ability">DES</span><span class="skill-total" id="skill-sleightOfHand">+0</span></div>
-            <div class="skill-row"><button class="skill-prof" data-skill="stealth">○</button><span class="skill-name">Furtività</span><span class="skill-ability">DES</span><span class="skill-total" id="skill-stealth">+0</span></div>
-            <div class="skill-row"><button class="skill-prof" data-skill="survival">○</button><span class="skill-name">Sopravvivenza</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-survival">+0</span></div>
-          </div>
-          <div class="passive-perception-row">
-            <span class="passive-label">Percezione Passiva</span>
-            <span id="passive-perception" class="passive-value">10</span>
-          </div>
-        </div>
-      </details>
-
-      <!-- ─── ATTACCHI ──────────────────────────────────── -->
-      <details class="sheet-section">
-        <summary>⚔ Attacchi</summary>
-        <div class="sheet-section-body">
-          <div id="attacks-list" class="attacks-list"></div>
-          <form id="form-add-attack" class="add-form" novalidate>
-            <h4>Aggiungi Attacco</h4>
-            <input type="text"   id="attack-name"    placeholder="Nome (es. Spada lunga)" maxlength="30">
-            <div class="field-grid-2">
-              <input type="text" id="attack-formula"  placeholder="Danno (es. 1d8)" maxlength="20">
-              <input type="text" id="attack-type"     placeholder="Tipo (es. taglio)" maxlength="20">
-            </div>
-            <div class="field-grid-2">
-              <select id="attack-ability" class="input-select">
-                <option value="str">FOR</option>
-                <option value="dex">DES</option>
-                <option value="con">COS</option>
-                <option value="int">INT</option>
-                <option value="wis">SAG</option>
-                <option value="cha">CAR</option>
-                <option value="manual">Manuale</option>
-              </select>
-              <label class="checkbox-label">
-                <input type="checkbox" id="attack-proficient"> Competenza
-              </label>
-            </div>
-            <div class="field-grid-2">
-              <input type="text" id="attack-bonus-override" placeholder="Bonus attacco (sovrascrivi)" maxlength="10">
-              <input type="text" id="attack-dmg-override"   placeholder="Mod. danni (sovrascrivi)" maxlength="10">
-            </div>
-            <button type="submit" class="btn-secondary">+ Aggiungi Attacco</button>
-          </form>
-        </div>
-      </details>
-
-      <!-- ─── MAGIA ─────────────────────────────────────── -->
-      <details class="sheet-section">
-        <summary>✨ Magia</summary>
-        <div class="sheet-section-body">
-          <div class="field-grid-3 magic-stats">
-            <div class="field-row field-row-center">
-              <label>Caratteristica</label>
-              <select data-path="spellcastingAbility" class="input-select">
-                <option value="">—</option>
-                <option value="int">INT</option>
-                <option value="wis">SAG</option>
-                <option value="cha">CAR</option>
-              </select>
-            </div>
-            <div class="field-row field-row-center">
-              <label>CD Tiro Salvezza</label>
-              <span id="spell-save-dc" class="computed-big">—</span>
-            </div>
-            <div class="field-row field-row-center">
-              <label>Bonus Attacco</label>
-              <span id="spell-attack-bonus" class="computed-big">—</span>
-            </div>
-          </div>
-
-          <h4 class="subsection-title">Slot Incantesimo</h4>
-          <div id="spell-slots-list" class="spell-slots-list"></div>
-
-          <h4 class="subsection-title">Trucchetti</h4>
-          <div id="cantrips-list" class="cantrip-list"></div>
-          <form id="form-add-cantrip" class="add-form-inline" novalidate>
-            <input type="text" id="cantrip-name" placeholder="Nome trucchetto" maxlength="40">
-            <button type="submit" class="btn-secondary btn-sm">+ Aggiungi</button>
-          </form>
-
-          <div id="spells-by-level"></div>
-        </div>
-      </details>
-
-      <!-- ─── INVENTARIO ────────────────────────────────── -->
-      <details class="sheet-section">
-        <summary>🎒 Inventario</summary>
-        <div class="sheet-section-body">
-          <div class="currency-grid">
-            <div class="currency-block">
-              <label>MR</label>
-              <input type="number" data-path="currency/cp" data-number min="0" placeholder="0">
-            </div>
-            <div class="currency-block">
-              <label>MA</label>
-              <input type="number" data-path="currency/sp" data-number min="0" placeholder="0">
-            </div>
-            <div class="currency-block">
-              <label>ME</label>
-              <input type="number" data-path="currency/ep" data-number min="0" placeholder="0">
-            </div>
-            <div class="currency-block">
-              <label>MO</label>
-              <input type="number" data-path="currency/gp" data-number min="0" placeholder="0">
-            </div>
-            <div class="currency-block">
-              <label>MP</label>
-              <input type="number" data-path="currency/pp" data-number min="0" placeholder="0">
-            </div>
-          </div>
-          <div id="inventory-list" class="inventory-list"></div>
-          <form id="form-add-item" class="add-form" novalidate>
-            <div class="field-grid-2">
-              <input type="text"   id="item-name" placeholder="Nome oggetto" maxlength="40">
-              <input type="number" id="item-qty"  placeholder="Qtà" min="1" value="1" class="input-small">
-            </div>
-            <input type="text" id="item-notes" placeholder="Note (opz.)" maxlength="200">
-            <button type="submit" class="btn-secondary">+ Aggiungi Oggetto</button>
-          </form>
-        </div>
-      </details>
-
-      <!-- ─── CARATTERISTICHE & CAPACITÀ ──────────────── -->
-      <details class="sheet-section">
-        <summary>🌟 Caratteristiche &amp; Capacità</summary>
-        <div class="sheet-section-body">
-          <textarea data-path="features" placeholder="Capacità di classe, tratti razziali, imprese..." rows="6"></textarea>
-        </div>
-      </details>
-
-      <!-- ─── PERSONALITÀ ───────────────────────────────── -->
-      <details class="sheet-section">
-        <summary>💬 Personalità</summary>
-        <div class="sheet-section-body">
-          <div class="field-row">
-            <label>Tratti caratteriali</label>
-            <textarea data-path="personalityTraits" placeholder="—" rows="2"></textarea>
-          </div>
-          <div class="field-row">
-            <label>Ideali</label>
-            <textarea data-path="ideals" placeholder="—" rows="2"></textarea>
-          </div>
-          <div class="field-row">
-            <label>Legami</label>
-            <textarea data-path="bonds" placeholder="—" rows="2"></textarea>
-          </div>
-          <div class="field-row">
-            <label>Difetti</label>
-            <textarea data-path="flaws" placeholder="—" rows="2"></textarea>
-          </div>
-        </div>
-      </details>
-
-      <!-- ─── LINGUE & COMPETENZE ───────────────────────── -->
-      <details class="sheet-section">
-        <summary>🔤 Lingue &amp; Competenze</summary>
-        <div class="sheet-section-body">
-          <div class="field-row">
-            <label>Lingue conosciute</label>
-            <textarea data-path="languages" placeholder="—" rows="2"></textarea>
-          </div>
-          <div class="field-row">
-            <label>Altre competenze e strumenti</label>
-            <textarea data-path="otherProficiencies" placeholder="—" rows="2"></textarea>
-          </div>
-        </div>
-      </details>
-
-      <!-- ─── NOTE ──────────────────────────────────────── -->
-      <details class="sheet-section">
-        <summary>📝 Note</summary>
-        <div class="sheet-section-body">
-          <textarea data-path="notes" placeholder="Note libere..." rows="6"></textarea>
-        </div>
-      </details>
-
-    </div><!-- /.sheet-body -->
-  </div><!-- /#view-character -->
 
   <script type="module" src="app.js"></script>
 </body>

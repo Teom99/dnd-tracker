@@ -42,10 +42,13 @@ export function renderMasterPanel(isMaster) {
   document.getElementById('master-controls')?.classList.toggle('hidden', !isMaster);
 }
 
-export function renderCombatantList(combatants, currentTurnId, myUid, masterUid, callbacks, acMap = {}, myDeathSaves = null, listId = 'combatant-list', emptyMsgId = 'empty-list-msg') {
+export function renderCombatantList(combatants, currentTurnId, myUid, masterUid, callbacks, acMap = {}, myDeathSaves = null, listId = 'combatant-list', emptyMsgId = 'empty-list-msg', allCombatants = null) {
   const list     = document.getElementById(listId);
   const emptyMsg = document.getElementById(emptyMsgId);
   if (!list) return;
+
+  // allCombatants: full sorted list used for target options and global turn numbering
+  const fullList = allCombatants ?? combatants;
 
   list.innerHTML = '';
 
@@ -55,7 +58,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
   }
   emptyMsg?.classList.add('hidden');
 
-  combatants.forEach((c, i) => {
+  combatants.forEach((c) => {
     const isActive      = c.id === currentTurnId;
     const isKO          = c.hpCurrent === 0;
     const canEdit       = myUid === c.ownerUid || myUid === masterUid;
@@ -71,11 +74,12 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const ac            = acMap[c.ownerUid] ?? c.armorClass ?? null;
     const successes     = isOwnCard && isKO ? (myDeathSaves?.successes ?? 0) : 0;
     const failures      = isOwnCard && isKO ? (myDeathSaves?.failures  ?? 0) : 0;
+    const turnNumber    = fullList.findIndex(x => x.id === c.id) + 1;
 
     const targetOptions = [
       `<option value="">— Bersaglio —</option>`,
       `<option value="${c.id}">Sé stesso</option>`,
-      ...combatants
+      ...fullList
         .filter(x => x.id !== c.id && x.hpCurrent > 0)
         .map(x => `<option value="${x.id}">${escapeHtml(x.name)}</option>`)
     ].join('');
@@ -86,7 +90,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
 
     li.innerHTML = `
       <div class="card-header">
-        <span class="turn-number">${i + 1}</span>
+        <span class="turn-number">${turnNumber}</span>
         <div class="card-name-block">
           <span class="combatant-name">${escapeHtml(c.name)}${isKO ? ' ☠' : ''}</span>
           <span class="type-badge ${c.type}">${c.type === 'player' ? 'PG' : 'CR'}</span>

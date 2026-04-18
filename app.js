@@ -230,9 +230,15 @@ document.getElementById('btn-exit-session').addEventListener('click', () => {
 // ─── SCHEDA: Torna indietro ───────────────────────────────────────────────────
 
 document.getElementById('btn-back-to-combat').addEventListener('click', () => {
+  document.body.classList.remove('sheet-only');
   if (_isSheetEmbedded()) return;
-  UI.showView(_sheetReturnView);
-  if (_sheetReturnView === 'view-home') _loadCharacterLibrary();
+  if (_sheetReturnView === 'view-home') {
+    document.body.classList.remove('has-sheet');
+    UI.showView('view-home');
+    _loadCharacterLibrary();
+  } else {
+    UI.showView('view-combat');
+  }
 });
 
 // ─── MODAL Condizioni ─────────────────────────────────────────────────────────
@@ -264,7 +270,7 @@ function _exitToHome(errorMessage) {
   if (gridContainer) gridContainer.innerHTML = '';
   const submitBtn = document.querySelector('#form-join [type="submit"]');
   if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Entra nella Sessione'; }
-  document.body.classList.remove('in-combat', 'has-sheet');
+  document.body.classList.remove('in-combat', 'has-sheet', 'sheet-only');
   UI.showView('view-home');
   if (errorMessage) UI.showError(errorMessage);
 }
@@ -312,8 +318,8 @@ function _startListening() {
       onOpenSheet:        ()                    => _openCharacterSheet(),
       onDeathSave:        async (type, count)   => _onDeathSave(type, count),
     };
-    UI.renderCombatantList(creatures, data.currentTurnId ?? null, myUid, session.masterUid, _callbacks, _acMap, null,                          'creature-list', 'empty-creatures-msg');
-    UI.renderCombatantList(players,   data.currentTurnId ?? null, myUid, session.masterUid, _callbacks, _acMap, _sheetData?.deathSaves ?? null, 'player-list',   'empty-players-msg');
+    UI.renderCombatantList(creatures, data.currentTurnId ?? null, myUid, session.masterUid, _callbacks, _acMap, null,                          'creature-list', 'empty-creatures-msg', sorted);
+    UI.renderCombatantList(players,   data.currentTurnId ?? null, myUid, session.masterUid, _callbacks, _acMap, _sheetData?.deathSaves ?? null, 'player-list',   'empty-players-msg', sorted);
 
     _renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null);
   });
@@ -332,6 +338,7 @@ async function _onDeathSave(type, count) {
 
 function _setupSheetListener() {
   if (!_sheet) return;
+  let _sheetPopulated = false;
   _sheet.listen((snap) => {
     _sheetData = snap.val() || {};
     const ac = _sheetData.armorClass ?? null;
@@ -361,22 +368,25 @@ function _setupSheetListener() {
         onOpenSheet:        ()                  => _openCharacterSheet(),
         onDeathSave:        async (type, count) => _onDeathSave(type, count),
       };
-      UI.renderCombatantList(creatures2, _snapshot.currentTurnId ?? null, myUid, session.masterUid, cb2, _acMap, null,                          'creature-list', 'empty-creatures-msg');
-      UI.renderCombatantList(players2,   _snapshot.currentTurnId ?? null, myUid, session.masterUid, cb2, _acMap, _sheetData?.deathSaves ?? null, 'player-list',   'empty-players-msg');
+      UI.renderCombatantList(creatures2, _snapshot.currentTurnId ?? null, myUid, session.masterUid, cb2, _acMap, null,                          'creature-list', 'empty-creatures-msg', sorted2);
+      UI.renderCombatantList(players2,   _snapshot.currentTurnId ?? null, myUid, session.masterUid, cb2, _acMap, _sheetData?.deathSaves ?? null, 'player-list',   'empty-players-msg', sorted2);
     }
 
-    const sheetView = document.getElementById('view-character');
-    if (sheetView && !sheetView.classList.contains('hidden')) {
-      SheetUI.updateComputedValues(_sheetData);
-      SheetUI.renderSaveChecks(_sheetData.savingThrows);
-      SheetUI.renderSkillProfs(_sheetData.skills);
-      SheetUI.renderDeathSaves(_sheetData.deathSaves);
-      SheetUI.renderSpellSlots(_sheetData.spellSlots, (lvl) => _sheet.useSpellSlot(lvl), (lvl) => _sheet.restoreSpellSlot(lvl));
-      SheetUI.renderAttacks(_sheetData.attacks, _sheetData, (id) => _sheet.removeAttack(id));
-      SheetUI.renderCantrips(_sheetData.cantrips, (id) => _sheet.removeCantrip(id));
-      SheetUI.renderSpellsByLevel(_sheetData.spells, (lvl, id) => _sheet.removeSpell(lvl, id), (lvl, id) => _sheet.toggleSpellPrepared(lvl, id), (lvl, name) => _sheet.addSpell(lvl, name));
-      SheetUI.renderInventory(_sheetData.inventory, (id) => _sheet.removeInventoryItem(id));
+    // Populate inputs once (on first data load) and bind events; after that just update computed/lists
+    if (!_sheetPopulated) {
+      _sheetPopulated = true;
+      SheetUI.populateSheet(_sheetData);
+      _bindSheetEvents();
     }
+    SheetUI.updateComputedValues(_sheetData);
+    SheetUI.renderSaveChecks(_sheetData.savingThrows);
+    SheetUI.renderSkillProfs(_sheetData.skills);
+    SheetUI.renderDeathSaves(_sheetData.deathSaves);
+    SheetUI.renderSpellSlots(_sheetData.spellSlots, (lvl) => _sheet.useSpellSlot(lvl), (lvl) => _sheet.restoreSpellSlot(lvl));
+    SheetUI.renderAttacks(_sheetData.attacks, _sheetData, (id) => _sheet.removeAttack(id));
+    SheetUI.renderCantrips(_sheetData.cantrips, (id) => _sheet.removeCantrip(id));
+    SheetUI.renderSpellsByLevel(_sheetData.spells, (lvl, id) => _sheet.removeSpell(lvl, id), (lvl, id) => _sheet.toggleSpellPrepared(lvl, id), (lvl, name) => _sheet.addSpell(lvl, name));
+    SheetUI.renderInventory(_sheetData.inventory, (id) => _sheet.removeInventoryItem(id));
   });
 }
 
@@ -389,14 +399,12 @@ function _initSheet(uid, charId) {
 }
 
 function _isSheetEmbedded() {
-  return window.matchMedia('(min-width: 1200px)').matches && document.body.classList.contains('has-sheet');
+  return window.matchMedia('(min-width: 1100px)').matches && document.body.classList.contains('has-sheet');
 }
 
 function _openCharacterSheet() {
   if (!_sheet) return;
   _sheetReturnView = 'view-combat';
-  const backBtn = document.getElementById('btn-back-to-combat');
-  if (backBtn) backBtn.textContent = '← Combattimento';
   SheetUI.populateSheet(_sheetData);
   SheetUI.renderSpellSlots(_sheetData?.spellSlots, (lvl) => _sheet.useSpellSlot(lvl), (lvl) => _sheet.restoreSpellSlot(lvl));
   SheetUI.renderAttacks(_sheetData?.attacks, _sheetData, (id) => _sheet.removeAttack(id));
@@ -404,7 +412,11 @@ function _openCharacterSheet() {
   SheetUI.renderSpellsByLevel(_sheetData?.spells, (lvl, id) => _sheet.removeSpell(lvl, id), (lvl, id) => _sheet.toggleSpellPrepared(lvl, id), (lvl, name) => _sheet.addSpell(lvl, name));
   SheetUI.renderInventory(_sheetData?.inventory, (id) => _sheet.removeInventoryItem(id));
   _bindSheetEvents();
-  if (!_isSheetEmbedded()) UI.showView('view-character');
+  // On mobile: show only the sheet column; on desktop: already visible as 3rd column
+  if (!_isSheetEmbedded()) {
+    document.body.classList.add('sheet-only');
+    UI.showView('view-combat');
+  }
 }
 
 async function _openLibrarySheet(charId) {
@@ -416,8 +428,7 @@ async function _openLibrarySheet(charId) {
     _sheetData = (await _library.getOne(charId)) || {};
     _setupSheetListener();
     _sheetReturnView = 'view-home';
-    const backBtn = document.getElementById('btn-back-to-combat');
-    if (backBtn) backBtn.textContent = '← Libreria';
+    document.body.classList.add('has-sheet', 'sheet-only');
     SheetUI.populateSheet(_sheetData);
     SheetUI.renderSpellSlots(_sheetData?.spellSlots, (lvl) => _sheet.useSpellSlot(lvl), (lvl) => _sheet.restoreSpellSlot(lvl));
     SheetUI.renderAttacks(_sheetData?.attacks, _sheetData, (id) => _sheet.removeAttack(id));
@@ -425,7 +436,7 @@ async function _openLibrarySheet(charId) {
     SheetUI.renderSpellsByLevel(_sheetData?.spells, (lvl, id) => _sheet.removeSpell(lvl, id), (lvl, id) => _sheet.toggleSpellPrepared(lvl, id), (lvl, name) => _sheet.addSpell(lvl, name));
     SheetUI.renderInventory(_sheetData?.inventory, (id) => _sheet.removeInventoryItem(id));
     _bindSheetEvents();
-    UI.showView('view-character');
+    UI.showView('view-combat');
   } catch (err) {
     UI.showError('Errore apertura scheda: ' + err.message);
   }
