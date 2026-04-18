@@ -433,7 +433,7 @@ function _startListening() {
     UI.renderCombatantList(creatures, data.currentTurnId ?? null, myUid, session.masterUid, _callbacks, _acMap, null,                          'creature-list', 'empty-creatures-msg', sorted);
     UI.renderCombatantList(players,   data.currentTurnId ?? null, myUid, session.masterUid, _callbacks, _acMap, _sheetData?.deathSaves ?? null, 'player-list',   'empty-players-msg', sorted);
 
-    _renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null);
+    _renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null, sorted);
   });
 }
 
@@ -651,9 +651,27 @@ async function _removeCombatant(id) {
   await combatantManager.remove(id);
 }
 
-function _renderGrid(gridPos, combatants, currentTurnId) {
+function _renderGrid(gridPos, combatants, currentTurnId, sortedCombatants) {
   const container = document.getElementById('grid-container');
   if (!container) return;
+
+  GridUI.renderInitiativeList(
+    document.getElementById('grid-initiative-list'),
+    sortedCombatants,
+    gridPos,
+    myCombatantId,
+    _selectedGridTokenId,
+    currentTurnId,
+    session.isMaster,
+    (id) => {
+      _selectedGridTokenId = id;
+      if (_snapshot) {
+        const sorted = tracker.sortedCombatants(_snapshot.combatants);
+        _renderGrid(_snapshot.grid || {}, _snapshot.combatants || {}, _snapshot.currentTurnId ?? null, sorted);
+      }
+    }
+  );
+
   GridUI.renderGrid(
     container,
     gridPos,
@@ -664,7 +682,10 @@ function _renderGrid(gridPos, combatants, currentTurnId) {
     currentTurnId,
     (id) => {
       _selectedGridTokenId = id;
-      if (_snapshot) _renderGrid(_snapshot.grid || {}, _snapshot.combatants || {}, _snapshot.currentTurnId ?? null);
+      if (_snapshot) {
+        const sorted = tracker.sortedCombatants(_snapshot.combatants);
+        _renderGrid(_snapshot.grid || {}, _snapshot.combatants || {}, _snapshot.currentTurnId ?? null, sorted);
+      }
     },
     (id, col, row) => session.setGridPosition(id, col, row)
   );
@@ -700,7 +721,10 @@ function _renderTokenBar(gridPos, combatants) {
     if (!btn) return;
     const id = btn.dataset.tokenId;
     _selectedGridTokenId = _selectedGridTokenId === id ? null : id;
-    if (_snapshot) _renderGrid(_snapshot.grid || {}, _snapshot.combatants || {}, _snapshot.currentTurnId ?? null);
+    if (_snapshot) {
+      const sorted = tracker.sortedCombatants(_snapshot.combatants);
+      _renderGrid(_snapshot.grid || {}, _snapshot.combatants || {}, _snapshot.currentTurnId ?? null, sorted);
+    }
   };
 }
 

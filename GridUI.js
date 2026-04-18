@@ -191,14 +191,66 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, isMast
     const occupantId = cellMap[`${col}_${row}`];
 
     if (occupantId) {
-      const canCtrl = isMaster || occupantId === myCombatantId;
-      if (canCtrl) onSelect(occupantId === selectedId ? null : occupantId);
+      // Chiunque può selezionare un token per vedere le distanze
+      onSelect(occupantId === selectedId ? null : occupantId);
     } else if (selectedId) {
-      onMove(selectedId, col, row);
+      // Solo il master o il proprietario del token possono muoverlo
+      const canMove = isMaster || selectedId === myCombatantId;
+      if (canMove) {
+        onMove(selectedId, col, row);
+      }
       onSelect(null);
     } else if (!isMaster && myCombatantId && pos[myCombatantId] == null) {
       // Giocatore non ancora posizionato: piazza il suo token
       onMove(myCombatantId, col, row);
     }
   });
+}
+
+export function renderInitiativeList(container, sortedCombatants, gridPos, myCombatantId, selectedId, currentTurnId, isMaster, onSelect) {
+  if (!container) return;
+
+  const pos = gridPos || {};
+  
+  // Decide which character is the reference for distances.
+  // If a character is selected on the grid, use that.
+  // Otherwise, use myCombatantId.
+  const referenceId = selectedId || myCombatantId;
+  const refPos = referenceId ? pos[referenceId] : null;
+
+  let html = '';
+  
+  for (const c of sortedCombatants) {
+    const isActive = c.id === currentTurnId;
+    const cPos = pos[c.id];
+    
+    let distText = '';
+    if (refPos && cPos && c.id !== referenceId) {
+      const d = hexDistance(refPos.col, refPos.row, cPos.col, cPos.row);
+      distText = `<span class="grid-initiative-dist">${fmtM(d)}</span>`;
+    }
+
+    const isSelected = c.id === selectedId;
+    let cls = 'grid-initiative-item';
+    if (isActive) cls += ' active-turn';
+    if (isSelected) cls += ' selected';
+    if (c.hpCurrent === 0) cls += ' ko';
+
+    html += `
+      <li class="${cls}" style="cursor: pointer;" data-id="${c.id}">
+        <span class="grid-initiative-name">${esc(c.name)}</span>
+        ${distText}
+      </li>
+    `;
+  }
+  
+  container.innerHTML = html;
+
+  container.onclick = (e) => {
+    const li = e.target.closest('li[data-id]');
+    if (!li) return;
+    const id = li.dataset.id;
+    // Anyone can click to select a character and see distances
+    onSelect(id === selectedId ? null : id);
+  };
 }

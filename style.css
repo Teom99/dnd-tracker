@@ -1842,7 +1842,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   color: var(--text-muted);
   transition: color 0.15s;
 }
-.ds-pip:hover { color: var(--text-primary); }
+.ds-pip:hover { color: var(--text); }
 .ds-pip.filled { color: #dc2626; }
 
 .btn-end-turn {
@@ -2010,6 +2010,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   gap: 0.5rem;
   width: 100%;
   box-sizing: border-box;
+  min-width: 0;
 }
 
 .grid-header {
@@ -2050,7 +2051,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
 }
-.grid-token-chip:hover { border-color: var(--border-warm); color: var(--text-primary); }
+.grid-token-chip:hover { border-color: var(--border-warm); color: var(--text); }
 .grid-token-chip.selected { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.1); }
 .grid-token-chip.ko { opacity: 0.4; }
 
@@ -2060,11 +2061,97 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: var(--border-warm) transparent;
+  flex: 1;
+  min-width: 0;
 }
 
 .grid-container::-webkit-scrollbar       { height: 4px; }
 .grid-container::-webkit-scrollbar-track { background: transparent; }
 .grid-container::-webkit-scrollbar-thumb { background: var(--border-warm); border-radius: 2px; }
+
+.grid-layout {
+  display: flex;
+  gap: 1rem;
+  width: 100%;
+  min-width: 0;
+}
+
+.grid-initiative-list-container {
+  width: 250px;
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius);
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.grid-initiative-list-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.85rem;
+  color: var(--gold-light);
+  text-align: center;
+  margin: 0;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--border-warm);
+}
+
+.grid-initiative-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+}
+
+.grid-initiative-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.3rem 0.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-warm);
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+
+.grid-initiative-item.active-turn {
+  border-color: var(--gold);
+  background: #1f1c10;
+  box-shadow: 0 0 8px var(--gold-glow);
+}
+
+.grid-initiative-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+.grid-initiative-item.active-turn .grid-initiative-name {
+  color: var(--gold-light);
+}
+
+.grid-initiative-dist {
+  font-family: 'Cinzel', serif;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
+  white-space: nowrap;
+}
+
+/* Nascondi container iniziativa su schermi piccoli per non rompere il layout,
+   o fai wrappare. Facciamo wrappare. */
+@media (max-width: 800px) {
+  .grid-layout {
+    flex-direction: column;
+  }
+  .grid-initiative-list-container {
+    width: 100%;
+  }
+}
 
 /* ═══════════════════════════════════════════
    AREA BATTAGLIA (griglia + log)
@@ -2074,6 +2161,12 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   grid-template-columns: 1fr 300px;
   gap: 1rem;
   align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .battle-area {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* ═══════════════════════════════════════════
