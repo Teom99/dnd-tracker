@@ -2031,6 +2031,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 /* ─── SVG elementi ─── */
 .hex-svg {
   display: block;
+  margin: 0 auto;
 }
 
 .hx {
