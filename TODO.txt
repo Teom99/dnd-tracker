@@ -5,6 +5,11 @@
 - Ogni aggiornamento Firebase causa un re-render che riporta tutti in cima alla pagina — da evitare (es. aggiornare solo i nodi DOM che cambiano invece di fare innerHTML completo)
 - Bug inventario nella scheda personaggio: eliminazione oggetti non funziona + dopo il primo add il form smette di funzionare
 - Le creature e pg possono settare le proprie resistenze ai danni. Quando viene fatto un danno, questo viene dimezzato in automatico in base alle resistenze.
+- Nel menù a tendina per la scelta del bersaglio, mettere un indicazione grafica per far differenziare amici da nemici
+- La Griglia di battaglia va centrata nello schermo, ora è tutto spostata sulla sinistra dello schermo
+- Nella griglia di battaglia, quando clicco su un token per vedere la distanza dagli altri personaggi, la distanza è poco visibile in quanto va sopra il cerchio 
+- BUG: a volte quando un giocatore modifica o fa un update di qualcosa nella pagina è capitato che la vita di un player andasse a 1/1
+- BUG: quando un giocatore è a terra non è possibile selezionarlo come bersaglio per una cura
 
 ## Fatto
 
