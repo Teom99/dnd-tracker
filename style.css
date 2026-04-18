@@ -1871,9 +1871,8 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   cursor: pointer;
 }
 
-.hx-hit:hover ~ .hx,
-.hx-hit:hover + .hx {
-  fill: rgba(255,255,255,0.04);
+.hx-hover {
+  fill: rgba(255,255,255,0.05);
 }
 
 .hx-name {

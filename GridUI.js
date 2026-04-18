@@ -118,7 +118,20 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, isMast
   container.innerHTML =
     `<svg class="hex-svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">${inner}</svg>`;
 
-  // Event delegation
+  // Hover: evidenzia solo l'esagono sotto il cursore
+  const svg = container.querySelector('svg');
+  svg.addEventListener('mouseover', (e) => {
+    const hit = e.target.closest('.hx-hit');
+    if (!hit) return;
+    svg.querySelectorAll('.hx.hx-hover').forEach(h => h.classList.remove('hx-hover'));
+    const hex = svg.querySelector(`.hx[data-c="${hit.dataset.c}"][data-r="${hit.dataset.r}"]`);
+    if (hex) hex.classList.add('hx-hover');
+  });
+  svg.addEventListener('mouseleave', () => {
+    svg.querySelectorAll('.hx.hx-hover').forEach(h => h.classList.remove('hx-hover'));
+  });
+
+  // Event delegation click
   container.querySelector('svg').addEventListener('click', (e) => {
     const el = e.target.closest('[data-c]');
     if (!el) return;
