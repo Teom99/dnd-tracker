@@ -52,7 +52,7 @@ export function setupSheetListener() {
     SheetUI.renderSaveChecks(state.sheetData.savingThrows);
     SheetUI.renderSkillProfs(state.sheetData.skills);
     SheetUI.renderDeathSaves(state.sheetData.deathSaves);
-    SheetUI.renderSpellSlots(state.sheetData.spellSlots, (lvl, count) => state.sheet.setSpellSlotsUsed(lvl, count), (lvl, val) => state.sheet.setField(`spellSlots/${lvl}/max`, val));
+    SheetUI.renderSpellSlots(state.sheetData.spellSlots, (lvl, count) => state.sheet.setSpellSlotsUsed(lvl, count), (lvl, val) => state.sheet.setSpellSlotsMax(lvl, val));
     SheetUI.renderAttacks(state.sheetData.attacks, state.sheetData, (id) => state.sheet.removeAttack(id));
     SheetUI.renderCantrips(state.sheetData.cantrips, (id) => state.sheet.removeCantrip(id));
     SheetUI.renderSpellsByLevel(state.sheetData.spells, (lvl, id) => state.sheet.removeSpell(lvl, id), (lvl, id) => state.sheet.toggleSpellPrepared(lvl, id), (lvl, name) => state.sheet.addSpell(lvl, name));
@@ -110,7 +110,7 @@ export function openCharacterSheet() {
   if (!state.sheet) return;
   state.sheetReturnView = 'view-combat';
   SheetUI.populateSheet(state.sheetData);
-  SheetUI.renderSpellSlots(state.sheetData?.spellSlots, (lvl, count) => state.sheet.setSpellSlotsUsed(lvl, count), (lvl, val) => state.sheet.setField(`spellSlots/${lvl}/max`, val));
+  SheetUI.renderSpellSlots(state.sheetData?.spellSlots, (lvl, count) => state.sheet.setSpellSlotsUsed(lvl, count), (lvl, val) => state.sheet.setSpellSlotsMax(lvl, val));
   SheetUI.renderAttacks(state.sheetData?.attacks, state.sheetData, (id) => state.sheet.removeAttack(id));
   SheetUI.renderCantrips(state.sheetData?.cantrips, (id) => state.sheet.removeCantrip(id));
   SheetUI.renderSpellsByLevel(state.sheetData?.spells, (lvl, id) => state.sheet.removeSpell(lvl, id), (lvl, id) => state.sheet.toggleSpellPrepared(lvl, id), (lvl, name) => state.sheet.addSpell(lvl, name));
@@ -133,7 +133,7 @@ export async function openLibrarySheet(charId) {
     state.sheetReturnView = 'view-home';
     document.body.classList.add('has-sheet', 'sheet-only');
     SheetUI.populateSheet(state.sheetData);
-    SheetUI.renderSpellSlots(state.sheetData?.spellSlots, (lvl, count) => state.sheet.setSpellSlotsUsed(lvl, count), (lvl, val) => state.sheet.setField(`spellSlots/${lvl}/max`, val));
+    SheetUI.renderSpellSlots(state.sheetData?.spellSlots, (lvl, count) => state.sheet.setSpellSlotsUsed(lvl, count), (lvl, val) => state.sheet.setSpellSlotsMax(lvl, val));
     SheetUI.renderAttacks(state.sheetData?.attacks, state.sheetData, (id) => state.sheet.removeAttack(id));
     SheetUI.renderCantrips(state.sheetData?.cantrips, (id) => state.sheet.removeCantrip(id));
     SheetUI.renderSpellsByLevel(state.sheetData?.spells, (lvl, id) => state.sheet.removeSpell(lvl, id), (lvl, id) => state.sheet.toggleSpellPrepared(lvl, id), (lvl, name) => state.sheet.addSpell(lvl, name));

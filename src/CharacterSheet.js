@@ -39,9 +39,18 @@ export class CharacterSheet {
 
   async setSpellSlotsUsed(level, count) {
     await runTransaction(this._ref(`spellSlots/${level}`), (current) => {
-      if (current == null) return current;
-      const max = current.max ?? 0;
-      return { ...current, used: Math.max(0, Math.min(max, count)) };
+      const node = current ?? {};
+      const max  = node.max ?? 0;
+      return { ...node, used: Math.max(0, Math.min(max, count)) };
+    });
+  }
+
+  async setSpellSlotsMax(level, max) {
+    await runTransaction(this._ref(`spellSlots/${level}`), (current) => {
+      const node    = current ?? {};
+      const newMax  = Math.max(0, Math.min(9, max));
+      const newUsed = Math.min(node.used ?? 0, newMax);
+      return { ...node, max: newMax, used: newUsed };
     });
   }
 
