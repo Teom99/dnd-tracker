@@ -20,7 +20,9 @@ export class Session {
   // ─── Auth ────────────────────────────────────────────────────────────────────
 
   async ensureAuth() {
-    await this._auth.authStateReady();
+    // Timeout 3s: evita che la pagina resti vuota se Firebase Auth è lento
+    const ready = this._auth.authStateReady?.() ?? Promise.resolve();
+    await Promise.race([ready, new Promise(r => setTimeout(r, 3000))]);
     return this._auth.currentUser;
   }
 
@@ -41,7 +43,7 @@ export class Session {
   // ─── Session lifecycle ───────────────────────────────────────────────────────
 
   async create() {
-    // Assume currentUser già autenticato (garantito da app.js prima di chiamare create)
+    if (!this._auth.currentUser) await signInAnonymously(this._auth);
     const uid  = this._auth.currentUser.uid;
     const code = this._generateCode();
 
@@ -59,7 +61,7 @@ export class Session {
   }
 
   async join(code) {
-    // Assume currentUser già autenticato
+    if (!this._auth.currentUser) await signInAnonymously(this._auth);
     const snap = await get(ref(this._db, `sessions/${code}`));
     if (!snap.exists()) throw new Error('Sessione non trovata. Controlla il codice.');
 

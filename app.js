@@ -1,6 +1,6 @@
-import { initializeApp }  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getDatabase }    from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { getAuth }        from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { initializeApp }      from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getDatabase, ref, set, get, remove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getAuth }            from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 import { FIREBASE_CONFIG } from './config.js';
 import { Session }         from './Session.js';
@@ -58,6 +58,20 @@ document.getElementById('btn-sign-out').addEventListener('click', async () => {
   _updateHomeAuthUI(null);
 });
 
+document.getElementById('btn-upgrade-google').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-upgrade-google');
+  btn.disabled = true;
+  try {
+    await session.signInWithGoogle();
+    _updateHomeAuthUI(auth.currentUser);
+  } catch (err) {
+    if (err.code !== 'auth/popup-closed-by-user') {
+      UI.showError('Errore accesso Google: ' + err.message);
+    }
+    btn.disabled = false;
+  }
+});
+
 // ─── HOME: Crea sessione (master) ────────────────────────────────────────────
 
 document.getElementById('btn-create-session').addEventListener('click', async () => {
@@ -65,6 +79,7 @@ document.getElementById('btn-create-session').addEventListener('click', async ()
     const code = await session.create();
     myUid = session.currentUid;
     _initCombatManagers(code);
+    await _saveUserSession(myUid, code, null, null, 'master');
     _enterCombatView(code, true);
   } catch (err) {
     UI.showError('Errore nella creazione della sessione: ' + err.message);
@@ -98,6 +113,7 @@ document.getElementById('form-join').addEventListener('submit', async (e) => {
 
     // Controlla se esiste già un PG di questo utente nella sessione
     const existing = await combatantManager.findByOwner(myUid);
+    let savedCharName = name;
     if (existing) {
       const rejoin = confirm(
         `Sei già presente in questa sessione con il personaggio "${existing.name}".\n\n` +
@@ -106,6 +122,7 @@ document.getElementById('form-join').addEventListener('submit', async (e) => {
       );
       if (rejoin) {
         myCombatantId = existing.id;
+        savedCharName = existing.name;
       } else {
         await combatantManager.remove(existing.id);
         myCombatantId = await combatantManager.add(name, initiative, hp, 'player', myUid);
@@ -115,6 +132,7 @@ document.getElementById('form-join').addEventListener('submit', async (e) => {
     }
 
     localStorage.setItem('dnd_combatant_id', myCombatantId);
+    await _saveUserSession(myUid, code, myCombatantId, savedCharName, 'player');
     _enterCombatView(code, false);
   } catch (err) {
     UI.showError(err.message);
@@ -383,25 +401,123 @@ function _openConditionModal(combatantId, conditionsObj) {
 }
 
 function _updateHomeAuthUI(user) {
-  const authPanel   = document.getElementById('auth-panel');
-  const homeCards   = document.getElementById('home-cards');
-  const userInfoBar = document.getElementById('user-info-bar');
-  const displayName = document.getElementById('user-display-name');
+  const authPanel     = document.getElementById('auth-panel');
+  const homeCards     = document.getElementById('home-cards');
+  const userInfoBar   = document.getElementById('user-info-bar');
+  const displayName   = document.getElementById('user-display-name');
+  const upgradeBtn    = document.getElementById('btn-upgrade-google');
+  const signOutBtn    = document.getElementById('btn-sign-out');
 
   if (!user) {
     authPanel?.classList.remove('hidden');
     homeCards?.classList.add('hidden');
     userInfoBar?.classList.add('hidden');
-  } else {
-    authPanel?.classList.add('hidden');
-    homeCards?.classList.remove('hidden');
-    if (session.isGoogleUser) {
-      userInfoBar?.classList.remove('hidden');
-      if (displayName) displayName.textContent = session.displayName ?? '';
-    } else {
-      userInfoBar?.classList.add('hidden');
-    }
+    return;
   }
+
+  authPanel?.classList.add('hidden');
+  homeCards?.classList.remove('hidden');
+  userInfoBar?.classList.remove('hidden');
+
+  if (session.isGoogleUser) {
+    if (displayName) displayName.textContent = '👤 ' + (session.displayName ?? '');
+    upgradeBtn?.classList.add('hidden');
+    signOutBtn?.classList.remove('hidden');
+  } else {
+    if (displayName) displayName.textContent = 'Ospite';
+    upgradeBtn?.classList.remove('hidden');
+    signOutBtn?.classList.add('hidden');
+  }
+
+  _loadUserSessions(user.uid);
+}
+
+async function _saveUserSession(uid, code, combatantId, characterName, role) {
+  await set(ref(db, `userSessions/${uid}/${code}`), {
+    combatantId:   combatantId ?? null,
+    characterName: characterName ?? null,
+    role,
+    lastSeen: Date.now(),
+  });
+}
+
+async function _loadUserSessions(uid) {
+  const section = document.getElementById('user-sessions-section');
+  const list    = document.getElementById('user-sessions-list');
+  if (!section || !list) return;
+
+  const snap = await get(ref(db, `userSessions/${uid}`));
+  if (!snap.exists()) { section.classList.add('hidden'); return; }
+
+  const entries = Object.entries(snap.val());
+  const active  = [];
+
+  await Promise.all(entries.map(async ([code, data]) => {
+    const sessionSnap = await get(ref(db, `sessions/${code}`));
+    if (sessionSnap.exists()) {
+      active.push({ code, ...data });
+    } else {
+      await remove(ref(db, `userSessions/${uid}/${code}`));
+    }
+  }));
+
+  // Ordina per lastSeen decrescente
+  active.sort((a, b) => (b.lastSeen ?? 0) - (a.lastSeen ?? 0));
+
+  if (active.length === 0) { section.classList.add('hidden'); return; }
+
+  section.classList.remove('hidden');
+  list.innerHTML = active.map(s => `
+    <div class="session-entry">
+      <div class="session-entry-info">
+        <span class="session-entry-code">${s.code}</span>
+        ${s.characterName ? `<span class="session-entry-char">— ${_esc(s.characterName)}</span>` : ''}
+        <span class="session-entry-role">${s.role === 'master' ? '⚔ Master' : '🧙 PG'}</span>
+      </div>
+      <button class="btn-rejoin btn-secondary btn-sm"
+              data-code="${s.code}"
+              data-combatant-id="${s.combatantId ?? ''}"
+              data-role="${s.role}">
+        Rientra →
+      </button>
+    </div>
+  `).join('');
+
+  list.onclick = (e) => {
+    const btn = e.target.closest('.btn-rejoin');
+    if (!btn) return;
+    _rejoinSession(btn.dataset.code, btn.dataset.combatantId || null, btn.dataset.role);
+  };
+}
+
+async function _rejoinSession(code, savedCombatantId, role) {
+  try {
+    const uid = await session.restore(code);
+    if (!uid) {
+      UI.showError('La sessione non è più disponibile.');
+      await remove(ref(db, `userSessions/${uid}/${code}`));
+      await _loadUserSessions(myUid || auth.currentUser?.uid);
+      return;
+    }
+    const isMaster = role === 'master';
+    if (!isMaster && !savedCombatantId) {
+      UI.showError('Non è possibile recuperare il personaggio.');
+      return;
+    }
+    myUid         = uid;
+    myCombatantId = savedCombatantId || null;
+    localStorage.setItem('dnd_session_code', code);
+    if (savedCombatantId) localStorage.setItem('dnd_combatant_id', savedCombatantId);
+    _initCombatManagers(code);
+    if (!isMaster) _initSheet(uid);
+    _enterCombatView(code, isMaster);
+  } catch (err) {
+    UI.showError('Errore nel rientro: ' + err.message);
+  }
+}
+
+function _esc(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 // ─── Avvio: ripristina auth state, poi eventuale auto-restore sessione ────────
