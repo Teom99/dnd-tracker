@@ -205,7 +205,7 @@ document.getElementById('form-add-creature').addEventListener('submit', async (e
 document.getElementById('btn-next-turn').addEventListener('click', async () => {
   if (!_snapshot) return;
   const sorted = tracker.sortedCombatants(_snapshot.combatants);
-  await tracker.nextTurn(sorted, _snapshot.currentTurnId, _snapshot.round);
+  await tracker.nextTurn(sorted);
 });
 
 document.getElementById('btn-reset').addEventListener('click', async () => {
@@ -296,7 +296,7 @@ function _startListening() {
     const sorted = tracker.sortedCombatants(data.combatants);
     UI.renderRound(data.round ?? 1);
     UI.renderCombatantList(sorted, data.currentTurnId ?? null, myUid, session.masterUid, {
-      onEndTurn:          async ()       => { const sorted = tracker.sortedCombatants(_snapshot.combatants); await tracker.nextTurn(sorted, _snapshot.currentTurnId, _snapshot.round); },
+      onEndTurn:          async ()       => { const sorted = tracker.sortedCombatants(_snapshot.combatants); await tracker.nextTurn(sorted); },
       onRemove:           (id)           => _removeCombatant(id),
       onInitiativeChange: (id, val)      => combatantManager.setInitiative(id, val),
       onOpenConditions:   (id)           => _openConditionModal(id, data.combatants?.[id]?.conditions),
