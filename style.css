@@ -2272,6 +2272,12 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   stroke-width: 1.5;
 }
 
+.hx-sel-my {
+  fill: rgba(112, 208, 112, 0.14);
+  stroke: #70d070;
+  stroke-width: 1.5;
+}
+
 .hx-hit {
   fill: transparent;
   stroke: none;
@@ -2292,12 +2298,12 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .hx-dist {
-  fill: var(--gold);
+  fill: #ffff00;
   font-family: 'Cinzel', serif;
-  font-size: 7px;
+  font-size: 12px;
   pointer-events: none;
   user-select: none;
-  opacity: 0.85;
+  opacity: 1.0;
 }
 
 .hx-tooltip-dist {

@@ -86,7 +86,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, isMast
 
       // ─ Esagono di sfondo
       let cls = 'hx';
-      if (isSelected)      cls += ' hx-sel';
+      if (isSelected)      cls += occupantId === myCombatantId ? ' hx-sel-my' : ' hx-sel';
       else if (occupantId) cls += ' hx-occ';
       inner += `<polygon class="${cls}" points="${hexPoints(x, y)}" data-c="${c}" data-r="${r}"/>`;
 
@@ -94,6 +94,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, isMast
       if (occupant) {
         const isPlayer = occupant.type === 'player';
         const isMyToken = occupantId === myCombatantId;
+        const isDead = occupant.hpCurrent <= 0;
         
         let fill, stroke;
         if (isMyToken) {
@@ -106,16 +107,33 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, isMast
                    : isPlayer   ? '#4a8abf' : '#bf4a4a';
         }
         
+        // Override per personaggi morti
+        if (isDead) {
+          fill = '#666666';
+          stroke = '#999999';
+        }
+        
         const sw       = (isSelected || isActive) ? 2.5 : 1.5;
         const initials = esc((occupant.name || '?').slice(0, 2).toUpperCase());
 
         inner += `<circle cx="${x}" cy="${y}" r="${HEX_R - 4}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" data-c="${c}" data-r="${r}"/>`;
         inner += `<text x="${x}" y="${y + 5}" text-anchor="middle" class="hx-name" data-c="${c}" data-r="${r}">${initials}</text>`;
+        
+        // Teschio nella cella sopra per personaggi morti
+        if (isDead) {
+          const aboveRow = r - 1;
+          const aboveKey = `${c}_${aboveRow}`;
+          // Solo se la cella sopra non è occupata
+          if (aboveRow >= 0 && !cellMap[aboveKey]) {
+            const { x: aboveX, y: aboveY } = hexCenter(c, aboveRow);
+            inner += `<text x="${aboveX}" y="${aboveY + 5}" text-anchor="middle" class="hx-name" data-c="${c}" data-r="${aboveRow}">💀</text>`;
+          }
+        }
 
         // Distanza dagli altri token quando uno è selezionato
         if (selPos && !isSelected) {
           const d = hexDistance(selPos.col, selPos.row, c, r);
-          inner += `<text x="${x}" y="${y - HEX_R + 7}" text-anchor="middle" class="hx-dist" data-c="${c}" data-r="${r}">${esc(fmtM(d))}</text>`;
+          inner += `<text x="${x}" y="${y - HEX_R + 2}" text-anchor="middle" class="hx-dist" data-c="${c}" data-r="${r}">${esc(fmtM(d))}</text>`;
         }
       }
 
