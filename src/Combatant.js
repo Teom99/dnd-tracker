@@ -29,12 +29,14 @@ export class Combatant {
   }
 
   async updateHp(id, delta) {
-    const hpMaxSnap = await get(ref(this._db, `sessions/${this._code}/combatants/${id}/hpMax`));
-    const hpMax = hpMaxSnap.val() ?? 0;
-
     await runTransaction(
-      ref(this._db, `sessions/${this._code}/combatants/${id}/hpCurrent`),
-      (current) => Math.max(0, Math.min(hpMax, (current ?? 0) + delta))
+      ref(this._db, `sessions/${this._code}/combatants/${id}`),
+      (current) => {
+        if (current == null) return current; // abort se il nodo non esiste
+        const hpMax = current.hpMax ?? 1;
+        current.hpCurrent = Math.max(0, Math.min(hpMax, (current.hpCurrent ?? hpMax) + delta));
+        return current;
+      }
     );
   }
 

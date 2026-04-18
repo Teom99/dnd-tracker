@@ -17,15 +17,23 @@ export async function onDeathSave(type, count) {
 export function setupSheetListener() {
   if (!state.sheet) return;
   let populated = false;
+  let prevAc    = undefined;
+  let prevHpMax = undefined;
   state.sheet.listen((snap) => {
     state.sheetData = snap.val() || {};
+
+    // Sincronizza AC al combattente solo se effettivamente cambiata
     const ac = state.sheetData.armorClass ?? null;
-    if (ac !== null && state.myCombatantId) {
+    if (ac !== null && ac !== prevAc && state.myCombatantId) {
+      prevAc = ac;
       state.acMap[state.myUid] = ac;
       state.combatantManager.setArmorClass(state.myCombatantId, ac);
     }
+
+    // Sincronizza hpMax al combattente solo se cambiato e > 0
     const hpMax = state.sheetData.hpMax ?? null;
-    if (hpMax !== null && state.myCombatantId) {
+    if (hpMax !== null && hpMax > 0 && hpMax !== prevHpMax && state.myCombatantId) {
+      prevHpMax = hpMax;
       state.combatantManager.setMaxHp(state.myCombatantId, hpMax);
     }
 

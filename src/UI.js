@@ -126,14 +126,25 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
   // allCombatants: full sorted list used for target options and global turn numbering
   const fullList = allCombatants ?? combatants;
 
-  // ── Salva scroll e focus prima di distruggere il DOM ─────────────────────
+  // ── Salva scroll, focus e stato action panel prima di distruggere il DOM ──
   const savedScrollY    = window.scrollY;
   const focused         = document.activeElement;
   const isInsideList    = list.contains(focused);
   const focusedCardId   = isInsideList ? focused.closest('[data-combatant-id]')?.dataset.combatantId : null;
   const focusedIsAction = isInsideList && focused.classList.contains('action-input');
   const focusedIsAmount = isInsideList && focused.classList.contains('attack-amount');
+  const focusedIsTarget = isInsideList && focused.classList.contains('target-select');
   const focusedValue    = (focusedIsAction || focusedIsAmount) ? focused.value : null;
+
+  // Snapshot bersaglio e quantità di ogni card (indipendentemente dal focus)
+  const savedPanelState = {};
+  list.querySelectorAll('[data-combatant-id]').forEach(card => {
+    const cid = card.dataset.combatantId;
+    savedPanelState[cid] = {
+      target: card.querySelector('.target-select')?.value ?? '',
+      amount: card.querySelector('.attack-amount')?.value ?? '',
+    };
+  });
 
   // ── Rebuild ───────────────────────────────────────────────────────────────
   _rendering = true;
@@ -312,6 +323,19 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       ` : ''}
     `;
 
+    // ── Ripristina bersaglio e quantità (indipendentemente dal focus) ─────────
+    const saved = savedPanelState[c.id];
+    if (saved) {
+      if (saved.target) {
+        const targetSel = li.querySelector('.target-select');
+        if (targetSel) targetSel.value = saved.target; // no-op se l'opzione non esiste più
+      }
+      if (saved.amount) {
+        const amountInput = li.querySelector('.attack-amount');
+        if (amountInput) amountInput.value = saved.amount;
+      }
+    }
+
     list.appendChild(li);
 
     // Salva l'azione dichiarata su blur — skip durante re-render per non triggerare Firebase
@@ -331,7 +355,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
   if (focusedCardId) {
     const newCard = list.querySelector(`[data-combatant-id="${focusedCardId}"]`);
     if (newCard) {
-      const sel = focusedIsAction ? '.action-input' : focusedIsAmount ? '.attack-amount' : null;
+      const sel = focusedIsAction ? '.action-input' : focusedIsAmount ? '.attack-amount' : focusedIsTarget ? '.target-select' : null;
       if (sel) {
         const newInput = newCard.querySelector(sel);
         if (newInput) {
