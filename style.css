@@ -44,6 +44,10 @@ body {
   gap: 1.25rem;
 }
 
+#view-combat {
+  max-width: none;
+}
+
 .hidden { display: none !important; }
 
 /* ═══════════════════════════════════════════
