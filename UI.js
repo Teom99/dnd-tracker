@@ -44,6 +44,10 @@ export function renderMasterPanel(isMaster) {
   document.getElementById('master-controls')?.classList.toggle('hidden', !isMaster);
 }
 
+// Stato modulo: flag anti-blur e tracking turno attivo per-lista
+let _rendering = false;
+const _lastActiveTurn = {};
+
 export function renderCombatantList(combatants, currentTurnId, myUid, masterUid, callbacks, acMap = {}, myDeathSaves = null, listId = 'combatant-list', emptyMsgId = 'empty-list-msg', allCombatants = null) {
   const list     = document.getElementById(listId);
   const emptyMsg = document.getElementById(emptyMsgId);
@@ -52,13 +56,30 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
   // allCombatants: full sorted list used for target options and global turn numbering
   const fullList = allCombatants ?? combatants;
 
+  // ── Salva scroll e focus prima di distruggere il DOM ─────────────────────
+  const savedScrollY    = window.scrollY;
+  const focused         = document.activeElement;
+  const isInsideList    = list.contains(focused);
+  const focusedCardId   = isInsideList ? focused.closest('[data-combatant-id]')?.dataset.combatantId : null;
+  const focusedIsAction = isInsideList && focused.classList.contains('action-input');
+  const focusedIsAmount = isInsideList && focused.classList.contains('attack-amount');
+  const focusedValue    = (focusedIsAction || focusedIsAmount) ? focused.value : null;
+
+  // ── Rebuild ───────────────────────────────────────────────────────────────
+  _rendering = true;
   list.innerHTML = '';
+  _rendering = false;
 
   if (combatants.length === 0) {
     emptyMsg?.classList.remove('hidden');
+    window.scrollTo(0, savedScrollY);
     return;
   }
   emptyMsg?.classList.add('hidden');
+
+  // scrollIntoView solo quando il turno attivo cambia
+  const turnChanged = currentTurnId !== _lastActiveTurn[listId];
+  if (turnChanged) _lastActiveTurn[listId] = currentTurnId;
 
   combatants.forEach((c) => {
     const isActive      = c.id === currentTurnId;
@@ -89,6 +110,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const li = document.createElement('li');
     li.className = ['combatant-card', isActive ? 'active-turn' : '', isKO ? 'knocked-out' : '']
       .filter(Boolean).join(' ');
+    li.dataset.combatantId = c.id;
 
     li.innerHTML = `
       <div class="card-header">
@@ -219,15 +241,33 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
 
     list.appendChild(li);
 
-    // Salva l'azione dichiarata su blur (blur non fa bubble, quindi listener diretto)
+    // Salva l'azione dichiarata su blur — skip durante re-render per non triggerare Firebase
     const actionInput = li.querySelector('.action-input');
     if (actionInput) {
-      actionInput.addEventListener('blur',    () => callbacks.onSetAction(c.id, actionInput.value.trim()));
+      actionInput.addEventListener('blur',    () => { if (_rendering) return; callbacks.onSetAction(c.id, actionInput.value.trim()); });
       actionInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') actionInput.blur(); });
     }
 
-    if (isActive) li.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    // scrollIntoView solo al cambio di turno, non ad ogni re-render
+    if (isActive && turnChanged) li.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
+
+  // ── Ripristina scroll e focus ─────────────────────────────────────────────
+  window.scrollTo(0, savedScrollY);
+
+  if (focusedCardId) {
+    const newCard = list.querySelector(`[data-combatant-id="${focusedCardId}"]`);
+    if (newCard) {
+      const sel = focusedIsAction ? '.action-input' : focusedIsAmount ? '.attack-amount' : null;
+      if (sel) {
+        const newInput = newCard.querySelector(sel);
+        if (newInput) {
+          newInput.focus({ preventScroll: true });
+          if (focusedValue !== null) newInput.value = focusedValue;
+        }
+      }
+    }
+  }
 
   list.onclick = (e) => {
     const btn = e.target.closest('[data-action]');
