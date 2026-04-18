@@ -93,10 +93,19 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, isMast
       // ─ Token
       if (occupant) {
         const isPlayer = occupant.type === 'player';
-        const fill     = isPlayer ? '#142d4a' : '#2d1010';
-        const stroke   = isSelected ? '#c9a84c'
-                       : isActive   ? '#e5c97a'
-                       : isPlayer   ? '#4a8abf' : '#bf4a4a';
+        const isMyToken = occupantId === myCombatantId;
+        
+        let fill, stroke;
+        if (isMyToken) {
+          fill = '#0d2d0d';
+          stroke = isSelected ? '#70d070' : '#4aba4a';
+        } else {
+          fill     = isPlayer ? '#142d4a' : '#2d1010';
+          stroke   = isSelected ? '#c9a84c'
+                   : isActive   ? '#e5c97a'
+                   : isPlayer   ? '#4a8abf' : '#bf4a4a';
+        }
+        
         const sw       = (isSelected || isActive) ? 2.5 : 1.5;
         const initials = esc((occupant.name || '?').slice(0, 2).toUpperCase());
 
