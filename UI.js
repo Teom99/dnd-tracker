@@ -12,7 +12,7 @@ export const CONDITIONS = [
   { name: 'Pietrificato', color: '#7c3aed' },
   { name: 'Affascinato',  color: '#ec4899' },
   { name: 'Esausto',      color: '#dc2626' },
-  { name: 'Nascosto',     color: '#6b7280' }
+  { name: 'Nascosto',     color: '#0891b2' }
 ];
 
 export function showView(viewId) {
