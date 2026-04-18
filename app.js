@@ -423,7 +423,7 @@ function _updateHomeAuthUI(user) {
   userInfoBar?.classList.remove('hidden');
 
   if (session.isGoogleUser) {
-    if (displayName) displayName.textContent = '👤 ' + (session.displayName ?? '');
+    if (displayName) displayName.textContent = session.displayName ?? '';
     upgradeBtn?.classList.add('hidden');
     signOutBtn?.classList.remove('hidden');
   } else {
@@ -433,6 +433,7 @@ function _updateHomeAuthUI(user) {
   }
 
   _loadUserSessions(user.uid);
+  _loadCharacterPreview(user.uid);
 }
 
 async function _saveUserSession(uid, code, combatantId, characterName, role) {
@@ -491,6 +492,30 @@ async function _loadUserSessions(uid) {
     if (!btn) return;
     _rejoinSession(btn.dataset.code, btn.dataset.combatantId || null, btn.dataset.role);
   };
+}
+
+async function _loadCharacterPreview(uid) {
+  const section = document.getElementById('character-preview-section');
+  const preview = document.getElementById('character-preview');
+  if (!section || !preview) return;
+
+  const snap = await get(ref(db, `sheets/${uid}`));
+  if (!snap.exists()) { section.classList.add('hidden'); return; }
+
+  const d = snap.val();
+  const charName = d.characterName || '—';
+  const cls      = [d.class, d.subclass].filter(Boolean).join(' — ') || '—';
+  const level    = d.level ? `Liv. ${d.level}` : '';
+  const race     = d.race || '';
+  const ac       = d.armorClass ? `CA ${d.armorClass}` : '';
+
+  const tags = [race, cls, level, ac].filter(Boolean);
+
+  preview.innerHTML = `
+    <div class="char-preview-name">${_esc(charName)}</div>
+    ${tags.length ? `<div class="char-preview-tags">${tags.map(t => `<span class="char-preview-tag">${_esc(t)}</span>`).join('')}</div>` : ''}
+  `;
+  section.classList.remove('hidden');
 }
 
 async function _rejoinSession(code, savedCombatantId, role) {

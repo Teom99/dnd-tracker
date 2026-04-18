@@ -395,6 +395,30 @@ input::placeholder { color: var(--text-muted); }
   white-space: nowrap;
 }
 
+/* ─── Character preview (home) ─── */
+.character-preview { display: flex; flex-direction: column; gap: 0.4rem; }
+
+.char-preview-name {
+  font-family: 'Cinzel', serif;
+  font-size: 1.1rem;
+  color: var(--gold-light);
+}
+
+.char-preview-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.char-preview-tag {
+  font-size: 0.78rem;
+  padding: 0.15rem 0.5rem;
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-warm);
+  border-radius: 99px;
+  color: var(--text-muted);
+}
+
 form { display: flex; flex-direction: column; gap: 0.6rem; }
 
 /* ═══════════════════════════════════════════
