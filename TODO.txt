@@ -8,3 +8,4 @@
 - va messo multi thread prché altrimenti in caso di aggiornamento concorrente si refresha
 - In caso di atterramento di un pg sotto alla sua card dovrebbe comparire la finestra per tenere traccia dei tiri salvezza da morte.  
 - Refactor per strutturare meglio il progetto.
+- Togliere la possibilità di settare gli HP massimi quando si joina una sessione, tanto si settano da dentro.
