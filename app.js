@@ -28,6 +28,7 @@ let _snapshot               = null;
 let _sheet                  = null;
 let _sheetData              = null;
 let _acMap                  = {};
+let _lastKnownHp            = null;
 let _library                = null;
 let _selectedJoinCharId     = null;
 let _selectedCreatureCharId = null;
@@ -173,6 +174,7 @@ document.getElementById('form-join').addEventListener('submit', async (e) => {
     _selectedJoinCharId = null;
     localStorage.setItem('dnd_combatant_id', myCombatantId);
     await _saveUserSession(myUid, code, myCombatantId, savedCharName, 'player', charId);
+    _lastKnownHp = null; // Reset per il nuovo personaggio
     _enterCombatView(code, false);
   } catch (err) {
     UI.showError(err.message);
@@ -263,6 +265,7 @@ function _exitToHome(errorMessage) {
   _snapshot               = null;
   _sheetData              = null;
   _acMap                  = {};
+  _lastKnownHp            = null;
   _selectedCreatureCharId = null;
   _sheetReturnView        = 'view-combat';
   _selectedGridTokenId    = null;
@@ -302,6 +305,21 @@ function _startListening() {
       return;
     }
 
+    // Controlla se l'HP del proprio personaggio è cambiato per mostrare notifiche
+    if (myCombatantId && combatants[myCombatantId]) {
+      const currentHp = combatants[myCombatantId].hpCurrent;
+      if (_lastKnownHp !== null && _lastKnownHp !== currentHp) {
+        const delta = currentHp - _lastKnownHp;
+        const amount = Math.abs(delta);
+        if (delta < 0) {
+          UI.showNotification(`🗡 Hai ricevuto ${amount} danni!`, 'damage');
+        } else if (delta > 0) {
+          UI.showNotification(`✚ Hai ricevuto ${amount} punti vita!`, 'heal');
+        }
+      }
+      _lastKnownHp = currentHp;
+    }
+
     const sorted   = tracker.sortedCombatants(data.combatants);
     const creatures = sorted.filter(c => c.type === 'creature');
     const players   = sorted.filter(c => c.type === 'player');
@@ -312,18 +330,7 @@ function _startListening() {
       onInitiativeChange: (id, val)             => combatantManager.setInitiative(id, val),
       onOpenConditions:   (id)                  => _openConditionModal(id, data.combatants?.[id]?.conditions),
       onSetAction:        (id, text)            => combatantManager.setAction(id, text),
-      onApplyToTarget:    async (targetId, delta) => {
-        await combatantManager.updateHp(targetId, delta);
-        // Mostra notifica se il target è il personaggio dell'utente corrente
-        if (targetId === myCombatantId) {
-          const amount = Math.abs(delta);
-          if (delta < 0) {
-            UI.showNotification(`🗡 Hai ricevuto ${amount} danni!`, 'damage');
-          } else if (delta > 0) {
-            UI.showNotification(`✚ Hai ricevuto ${amount} punti vita!`, 'heal');
-          }
-        }
-      },
+      onApplyToTarget:    (targetId, delta)     => combatantManager.updateHp(targetId, delta),
       onToggleHealthHint: (id, current)         => combatantManager.setHealthHint(id, !current),
       onSetMaxHp:         (id, val)             => combatantManager.setMaxHp(id, val),
       onOpenSheet:        ()                    => _openCharacterSheet(),
@@ -373,18 +380,7 @@ function _setupSheetListener() {
         onInitiativeChange: (id, val)           => combatantManager.setInitiative(id, val),
         onOpenConditions:   (id)                => _openConditionModal(id, _snapshot.combatants?.[id]?.conditions),
         onSetAction:        (id, text)          => combatantManager.setAction(id, text),
-        onApplyToTarget:    async (targetId, delta) => {
-          await combatantManager.updateHp(targetId, delta);
-          // Mostra notifica se il target è il personaggio dell'utente corrente
-          if (targetId === myCombatantId) {
-            const amount = Math.abs(delta);
-            if (delta < 0) {
-              UI.showNotification(`🗡 Hai ricevuto ${amount} danni!`, 'damage');
-            } else if (delta > 0) {
-              UI.showNotification(`✚ Hai ricevuto ${amount} punti vita!`, 'heal');
-            }
-          }
-        },
+        onApplyToTarget:    (targetId, delta)   => combatantManager.updateHp(targetId, delta),
         onToggleHealthHint: (id, current)       => combatantManager.setHealthHint(id, !current),
         onSetMaxHp:         (id, val)           => combatantManager.setMaxHp(id, val),
         onOpenSheet:        ()                  => _openCharacterSheet(),
@@ -838,6 +834,7 @@ async function _rejoinSession(code, savedCombatantId, role, savedCharId = null) 
     }
     myUid         = uid;
     myCombatantId = savedCombatantId || null;
+    _lastKnownHp   = null; // Reset per il rejoin
     localStorage.setItem('dnd_session_code', code);
     if (savedCombatantId) localStorage.setItem('dnd_combatant_id', savedCombatantId);
     _initCombatManagers(code);
