@@ -1980,6 +1980,8 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+  align-items: center;
+  text-align: center;
 }
 
 .grid-title {
