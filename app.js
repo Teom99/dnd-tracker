@@ -320,6 +320,10 @@ function _setupSheetListener() {
       _acMap[myUid] = ac;
       combatantManager.setArmorClass(myCombatantId, ac);
     }
+    const hpMax = _sheetData.hpMax ?? null;
+    if (hpMax !== null && myCombatantId) {
+      combatantManager.setMaxHp(myCombatantId, hpMax);
+    }
     const sheetView = document.getElementById('view-character');
     if (sheetView && !sheetView.classList.contains('hidden')) {
       SheetUI.updateComputedValues(_sheetData);
