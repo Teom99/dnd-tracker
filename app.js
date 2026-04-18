@@ -305,11 +305,22 @@ function _startListening() {
       onToggleHealthHint:   (id, current)     => combatantManager.setHealthHint(id, !current),
       onSetMaxHp:           (id, val)        => combatantManager.setMaxHp(id, val),
       onOpenSheet:          ()               => _openCharacterSheet(),
-      onDeathSave:          (type, count)   => _sheet?.setField(`deathSaves/${type}`, count),
+      onDeathSave:          async (type, count) => _onDeathSave(type, count),
     }, _acMap, _sheetData?.deathSaves ?? null);
 
     _renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null);
   });
+}
+
+async function _onDeathSave(type, count) {
+  if (!_sheet) return;
+  await _sheet.setField(`deathSaves/${type}`, count);
+  if (type === 'successes' && count >= 3) {
+    // 3 successi: il giocatore si stabilizza e torna in partita con 1 HP
+    await combatantManager.updateHp(myCombatantId, 1);
+    await _sheet.setField('deathSaves/successes', 0);
+    await _sheet.setField('deathSaves/failures', 0);
+  }
 }
 
 function _setupSheetListener() {
@@ -325,6 +336,24 @@ function _setupSheetListener() {
     if (hpMax !== null && myCombatantId) {
       combatantManager.setMaxHp(myCombatantId, hpMax);
     }
+    // Re-render combatant list subito se siamo in combat, così i death saves appaiono senza aspettare il prossimo evento sessione
+    const combatView = document.getElementById('view-combat');
+    if (combatView && !combatView.classList.contains('hidden') && _snapshot) {
+      const sorted = tracker.sortedCombatants(_snapshot.combatants);
+      UI.renderCombatantList(sorted, _snapshot.currentTurnId ?? null, myUid, session.masterUid, {
+        onEndTurn:          async ()       => { const s = tracker.sortedCombatants(_snapshot.combatants); await tracker.nextTurn(s); },
+        onRemove:           (id)           => _removeCombatant(id),
+        onInitiativeChange: (id, val)      => combatantManager.setInitiative(id, val),
+        onOpenConditions:   (id)           => _openConditionModal(id, _snapshot.combatants?.[id]?.conditions),
+        onSetAction:        (id, text)     => combatantManager.setAction(id, text),
+        onApplyToTarget:    (targetId, delta) => combatantManager.updateHp(targetId, delta),
+        onToggleHealthHint: (id, current)  => combatantManager.setHealthHint(id, !current),
+        onSetMaxHp:         (id, val)      => combatantManager.setMaxHp(id, val),
+        onOpenSheet:        ()             => _openCharacterSheet(),
+        onDeathSave:        async (type, count) => _onDeathSave(type, count),
+      }, _acMap, _sheetData?.deathSaves ?? null);
+    }
+
     const sheetView = document.getElementById('view-character');
     if (sheetView && !sheetView.classList.contains('hidden')) {
       SheetUI.updateComputedValues(_sheetData);

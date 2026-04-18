@@ -12,9 +12,10 @@ export class CombatTracker {
   }
 
   // Avanza al turno successivo in modo atomico (runTransaction).
+  // I player KO restano nel turno per i tiri salvezza; le creature KO vengono saltate.
   async nextTurn(combatants) {
-    const alive = combatants.filter(c => c.hpCurrent > 0);
-    await this._session.nextTurnAtomic(alive.map(c => c.id));
+    const active = combatants.filter(c => c.hpCurrent > 0 || c.type === 'player');
+    await this._session.nextTurnAtomic(active.map(c => c.id));
   }
 
   async reset() {

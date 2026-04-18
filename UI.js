@@ -55,7 +55,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
   emptyMsg?.classList.add('hidden');
 
   combatants.forEach((c, i) => {
-    const isActive      = c.id === currentTurnId && c.hpCurrent > 0;
+    const isActive      = c.id === currentTurnId;
     const isKO          = c.hpCurrent === 0;
     const canEdit       = myUid === c.ownerUid || myUid === masterUid;
     const isMaster      = myUid === masterUid;
