@@ -2078,3 +2078,13 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   user-select: none;
   opacity: 0.85;
 }
+
+.hx-tooltip-dist {
+  fill: var(--gold-light);
+  font-family: 'Cinzel', serif;
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: none;
+  user-select: none;
+  text-shadow: 0 0 3px rgba(0,0,0,0.9);
+}

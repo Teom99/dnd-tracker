@@ -120,6 +120,46 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, isMast
 
   // Hover: evidenzia solo l'esagono sotto il cursore
   const svg = container.querySelector('svg');
+  
+  // Tooltip per la distanza quando il mouse si muove
+  let distanceTooltip = null;
+  
+  svg.addEventListener('mousemove', (e) => {
+    if (!selectedId) return;
+    
+    const hit = e.target.closest('.hx-hit');
+    if (!hit) {
+      if (distanceTooltip) distanceTooltip.remove();
+      distanceTooltip = null;
+      return;
+    }
+    
+    const c = parseInt(hit.dataset.c);
+    const r = parseInt(hit.dataset.r);
+    
+    // Non mostrare distanza se siamo sul token selezionato stesso
+    if (selPos && c === selPos.col && r === selPos.row) {
+      if (distanceTooltip) distanceTooltip.remove();
+      distanceTooltip = null;
+      return;
+    }
+    
+    const { x, y } = hexCenter(c, r);
+    const d = selPos ? hexDistance(selPos.col, selPos.row, c, r) : 0;
+    const distText = fmtM(d);
+    
+    // Crea o aggiorna il tooltip
+    if (!distanceTooltip) {
+      distanceTooltip = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      distanceTooltip.setAttribute('class', 'hx-tooltip-dist');
+      svg.appendChild(distanceTooltip);
+    }
+    
+    distanceTooltip.setAttribute('x', x);
+    distanceTooltip.setAttribute('y', y);
+    distanceTooltip.textContent = distText;
+  });
+  
   svg.addEventListener('mouseover', (e) => {
     const hit = e.target.closest('.hx-hit');
     if (!hit) return;
@@ -129,6 +169,8 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, isMast
   });
   svg.addEventListener('mouseleave', () => {
     svg.querySelectorAll('.hx.hx-hover').forEach(h => h.classList.remove('hx-hover'));
+    if (distanceTooltip) distanceTooltip.remove();
+    distanceTooltip = null;
   });
 
   // Event delegation click
