@@ -10,6 +10,7 @@ import { CharacterSheet }    from './CharacterSheet.js';
 import { CharacterLibrary }  from './CharacterLibrary.js';
 import * as UI               from './UI.js';
 import * as SheetUI          from './SheetUI.js';
+import * as GridUI           from './GridUI.js';
 
 // --- Firebase init ---
 const app  = initializeApp(FIREBASE_CONFIG);
@@ -31,6 +32,7 @@ let _library                = null;
 let _selectedJoinCharId     = null;
 let _selectedCreatureCharId = null;
 let _sheetReturnView        = 'view-combat';
+let _selectedGridTokenId    = null;
 
 // ─── HOME: Auth ───────────────────────────────────────────────────────────────
 
@@ -257,6 +259,9 @@ function _exitToHome(errorMessage) {
   _acMap                  = {};
   _selectedCreatureCharId = null;
   _sheetReturnView        = 'view-combat';
+  _selectedGridTokenId    = null;
+  const gridContainer = document.getElementById('grid-container');
+  if (gridContainer) gridContainer.innerHTML = '';
   const submitBtn = document.querySelector('#form-join [type="submit"]');
   if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Entra nella Sessione'; }
   UI.showView('view-home');
@@ -292,7 +297,7 @@ function _startListening() {
     const sorted = tracker.sortedCombatants(data.combatants);
     UI.renderRound(data.round ?? 1);
     UI.renderCombatantList(sorted, data.currentTurnId ?? null, myUid, session.masterUid, {
-      onRemove:           (id)           => combatantManager.remove(id),
+      onRemove:           (id)           => _removeCombatant(id),
       onInitiativeChange: (id, val)      => combatantManager.setInitiative(id, val),
       onOpenConditions:   (id)           => _openConditionModal(id, data.combatants?.[id]?.conditions),
       onSetAction:          (id, text)        => combatantManager.setAction(id, text),
@@ -300,6 +305,8 @@ function _startListening() {
       onToggleHealthHint:   (id, current)     => combatantManager.setHealthHint(id, !current),
       onOpenSheet:          ()               => _openCharacterSheet(),
     }, _acMap);
+
+    _renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null);
   });
 }
 
@@ -465,6 +472,30 @@ function _openConditionModal(combatantId, conditionsObj) {
   );
 }
 
+async function _removeCombatant(id) {
+  await session.clearGridPosition(id);
+  await combatantManager.remove(id);
+}
+
+function _renderGrid(gridPos, combatants, currentTurnId) {
+  const container = document.getElementById('grid-container');
+  if (!container) return;
+  GridUI.renderGrid(
+    container,
+    gridPos,
+    combatants,
+    myCombatantId,
+    session.isMaster,
+    _selectedGridTokenId,
+    currentTurnId,
+    (id) => {
+      _selectedGridTokenId = id;
+      if (_snapshot) _renderGrid(_snapshot.grid || {}, _snapshot.combatants || {}, _snapshot.currentTurnId ?? null);
+    },
+    (id, col, row) => session.setGridPosition(id, col, row)
+  );
+}
+
 function _updateHomeAuthUI(user) {
   const authPanel   = document.getElementById('auth-panel');
   const homeCards   = document.getElementById('home-cards');
@@ -510,7 +541,14 @@ async function _loadCharacterLibrary() {
   const list    = document.getElementById('character-library-list');
   if (!section || !list || !_library) return;
 
-  const chars   = await _library.getAll();
+  let chars = {};
+  try {
+    chars = await _library.getAll();
+  } catch {
+    list.innerHTML = '<p class="empty-hint">Errore di permessi — aggiungi le regole Firebase per "characters".</p>';
+    section.classList.remove('hidden');
+    return;
+  }
   const entries = Object.entries(chars);
 
   if (entries.length === 0) {
@@ -552,7 +590,8 @@ async function _populateJoinPicker() {
   const list   = document.getElementById('join-char-list');
   if (!picker || !list || !_library) return;
 
-  const chars   = await _library.getAll();
+  let chars = {};
+  try { chars = await _library.getAll(); } catch { return; }
   const players = Object.entries(chars).filter(([, c]) => c.type === 'player');
 
   if (players.length === 0) {
@@ -581,7 +620,8 @@ async function _populateCreaturePicker() {
   const list   = document.getElementById('creature-library-list');
   if (!picker || !list || !_library) return;
 
-  const chars     = await _library.getAll();
+  let chars = {};
+  try { chars = await _library.getAll(); } catch { return; }
   const creatures = Object.entries(chars).filter(([, c]) => c.type === 'creature');
 
   if (creatures.length === 0) {

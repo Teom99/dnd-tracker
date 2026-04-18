@@ -1798,3 +1798,98 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   text-align: center;
   margin: 0.1rem 0;
 }
+
+/* ═══════════════════════════════════════════
+   GRIGLIA DI BATTAGLIA (esagonale)
+═══════════════════════════════════════════ */
+.grid-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius);
+  padding: 0.75rem 0.9rem;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.grid-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.grid-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.95rem;
+  color: var(--gold-light);
+}
+
+.grid-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.grid-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-warm) transparent;
+}
+
+.grid-container::-webkit-scrollbar       { height: 4px; }
+.grid-container::-webkit-scrollbar-track { background: transparent; }
+.grid-container::-webkit-scrollbar-thumb { background: var(--border-warm); border-radius: 2px; }
+
+/* ─── SVG elementi ─── */
+.hex-svg {
+  display: block;
+}
+
+.hx {
+  fill: #0d0d1a;
+  stroke: #2a2040;
+  stroke-width: 1;
+  transition: fill 0.1s;
+}
+
+.hx-occ {
+  fill: #12122a;
+}
+
+.hx-sel {
+  fill: rgba(201, 168, 76, 0.12);
+  stroke: var(--gold);
+  stroke-width: 1.5;
+}
+
+.hx-hit {
+  fill: transparent;
+  stroke: none;
+  cursor: pointer;
+}
+
+.hx-hit:hover ~ .hx,
+.hx-hit:hover + .hx {
+  fill: rgba(255,255,255,0.04);
+}
+
+.hx-name {
+  fill: #e8d5b7;
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  font-weight: 700;
+  pointer-events: none;
+  user-select: none;
+}
+
+.hx-dist {
+  fill: var(--gold);
+  font-family: 'Cinzel', serif;
+  font-size: 7px;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.85;
+}

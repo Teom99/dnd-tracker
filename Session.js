@@ -95,6 +95,14 @@ export class Session {
     await set(ref(this._db, `sessions/${this.code}/currentTurnId`), id ?? null);
   }
 
+  async setGridPosition(combatantId, col, row) {
+    await set(ref(this._db, `sessions/${this.code}/grid/${combatantId}`), { col, row });
+  }
+
+  async clearGridPosition(combatantId) {
+    await set(ref(this._db, `sessions/${this.code}/grid/${combatantId}`), null);
+  }
+
   _generateCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
