@@ -5,8 +5,6 @@
 - Ogni aggiornamento Firebase causa un re-render che riporta tutti in cima alla pagina — da evitare (es. aggiornare solo i nodi DOM che cambiano invece di fare innerHTML completo)
 - Bug inventario nella scheda personaggio: eliminazione oggetti non funziona + dopo il primo add il form smette di funzionare
 - Nel menù a tendina per la scelta del bersaglio, mettere un indicazione grafica per far differenziare amici da nemici
-- La Griglia di battaglia va centrata nello schermo, ora è tutto spostata sulla sinistra dello schermo
-- Nella griglia di battaglia, quando clicco su un token per vedere la distanza dagli altri personaggi, la distanza è poco visibile in quanto va sopra il cerchio 
 
 ## Fatto
 
@@ -20,3 +18,5 @@
 - Aggiornamenti concorrenti gestiti con runTransaction (no race condition)
 - Tiri salvezza da morte nella card combat quando il PG è a 0 HP; 3 successi = revive a 1 HP
 - Rimossa la possibilità di settare HP massimi al join (si settano dalla scheda/card)
+- La Griglia di battaglia va centrata nello schermo, ora è tutto spostata sulla sinistra dello schermo
+- Nella griglia di battaglia, quando clicco su un token per vedere la distanza dagli altri personaggi, la distanza è poco visibile in quanto va sopra il cerchio 
