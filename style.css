@@ -2,20 +2,20 @@
    Variabili e reset
 ═══════════════════════════════════════════ */
 :root {
-  --bg-deep:       #0f0f1a;
-  --bg-card:       #1a1a2e;
-  --bg-card-alt:   #1e2040;
-  --border-warm:   #3d2b1f;
-  --gold:          #c9a84c;
-  --gold-light:    #e5c97a;
-  --gold-glow:     rgba(201, 168, 76, 0.35);
-  --text:          #e8d5b7;
-  --text-muted:    #9e8c7a;
+  --bg-deep:       #07070f;
+  --bg-card:       #11112a;
+  --bg-card-alt:   #161638;
+  --border-warm:   #3a1f6e;
+  --gold:          #7c3aed;
+  --gold-light:    #a855f7;
+  --gold-glow:     rgba(124, 58, 237, 0.4);
+  --text:          #e0d8f4;
+  --text-muted:    #8878aa;
   --red:           #8b2020;
   --red-bright:    #cc3333;
   --green:         #4a7c59;
   --radius:        8px;
-  --shadow:        0 2px 12px rgba(0,0,0,0.5);
+  --shadow:        0 2px 16px rgba(0,0,0,0.7);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -146,7 +146,7 @@ input[type="text"],
 input[type="number"] {
   width: 100%;
   padding: 0.65rem 0.75rem;
-  background: #12121f;
+  background: #0b0b1e;
   color: var(--text);
   border: 1px solid var(--border-warm);
   border-radius: var(--radius);
@@ -626,8 +626,8 @@ body.sheet-only .sheet-back-btn {
 
 .combatant-card.active-turn {
   border-left-color: var(--gold);
-  background: #1f1c10;
-  box-shadow: 0 0 16px var(--gold-glow), var(--shadow);
+  background: #160d2e;
+  box-shadow: 0 0 20px var(--gold-glow), var(--shadow);
 }
 
 .combatant-card.knocked-out {
@@ -779,15 +779,15 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   color: var(--text);
 }
 
-.hp-numbers.hp-low      { color: #c9a84c; }
+.hp-numbers.hp-low      { color: #e0923a; }
 .hp-numbers.hp-critical { color: var(--red-bright); }
 
 .hp-bar-container {
   height: 10px;
-  background: #1e1e2e;
+  background: #0d0d1e;
   border-radius: 5px;
   overflow: hidden;
-  border: 1px solid #2a2a3a;
+  border: 1px solid #231b40;
 }
 
 .hp-bar {
@@ -826,7 +826,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 
 .health-hint.hint-full     { color: #70c070; border-color: #4a7c59; background: rgba(74,124,89,0.1); }
 .health-hint.hint-good     { color: #8ecf8e; border-color: #5a9a5a; background: rgba(90,154,90,0.1); }
-.health-hint.hint-hurt     { color: #c9a84c; border-color: #b5860d; background: rgba(181,134,13,0.1); }
+.health-hint.hint-hurt     { color: #e0923a; border-color: #b56d10; background: rgba(224,146,58,0.1); }
 .health-hint.hint-bad      { color: #e08040; border-color: #c4621d; background: rgba(196,98,29,0.1); }
 .health-hint.hint-critical { color: #e07070; border-color: #8b2020; background: rgba(139,32,32,0.1); }
 .health-hint.hint-ko       { color: #888;    border-color: #555;    background: rgba(80,80,80,0.1); }
@@ -857,7 +857,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 .action-input {
   flex: 1;
   padding: 0.45rem 0.65rem;
-  background: #12121f;
+  background: #0b0b1e;
   color: var(--text);
   border: 1px solid var(--border-warm);
   border-radius: 4px;
@@ -878,7 +878,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 .target-select {
   width: 100%;
   padding: 0.45rem 0.6rem;
-  background: #12121f;
+  background: #0b0b1e;
   color: var(--text);
   border: 1px solid var(--border-warm);
   border-radius: 4px;
@@ -1286,7 +1286,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 .sheet-section-body select {
   width: 100%;
   padding: 0.45rem 0.6rem;
-  background: #12121f;
+  background: #0b0b1e;
   color: var(--text);
   border: 1px solid var(--border-warm);
   border-radius: var(--radius);
@@ -1588,7 +1588,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   font-size: 0.9rem;
   cursor: pointer;
   padding: 0.45rem 0.6rem;
-  background: #12121f;
+  background: #0b0b1e;
   border: 1px solid var(--border-warm);
   border-radius: var(--radius);
   min-height: 40px;
@@ -2150,7 +2150,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 
 .grid-initiative-item.active-turn {
   border-color: var(--gold);
-  background: #1f1c10;
+  background: #160d2e;
   box-shadow: 0 0 8px var(--gold-glow);
 }
 
@@ -2286,7 +2286,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .hx {
-  fill: #0d0d1a;
+  fill: #07070f;
   stroke: #2a2040;
   stroke-width: 1;
   transition: fill 0.1s;
@@ -2319,7 +2319,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .hx-name {
-  fill: #e8d5b7;
+  fill: #e0d8f4;
   font-family: 'Cinzel', serif;
   font-size: 9px;
   font-weight: 700;
