@@ -1625,49 +1625,61 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   flex-wrap: wrap;
 }
 
-.slot-pip {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 1.5px solid var(--text-muted);
+.slot-none { font-size: 0.8rem; color: var(--text-muted); }
+
+.slot-counter {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
-.slot-pip.available { background: var(--gold); border-color: var(--gold); }
-.slot-pip.used      { background: transparent; border-color: #444; }
-.slot-none          { font-size: 0.8rem; color: var(--text-muted); }
+.slot-count {
+  min-width: 1.4rem;
+  text-align: center;
+  font-family: 'Cinzel', serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+.slot-count.used { color: var(--red-bright); }
+
+.slot-sep {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.slot-slash {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  padding: 0 0.1rem;
+}
 
 .slot-max-input {
   width: 42px !important;
-  min-height: 32px !important;
-  padding: 0.2rem 0.3rem !important;
+  min-height: 28px !important;
+  padding: 0.15rem 0.3rem !important;
   text-align: center;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
 }
 
-.slot-buttons {
-  display: flex;
-  gap: 0.2rem;
-}
-
-.btn-slot-use,
-.btn-slot-restore {
+.btn-slot-adj {
   background: var(--bg-card);
   border: 1px solid var(--border-warm);
   border-radius: 4px;
   color: var(--text-muted);
-  width: 30px;
-  height: 30px;
+  width: 24px;
+  height: 24px;
   font-size: 1rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.15s, border-color 0.15s;
   padding: 0;
+  line-height: 1;
+  transition: color 0.15s, border-color 0.15s;
 }
-
-.btn-slot-use:hover     { color: var(--red-bright); border-color: var(--red-bright); }
-.btn-slot-restore:hover { color: var(--green); border-color: var(--green); }
+.btn-slot-adj:hover:not(:disabled) { color: var(--gold); border-color: var(--gold); }
+.btn-slot-adj:disabled { opacity: 0.3; cursor: default; }
 
 /* ─── Cantrips ─── */
 .cantrip-list { display: flex; flex-direction: column; gap: 0.3rem; }

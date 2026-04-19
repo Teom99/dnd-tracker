@@ -105,11 +105,12 @@ export function updateComputedValues(data) {
   if (pp) pp.textContent = String(10 + skillTotal(d, 'perception'));
 
   // Spell stats
-  const castMod = spellcastingMod(d);
-  const dcEl    = document.getElementById('spell-save-dc');
-  const abEl    = document.getElementById('spell-attack-bonus');
-  if (dcEl) dcEl.textContent   = castMod !== null ? String(8 + profBonus(d) + castMod) : '—';
-  if (abEl) abEl.textContent   = castMod !== null ? signed(profBonus(d) + castMod)     : '—';
+  const castMod  = spellcastingMod(d);
+  const extraMod = d.spellBonusModifier ?? 0;
+  const dcEl     = document.getElementById('spell-save-dc');
+  const abEl     = document.getElementById('spell-attack-bonus');
+  if (dcEl) dcEl.textContent = castMod !== null ? String(8 + profBonus(d) + castMod + extraMod) : '—';
+  if (abEl) abEl.textContent = castMod !== null ? signed(profBonus(d) + castMod + extraMod)     : '—';
 }
 
 // ─── Death saves ────────────────────────────────────────────────────────────
@@ -183,35 +184,45 @@ export function renderAttacks(attacks, data, onRemove) {
 
 // ─── Spell Slots ─────────────────────────────────────────────────────────────
 
-export function renderSpellSlots(slots, onUse, onRestore) {
+export function renderSpellSlots(slots, onSetUsed, onSetMax) {
   const container = document.getElementById('spell-slots-list');
   if (!container) return;
   container.innerHTML = SPELL_LEVELS.map(lvl => {
-    const s   = slots?.[lvl] || {};
+    const s    = slots?.[lvl] || {};
     const max  = s.max  ?? 0;
     const used = s.used ?? 0;
-    const avail = Math.max(0, max - used);
-    const pips = Array.from({ length: max }, (_, i) =>
-      `<span class="slot-pip ${i < avail ? 'available' : 'used'}"></span>`
-    ).join('');
     return `
       <div class="slot-row" data-level="${lvl}">
         <span class="slot-level">${lvl}°</span>
-        <div class="slot-pips">${pips || '<span class="slot-none">—</span>'}</div>
-        <input type="number" class="slot-max-input" data-path="spellSlots/${lvl}/max" data-number min="0" max="9" value="${max}" title="Slot massimi livello ${lvl}">
-        <div class="slot-buttons">
-          <button class="btn-slot-use"     data-level="${lvl}" title="Usa slot">−</button>
-          <button class="btn-slot-restore" data-level="${lvl}" title="Recupera slot">+</button>
+        <div class="slot-counter">
+          <button class="btn-slot-adj" data-level="${lvl}" data-delta="-1" ${used <= 0 ? 'disabled' : ''}>−</button>
+          <span class="slot-count slot-used-val${max > 0 && used === 0 ? ' used' : ''}">${used}</span>
+          <button class="btn-slot-adj" data-level="${lvl}" data-delta="1"  ${used >= max ? 'disabled' : ''}>+</button>
+          <span class="slot-sep">usati</span>
         </div>
+        <span class="slot-slash">/</span>
+        <input type="number" class="slot-max-input" data-level="${lvl}" min="0" max="9" value="${max}" title="Slot massimi">
       </div>`;
   }).join('');
 
   container.onclick = (e) => {
-    const use = e.target.closest('.btn-slot-use');
-    if (use) { onUse(use.dataset.level); return; }
-    const restore = e.target.closest('.btn-slot-restore');
-    if (restore) { onRestore(restore.dataset.level); return; }
+    const btn = e.target.closest('.btn-slot-adj');
+    if (!btn || btn.disabled) return;
+    const lvl  = btn.dataset.level;
+    const delta = parseInt(btn.dataset.delta);
+    const row  = container.querySelector(`.slot-row[data-level="${lvl}"]`);
+    const used = parseInt(row.querySelector('.slot-used-val').textContent);
+    const max  = parseInt(row.querySelector('.slot-max-input').value) || 0;
+    onSetUsed(lvl, Math.max(0, Math.min(max, used + delta)));
   };
+
+  container.querySelectorAll('.slot-max-input').forEach(input => {
+    input.addEventListener('change', () => {
+      const val = Math.max(0, Math.min(9, parseInt(input.value) || 0));
+      input.value = val;
+      onSetMax(input.dataset.level, val);
+    });
+  });
 }
 
 // ─── Cantrips ────────────────────────────────────────────────────────────────
