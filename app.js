@@ -234,7 +234,9 @@ document.getElementById('btn-clear-log').addEventListener('click', () => {
 
 document.getElementById('btn-back-to-combat').addEventListener('click', () => {
   document.body.classList.remove('sheet-only');
-  const embedded = window.matchMedia('(min-width: 1100px)').matches && document.body.classList.contains('has-sheet');
+  const embedded = window.matchMedia('(min-width: 1100px)').matches
+    && document.body.classList.contains('has-sheet')
+    && document.body.classList.contains('in-combat');
   if (embedded) return;
   if (state.sheetReturnView === 'view-home') {
     document.body.classList.remove('has-sheet');

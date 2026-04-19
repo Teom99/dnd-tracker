@@ -532,6 +532,19 @@ body.sheet-only:not(.in-combat) .combat-header  { display: none; }
 body.sheet-only:not(.in-combat) .battle-area    { display: none; }
 body.sheet-only:not(.in-combat) #master-controls { display: none; }
 
+/* Su desktop dalla home: scheda a larghezza contenuta, centrata */
+@media (min-width: 1100px) {
+  body.sheet-only:not(.in-combat) .combat-cols {
+    display: flex;
+    justify-content: center;
+  }
+  body.sheet-only:not(.in-combat) #col-sheet {
+    grid-column: auto;
+    max-width: 620px;
+    width: 100%;
+  }
+}
+
 @media (max-width: 700px) {
   .combat-cols { grid-template-columns: 1fr; }
 }
