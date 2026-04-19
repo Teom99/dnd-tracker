@@ -3,7 +3,6 @@
 - FEAT: Il master dovrebbe poter caricare immagini da mostrare al party (aggiungere/rimuovere a piacimento)
 - FEAT: Le creature e pg possono settare le proprie resistenze ai danni. Quando viene fatto un danno, questo viene dimezzato in automatico in base alle resistenze.
 - BUG: Inventario nella scheda — eliminazione oggetti non funziona + dopo il primo add il form smette di funzionare
-- BUG: Aprire la scheda di un personaggio dalla home mostra la vista combat vuota invece della sola scheda — la navigazione dovrebbe rimanere nella home con la scheda sovrapposta/affiancata, senza simulare una sessione di combattimento
 
 
 ## Fatto
@@ -30,3 +29,5 @@
 - Log eventi in tempo reale per danni, cure, KO, revive, cambi turno, condizioni, entrata/uscita combattenti, reset incontro
 - La Griglia di battaglia va centrata nello schermo, ora è tutto spostata sulla sinistra dello schermo
 - Nella griglia di battaglia, quando clicco su un token per vedere la distanza dagli altri personaggi, la distanza è poco visibile in quanto va sopra il cerchio
+- Fix cura giocatori a terra: player KO ora selezionabili come bersaglio nel menu attacco
+- Fix scheda personaggio dalla home: naviga direttamente a view-character senza mostrare la vista combat
