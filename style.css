@@ -527,6 +527,11 @@ body.sheet-only #col-sheet {
   grid-column: 1 / -1;
 }
 
+/* Scheda aperta dalla home (non in sessione): nascondi chrome combat */
+body.sheet-only:not(.in-combat) .combat-header  { display: none; }
+body.sheet-only:not(.in-combat) .battle-area    { display: none; }
+body.sheet-only:not(.in-combat) #master-controls { display: none; }
+
 @media (max-width: 700px) {
   .combat-cols { grid-template-columns: 1fr; }
 }

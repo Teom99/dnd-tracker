@@ -131,6 +131,7 @@ export async function openLibrarySheet(charId) {
     state.sheetData = (await state.library.getOne(charId)) || {};
     setupSheetListener();
     state.sheetReturnView = 'view-home';
+    document.body.classList.add('has-sheet', 'sheet-only');
     SheetUI.populateSheet(state.sheetData);
     SheetUI.renderSpellSlots(state.sheetData?.spellSlots, (lvl, count) => state.sheet.setSpellSlotsUsed(lvl, count), (lvl, val) => state.sheet.setSpellSlotsMax(lvl, val));
     SheetUI.renderAttacks(state.sheetData?.attacks, state.sheetData, (id) => state.sheet.removeAttack(id));
@@ -138,7 +139,7 @@ export async function openLibrarySheet(charId) {
     SheetUI.renderSpellsByLevel(state.sheetData?.spells, (lvl, id) => state.sheet.removeSpell(lvl, id), (lvl, id) => state.sheet.toggleSpellPrepared(lvl, id), (lvl, name) => state.sheet.addSpell(lvl, name));
     SheetUI.renderInventory(state.sheetData?.inventory, (id) => state.sheet.removeInventoryItem(id));
     bindSheetEvents();
-    UI.showView('view-character');
+    UI.showView('view-combat');
   } catch (err) {
     UI.showError('Errore apertura scheda: ' + err.message);
   }
