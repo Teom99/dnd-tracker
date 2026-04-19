@@ -1,12 +1,9 @@
 ## Da fare
 
-- CHORE: Refactor struttura progetto (cartelle src/, separare state da handlers in app.js)
 - FEAT: Il master dovrebbe poter caricare immagini da mostrare al party (aggiungere/rimuovere a piacimento)
 - FEAT: Le creature e pg possono settare le proprie resistenze ai danni. Quando viene fatto un danno, questo viene dimezzato in automatico in base alle resistenze.
-- FIX: Nella griglia di battaglia, quando clicco su un token per vedere la distanza dagli altri personaggi, la distanza è poco visibile in quanto va sopra il cerchio 
-- BUG: a volte quando un giocatore modifica o fa un update di qualcosa nella pagina è capitato che la vita di un player andasse a 1/1
-- BUG: quando un giocatore è a terra non è possibile selezionarlo come bersaglio per una cura
-- BUG: probabile problema nel multithreading, capita spesso che per degli eventi che accadono in contemporanea uno di questi non sortisca effetto.
+- BUG: Inventario nella scheda — eliminazione oggetti non funziona + dopo il primo add il form smette di funzionare
+- BUG: Aprire la scheda di un personaggio dalla home mostra la vista combat vuota invece della sola scheda — la navigazione dovrebbe rimanere nella home con la scheda sovrapposta/affiancata, senza simulare una sessione di combattimento
 
 
 ## Fatto
@@ -22,9 +19,14 @@
 - Layout 3 colonne: Creature | Giocatori | Scheda personaggio sempre visibile
 - Griglia di battaglia più larga
 - Aggiornamenti concorrenti gestiti con runTransaction (no race condition)
+- updateHp atomico su nodo intero combattente (fix race condition hpMax/hpCurrent)
+- Slot incantesimo con counter +/− atomico e max editabile; fix race condition slot concorrenti
+- Campo spellBonusModifier per modificatore extra su CD e bonus attacco magia
+- Refactor struttura progetto: moduli in src/, stato globale in state.js, app.js ridotto
+- Token morti grigi con teschio nella griglia; highlight verde per proprio token selezionato
 - Tiri salvezza da morte nella card combat quando il PG è a 0 HP; 3 successi = revive a 1 HP
 - Rimossa la possibilità di settare HP massimi al join (si settano dalla scheda/card)
 - Notifiche per danni/cure ricevuti dal proprio personaggio
 - Log eventi in tempo reale per danni, cure, KO, revive, cambi turno, condizioni, entrata/uscita combattenti, reset incontro
 - La Griglia di battaglia va centrata nello schermo, ora è tutto spostata sulla sinistra dello schermo
-- Nella griglia di battaglia, quando clicco su un token per vedere la distanza dagli altri personaggi, la distanza è poco visibile in quanto va sopra il cerchio 
+- Nella griglia di battaglia, quando clicco su un token per vedere la distanza dagli altri personaggi, la distanza è poco visibile in quanto va sopra il cerchio

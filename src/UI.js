@@ -184,7 +184,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       `<option value="">— Bersaglio —</option>`,
       `<option value="${c.id}">Sé stesso</option>`,
       ...fullList
-        .filter(x => x.id !== c.id && x.hpCurrent > 0)
+        .filter(x => x.id !== c.id && (x.hpCurrent > 0 || x.type === 'player'))
         .map(x => {
           const prefix = x.type === 'player' ? '👤' : '👹';
           return `<option value="${x.id}">${prefix} ${escapeHtml(x.name)}</option>`;
