@@ -196,25 +196,36 @@ export async function loadUserSessions(uid) {
         ${s.characterName ? `<span class="session-entry-char">— ${esc(s.characterName)}</span>` : ''}
         <span class="session-entry-role">${s.role === 'master' ? '⚔ Master' : '🧙 PG'}</span>
       </div>
-      <button class="btn-rejoin btn-secondary btn-sm"
-              data-code="${s.code}"
-              data-combatant-id="${s.combatantId ?? ''}"
-              data-role="${s.role}"
-              data-char-id="${s.charId ?? ''}">
-        Rientra →
-      </button>
+      <div class="session-entry-actions">
+        <button class="btn-rejoin btn-secondary btn-sm"
+                data-code="${s.code}"
+                data-combatant-id="${s.combatantId ?? ''}"
+                data-role="${s.role}"
+                data-char-id="${s.charId ?? ''}">
+          Rientra →
+        </button>
+        <button class="btn-remove-sm btn-delete-session" data-code="${s.code}" aria-label="Rimuovi sessione">×</button>
+      </div>
     </div>
   `).join('');
 
   list.onclick = (e) => {
-    const btn = e.target.closest('.btn-rejoin');
-    if (!btn) return;
-    // Dispatch custom event so app.js can handle rejoin (needs _enterCombatView)
-    document.dispatchEvent(new CustomEvent('dnd:rejoin', { detail: {
-      code:           btn.dataset.code,
-      combatantId:    btn.dataset.combatantId || null,
-      role:           btn.dataset.role,
-      charId:         btn.dataset.charId || null,
-    }}));
+    const rejoinBtn = e.target.closest('.btn-rejoin');
+    if (rejoinBtn) {
+      document.dispatchEvent(new CustomEvent('dnd:rejoin', { detail: {
+        code:        rejoinBtn.dataset.code,
+        combatantId: rejoinBtn.dataset.combatantId || null,
+        role:        rejoinBtn.dataset.role,
+        charId:      rejoinBtn.dataset.charId || null,
+      }}));
+      return;
+    }
+    const delBtn = e.target.closest('.btn-delete-session');
+    if (delBtn) deleteUserSession(uid, delBtn.dataset.code);
   };
+}
+
+async function deleteUserSession(uid, code) {
+  await remove(ref(state.db, `userSessions/${uid}/${code}`));
+  loadUserSessions(uid);
 }

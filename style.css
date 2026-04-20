@@ -395,8 +395,14 @@ input::placeholder { color: var(--text-muted); }
   flex-shrink: 0;
 }
 
-.btn-rejoin {
+.session-entry-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   flex-shrink: 0;
+}
+
+.btn-rejoin {
   white-space: nowrap;
 }
 
