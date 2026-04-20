@@ -91,48 +91,49 @@ button, input, select {
   display: block;
   width: 100%;
   padding: 0.75rem 1rem;
-  background: linear-gradient(135deg, #8b4513, #6b3410);
-  color: var(--gold-light);
-  border: 1px solid var(--gold);
-  border-radius: var(--radius);
+  background: linear-gradient(135deg, #7c3aed, #5b21b6);
+  color: #ffffff;
+  border: 1px solid #9d5cf5;
+  border-radius: 10px;
   cursor: pointer;
   font-family: 'Cinzel', serif;
   font-size: 0.95rem;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   min-height: 48px;
-  transition: filter 0.15s, box-shadow 0.15s;
+  box-shadow: 0 2px 10px rgba(124,58,237,0.35), inset 0 1px 0 rgba(255,255,255,0.1);
+  transition: box-shadow 0.15s, transform 0.1s, filter 0.15s;
 }
 
-.btn-primary:hover  { filter: brightness(1.15); box-shadow: 0 0 10px var(--gold-glow); }
-.btn-primary:active { filter: brightness(0.9); }
+.btn-primary:hover  { filter: brightness(1.15); box-shadow: 0 4px 18px rgba(124,58,237,0.55), inset 0 1px 0 rgba(255,255,255,0.15); transform: translateY(-1px); }
+.btn-primary:active { filter: brightness(0.9); transform: translateY(0); }
 
 .btn-secondary {
   padding: 0.6rem 1rem;
   background: var(--bg-card-alt);
   color: var(--text);
   border: 1px solid var(--border-warm);
-  border-radius: var(--radius);
+  border-radius: 8px;
   cursor: pointer;
   min-height: 44px;
-  transition: filter 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, color 0.15s;
 }
 
-.btn-secondary:hover { filter: brightness(1.2); }
+.btn-secondary:hover { border-color: var(--gold); color: var(--gold-light); box-shadow: 0 0 8px var(--gold-glow); }
 
 .btn-danger {
   padding: 0.6rem 1rem;
   background: #3d1010;
   color: #e07070;
   border: 1px solid #6b2020;
-  border-radius: var(--radius);
+  border-radius: 8px;
   cursor: pointer;
   min-height: 44px;
   font-family: 'Cinzel', serif;
   font-size: 0.85rem;
-  transition: filter 0.15s;
+  transition: filter 0.15s, box-shadow 0.15s;
 }
 
-.btn-danger:hover { filter: brightness(1.2); }
+.btn-danger:hover { filter: brightness(1.25); box-shadow: 0 0 8px rgba(139,32,32,0.5); }
 
 .btn-next {
   flex: 1;
@@ -813,7 +814,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .btn-health-hint:hover       { color: var(--text-muted); border-color: var(--text-muted); }
-.btn-health-hint.hint-active { color: var(--gold); border-color: var(--gold); border-style: solid; background: rgba(201,168,76,0.07); }
+.btn-health-hint.hint-active { color: var(--gold); border-color: var(--gold); border-style: solid; background: rgba(124,58,237,0.12); }
 
 /* ─── Suggerimento salute creatura (visibile ai giocatori quando il master lo attiva) ─── */
 .health-hint {
@@ -1427,7 +1428,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   padding: 0;
 }
 
-.skill-prof.active    { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.12); }
+.skill-prof.active    { border-color: var(--gold); color: var(--gold); background: rgba(124,58,237,0.14); }
 .skill-prof.expertise { border-color: var(--gold-light); color: var(--gold-light); background: rgba(229,201,122,0.18); }
 
 .skill-name    { flex: 1; font-size: 0.9rem; }
@@ -1522,7 +1523,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .attack-entry-name { flex: 1; font-size: 0.95rem; font-weight: 600; min-width: 0; }
-.attack-stat       { font-family: 'Cinzel', serif; font-size: 0.85rem; color: var(--gold); background: rgba(201,168,76,0.1); border: 1px solid rgba(201,168,76,0.3); border-radius: 4px; padding: 0.1rem 0.4rem; white-space: nowrap; }
+.attack-stat       { font-family: 'Cinzel', serif; font-size: 0.85rem; color: var(--gold); background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.3); border-radius: 4px; padding: 0.1rem 0.4rem; white-space: nowrap; }
 .attack-damage     { font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; }
 
 /* ─── Small remove button ─── */
@@ -1757,7 +1758,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   padding: 0;
 }
 
-.spell-prepared.prepared { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.12); }
+.spell-prepared.prepared { border-color: var(--gold); color: var(--gold); background: rgba(124,58,237,0.14); }
 
 .spell-name { flex: 1; font-size: 0.9rem; }
 
@@ -1836,7 +1837,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   transition: background 0.15s, color 0.15s;
 }
 
-.btn-sheet:hover { background: rgba(201,168,76,0.12); }
+.btn-sheet:hover { background: rgba(124,58,237,0.14); }
 
 /* ─── Death saves inline nella card KO ─── */
 .death-saves-inline {
@@ -2082,7 +2083,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   transition: border-color 0.15s, color 0.15s;
 }
 .grid-token-chip:hover { border-color: var(--border-warm); color: var(--text); }
-.grid-token-chip.selected { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.1); }
+.grid-token-chip.selected { border-color: var(--gold); color: var(--gold); background: rgba(124,58,237,0.1); }
 .grid-token-chip.ko { opacity: 0.4; }
 
 .grid-container {
@@ -2267,7 +2268,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 
 .event-entry.damage { border-color: #e07070; background: rgba(224,112,112,0.1); }
 .event-entry.heal   { border-color: #70c070; background: rgba(112,192,112,0.1); }
-.event-entry.turn   { border-color: var(--gold); background: rgba(201,168,76,0.1); }
+.event-entry.turn   { border-color: var(--gold); background: rgba(124,58,237,0.1); }
 .event-entry.ko     { border-color: #888; background: rgba(136,136,136,0.1); }
 .event-entry.revive { border-color: #4aba4a; background: rgba(74,186,74,0.1); }
 .event-entry.condition { border-color: #a070e0; background: rgba(160,112,224,0.1); }
