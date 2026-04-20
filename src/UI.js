@@ -62,6 +62,8 @@ export function showNotification(message, type = 'info') {
   }, 3000);
 }
 
+let lastLogId = null;
+
 export function renderLogs(logsObj) {
   const logContainer = document.getElementById('event-log');
   if (!logContainer) return;
@@ -71,15 +73,23 @@ export function renderLogs(logsObj) {
   
   if (!logsObj) return;
 
-  // Ordina i log per timestamp crescente
-  const logsArray = Object.values(logsObj).sort((a, b) => a.timestamp - b.timestamp);
+  // Ordina i log per timestamp decrescente (più recenti in alto)
+  const logsArray = Object.values(logsObj).sort((a, b) => b.timestamp - a.timestamp);
   
   // Teniamo solo gli ultimi 100 per non appesantire il DOM
-  const recentLogs = logsArray.slice(-100);
+  const recentLogs = logsArray.slice(0, 100);
 
-  for (const log of recentLogs) {
+  // L'ID del log più recente in assoluto
+  const currentNewestId = recentLogs.length > 0 ? `${recentLogs[0].timestamp}-${recentLogs[0].message}` : null;
+
+  recentLogs.forEach((log, index) => {
     const entry = document.createElement('div');
-    entry.className = `event-entry event-${log.type || 'info'}`;
+    const logId = `${log.timestamp}-${log.message}`;
+    
+    // Animate only if it's the newest AND it's different from the last time we rendered
+    const isNew = index === 0 && logId !== lastLogId;
+    
+    entry.className = `event-entry event-${log.type || 'info'} ${isNew ? 'animate-new' : ''}`;
     
     const d = new Date(log.timestamp);
     const timestamp = d.toLocaleTimeString('it-IT', { 
@@ -93,10 +103,9 @@ export function renderLogs(logsObj) {
       <div>${escapeHtml(log.message)}</div>
     `;
     logContainer.appendChild(entry);
-  }
+  });
 
-  // Scroll automatico al fondo
-  logContainer.scrollTop = logContainer.scrollHeight;
+  lastLogId = currentNewestId;
 }
 
 export function renderSessionCode(code) {
