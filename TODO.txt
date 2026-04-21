@@ -2,10 +2,11 @@
 
 - FEAT: Il master dovrebbe poter caricare immagini da mostrare al party (aggiungere/rimuovere a piacimento)
 - FEAT: Le creature e pg possono settare le proprie resistenze ai danni. Quando viene fatto un danno, questo viene dimezzato in automatico in base alle resistenze.
-- BUG: Inventario nella scheda — eliminazione oggetti non funziona + dopo il primo add il form smette di funzionare
 
 
 ## Fatto
+
+- Inventario nella scheda: risolto bug eliminazione e blocco form dopo primo add; migliorato allineamento tasti rimozione
 
 - Ogni aggiornamento Firebase causa un re-render che riporta tutti in cima alla pagina — da evitare (es. aggiornare solo i nodi DOM che cambiano invece di fare innerHTML completo)
 - La Griglia di battaglia va centrata nello schermo, ora è tutto spostata sulla sinistra dello schermo
@@ -27,7 +28,6 @@
 - Rimossa la possibilità di settare HP massimi al join (si settano dalla scheda/card)
 - Notifiche per danni/cure ricevuti dal proprio personaggio
 - Log eventi in tempo reale per danni, cure, KO, revive, cambi turno, condizioni, entrata/uscita combattenti, reset incontro
-- La Griglia di battaglia va centrata nello schermo, ora è tutto spostata sulla sinistra dello schermo
 - Nella griglia di battaglia, quando clicco su un token per vedere la distanza dagli altri personaggi, la distanza è poco visibile in quanto va sopra il cerchio
 - Fix cura giocatori a terra: player KO ora selezionabili come bersaglio nel menu attacco
 - Fix scheda personaggio dalla home: mostra solo la scheda senza chrome combat; back button funziona correttamente su desktop

@@ -91,9 +91,10 @@ userSessions/{uid}/{code}/
 - Slot incantesimo con counter numerico +/− e max editabile inline; scritture atomiche con `runTransaction`
 - Campo `spellBonusModifier` per modificatore extra su CD e bonus attacco magia
 - Refactor struttura progetto: `app.js` ridotto, stato in `src/state.js`, logica in moduli separati
+- Fix inventario: risolta eliminazione oggetti e blocco form; allineamento tasti rimozione a destra
 
 ### Bug noti non ancora risolti
-- **Inventario nella scheda**: eliminazione oggetti non funziona + dopo il primo add il form smette di funzionare
+Nessuno al momento.
 
 ---
 
