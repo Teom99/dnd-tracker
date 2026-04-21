@@ -56,7 +56,7 @@ export function setupSheetListener() {
     SheetUI.renderAttacks(state.sheetData.attacks, state.sheetData, (id) => state.sheet.removeAttack(id));
     SheetUI.renderCantrips(state.sheetData.cantrips, (id) => state.sheet.removeCantrip(id));
     SheetUI.renderSpellsByLevel(state.sheetData.spells, (lvl, id) => state.sheet.removeSpell(lvl, id), (lvl, id) => state.sheet.toggleSpellPrepared(lvl, id), (lvl, name) => state.sheet.addSpell(lvl, name));
-    SheetUI.renderInventory(state.sheetData.inventory, (id) => state.sheet.removeInventoryItem(id));
+    SheetUI.renderInventory(state.sheetData.inventory);
   });
 }
 
@@ -114,7 +114,7 @@ export function openCharacterSheet() {
   SheetUI.renderAttacks(state.sheetData?.attacks, state.sheetData, (id) => state.sheet.removeAttack(id));
   SheetUI.renderCantrips(state.sheetData?.cantrips, (id) => state.sheet.removeCantrip(id));
   SheetUI.renderSpellsByLevel(state.sheetData?.spells, (lvl, id) => state.sheet.removeSpell(lvl, id), (lvl, id) => state.sheet.toggleSpellPrepared(lvl, id), (lvl, name) => state.sheet.addSpell(lvl, name));
-  SheetUI.renderInventory(state.sheetData?.inventory, (id) => state.sheet.removeInventoryItem(id));
+  SheetUI.renderInventory(state.sheetData?.inventory);
   bindSheetEvents();
   if (!isSheetEmbedded()) {
     document.body.classList.add('sheet-only');
@@ -137,7 +137,7 @@ export async function openLibrarySheet(charId) {
     SheetUI.renderAttacks(state.sheetData?.attacks, state.sheetData, (id) => state.sheet.removeAttack(id));
     SheetUI.renderCantrips(state.sheetData?.cantrips, (id) => state.sheet.removeCantrip(id));
     SheetUI.renderSpellsByLevel(state.sheetData?.spells, (lvl, id) => state.sheet.removeSpell(lvl, id), (lvl, id) => state.sheet.toggleSpellPrepared(lvl, id), (lvl, name) => state.sheet.addSpell(lvl, name));
-    SheetUI.renderInventory(state.sheetData?.inventory, (id) => state.sheet.removeInventoryItem(id));
+    SheetUI.renderInventory(state.sheetData?.inventory);
     bindSheetEvents();
     UI.showView('view-combat');
   } catch (err) {
@@ -215,15 +215,33 @@ export function bindSheetEvents() {
     itemForm._sheetBound = true;
     itemForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const name = document.getElementById('item-name')?.value.trim();
+      const nameEl = document.getElementById('item-name');
+      const qtyEl  = document.getElementById('item-qty');
+      const noteEl = document.getElementById('item-notes');
+      
+      const name = nameEl?.value.trim();
       if (!name) return;
-      await state.sheet.addInventoryItem(
-        name,
-        document.getElementById('item-qty')?.value,
-        document.getElementById('item-notes')?.value.trim()
-      );
-      itemForm.reset();
-      document.getElementById('item-qty').value = '1';
+      
+      try {
+        const qty = qtyEl?.value;
+        const notes = noteEl?.value.trim() || '';
+        await state.sheet.addInventoryItem(name, qty, notes);
+        if (nameEl) nameEl.value = '';
+        if (qtyEl)  qtyEl.value  = '1';
+        if (noteEl) noteEl.value = '';
+        nameEl?.focus();
+      } catch (err) {
+        UI.showError('Errore aggiunta oggetto: ' + err.message);
+      }
+    });
+  }
+
+  const inventoryList = document.getElementById('inventory-list');
+  if (inventoryList && !inventoryList._sheetBound) {
+    inventoryList._sheetBound = true;
+    inventoryList.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action="remove-item"]');
+      if (btn) state.sheet.removeInventoryItem(btn.dataset.id);
     });
   }
 }

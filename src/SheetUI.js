@@ -295,7 +295,7 @@ export function renderSpellsByLevel(spells, onRemove, onTogglePrepared, onAddSpe
 
 // ─── Inventory ───────────────────────────────────────────────────────────────
 
-export function renderInventory(inventory, onRemove) {
+export function renderInventory(inventory) {
   const container = document.getElementById('inventory-list');
   if (!container) return;
   const entries = Object.entries(inventory || {});
@@ -306,15 +306,12 @@ export function renderInventory(inventory, onRemove) {
   container.innerHTML = entries.map(([id, item]) => `
     <div class="inventory-entry" data-id="${id}">
       <span class="item-qty">${item.quantity ?? 1}×</span>
-      <span class="item-name">${escapeHtml(item.name)}</span>
-      ${item.notes ? `<span class="item-notes">${escapeHtml(item.notes)}</span>` : ''}
+      <div class="item-main-content">
+        <span class="item-name">${escapeHtml(item.name)}</span>
+        ${item.notes ? `<span class="item-notes">${escapeHtml(item.notes)}</span>` : ''}
+      </div>
       <button class="btn-remove-sm" data-action="remove-item" data-id="${id}" aria-label="Rimuovi">×</button>
     </div>`).join('');
-
-  container.onclick = (e) => {
-    const btn = e.target.closest('[data-action="remove-item"]');
-    if (btn) onRemove(btn.dataset.id);
-  };
 }
 
 // ─── Death save interaction ───────────────────────────────────────────────────

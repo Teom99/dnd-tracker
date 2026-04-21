@@ -1773,18 +1773,18 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 
 .inventory-entry {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.5rem;
   background: var(--bg-card-alt);
   border: 1px solid var(--border-warm);
   border-radius: 4px;
   padding: 0.35rem 0.55rem;
-  flex-wrap: wrap;
 }
 
-.item-qty   { font-family: 'Cinzel', serif; font-size: 0.8rem; color: var(--text-muted); min-width: 2rem; }
-.item-name  { flex: 1; font-size: 0.9rem; min-width: 0; }
-.item-notes { width: 100%; font-size: 0.8rem; color: var(--text-muted); font-style: italic; padding-left: 2.5rem; }
+.item-qty   { font-family: 'Cinzel', serif; font-size: 0.8rem; color: var(--text-muted); min-width: 2rem; padding-top: 0.1rem; }
+.item-main-content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.item-name  { font-size: 0.9rem; font-weight: 500; }
+.item-notes { font-size: 0.8rem; color: var(--text-muted); font-style: italic; display: block; }
 
 /* ─── Currency ─── */
 .currency-grid {
