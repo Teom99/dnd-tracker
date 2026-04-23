@@ -87,9 +87,10 @@ async function _openLevelUpModal() {
   const className = state.sheetData?.class;
   if (!className || fromLevel >= 20) return;
 
-  const classesData = await LevelUp.load();
-  const changes     = LevelUp.getChanges(classesData, className, fromLevel, fromLevel + 1);
-  if (!changes) { UI.showError(`Classe "${className}" non trovata nel database.`); return; }
+  const classesData  = await LevelUp.load();
+  const resolvedName = LevelUp.resolveClassName(classesData, className);
+  if (!resolvedName) { UI.showError(`Classe "${className}" non trovata nel database. Usa il nome inglese (es. Barbarian, Wizard).`); return; }
+  const changes = LevelUp.getChanges(classesData, resolvedName, fromLevel, fromLevel + 1);
 
   changes.conMod = Math.floor(((state.sheetData?.abilities?.con ?? 10) - 10) / 2);
 
@@ -224,6 +225,23 @@ export function bindSheetEvents() {
   SheetUI.bindDeathSaves((type, count) => {
     state.sheet.setField(`deathSaves/${type}`, count);
   });
+
+  const classSelect = document.getElementById('class-select');
+  if (classSelect && !classSelect._classesLoaded) {
+    classSelect._classesLoaded = true;
+    LevelUp.load().then(classesData => {
+      const current = classSelect.value;
+      LevelUp.classNames(classesData).forEach(name => {
+        if (!classSelect.querySelector(`option[value="${CSS.escape(name)}"]`)) {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          classSelect.appendChild(opt);
+        }
+      });
+      if (current) classSelect.value = current;
+    });
+  }
 
   const levelupBtn = document.getElementById('btn-levelup');
   if (levelupBtn && !levelupBtn._sheetBound) {

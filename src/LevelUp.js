@@ -84,6 +84,18 @@ export class LevelUp {
     return Object.keys(classesData).sort();
   }
 
+  static resolveClassName(classesData, input) {
+    if (!input) return null;
+    const keys = Object.keys(classesData);
+    const low  = input.toLowerCase().trim();
+    const exact = keys.find(k => k.toLowerCase() === low);
+    if (exact) return exact;
+    const starts = keys.find(k => k.toLowerCase().startsWith(low));
+    if (starts) return starts;
+    const contains = keys.find(k => k.toLowerCase().includes(low) || low.includes(k.toLowerCase()));
+    return contains ?? null;
+  }
+
   // ─── Private helpers ─────────────────────────────────────────────────────────
 
   static #findTable(cls) {
