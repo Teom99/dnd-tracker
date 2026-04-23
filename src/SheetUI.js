@@ -55,7 +55,11 @@ function damageBonusCalc(attack, data) {
 
 // ─── Populate all static inputs from Firebase data ────────────────────────
 
+let _populating = false;
+export function isPopulating() { return _populating; }
+
 export function populateSheet(data) {
+  _populating = true;
   const d = data || {};
 
   // Fill all [data-path] inputs / textareas / selects
@@ -75,6 +79,7 @@ export function populateSheet(data) {
   renderDeathSaves(d.deathSaves);
   renderSaveChecks(d.savingThrows);
   renderSkillProfs(d.skills);
+  _populating = false;
 }
 
 // ─── Update only computed/derived display elements ─────────────────────────

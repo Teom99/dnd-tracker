@@ -54,9 +54,7 @@ export function setupSheetListener() {
         bindSheetEvents();
       })();
     } else {
-      const sel = document.getElementById('class-select');
-      if (sel && sel.options.length > 1 && state.sheetData?.class)
-        sel.value = state.sheetData.class;
+      SheetUI.populateSheet(state.sheetData);
     }
     SheetUI.updateComputedValues(state.sheetData);
     SheetUI.renderSaveChecks(state.sheetData.savingThrows);
@@ -221,6 +219,7 @@ export function bindSheetEvents() {
     if (el._sheetBound) return;
     el._sheetBound = true;
     const save = () => {
+      if (SheetUI.isPopulating()) return;
       const path  = el.dataset.path;
       const value = el.dataset.number !== undefined ? (parseInt(el.value) || 0) : el.value;
       state.sheet.setField(path, value);
