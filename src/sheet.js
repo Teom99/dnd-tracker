@@ -117,13 +117,36 @@ async function _openLevelUpModal() {
   changes.conMod = Math.floor(((state.sheetData?.abilities?.con ?? 10) - 10) / 2);
 
   LevelUpUI.openLevelUp(changes, fromLevel, className, async (confirmed) => {
-    await state.sheet.setField('level', fromLevel + 1);
-    await state.sheet.setField('proficiencyBonus', confirmed.profBonus);
-    await state.sheet.setField('hpMax', (state.sheetData?.hpMax ?? 0) + confirmed.hpGained);
+    const newHpMax = (state.sheetData?.hpMax ?? 0) + confirmed.hpGained;
+
+    // Aggiorna state.sheetData subito per il render immediato
+    state.sheetData = {
+      ...state.sheetData,
+      level:             fromLevel + 1,
+      proficiencyBonus:  confirmed.profBonus,
+      hpMax:             newHpMax,
+    };
+    for (const [slot, max] of Object.entries(confirmed.spellSlots ?? {})) {
+      state.sheetData.spellSlots = state.sheetData.spellSlots ?? {};
+      state.sheetData.spellSlots[slot] = { ...(state.sheetData.spellSlots[slot] ?? {}), max };
+    }
+
+    // Aggiorna subito la UI senza aspettare Firebase
+    SheetUI.populateSheet(state.sheetData);
+    SheetUI.renderSpellSlots(state.sheetData.spellSlots,
+      (lvl, count) => state.sheet.setSpellSlotsUsed(lvl, count),
+      (lvl, val)   => state.sheet.setSpellSlotsMax(lvl, val));
+    _updateLevelUpButton(state.sheetData);
+
+    // Scrivi su Firebase in background
+    state.sheet.setField('level', fromLevel + 1);
+    state.sheet.setField('proficiencyBonus', confirmed.profBonus);
+    state.sheet.setField('hpMax', newHpMax);
     for (const [slot, max] of Object.entries(confirmed.spellSlots ?? {}))
-      await state.sheet.setField(`spellSlots/${slot}/max`, max);
+      state.sheet.setField(`spellSlots/${slot}/max`, max);
     for (const { name, description } of confirmed.features ?? [])
-      await state.sheet.addClassFeature(name, description, fromLevel + 1);
+      state.sheet.addClassFeature(name, description, fromLevel + 1);
+
     LevelUpUI.close();
   });
 }
