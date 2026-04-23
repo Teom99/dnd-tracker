@@ -929,21 +929,35 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   gap: 0.4rem;
 }
 
-.target-select {
-  width: 100%;
-  padding: 0.45rem 0.6rem;
-  background: var(--input-bg);
-  color: var(--text);
-  border: 1px solid var(--border-warm);
-  border-radius: 4px;
-  font-size: 0.9rem;
-  font-family: inherit;
-  min-height: 40px;
-  cursor: pointer;
-  transition: border-color 0.15s;
+.target-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
 }
 
-.target-select:focus { border-color: var(--gold); outline: none; }
+.target-chip {
+  padding: 0.3rem 0.65rem;
+  border-radius: 20px;
+  border: 1px solid var(--border-warm);
+  background: var(--input-bg);
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.target-chip:hover {
+  border-color: var(--gold);
+  color: var(--text);
+}
+
+.target-chip.selected {
+  background: rgba(124, 58, 237, 0.18);
+  border-color: var(--gold);
+  color: var(--gold);
+  font-weight: 600;
+}
 
 .attack-controls {
   display: flex;

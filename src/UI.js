@@ -123,9 +123,10 @@ export function renderMasterPanel(isMaster) {
   document.getElementById('master-controls')?.classList.toggle('hidden', !isMaster);
 }
 
-// Stato modulo: flag anti-blur e tracking turno attivo per-lista
+// Stato modulo: flag anti-blur, tracking turno attivo per-lista, selezioni bersagli
 let _rendering = false;
-const _lastActiveTurn = {};
+const _lastActiveTurn  = {};
+const _selectedTargets = new Map(); // combatantId (owner) → Set<targetId>
 
 export function renderCombatantList(combatants, currentTurnId, myUid, masterUid, callbacks, acMap = {}, myDeathSaves = null, listId = 'combatant-list', emptyMsgId = 'empty-list-msg', allCombatants = null) {
   const list     = document.getElementById(listId);
@@ -142,17 +143,13 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
   const focusedCardId   = isInsideList ? focused.closest('[data-combatant-id]')?.dataset.combatantId : null;
   const focusedIsAction = isInsideList && focused.classList.contains('action-input');
   const focusedIsAmount = isInsideList && focused.classList.contains('attack-amount');
-  const focusedIsTarget = isInsideList && focused.classList.contains('target-select');
   const focusedValue    = (focusedIsAction || focusedIsAmount) ? focused.value : null;
 
-  // Snapshot bersaglio e quantità di ogni card (indipendentemente dal focus)
+  // Snapshot quantità di ogni card (il bersaglio è ora in _selectedTargets, persiste da solo)
   const savedPanelState = {};
   list.querySelectorAll('[data-combatant-id]').forEach(card => {
     const cid = card.dataset.combatantId;
-    savedPanelState[cid] = {
-      target: card.querySelector('.target-select')?.value ?? '',
-      amount: card.querySelector('.attack-amount')?.value ?? '',
-    };
+    savedPanelState[cid] = { amount: card.querySelector('.attack-amount')?.value ?? '' };
   });
 
   // ── Rebuild ───────────────────────────────────────────────────────────────
@@ -189,14 +186,20 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const failures      = isOwnCard && isKO ? (myDeathSaves?.failures  ?? 0) : 0;
     const turnNumber    = fullList.findIndex(x => x.id === c.id) + 1;
 
-    const targetOptions = [
-      `<option value="">— Bersaglio —</option>`,
-      `<option value="${c.id}">Sé stesso</option>`,
+    // Pulisce bersagli non più validi dalla selezione persistente
+    const validIds = new Set(fullList.filter(x => x.hpCurrent > 0 || x.type === 'player').map(x => x.id));
+    validIds.add(c.id);
+    const ownerSel = _selectedTargets.get(c.id);
+    if (ownerSel) for (const tid of [...ownerSel]) { if (!validIds.has(tid)) ownerSel.delete(tid); }
+    const isSel = (targetId) => _selectedTargets.get(c.id)?.has(targetId) ?? false;
+
+    const targetChips = [
+      `<button class="target-chip${isSel(c.id) ? ' selected' : ''}" data-action="toggle-target" data-target-id="${c.id}">👤 Sé stesso</button>`,
       ...fullList
         .filter(x => x.id !== c.id && (x.hpCurrent > 0 || x.type === 'player'))
         .map(x => {
           const prefix = x.type === 'player' ? '👤' : '👹';
-          return `<option value="${x.id}">${prefix} ${escapeHtml(x.name)}</option>`;
+          return `<button class="target-chip${isSel(x.id) ? ' selected' : ''}" data-action="toggle-target" data-target-id="${x.id}">${prefix} ${escapeHtml(x.name)}</button>`;
         })
     ].join('');
 
@@ -268,9 +271,9 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
             >
           </div>
           <div class="attack-row">
-            <select class="target-select" data-id="${c.id}">
-              ${targetOptions}
-            </select>
+            <div class="target-chips" data-id="${c.id}">
+              ${targetChips}
+            </div>
             <div class="attack-controls">
               <input
                 type="number"
@@ -332,17 +335,11 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       ` : ''}
     `;
 
-    // ── Ripristina bersaglio e quantità (indipendentemente dal focus) ─────────
+    // ── Ripristina quantità (il bersaglio persiste in _selectedTargets) ────────
     const saved = savedPanelState[c.id];
-    if (saved) {
-      if (saved.target) {
-        const targetSel = li.querySelector('.target-select');
-        if (targetSel) targetSel.value = saved.target; // no-op se l'opzione non esiste più
-      }
-      if (saved.amount) {
-        const amountInput = li.querySelector('.attack-amount');
-        if (amountInput) amountInput.value = saved.amount;
-      }
+    if (saved?.amount) {
+      const amountInput = li.querySelector('.attack-amount');
+      if (amountInput) amountInput.value = saved.amount;
     }
 
     list.appendChild(li);
@@ -364,7 +361,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
   if (focusedCardId) {
     const newCard = list.querySelector(`[data-combatant-id="${focusedCardId}"]`);
     if (newCard) {
-      const sel = focusedIsAction ? '.action-input' : focusedIsAmount ? '.attack-amount' : focusedIsTarget ? '.target-select' : null;
+      const sel = focusedIsAction ? '.action-input' : focusedIsAmount ? '.attack-amount' : null;
       if (sel) {
         const newInput = newCard.querySelector(sel);
         if (newInput) {
@@ -381,13 +378,24 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const id     = btn.dataset.id;
     const action = btn.dataset.action;
 
+    if (action === 'toggle-target') {
+      const ownerId  = btn.closest('.target-chips')?.dataset.id;
+      const targetId = btn.dataset.targetId;
+      if (!ownerId || !targetId) return;
+      if (!_selectedTargets.has(ownerId)) _selectedTargets.set(ownerId, new Set());
+      const sel = _selectedTargets.get(ownerId);
+      if (sel.has(targetId)) sel.delete(targetId); else sel.add(targetId);
+      btn.classList.toggle('selected');
+      return;
+    }
     if (action === 'apply-damage' || action === 'apply-heal') {
-      const targetId = list.querySelector(`.target-select[data-id="${id}"]`)?.value;
-      const input    = list.querySelector(`.attack-amount[data-id="${id}"]`);
-      const amt      = parseInt(input?.value);
-      if (!targetId) { _flashError(btn, 'Scegli un bersaglio'); return; }
-      if (!amt || amt <= 0) { _flashError(btn, 'Inserisci una quantità'); return; }
-      callbacks.onApplyToTarget(id, targetId, action === 'apply-damage' ? -amt : amt);
+      const sel   = _selectedTargets.get(id);
+      const input = list.querySelector(`.attack-amount[data-id="${id}"]`);
+      const amt   = parseInt(input?.value);
+      if (!sel || sel.size === 0) { _flashError(btn, 'Scegli un bersaglio'); return; }
+      if (!amt || amt <= 0)       { _flashError(btn, 'Inserisci una quantità'); return; }
+      sel.forEach(targetId => callbacks.onApplyToTarget(id, targetId, action === 'apply-damage' ? -amt : amt));
+      _selectedTargets.delete(id);
       if (input) input.value = '';
       return;
     }
