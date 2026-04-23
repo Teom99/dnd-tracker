@@ -214,6 +214,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         <div class="card-name-block">
           <span class="combatant-name">${escapeHtml(c.name)}${isKO ? ' ☠' : ''}</span>
           <span class="type-badge ${c.type}">${c.type === 'player' ? 'PG' : 'CR'}</span>
+          ${c.type === 'player' && c.level ? `<span class="level-badge">Lv.${c.level}</span>` : ''}
           ${ac !== null ? `<span class="ac-badge">CA ${ac}</span>` : ''}
         </div>
         <div class="initiative-block">

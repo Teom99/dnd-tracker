@@ -18,9 +18,10 @@ export async function onDeathSave(type, count) {
 
 export function setupSheetListener() {
   if (!state.sheet) return;
-  let populated = false;
-  let prevAc    = undefined;
-  let prevHpMax = undefined;
+  let populated  = false;
+  let prevAc     = undefined;
+  let prevHpMax  = undefined;
+  let prevLevel  = undefined;
   state.sheet.listen((snap) => {
     state.sheetData = snap.val() || {};
 
@@ -37,6 +38,13 @@ export function setupSheetListener() {
     if (hpMax !== null && hpMax > 0 && hpMax !== prevHpMax && state.myCombatantId) {
       prevHpMax = hpMax;
       state.combatantManager.setMaxHp(state.myCombatantId, hpMax);
+    }
+
+    // Sincronizza livello al combattente
+    const level = state.sheetData.level ?? null;
+    if (level !== null && level !== prevLevel && state.myCombatantId) {
+      prevLevel = level;
+      state.combatantManager.setLevel(state.myCombatantId, level);
     }
 
     // Re-render lista combattenti subito per aggiornare death saves senza aspettare il prossimo snapshot sessione

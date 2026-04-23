@@ -2710,3 +2710,14 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   font-size: 0.95rem;
   min-height: unset;
 }
+
+.level-badge {
+  font-family: 'Cinzel', serif;
+  font-size: 0.7rem;
+  background: rgba(124,58,237,0.25);
+  border: 1px solid var(--purple-main, #7c3aed);
+  color: var(--gold-light);
+  border-radius: 4px;
+  padding: 0.1rem 0.35rem;
+  white-space: nowrap;
+}
