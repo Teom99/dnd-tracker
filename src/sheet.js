@@ -167,12 +167,20 @@ function _makeCallbacks() {
     onInitiativeChange: (id, val)                         => state.combatantManager.setInitiative(id, val),
     onOpenConditions:   (id)                              => openConditionModal(id, state.snapshot.combatants?.[id]?.conditions),
     onSetAction:        (id, text)                        => state.combatantManager.setAction(id, text),
-    onApplyToTarget:    async (sourceId, targetId, delta) => {
+    onApplyToTarget:    async (sourceId, targetId, delta, actionText) => {
       const actor  = state.snapshot.combatants?.[sourceId]?.name ?? 'Qualcuno';
       const target = state.snapshot.combatants?.[targetId]?.name ?? 'bersaglio';
+      const using  = actionText || state.snapshot.combatants?.[sourceId]?.currentAction || null;
       const amount = Math.abs(delta);
       await state.combatantManager.updateHp(targetId, delta);
-      await state.session.addActionLog({ actor, target, action: delta < 0 ? 'ha colpito' : 'ha curato', amount, type: delta < 0 ? 'damage' : 'heal' });
+      await state.session.addActionLog({ 
+        actor, 
+        target, 
+        action: delta < 0 ? 'ha colpito' : 'ha curato', 
+        amount, 
+        type: delta < 0 ? 'damage' : 'heal',
+        using
+      });
     },
     onToggleHealthHint: (id, current)                     => state.combatantManager.setHealthHint(id, !current),
     onSetMaxHp:         (id, val)                         => state.combatantManager.setMaxHp(id, val),

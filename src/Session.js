@@ -139,17 +139,21 @@ export class Session {
   }
 
   // Helper per messaggi azione comuni (danno/cura/etc.)
-  async addActionLog({ actor, target, action, amount, type = 'info' }) {
+  async addActionLog({ actor, target, action, amount, type = 'info', using = null }) {
     if (!actor || !action) return;
     const hasTarget = Boolean(target);
     const hasAmount = Number.isFinite(amount);
+    const hasUsing  = Boolean(using);
+    
     const verb = action.trim();
+    const usingPart = hasUsing ? ` con ${using}` : '';
     const amountPart = hasAmount
       ? (type === 'heal' ? ` curandolo di ${amount}` : ` infliggendogli ${amount} danni`)
       : '';
+      
     const message = hasTarget
-      ? `${actor} ${verb} ${target}${amountPart}`
-      : `${actor} ${verb}${amountPart}`;
+      ? `${actor} ${verb} ${target}${usingPart}${amountPart}`
+      : `${actor} ${verb}${usingPart}${amountPart}`;
 
     await this.addLogEvent(message, type, { actor, target: target ?? null, amount: hasAmount ? amount : null });
   }

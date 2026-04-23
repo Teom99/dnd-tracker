@@ -391,10 +391,13 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     if (action === 'apply-damage' || action === 'apply-heal') {
       const sel   = _selectedTargets.get(id);
       const input = list.querySelector(`.attack-amount[data-id="${id}"]`);
+      const actionInput = list.querySelector(`.action-input[data-id="${id}"]`);
       const amt   = parseInt(input?.value);
+      const actionText = actionInput?.value.trim() || null;
+      
       if (!sel || sel.size === 0) { _flashError(btn, 'Scegli un bersaglio'); return; }
       if (!amt || amt <= 0)       { _flashError(btn, 'Inserisci una quantità'); return; }
-      sel.forEach(targetId => callbacks.onApplyToTarget(id, targetId, action === 'apply-damage' ? -amt : amt));
+      sel.forEach(targetId => callbacks.onApplyToTarget(id, targetId, action === 'apply-damage' ? -amt : amt, actionText));
       _selectedTargets.delete(id);
       if (input) input.value = '';
       return;
