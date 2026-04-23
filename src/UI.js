@@ -1,5 +1,5 @@
 export const CONDITIONS = [
-  { name: 'Avvelenato',   color: '#7c3aed' },
+  { name: 'Avvelenato',   color: 'var(--gold)' },
   { name: 'Stordito',     color: '#d97706' },
   { name: 'Spaventato',   color: '#dc2626' },
   { name: 'Bloccato',     color: '#ea580c' },
@@ -8,8 +8,8 @@ export const CONDITIONS = [
   { name: 'Prono',        color: '#9ca3af' },
   { name: 'Invisibile',   color: '#0891b2' },
   { name: 'Incapacitato', color: '#d97706' },
-  { name: 'Paralizzato',  color: '#7c3aed' },
-  { name: 'Pietrificato', color: '#7c3aed' },
+  { name: 'Paralizzato',  color: 'var(--gold)' },
+  { name: 'Pietrificato', color: 'var(--gold)' },
   { name: 'Affascinato',  color: '#ec4899' },
   { name: 'Esausto',      color: '#dc2626' },
   { name: 'Nascosto',     color: '#0891b2' },
@@ -512,9 +512,9 @@ function healthHintText(percent) {
 }
 
 function hpBarColor(percent) {
-  if (percent > 50) return '#4a7c59';
-  if (percent > 25) return '#b5860d';
-  return '#8b2020';
+  if (percent > 50) return 'var(--green)';
+  if (percent > 25) return 'var(--hp-low)';
+  return 'var(--red-bright)';
 }
 
 function escapeHtml(str) {

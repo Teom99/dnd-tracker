@@ -13,6 +13,21 @@ import { renderGrid }        from './src/grid.js';
 import { initSheet, setupSheetListener, makeCallbacks } from './src/sheet.js';
 import { updateHomeAuthUI, loadCharacterLibrary, populateJoinPicker, populateCreaturePicker, saveUserSession, loadUserSessions } from './src/home.js';
 
+// --- Theme Management ---
+function initTheme() {
+  const savedTheme = localStorage.getItem('theme') || 'purple';
+  if (savedTheme === 'old') {
+    document.documentElement.classList.add('theme-old');
+  }
+}
+function toggleTheme() {
+  const isOld = document.documentElement.classList.toggle('theme-old');
+  localStorage.setItem('theme', isOld ? 'old' : 'purple');
+}
+document.getElementById('btn-theme-toggle-home').addEventListener('click', toggleTheme);
+document.getElementById('btn-theme-toggle-combat').addEventListener('click', toggleTheme);
+initTheme();
+
 // --- Firebase init ---
 const firebaseApp = initializeApp(FIREBASE_CONFIG);
 const db          = getDatabase(firebaseApp);

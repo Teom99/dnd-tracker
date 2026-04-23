@@ -102,8 +102,8 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, isMast
           stroke = isSelected ? '#70d070' : '#4aba4a';
         } else {
           fill     = isPlayer ? '#142d4a' : '#2d1010';
-          stroke   = isSelected ? '#c9a84c'
-                   : isActive   ? '#e5c97a'
+          stroke   = isSelected ? 'var(--gold)'
+                   : isActive   ? 'var(--gold-light)'
                    : isPlayer   ? '#4a8abf' : '#bf4a4a';
         }
         
