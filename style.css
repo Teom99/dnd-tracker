@@ -2327,9 +2327,8 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .hx-sel-my {
-  fill: rgba(112, 208, 112, 0.14);
-  stroke: #70d070;
-  stroke-width: 1.5;
+  fill: transparent;
+  stroke: none;
 }
 
 .hx-hit {
