@@ -7,6 +7,11 @@ const HEX_R  = 20;          // raggio (centro → vertice), px
 const SQRT3  = Math.sqrt(3);
 const PAD    = HEX_R + 2;   // margine svg
 
+let currentZoom = 1;
+const MIN_ZOOM = 0.5;
+const MAX_ZOOM = 3;
+const ZOOM_STEP = 0.25;
+
 // ─── Coordinate helpers ──────────────────────────────────────────────────────
 
 function hexCenter(col, row) {
@@ -72,6 +77,9 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, isMast
 
   const svgW = (HEX_R * SQRT3 * (GRID_COLS + 0.5) + PAD * 2).toFixed(0);
   const svgH = (HEX_R * 1.5 * (GRID_ROWS - 1) + HEX_R * 2 + PAD * 2).toFixed(0);
+
+  const displayW = Math.round(svgW * currentZoom);
+  const displayH = Math.round(svgH * currentZoom);
 
   let inner = '';
 
@@ -143,7 +151,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, isMast
   }
 
   container.innerHTML =
-    `<svg class="hex-svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">${inner}</svg>`;
+    `<svg class="hex-svg" width="${displayW}" height="${displayH}" viewBox="0 0 ${svgW} ${svgH}">${inner}</svg>`;
 
   // Hover: evidenzia solo l'esagono sotto il cursore
   const svg = container.querySelector('svg');
@@ -271,4 +279,45 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
     // Anyone can click to select a character and see distances
     onSelect(id === selectedId ? null : id);
   };
+}
+
+// ─── Zoom functions ──────────────────────────────────────────────────────
+
+export function zoomIn() {
+  if (currentZoom < MAX_ZOOM) {
+    currentZoom = Math.min(MAX_ZOOM, currentZoom + ZOOM_STEP);
+    updateZoom();
+  }
+}
+
+export function zoomOut() {
+  if (currentZoom > MIN_ZOOM) {
+    currentZoom = Math.max(MIN_ZOOM, currentZoom - ZOOM_STEP);
+    updateZoom();
+  }
+}
+
+export function zoomReset() {
+  currentZoom = 1;
+  updateZoom();
+}
+
+function updateZoom() {
+  const container = document.getElementById('grid-container');
+  if (!container) return;
+  const svg = container.querySelector('svg.hex-svg');
+  if (svg) {
+    svg.style.transform = `scale(${currentZoom})`;
+    svg.style.transformOrigin = 'top left';
+  }
+}
+
+export function initZoomControls() {
+  const zoomInBtn = document.getElementById('btn-zoom-in');
+  const zoomOutBtn = document.getElementById('btn-zoom-out');
+  const zoomResetBtn = document.getElementById('btn-zoom-reset');
+
+  if (zoomInBtn) zoomInBtn.addEventListener('click', zoomIn);
+  if (zoomOutBtn) zoomOutBtn.addEventListener('click', zoomOut);
+  if (zoomResetBtn) zoomResetBtn.addEventListener('click', zoomReset);
 }

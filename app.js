@@ -6,6 +6,7 @@ import { FIREBASE_CONFIG }   from './config.js';
 import { Session }           from './src/Session.js';
 import { CharacterLibrary }  from './src/CharacterLibrary.js';
 import * as UI               from './src/UI.js';
+import * as GridUI           from './src/GridUI.js';
 import { state }             from './src/state.js';
 import { initCombatManagers, exitToHome, closeConditionModal } from './src/core.js';
 import { CharacterSheet } from './src/CharacterSheet.js';
@@ -295,6 +296,7 @@ function _enterCombatView(code, isMaster) {
   state.sheetReturnView = 'view-combat';
   document.body.classList.add('in-combat');
   _startListening();
+  GridUI.initZoomControls();
   UI.showView('view-combat');
 }
 

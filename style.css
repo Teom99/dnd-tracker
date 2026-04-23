@@ -2123,12 +2123,14 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   font-family: 'Cinzel', serif;
   font-size: 0.95rem;
   color: var(--gold-light);
+  text-align: center;
 }
 
 .grid-hint {
   font-size: 0.75rem;
   color: var(--text-muted);
   font-style: italic;
+  text-align: center;
 }
 
 .grid-token-bar {
@@ -2155,17 +2157,42 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 
 .grid-container {
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: var(--border-warm) transparent;
   flex: 1;
   min-width: 0;
+  min-height: 300px;
 }
 
 .grid-container::-webkit-scrollbar       { height: 4px; }
 .grid-container::-webkit-scrollbar-track { background: transparent; }
 .grid-container::-webkit-scrollbar-thumb { background: var(--border-warm); border-radius: 2px; }
+
+.grid-zoom-controls {
+  display: flex;
+  gap: 0.25rem;
+  margin-bottom: 0.25rem;
+  justify-content: center;
+}
+
+.grid-zoom-btn {
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0.15rem 0.4rem;
+  transition: all 0.15s;
+}
+
+.grid-zoom-btn:hover {
+  background: var(--bg-hover);
+  color: var(--gold-light);
+  border-color: var(--gold);
+}
 
 .grid-layout {
   display: flex;
