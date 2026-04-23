@@ -2352,12 +2352,13 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .hx-dist {
-  fill: #ffff00;
+  fill: var(--gold-light);
   font-family: 'Cinzel', serif;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 700;
   pointer-events: none;
   user-select: none;
-  opacity: 1.0;
+  text-shadow: 0 0 3px rgba(0,0,0,0.9);
 }
 
 .hx-tooltip-dist {
