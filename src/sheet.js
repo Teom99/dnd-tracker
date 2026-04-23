@@ -47,8 +47,16 @@ export function setupSheetListener() {
 
     if (!populated) {
       populated = true;
-      SheetUI.populateSheet(state.sheetData);
-      bindSheetEvents();
+      (async () => {
+        const classesData = await LevelUp.load();
+        _populateClassSelect(classesData, state.sheetData?.class);
+        SheetUI.populateSheet(state.sheetData);
+        bindSheetEvents();
+      })();
+    } else {
+      const sel = document.getElementById('class-select');
+      if (sel && sel.options.length > 1 && state.sheetData?.class)
+        sel.value = state.sheetData.class;
     }
     SheetUI.updateComputedValues(state.sheetData);
     SheetUI.renderSaveChecks(state.sheetData.savingThrows);
@@ -68,6 +76,21 @@ export function setupSheetListener() {
     );
     _updateLevelUpButton(state.sheetData);
   });
+}
+
+function _populateClassSelect(classesData, currentValue) {
+  const sel = document.getElementById('class-select');
+  if (!sel || sel.options.length > 1) {
+    if (sel && currentValue) sel.value = currentValue;
+    return;
+  }
+  LevelUp.classNames(classesData).forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+  if (currentValue) sel.value = currentValue;
 }
 
 function _updateLevelUpButton(data) {
@@ -225,23 +248,6 @@ export function bindSheetEvents() {
   SheetUI.bindDeathSaves((type, count) => {
     state.sheet.setField(`deathSaves/${type}`, count);
   });
-
-  const classSelect = document.getElementById('class-select');
-  if (classSelect && !classSelect._classesLoaded) {
-    classSelect._classesLoaded = true;
-    LevelUp.load().then(classesData => {
-      const current = classSelect.value;
-      LevelUp.classNames(classesData).forEach(name => {
-        if (!classSelect.querySelector(`option[value="${CSS.escape(name)}"]`)) {
-          const opt = document.createElement('option');
-          opt.value = name;
-          opt.textContent = name;
-          classSelect.appendChild(opt);
-        }
-      });
-      if (current) classSelect.value = current;
-    });
-  }
 
   const levelupBtn = document.getElementById('btn-levelup');
   if (levelupBtn && !levelupBtn._sheetBound) {

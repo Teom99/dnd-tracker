@@ -48,6 +48,8 @@ export class CharacterLibrary {
     await sheet.setField('hpMax', initialData.hpMax ?? 1);
     await sheet.setField('proficiencyBonus', initialData.profBonus ?? 2);
     if (initialData.hitDiceType) await sheet.setField('hitDiceType', initialData.hitDiceType);
+    for (const [ab, score] of Object.entries(initialData.abilities ?? {}))
+      await sheet.setAbility(ab, score);
     for (const [slot, max] of Object.entries(initialData.spellSlots ?? {}))
       await sheet.setField(`spellSlots/${slot}/max`, max);
     for (const { name: fn, description: fd, level: fl } of initialData.features ?? [])

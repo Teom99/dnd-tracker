@@ -93,6 +93,16 @@ export class LevelUpUI {
             ${Array.from({length:20},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join('')}
           </select>
         </div>
+      </div>
+      <div class="lu-section">
+        <h4 class="lu-section-title">Caratteristiche</h4>
+        <div class="lu-ability-grid">
+          ${[['str','FOR'],['dex','DES'],['con','COS'],['int','INT'],['wis','SAG'],['cha','CAR']].map(([k,label]) => `
+            <div class="lu-ability-block">
+              <label class="lu-ability-label">${label}</label>
+              <input type="number" id="lu-ab-${k}" class="lu-ability-input" min="1" max="30" value="10">
+            </div>`).join('')}
+        </div>
       </div>`;
 
     document.getElementById('btn-levelup-confirm').textContent = 'Avanti →';
@@ -104,16 +114,21 @@ export class LevelUpUI {
       if (!name) { document.getElementById('lu-char-name')?.focus(); return; }
       if (!cls)  { document.getElementById('lu-class-select')?.focus(); return; }
 
+      const abilities = {};
+      for (const k of ['str','dex','con','int','wis','cha']) {
+        abilities[k] = parseInt(document.getElementById(`lu-ab-${k}`)?.value) || 10;
+      }
+
       const data = LevelUp.getCreationData(classesData, cls, level);
       if (!data) return;
 
-      LevelUpUI.#openCreationStep2({ name, cls, subclass, level, data, onConfirm });
+      LevelUpUI.#openCreationStep2({ name, cls, subclass, level, abilities, data, onConfirm });
     };
 
     LevelUpUI.#show();
   }
 
-  static #openCreationStep2({ name, cls, subclass, level, data, onConfirm }) {
+  static #openCreationStep2({ name, cls, subclass, level, abilities, data, onConfirm }) {
     const dieSize = parseInt(data.hitDie.replace('d','')) || 8;
     const avgPerLevel = Math.floor(dieSize / 2) + 1;
     const hpSugg  = dieSize + (avgPerLevel * (level - 1));
@@ -169,6 +184,7 @@ export class LevelUpUI {
       const features = LevelUpUI.#readFeatures();
       onConfirm({
         name, className: cls, subclass, level, hpMax,
+        abilities,
         profBonus:   data.profBonus,
         spellSlots:  data.spellSlots,
         hitDiceType: data.hitDie,
