@@ -196,7 +196,7 @@ export function renderSpellSlots(slots, onSetUsed, onSetMax) {
         <span class="slot-level">${lvl}°</span>
         <div class="slot-counter">
           <button class="btn-slot-adj" data-level="${lvl}" data-delta="-1" ${used <= 0 ? 'disabled' : ''}>−</button>
-          <span class="slot-count slot-used-val${max > 0 && used === 0 ? ' used' : ''}">${used}</span>
+          <span class="slot-count slot-used-val${max > 0 && used >= max ? ' used' : ''}">${used}</span>
           <button class="btn-slot-adj" data-level="${lvl}" data-delta="1"  ${used >= max ? 'disabled' : ''}>+</button>
           <span class="slot-sep">usati</span>
         </div>
