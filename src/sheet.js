@@ -106,6 +106,7 @@ function _updateLevelUpButton(data) {
 async function _openLevelUpModal() {
   const fromLevel = state.sheetData?.level ?? 1;
   const className = state.sheetData?.class;
+  if (!confirm(`Sei sicuro di voler far salire di livello ${state.sheetData?.characterName ?? 'il personaggio'}?\n${className} Lv.${fromLevel} → Lv.${fromLevel + 1}`)) return;
   if (!className || fromLevel >= 20) return;
 
   const classesData  = await LevelUp.load();
