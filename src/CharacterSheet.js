@@ -108,4 +108,28 @@ export class CharacterSheet {
   async removeAttack(id) {
     await remove(this._ref(`attacks/${id}`));
   }
+
+  async addClassFeature(name, description, level) {
+    const newRef = push(this._ref('classFeatures'));
+    await set(newRef, { name: name.trim(), description: (description ?? '').trim(), level: level ?? 1 });
+    return newRef.key;
+  }
+
+  async updateClassFeature(id, name, description) {
+    await set(this._ref(`classFeatures/${id}`), { name: name.trim(), description: (description ?? '').trim() });
+  }
+
+  async removeClassFeature(id) {
+    await remove(this._ref(`classFeatures/${id}`));
+  }
+
+  async addClassStat(label, value) {
+    const newRef = push(this._ref('classStats'));
+    await set(newRef, { label: label.trim(), value: String(value ?? '') });
+    return newRef.key;
+  }
+
+  async removeClassStat(id) {
+    await remove(this._ref(`classStats/${id}`));
+  }
 }

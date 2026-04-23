@@ -329,6 +329,70 @@ export function bindDeathSaves(onSet) {
   });
 }
 
+// ─── Class Features ──────────────────────────────────────────────────────────
+
+export function renderClassFeatures(classFeatures, classStats, onRemoveFeature, onRemoveStat, onEditFeature) {
+  const container = document.getElementById('class-features-list');
+  if (!container) return;
+
+  const featureEntries = Object.entries(classFeatures || {});
+  const statEntries    = Object.entries(classStats    || {});
+
+  let html = '';
+
+  if (statEntries.length > 0) {
+    html += `<div class="class-stats-row">${
+      statEntries.map(([id, s]) =>
+        `<span class="class-stat-chip">${escapeHtml(s.label)}: <strong>${escapeHtml(s.value)}</strong>
+         <button class="btn-chip-remove" data-action="remove-stat" data-id="${id}" aria-label="Rimuovi">×</button></span>`
+      ).join('')
+    }</div>`;
+  }
+
+  if (featureEntries.length === 0 && statEntries.length === 0) {
+    html += '<p class="empty-hint">Nessuna capacità di classe.</p>';
+  }
+
+  html += featureEntries.map(([id, f]) => `
+    <details class="class-feature-card" data-id="${id}">
+      <summary class="class-feature-summary">
+        <span class="class-feature-name">${escapeHtml(f.name)}</span>
+        ${f.level ? `<span class="class-feature-level-badge">Lv.${f.level}</span>` : ''}
+        <div class="class-feature-actions">
+          <button class="btn-remove-sm" data-action="remove-feature" data-id="${id}" aria-label="Rimuovi">×</button>
+        </div>
+      </summary>
+      <div class="class-feature-body">
+        <input type="text" class="cf-name-input" data-id="${id}" value="${escapeHtml(f.name)}" placeholder="Nome">
+        <textarea class="cf-desc-input" data-id="${id}" rows="4" placeholder="Descrizione">${escapeHtml(f.description ?? '')}</textarea>
+        <button class="btn-secondary btn-sm cf-save-btn" data-id="${id}">Salva</button>
+      </div>
+    </details>`).join('');
+
+  html += `
+    <form id="form-add-class-feature" class="add-form-inline lu-add-feature-form" novalidate>
+      <input type="text" id="cf-new-name" placeholder="Nome capacità" maxlength="60">
+      <button type="submit" class="btn-secondary btn-sm">+ Aggiungi</button>
+    </form>`;
+
+  container.innerHTML = html;
+
+  container.addEventListener('click', (e) => {
+    const removeFeature = e.target.closest('[data-action="remove-feature"]');
+    if (removeFeature) { onRemoveFeature?.(removeFeature.dataset.id); return; }
+    const removeStat = e.target.closest('[data-action="remove-stat"]');
+    if (removeStat)    { onRemoveStat?.(removeStat.dataset.id); return; }
+    const saveBtn = e.target.closest('.cf-save-btn');
+    if (saveBtn) {
+      const card = saveBtn.closest('.class-feature-card');
+      const nameVal = card?.querySelector('.cf-name-input')?.value.trim() ?? '';
+      const descVal = card?.querySelector('.cf-desc-input')?.value.trim() ?? '';
+      onEditFeature?.(saveBtn.dataset.id, nameVal, descVal);
+      return;
+    }
+  });
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function escapeHtml(str) {

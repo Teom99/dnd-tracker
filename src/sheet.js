@@ -3,6 +3,8 @@ import * as UI           from './UI.js';
 import { CharacterSheet } from './CharacterSheet.js';
 import { state }          from './state.js';
 import { openConditionModal, removeCombatant } from './core.js';
+import { LevelUp }   from './LevelUp.js';
+import { LevelUpUI } from './LevelUpUI.js';
 
 export async function onDeathSave(type, count) {
   if (!state.sheet) return;
@@ -57,6 +59,49 @@ export function setupSheetListener() {
     SheetUI.renderCantrips(state.sheetData.cantrips, (id) => state.sheet.removeCantrip(id));
     SheetUI.renderSpellsByLevel(state.sheetData.spells, (lvl, id) => state.sheet.removeSpell(lvl, id), (lvl, id) => state.sheet.toggleSpellPrepared(lvl, id), (lvl, name) => state.sheet.addSpell(lvl, name));
     SheetUI.renderInventory(state.sheetData.inventory);
+    SheetUI.renderClassFeatures(
+      state.sheetData.classFeatures,
+      state.sheetData.classStats,
+      (id) => state.sheet.removeClassFeature(id),
+      (id) => state.sheet.removeClassStat(id),
+      (id, name, desc) => state.sheet.updateClassFeature(id, name, desc),
+    );
+    _updateLevelUpButton(state.sheetData);
+  });
+}
+
+function _updateLevelUpButton(data) {
+  const btn = document.getElementById('btn-levelup');
+  if (!btn) return;
+  const cls   = data?.class;
+  const level = data?.level ?? 0;
+  if (cls && level > 0 && level < 20) {
+    btn.classList.remove('hidden');
+  } else {
+    btn.classList.add('hidden');
+  }
+}
+
+async function _openLevelUpModal() {
+  const fromLevel = state.sheetData?.level ?? 1;
+  const className = state.sheetData?.class;
+  if (!className || fromLevel >= 20) return;
+
+  const classesData = await LevelUp.load();
+  const changes     = LevelUp.getChanges(classesData, className, fromLevel, fromLevel + 1);
+  if (!changes) { UI.showError(`Classe "${className}" non trovata nel database.`); return; }
+
+  changes.conMod = Math.floor(((state.sheetData?.abilities?.con ?? 10) - 10) / 2);
+
+  LevelUpUI.openLevelUp(changes, fromLevel, className, async (confirmed) => {
+    await state.sheet.setField('level', fromLevel + 1);
+    await state.sheet.setField('proficiencyBonus', confirmed.profBonus);
+    await state.sheet.setField('hpMax', (state.sheetData?.hpMax ?? 0) + confirmed.hpGained);
+    for (const [slot, max] of Object.entries(confirmed.spellSlots ?? {}))
+      await state.sheet.setField(`spellSlots/${slot}/max`, max);
+    for (const { name, description } of confirmed.features ?? [])
+      await state.sheet.addClassFeature(name, description, fromLevel + 1);
+    LevelUpUI.close();
   });
 }
 
@@ -179,6 +224,25 @@ export function bindSheetEvents() {
   SheetUI.bindDeathSaves((type, count) => {
     state.sheet.setField(`deathSaves/${type}`, count);
   });
+
+  const levelupBtn = document.getElementById('btn-levelup');
+  if (levelupBtn && !levelupBtn._sheetBound) {
+    levelupBtn._sheetBound = true;
+    levelupBtn.addEventListener('click', _openLevelUpModal);
+  }
+
+  const classFeatureForm = document.getElementById('form-add-class-feature');
+  if (classFeatureForm && !classFeatureForm._sheetBound) {
+    classFeatureForm._sheetBound = true;
+    classFeatureForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const input = document.getElementById('cf-new-name');
+      const name = input?.value.trim();
+      if (!name) return;
+      await state.sheet.addClassFeature(name, '', null);
+      if (input) input.value = '';
+    });
+  }
 
   const attackForm = document.getElementById('form-add-attack');
   if (attackForm && !attackForm._sheetBound) {

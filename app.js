@@ -11,6 +11,8 @@ import { initCombatManagers, exitToHome, closeConditionModal } from './src/core.
 import { CharacterSheet } from './src/CharacterSheet.js';
 import { renderGrid }        from './src/grid.js';
 import { initSheet, setupSheetListener, makeCallbacks } from './src/sheet.js';
+import { LevelUp }   from './src/LevelUp.js';
+import { LevelUpUI } from './src/LevelUpUI.js';
 import { updateHomeAuthUI, loadCharacterLibrary, populateJoinPicker, populateCreaturePicker, saveUserSession, loadUserSessions } from './src/home.js';
 
 // --- Theme Management ---
@@ -88,11 +90,14 @@ document.getElementById('btn-upgrade-google').addEventListener('click', async ()
 // ─── HOME: Libreria personaggi ────────────────────────────────────────────────
 
 document.getElementById('btn-create-player').addEventListener('click', async () => {
-  const name = prompt('Nome del personaggio:');
-  if (!name?.trim()) return;
-  await state.library.create(name.trim(), 'player');
-  loadCharacterLibrary();
-  populateJoinPicker();
+  if (!state.library) return;
+  const classesData = await LevelUp.load();
+  LevelUpUI.openCreation(classesData, async (confirmed) => {
+    await state.library.createWithData(confirmed.name, 'player', confirmed);
+    LevelUpUI.close();
+    loadCharacterLibrary();
+    populateJoinPicker();
+  });
 });
 
 document.getElementById('btn-create-creature').addEventListener('click', async () => {
@@ -261,6 +266,11 @@ document.getElementById('btn-back-to-combat').addEventListener('click', () => {
     UI.showView('view-combat');
   }
 });
+
+// ─── MODAL Level Up ───────────────────────────────────────────────────────────
+
+LevelUpUI.bindConfirm();
+LevelUpUI.bindCancel();
 
 // ─── MODAL Condizioni ─────────────────────────────────────────────────────────
 

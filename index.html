@@ -224,7 +224,7 @@
                   <div class="field-row"><label>Razza</label><input type="text" data-path="race" maxlength="30" placeholder="—"></div>
                   <div class="field-row"><label>Classe</label><input type="text" data-path="class" maxlength="30" placeholder="—"></div>
                   <div class="field-row"><label>Sottoclasse</label><input type="text" data-path="subclass" maxlength="30" placeholder="—"></div>
-                  <div class="field-row"><label>Livello</label><input type="number" data-path="level" data-number min="1" max="20" placeholder="1"></div>
+                  <div class="field-row field-row-levelup"><label>Livello</label><input type="number" data-path="level" data-number min="1" max="20" placeholder="1"><button id="btn-levelup" class="btn-levelup hidden">⬆ Sali</button></div>
                   <div class="field-row"><label>Background</label><input type="text" data-path="background" maxlength="30" placeholder="—"></div>
                   <div class="field-row"><label>Allineamento</label><input type="text" data-path="alignment" maxlength="20" placeholder="—"></div>
                 </div>
@@ -244,6 +244,13 @@
                   <div class="ability-block"><div class="ability-label">CAR</div><input type="number" class="ability-input" data-path="abilities/cha" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-cha">+0</div></div>
                 </div>
                 <div class="field-row field-row-inline"><label>Bonus Competenza</label><input type="number" data-path="proficiencyBonus" data-number min="2" max="6" placeholder="2" class="input-small"></div>
+              </div>
+            </details>
+
+            <details class="sheet-section" id="section-class-features">
+              <summary>⭐ Capacità di Classe</summary>
+              <div class="sheet-section-body">
+                <div id="class-features-list"></div>
               </div>
             </details>
 
@@ -489,6 +496,20 @@
       <p class="modal-hint">Tocca per attivare/disattivare</p>
       <div id="condition-list" class="condition-grid"></div>
       <button id="btn-close-modal" class="btn-secondary">Chiudi</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       MODAL — Level Up / Creazione guidata
+  ═══════════════════════════════════════════════ -->
+  <div id="levelup-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-content levelup-modal-content">
+      <h3 id="levelup-modal-title"></h3>
+      <div id="levelup-modal-body" class="levelup-modal-body"></div>
+      <div class="modal-footer">
+        <button id="btn-levelup-confirm" class="btn-primary"></button>
+        <button id="btn-levelup-cancel" class="btn-secondary">Annulla</button>
+      </div>
     </div>
   </div>
 
