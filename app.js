@@ -299,6 +299,30 @@ document.getElementById('btn-clear-scene').addEventListener('click', async () =>
   if (state.session) await state.session.clearSceneImage();
 });
 
+document.addEventListener('paste', async (e) => {
+  if (!state.session?.isMaster) return;
+  const imageItem = Array.from(e.clipboardData?.items ?? []).find(i => i.type.startsWith('image/'));
+  if (!imageItem) return;
+  const file = imageItem.getAsFile();
+  if (!file) return;
+
+  _btnUploadScene.disabled = true;
+  _btnUploadScene.textContent = '⏳ Caricamento...';
+  try {
+    const url = await _uploadToDiscord(file);
+    await state.session.setSceneImage(url, 'scena-incollata.png');
+  } catch (err) {
+    console.error(err);
+    const banner = document.getElementById('error-message-combat');
+    banner.textContent = `Errore upload: ${err.message}`;
+    banner.classList.remove('hidden');
+    setTimeout(() => banner.classList.add('hidden'), 5000);
+  } finally {
+    _btnUploadScene.disabled = false;
+    _btnUploadScene.textContent = 'Carica Scena';
+  }
+});
+
 // ─── SCHEDA: Torna indietro ───────────────────────────────────────────────────
 
 document.getElementById('btn-back-to-combat').addEventListener('click', () => {
