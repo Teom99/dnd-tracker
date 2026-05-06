@@ -62,6 +62,28 @@ export function showNotification(message, type = 'info') {
   }, 3000);
 }
 
+export function renderScenePanel(sceneImageUrl, sceneImageName, isMaster) {
+  const section   = document.getElementById('scene-section');
+  const img       = document.getElementById('scene-image');
+  const imgLink   = document.getElementById('scene-image-link');
+  const clearBtn  = document.getElementById('btn-clear-scene');
+  const changeBtn = document.getElementById('btn-change-scene');
+  if (!section) return;
+
+  if (!sceneImageUrl) {
+    section.classList.add('hidden');
+    return;
+  }
+
+  section.classList.remove('hidden');
+  img.src  = sceneImageUrl;
+  img.alt  = sceneImageName || 'Scena';
+  imgLink.href = sceneImageUrl;
+
+  clearBtn.classList.toggle('hidden', !isMaster);
+  changeBtn.classList.toggle('hidden', !isMaster);
+}
+
 let lastLogId = null;
 
 export function renderLogs(logsObj) {

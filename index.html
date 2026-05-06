@@ -453,6 +453,21 @@
 
     <!-- Griglia di battaglia e Log eventi -->
     <div class="battle-area">
+
+      <!-- Pannello Scena (immagine condivisa dal master) -->
+      <section id="scene-section" class="scene-section hidden">
+        <div class="scene-header">
+          <span class="scene-title">Scena</span>
+          <div class="scene-header-actions">
+            <button id="btn-change-scene" class="btn-copy scene-btn hidden">Cambia</button>
+            <button id="btn-clear-scene" class="btn-copy scene-btn scene-btn-remove hidden">✕</button>
+          </div>
+        </div>
+        <a id="scene-image-link" href="#" target="_blank" rel="noopener">
+          <img id="scene-image" class="scene-image" src="" alt="">
+        </a>
+      </section>
+
       <!-- Griglia di battaglia -->
       <section id="grid-section" class="grid-section">
         <div class="grid-header">
@@ -487,6 +502,7 @@
     <!-- Controlli turno (visibili solo al master) -->
     <footer id="master-controls" class="master-controls hidden">
       <button id="btn-next-turn" class="btn-primary btn-next">Turno Successivo ▶</button>
+      <button id="btn-upload-scene" class="btn-secondary btn-sm hidden">Carica Scena</button>
       <button id="btn-reset" class="btn-danger">↺ Reset Incontro</button>
     </footer>
 
@@ -518,6 +534,7 @@
     </div>
   </div>
 
+  <input type="file" id="input-scene-image" accept="image/*" style="display:none">
   <script type="module" src="app.js"></script>
 </body>
 </html>

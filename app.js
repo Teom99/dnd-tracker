@@ -2,7 +2,7 @@ import { initializeApp }      from 'https://www.gstatic.com/firebasejs/10.12.0/f
 import { getDatabase, ref, get, remove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import { getAuth }            from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
-import { FIREBASE_CONFIG }   from './config.js';
+import { FIREBASE_CONFIG, DISCORD_WEBHOOK_URL } from './config.js';
 import { Session }           from './src/Session.js';
 import { CharacterLibrary }  from './src/CharacterLibrary.js';
 import * as UI               from './src/UI.js';
@@ -251,6 +251,54 @@ document.getElementById('btn-clear-log').addEventListener('click', () => {
   }
 });
 
+// ─── SCENA: Upload immagine via Discord Webhook ───────────────────────────────
+
+async function _uploadToDiscord(file) {
+  if (!DISCORD_WEBHOOK_URL) throw new Error('DISCORD_WEBHOOK_URL non configurato in config.js');
+  const formData = new FormData();
+  formData.append('file', file, file.name);
+  const res = await fetch(DISCORD_WEBHOOK_URL + '?wait=true', { method: 'POST', body: formData });
+  if (!res.ok) throw new Error(`Discord upload error: ${res.status}`);
+  const data = await res.json();
+  if (!data.attachments?.length) throw new Error('Nessun allegato nella risposta Discord');
+  return data.attachments[0].url;
+}
+
+const _inputSceneImage = document.getElementById('input-scene-image');
+const _btnUploadScene  = document.getElementById('btn-upload-scene');
+const _btnChangeScene  = document.getElementById('btn-change-scene');
+
+function _triggerSceneUpload() { _inputSceneImage.click(); }
+_btnUploadScene.addEventListener('click', _triggerSceneUpload);
+_btnChangeScene.addEventListener('click', _triggerSceneUpload);
+
+_inputSceneImage.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file || !state.session) return;
+  e.target.value = '';
+
+  _btnUploadScene.disabled = true;
+  _btnUploadScene.textContent = '⏳ Caricamento...';
+
+  try {
+    const url = await _uploadToDiscord(file);
+    await state.session.setSceneImage(url, file.name);
+  } catch (err) {
+    console.error(err);
+    const banner = document.getElementById('error-message-combat');
+    banner.textContent = `Errore upload: ${err.message}`;
+    banner.classList.remove('hidden');
+    setTimeout(() => banner.classList.add('hidden'), 5000);
+  } finally {
+    _btnUploadScene.disabled = false;
+    _btnUploadScene.textContent = 'Carica Scena';
+  }
+});
+
+document.getElementById('btn-clear-scene').addEventListener('click', async () => {
+  if (state.session) await state.session.clearSceneImage();
+});
+
 // ─── SCHEDA: Torna indietro ───────────────────────────────────────────────────
 
 document.getElementById('btn-back-to-combat').addEventListener('click', () => {
@@ -337,6 +385,10 @@ function _startListening() {
     UI.renderCombatantList(players,   data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, state.sheetData?.deathSaves ?? null, 'player-list',   'empty-players-msg', sorted);
 
     renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null, sorted);
+
+    const isMaster = data.masterUid === state.myUid;
+    UI.renderScenePanel(data.sceneImageUrl ?? null, data.sceneImageName ?? null, isMaster);
+    _btnUploadScene.classList.toggle('hidden', !isMaster);
   });
 }
 

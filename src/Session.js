@@ -163,6 +163,18 @@ export class Session {
     await set(ref(this._db, `sessions/${this.code}/logs`), null);
   }
 
+  async setSceneImage(url, name) {
+    if (!this.code) return;
+    await set(ref(this._db, `sessions/${this.code}/sceneImageUrl`), url);
+    await set(ref(this._db, `sessions/${this.code}/sceneImageName`), name || '');
+  }
+
+  async clearSceneImage() {
+    if (!this.code) return;
+    await set(ref(this._db, `sessions/${this.code}/sceneImageUrl`), null);
+    await set(ref(this._db, `sessions/${this.code}/sceneImageName`), null);
+  }
+
   _generateCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');

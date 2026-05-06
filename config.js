@@ -9,3 +9,6 @@ export const FIREBASE_CONFIG = {
   messagingSenderId: "364383994230",
   appId:             "1:364383994230:web:5650f9c9eb8322446afa57"
 };
+
+// Discord → Server → Integrazioni → Webhook → Copia URL webhook
+export const DISCORD_WEBHOOK_URL = '';
