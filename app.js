@@ -264,6 +264,9 @@ async function _uploadToDiscord(file) {
   return data.attachments[0].url;
 }
 
+const _expandedNoteIds    = new Set();
+const _noteDebounceTimers = {};
+
 const _inputSceneImage   = document.getElementById('input-scene-image');
 const _btnUploadScene    = document.getElementById('btn-upload-scene');
 const _btnChangeScene    = document.getElementById('btn-change-scene');
@@ -328,6 +331,64 @@ document.addEventListener('paste', async (e) => {
 
 document.getElementById('btn-clear-scene').addEventListener('click', async () => {
   if (state.session) await state.session.clearSceneImage();
+});
+
+// ─── CRONACHE: Note di sessione collaborative ─────────────────────────────────
+
+document.getElementById('btn-add-session-note').addEventListener('click', async () => {
+  if (!state.session) return;
+  const newId = await state.session.addSessionNote();
+  if (newId) _expandedNoteIds.add(newId);
+});
+
+document.getElementById('session-notes-list').addEventListener('click', async (e) => {
+  // Non propagare click da input/textarea
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  const toggleEl = e.target.closest('[data-action="toggle"]');
+  if (toggleEl) {
+    const id = toggleEl.dataset.noteId;
+    _expandedNoteIds.has(id) ? _expandedNoteIds.delete(id) : _expandedNoteIds.add(id);
+    UI.renderSessionNotes(state.snapshot?.sessionNotes, true, _expandedNoteIds);
+    return;
+  }
+  const deleteEl = e.target.closest('[data-action="delete"]');
+  if (deleteEl && confirm('Eliminare questa nota di sessione?')) {
+    _expandedNoteIds.delete(deleteEl.dataset.noteId);
+    await state.session.deleteSessionNote(deleteEl.dataset.noteId);
+  }
+});
+
+document.getElementById('session-notes-list').addEventListener('input', (e) => {
+  const noteId = e.target.dataset.noteId;
+  if (!noteId || !state.session) return;
+
+  if (e.target.classList.contains('note-textarea')) {
+    clearTimeout(_noteDebounceTimers[noteId]);
+    _noteDebounceTimers[noteId] = setTimeout(
+      () => state.session.updateSessionNote(noteId, { content: e.target.value }),
+      1200
+    );
+  }
+  if (e.target.classList.contains('note-title-input')) {
+    clearTimeout(_noteDebounceTimers[noteId + '_title']);
+    _noteDebounceTimers[noteId + '_title'] = setTimeout(
+      () => state.session.updateSessionNote(noteId, { title: e.target.value }),
+      800
+    );
+  }
+  if (e.target.classList.contains('note-date-input') && e.target.value) {
+    state.session.updateSessionNote(noteId, { date: new Date(e.target.value).getTime() });
+  }
+});
+
+// Modal archivio note (aperto da home.js tramite evento)
+document.getElementById('btn-notes-archive-close').addEventListener('click', () => {
+  document.getElementById('notes-archive-modal').classList.add('hidden');
+});
+document.getElementById('notes-archive-modal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('notes-archive-modal'))
+    document.getElementById('notes-archive-modal').classList.add('hidden');
 });
 
 // ─── SCHEDA: Torna indietro ───────────────────────────────────────────────────
@@ -420,6 +481,7 @@ function _startListening() {
     const isMaster = data.masterUid === state.myUid;
     UI.renderScenePanel(data.sceneImageUrl ?? null, data.sceneImageName ?? null, isMaster);
     _btnUploadScene.classList.toggle('hidden', !isMaster);
+    UI.renderSessionNotes(data.sessionNotes ?? {}, true, _expandedNoteIds);
   });
 }
 

@@ -1,4 +1,4 @@
-import { ref, set, get, onValue, runTransaction, push, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { ref, set, get, remove, onValue, runTransaction, push, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import {
   signInAnonymously, signInWithPopup, GoogleAuthProvider
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -173,6 +173,34 @@ export class Session {
     if (!this.code) return;
     await set(ref(this._db, `sessions/${this.code}/sceneImageUrl`), null);
     await set(ref(this._db, `sessions/${this.code}/sceneImageName`), null);
+  }
+
+  async addSessionNote() {
+    if (!this.code) return null;
+    const notesRef = ref(this._db, `sessions/${this.code}/sessionNotes`);
+    const snap     = await get(notesRef);
+    const count    = snap.val() ? Object.keys(snap.val()).length : 0;
+    const noteRef  = push(notesRef);
+    await set(noteRef, {
+      title:     `Sessione ${count + 1}`,
+      content:   '',
+      date:      Date.now(),
+      createdBy: this._auth.currentUser?.uid ?? '',
+      createdAt: Date.now(),
+    });
+    return noteRef.key;
+  }
+
+  async updateSessionNote(noteId, fields) {
+    if (!this.code) return;
+    for (const [key, value] of Object.entries(fields)) {
+      await set(ref(this._db, `sessions/${this.code}/sessionNotes/${noteId}/${key}`), value);
+    }
+  }
+
+  async deleteSessionNote(noteId) {
+    if (!this.code) return;
+    await remove(ref(this._db, `sessions/${this.code}/sessionNotes/${noteId}`));
   }
 
   _generateCode() {

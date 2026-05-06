@@ -197,6 +197,7 @@ export async function loadUserSessions(uid) {
         <span class="session-entry-role">${s.role === 'master' ? '⚔ Master' : '🧙 PG'}</span>
       </div>
       <div class="session-entry-actions">
+        <button class="btn-copy btn-sm btn-notes-session" data-code="${s.code}" title="Cronache della campagna">📖</button>
         <button class="btn-rejoin btn-secondary btn-sm"
                 data-code="${s.code}"
                 data-combatant-id="${s.combatantId ?? ''}"
@@ -209,7 +210,14 @@ export async function loadUserSessions(uid) {
     </div>
   `).join('');
 
-  list.onclick = (e) => {
+  list.onclick = async (e) => {
+    const notesBtn = e.target.closest('.btn-notes-session');
+    if (notesBtn) {
+      const code = notesBtn.dataset.code;
+      const snap = await get(ref(state.db, `sessions/${code}/sessionNotes`));
+      _openNotesArchiveModal(code, snap.val());
+      return;
+    }
     const rejoinBtn = e.target.closest('.btn-rejoin');
     if (rejoinBtn) {
       document.dispatchEvent(new CustomEvent('dnd:rejoin', { detail: {
@@ -223,6 +231,29 @@ export async function loadUserSessions(uid) {
     const delBtn = e.target.closest('.btn-delete-session');
     if (delBtn) deleteUserSession(uid, delBtn.dataset.code);
   };
+}
+
+function _openNotesArchiveModal(code, notesObj) {
+  const modal  = document.getElementById('notes-archive-modal');
+  const listEl = document.getElementById('notes-archive-list');
+  document.getElementById('notes-archive-title').textContent = `📖 Cronache — ${code}`;
+
+  const notes = Object.values(notesObj ?? {}).sort((a, b) => b.date - a.date);
+
+  listEl.innerHTML = notes.length === 0
+    ? '<p class="empty-msg">Nessuna nota per questa campagna.</p>'
+    : notes.map(n => `
+        <div class="archive-note-entry">
+          <div class="archive-note-header">
+            <strong class="archive-note-title">${esc(n.title ?? '')}</strong>
+            <span class="archive-note-date">${new Date(n.date).toLocaleDateString('it-IT', { day:'numeric', month:'short', year:'numeric' })}</span>
+          </div>
+          ${n.content
+            ? `<p class="archive-note-content">${esc(n.content)}</p>`
+            : '<p class="archive-note-empty">Nessun testo</p>'}
+        </div>`).join('');
+
+  modal.classList.remove('hidden');
 }
 
 async function deleteUserSession(uid, code) {

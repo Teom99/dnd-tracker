@@ -499,6 +499,15 @@
       </section>
     </div>
 
+    <!-- Cronache della campagna -->
+    <section id="session-notes-section" class="session-notes-section">
+      <div class="session-notes-header">
+        <span class="session-notes-title">📖 Cronache</span>
+        <button id="btn-add-session-note" class="btn-secondary btn-sm">+ Nuova Nota</button>
+      </div>
+      <div id="session-notes-list" class="session-notes-list"></div>
+    </section>
+
     <!-- Controlli turno (visibili solo al master) -->
     <footer id="master-controls" class="master-controls hidden">
       <button id="btn-next-turn" class="btn-primary btn-next">Turno Successivo ▶</button>
@@ -517,6 +526,17 @@
       <p class="modal-hint">Tocca per attivare/disattivare</p>
       <div id="condition-list" class="condition-grid"></div>
       <button id="btn-close-modal" class="btn-secondary">Chiudi</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       MODAL — archivio cronache (home)
+  ═══════════════════════════════════════════════ -->
+  <div id="notes-archive-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Cronache sessioni">
+    <div class="modal-content notes-archive-content">
+      <h3 id="notes-archive-title">📖 Cronache</h3>
+      <div id="notes-archive-list" class="notes-archive-list"></div>
+      <button id="btn-notes-archive-close" class="btn-secondary">Chiudi</button>
     </div>
   </div>
 

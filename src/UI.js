@@ -84,6 +84,64 @@ export function renderScenePanel(sceneImageUrl, sceneImageName, isMaster) {
   changeBtn.classList.toggle('hidden', !isMaster);
 }
 
+export function renderSessionNotes(notesObj, canEdit, expandedIds) {
+  const container = document.getElementById('session-notes-list');
+  if (!container) return;
+
+  const focusedNoteId = document.activeElement?.dataset?.noteId ?? null;
+
+  const notes = Object.entries(notesObj ?? {})
+    .map(([id, n]) => ({ id, ...n }))
+    .sort((a, b) => b.date - a.date);
+
+  if (notes.length === 0) {
+    const isEditingNote = document.activeElement?.classList.contains('note-textarea') ||
+                          document.activeElement?.classList.contains('note-title-input');
+    if (!isEditingNote) container.innerHTML = '';
+    return;
+  }
+
+  notes.forEach(note => {
+    const isExpanded = expandedIds.has(note.id);
+    const dateVal    = new Date(note.date).toISOString().slice(0, 10);
+
+    let el = container.querySelector(`.note-entry[data-note-id="${note.id}"]`);
+    if (!el) {
+      el = document.createElement('div');
+      el.className      = 'note-entry';
+      el.dataset.noteId = note.id;
+      container.appendChild(el);
+    }
+
+    const headerHtml = `
+      <div class="note-header" data-action="toggle" data-note-id="${note.id}">
+        <span class="note-chevron">${isExpanded ? '▼' : '▶'}</span>
+        <input class="note-title-input" data-note-id="${note.id}" value="${esc(note.title ?? '')}" title="Modifica titolo">
+        <input type="date" class="note-date-input" data-note-id="${note.id}" value="${dateVal}">
+        ${canEdit ? `<button class="btn-remove-sm note-delete-btn" data-action="delete" data-note-id="${note.id}" title="Elimina">×</button>` : ''}
+      </div>`;
+
+    const bodyHtml = isExpanded ? `
+      <div class="note-body">
+        <textarea class="note-textarea" data-note-id="${note.id}"
+                  placeholder="Scrivi qui cosa è successo in questa sessione..."
+                  rows="6">${esc(note.content ?? '')}</textarea>
+      </div>` : '';
+
+    if (note.id !== focusedNoteId) {
+      el.innerHTML = headerHtml + bodyHtml;
+    } else {
+      const existingHeader = el.querySelector('.note-header');
+      if (existingHeader) existingHeader.outerHTML = headerHtml;
+    }
+  });
+
+  // Rimuovi note eliminate dal DOM
+  container.querySelectorAll('.note-entry[data-note-id]').forEach(el => {
+    if (!notesObj?.[el.dataset.noteId]) el.remove();
+  });
+}
+
 let lastLogId = null;
 
 export function renderLogs(logsObj) {
