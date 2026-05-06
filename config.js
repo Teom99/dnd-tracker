@@ -11,4 +11,4 @@ export const FIREBASE_CONFIG = {
 };
 
 // Discord → Server → Integrazioni → Webhook → Copia URL webhook
-export const DISCORD_WEBHOOK_URL = '';
+export const DISCORD_WEBHOOK_URL = 'https://discord.com/api/webhooks/1501689446377193643/oPv9gGivhTDnO5eDRC1oinnI5ZIhbY7eqLfRhH5Ko0fXqAfihT6FMBcXYN9rKwux01p2';
