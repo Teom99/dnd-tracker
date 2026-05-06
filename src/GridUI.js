@@ -281,10 +281,15 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
     if (isSelected) cls += ' selected';
     if (c.hpCurrent === 0) cls += ' ko';
 
+    const koIcon = c.hpCurrent === 0 ? `<span class="grid-initiative-ko">💀</span>` : '<span class="grid-initiative-ko"></span>';
+
     html += `
       <li class="${cls}" style="cursor: pointer;" data-id="${c.id}">
         <span class="grid-initiative-name">${esc(c.name)}</span>
-        ${distText}
+        <div class="grid-initiative-meta">
+          ${koIcon}
+          ${distText}
+        </div>
       </li>
     `;
   }

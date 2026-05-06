@@ -2402,8 +2402,24 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   font-family: 'Cinzel', serif;
   color: var(--text-muted);
   font-size: 0.75rem;
-  margin-left: 0.5rem;
   white-space: nowrap;
+  width: 2.8rem;
+  text-align: right;
+}
+
+.grid-initiative-meta {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 0.2rem;
+  margin-left: 0.5rem;
+}
+
+.grid-initiative-ko {
+  display: inline-block;
+  width: 1.2rem;
+  text-align: center;
+  font-size: 0.9rem;
 }
 
 /* Nascondi container iniziativa su schermi piccoli per non rompere il layout,

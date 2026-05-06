@@ -63,7 +63,7 @@ export function renderTokenBar(gridPos, combatants) {
       class="grid-token-chip${selected ? ' selected' : ''}${ko ? ' ko' : ''}"
       data-token-id="${id}"
       title="${placed ? 'Riposiziona' : 'Posiziona sulla griglia'}"
-    >${(c.name || '?').slice(0, 2).toUpperCase()}${placed ? '' : ' +'}</button>`;
+    >${(c.name || '?').slice(0, 2).toUpperCase()}${ko ? ' 💀' : ''}${placed ? '' : ' +'}</button>`;
   }).join('');
 
   bar.onclick = (e) => {
