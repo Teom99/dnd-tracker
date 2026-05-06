@@ -264,25 +264,29 @@ async function _uploadToDiscord(file) {
   return data.attachments[0].url;
 }
 
-const _inputSceneImage = document.getElementById('input-scene-image');
-const _btnUploadScene  = document.getElementById('btn-upload-scene');
-const _btnChangeScene  = document.getElementById('btn-change-scene');
+const _inputSceneImage   = document.getElementById('input-scene-image');
+const _btnUploadScene    = document.getElementById('btn-upload-scene');
+const _btnChangeScene    = document.getElementById('btn-change-scene');
+const _sceneUploadModal  = document.getElementById('scene-upload-modal');
+const _sceneDropZone     = document.getElementById('scene-drop-zone');
+const _sceneDropText     = document.getElementById('scene-drop-text');
 
-function _triggerSceneUpload() { _inputSceneImage.click(); }
-_btnUploadScene.addEventListener('click', _triggerSceneUpload);
-_btnChangeScene.addEventListener('click', _triggerSceneUpload);
+function _openSceneModal()  { _sceneUploadModal.classList.remove('hidden'); }
+function _closeSceneModal() { _sceneUploadModal.classList.add('hidden'); }
 
-_inputSceneImage.addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  if (!file || !state.session) return;
-  e.target.value = '';
+_btnUploadScene.addEventListener('click', _openSceneModal);
+_btnChangeScene.addEventListener('click', _openSceneModal);
+document.getElementById('btn-scene-cancel').addEventListener('click', _closeSceneModal);
+_sceneUploadModal.addEventListener('click', (e) => { if (e.target === _sceneUploadModal) _closeSceneModal(); });
 
-  _btnUploadScene.disabled = true;
-  _btnUploadScene.textContent = '⏳ Caricamento...';
-
+async function _handleSceneFile(file, name) {
+  if (!state.session) return;
+  _sceneDropZone.classList.add('uploading');
+  _sceneDropText.textContent = '⏳ Caricamento...';
   try {
     const url = await _uploadToDiscord(file);
-    await state.session.setSceneImage(url, file.name);
+    await state.session.setSceneImage(url, name ?? file.name);
+    _closeSceneModal();
   } catch (err) {
     console.error(err);
     const banner = document.getElementById('error-message-combat');
@@ -290,37 +294,40 @@ _inputSceneImage.addEventListener('change', async (e) => {
     banner.classList.remove('hidden');
     setTimeout(() => banner.classList.add('hidden'), 5000);
   } finally {
-    _btnUploadScene.disabled = false;
-    _btnUploadScene.textContent = 'Carica Scena';
+    _sceneDropZone.classList.remove('uploading');
+    _sceneDropText.textContent = 'Trascina un\'immagine qui';
   }
+}
+
+// File picker
+document.getElementById('btn-scene-pick-file').addEventListener('click', () => _inputSceneImage.click());
+_inputSceneImage.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  e.target.value = '';
+  await _handleSceneFile(file);
+});
+
+// Drag & drop
+_sceneDropZone.addEventListener('dragover',  (e) => { e.preventDefault(); _sceneDropZone.classList.add('drag-over'); });
+_sceneDropZone.addEventListener('dragleave', ()  => { _sceneDropZone.classList.remove('drag-over'); });
+_sceneDropZone.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  _sceneDropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file?.type.startsWith('image/')) await _handleSceneFile(file);
+});
+
+// Paste (scoped al modal aperto)
+document.addEventListener('paste', async (e) => {
+  if (_sceneUploadModal.classList.contains('hidden')) return;
+  const imageItem = Array.from(e.clipboardData?.items ?? []).find(i => i.type.startsWith('image/'));
+  if (!imageItem) return;
+  await _handleSceneFile(imageItem.getAsFile(), 'scena-incollata.png');
 });
 
 document.getElementById('btn-clear-scene').addEventListener('click', async () => {
   if (state.session) await state.session.clearSceneImage();
-});
-
-document.addEventListener('paste', async (e) => {
-  if (!state.session?.isMaster) return;
-  const imageItem = Array.from(e.clipboardData?.items ?? []).find(i => i.type.startsWith('image/'));
-  if (!imageItem) return;
-  const file = imageItem.getAsFile();
-  if (!file) return;
-
-  _btnUploadScene.disabled = true;
-  _btnUploadScene.textContent = '⏳ Caricamento...';
-  try {
-    const url = await _uploadToDiscord(file);
-    await state.session.setSceneImage(url, 'scena-incollata.png');
-  } catch (err) {
-    console.error(err);
-    const banner = document.getElementById('error-message-combat');
-    banner.textContent = `Errore upload: ${err.message}`;
-    banner.classList.remove('hidden');
-    setTimeout(() => banner.classList.add('hidden'), 5000);
-  } finally {
-    _btnUploadScene.disabled = false;
-    _btnUploadScene.textContent = 'Carica Scena';
-  }
 });
 
 // ─── SCHEDA: Torna indietro ───────────────────────────────────────────────────

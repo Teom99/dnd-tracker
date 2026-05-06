@@ -535,6 +535,24 @@
   </div>
 
   <input type="file" id="input-scene-image" accept="image/*" style="display:none">
+
+  <!-- ═══════════════════════════════════════════════
+       MODAL — carica immagine scena
+  ═══════════════════════════════════════════════ -->
+  <div id="scene-upload-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Carica immagine scena">
+    <div class="modal-content scene-upload-content">
+      <h3>Carica Immagine Scena</h3>
+      <div id="scene-drop-zone" class="scene-drop-zone">
+        <div class="scene-drop-icon">🖼</div>
+        <p id="scene-drop-text" class="scene-drop-text">Trascina un'immagine qui</p>
+        <p class="scene-drop-or">— oppure —</p>
+        <button id="btn-scene-pick-file" class="btn-secondary btn-sm">Scegli file</button>
+        <p class="scene-paste-hint">Incolla con <kbd>Cmd+V</kbd> / <kbd>Ctrl+V</kbd></p>
+      </div>
+      <button id="btn-scene-cancel" class="btn-secondary">Annulla</button>
+    </div>
+  </div>
+
   <script type="module" src="app.js"></script>
 </body>
 </html>

@@ -2434,6 +2434,68 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 /* ═══════════════════════════════════════════
+   MODAL UPLOAD SCENA
+═══════════════════════════════════════════ */
+.scene-upload-content {
+  border-radius: var(--radius);
+  gap: 1rem;
+}
+
+.scene-drop-zone {
+  border: 2px dashed var(--border-warm);
+  border-radius: var(--radius);
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.65rem;
+  text-align: center;
+  cursor: default;
+  transition: border-color 0.18s, background 0.18s;
+  min-height: 200px;
+  justify-content: center;
+}
+
+.scene-drop-zone.drag-over {
+  border-color: var(--gold);
+  border-style: solid;
+  background: var(--gold-glow);
+}
+
+.scene-drop-zone.uploading {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.scene-drop-icon { font-size: 2.4rem; line-height: 1; }
+
+.scene-drop-text {
+  color: var(--text-muted);
+  font-size: 1rem;
+}
+
+.scene-drop-or {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.scene-paste-hint {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 0.1rem;
+}
+
+.scene-paste-hint kbd {
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-warm);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.8rem;
+  color: var(--text);
+}
+
+/* ═══════════════════════════════════════════
    PANNELLO SCENA
 ═══════════════════════════════════════════ */
 .scene-section {
