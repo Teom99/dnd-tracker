@@ -2597,6 +2597,16 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   text-shadow: 0 0 3px rgba(0,0,0,0.9);
 }
 
+.hx-tooltip-name {
+  fill: #ffffff;
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  font-weight: 700;
+  pointer-events: none;
+  user-select: none;
+  text-shadow: 0 0 4px rgba(0,0,0,1);
+}
+
 /* ─── Level Up / Class Features ─────────────────────────────────────── */
 
 .btn-levelup {

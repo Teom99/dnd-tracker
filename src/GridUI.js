@@ -156,43 +156,62 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, isMast
   // Hover: evidenzia solo l'esagono sotto il cursore
   const svg = container.querySelector('svg');
   
-  // Tooltip per la distanza quando il mouse si muove
+  // Tooltip per la distanza e nome quando il mouse si muove
   let distanceTooltip = null;
+  let nameTooltip     = null;
   
   svg.addEventListener('mousemove', (e) => {
-    if (!selectedId) return;
-    
     const hit = e.target.closest('.hx-hit');
     if (!hit) {
       if (distanceTooltip) distanceTooltip.remove();
       distanceTooltip = null;
+      if (nameTooltip) nameTooltip.remove();
+      nameTooltip = null;
       return;
     }
     
     const c = parseInt(hit.dataset.c);
     const r = parseInt(hit.dataset.r);
-    
-    // Non mostrare distanza se siamo sul token selezionato stesso
-    if (selPos && c === selPos.col && r === selPos.row) {
-      if (distanceTooltip) distanceTooltip.remove();
-      distanceTooltip = null;
-      return;
-    }
-    
     const { x, y } = hexCenter(c, r);
-    const d = selPos ? hexDistance(selPos.col, selPos.row, c, r) : 0;
-    const distText = fmtM(d);
-    
-    // Crea o aggiorna il tooltip
-    if (!distanceTooltip) {
-      distanceTooltip = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      distanceTooltip.setAttribute('class', 'hx-tooltip-dist');
-      svg.appendChild(distanceTooltip);
+
+    // --- Nome ---
+    const occId = cellMap[`${c}_${r}`];
+    const occ   = occId ? comb[occId] : null;
+    if (occ) {
+      if (!nameTooltip) {
+        nameTooltip = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        nameTooltip.setAttribute('class', 'hx-tooltip-name');
+        nameTooltip.setAttribute('text-anchor', 'middle');
+        svg.appendChild(nameTooltip);
+      }
+      nameTooltip.setAttribute('x', x);
+      nameTooltip.setAttribute('y', y - HEX_R - 5);
+      nameTooltip.textContent = occ.name;
+    } else {
+      if (nameTooltip) nameTooltip.remove();
+      nameTooltip = null;
     }
-    
-    distanceTooltip.setAttribute('x', x);
-    distanceTooltip.setAttribute('y', y);
-    distanceTooltip.textContent = distText;
+
+    // --- Distanza ---
+    if (selectedId) {
+      // Non mostrare distanza se siamo sul token selezionato stesso
+      if (selPos && c === selPos.col && r === selPos.row) {
+        if (distanceTooltip) distanceTooltip.remove();
+        distanceTooltip = null;
+      } else {
+        const d = selPos ? hexDistance(selPos.col, selPos.row, c, r) : 0;
+        const distText = fmtM(d);
+        if (!distanceTooltip) {
+          distanceTooltip = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          distanceTooltip.setAttribute('class', 'hx-tooltip-dist');
+          distanceTooltip.setAttribute('text-anchor', 'middle');
+          svg.appendChild(distanceTooltip);
+        }
+        distanceTooltip.setAttribute('x', x);
+        distanceTooltip.setAttribute('y', y + HEX_R + 12);
+        distanceTooltip.textContent = distText;
+      }
+    }
   });
   
   svg.addEventListener('mouseover', (e) => {
