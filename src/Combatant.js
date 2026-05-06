@@ -23,6 +23,7 @@ export class Combatant {
       type,
       conditions: {},
       ownerUid,
+      faction: 'evil',
       charId: charId ?? null,
     });
     return newRef.key;
@@ -61,6 +62,10 @@ export class Combatant {
 
   async setLevel(id, level) {
     await set(ref(this._db, `sessions/${this._code}/combatants/${id}/level`), parseInt(level) || 1);
+  }
+
+  async setFaction(id, faction) {
+    await set(ref(this._db, `sessions/${this._code}/combatants/${id}/faction`), faction || 'evil');
   }
 
   async setAction(id, text) {

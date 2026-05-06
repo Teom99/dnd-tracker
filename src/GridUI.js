@@ -108,11 +108,21 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, isMast
         if (isMyToken) {
           fill = '#0d2d0d';
           stroke = isSelected ? '#70d070' : '#4aba4a';
-        } else {
-          fill     = isPlayer ? '#142d4a' : '#2d1010';
+        } else if (isPlayer) {
+          fill     = '#142d4a';
           stroke   = isSelected ? 'var(--gold)'
                    : isActive   ? 'var(--gold-light)'
-                   : isPlayer   ? '#4a8abf' : '#bf4a4a';
+                   : '#4a8abf';
+        } else {
+          // Creature: good (yellow) or evil (red, default)
+          const isGood = occupant.faction === 'good';
+          if (isGood) {
+            fill   = 'rgba(124, 88, 0, 0.4)'; // Darker yellow/gold fill
+            stroke = isSelected ? 'var(--gold)' : isActive ? 'var(--gold-light)' : '#d4af37';
+          } else {
+            fill   = '#2d1010';
+            stroke = isSelected ? 'var(--gold)' : isActive ? 'var(--gold-light)' : '#bf4a4a';
+          }
         }
         
         // Override per personaggi morti

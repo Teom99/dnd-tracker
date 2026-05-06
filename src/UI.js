@@ -114,8 +114,8 @@ export function renderLogs(logsObj) {
     entry.className = `event-entry event-${log.type || 'info'} ${isNew ? 'animate-new' : ''}`;
     
     const d = new Date(log.timestamp);
-    const timestamp = d.toLocaleTimeString('it-IT', { 
-      hour: '2-digit', 
+    const timestamp = d.toLocaleTimeString('it-IT', {
+      hour: '2-digit',
       minute: '2-digit',
       second: '2-digit'
     });
@@ -235,11 +235,17 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         <span class="turn-number">${turnNumber}</span>
         <div class="card-name-block">
           <span class="combatant-name">${escapeHtml(c.name)}${isKO ? ' 💀' : ''}</span>
-          <span class="type-badge ${c.type}">${c.type === 'player' ? 'PG' : 'CR'}</span>
+          <span class="type-badge ${c.type} ${isCreature ? (c.faction || 'evil') : ''}">${c.type === 'player' ? 'PG' : 'CR'}</span>
           ${c.type === 'player' && c.level ? `<span class="level-badge">Lv.${c.level}</span>` : ''}
           ${ac !== null ? `<span class="ac-badge">CA ${ac}</span>` : ''}
         </div>
         <div class="initiative-block">
+          ${isMaster && isCreature ? `
+            <div class="faction-switch">
+              <button class="faction-btn evil ${(c.faction || 'evil') === 'evil' ? 'active' : ''}" data-id="${c.id}" data-action="set-faction" data-faction="evil" title="Fazione Cattiva">Cattivo</button>
+              <button class="faction-btn good ${c.faction === 'good' ? 'active' : ''}" data-id="${c.id}" data-action="set-faction" data-faction="good" title="Fazione Buona">Buono</button>
+            </div>
+          ` : ''}
           ${canEdit
             ? `<button class="initiative-value editable" data-id="${c.id}" data-action="edit-initiative" title="Modifica iniziativa">${c.initiative}</button>`
             : `<span class="initiative-value">${c.initiative}</span>`
@@ -439,6 +445,11 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       return;
     }
     if (action === 'remove')          { callbacks.onRemove(id); return; }
+    if (action === 'set-faction') {
+      const faction = btn.dataset.faction;
+      callbacks.onSetFaction(id, faction);
+      return;
+    }
     if (action === 'open-conditions') { callbacks.onOpenConditions(id); return; }
     if (action === 'edit-initiative') { openInitiativeEdit(btn, id, callbacks.onInitiativeChange); return; }
     if (action === 'edit-hp-max')     { openHpMaxEdit(btn, id, callbacks.onSetMaxHp); return; }
