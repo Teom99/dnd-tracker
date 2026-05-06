@@ -6,6 +6,22 @@ import { openConditionModal, removeCombatant } from './core.js';
 import { LevelUp }   from './LevelUp.js';
 import { LevelUpUI } from './LevelUpUI.js';
 
+let editingInventoryId = null;
+const inventoryCallbacks = {
+  onRemove: (id) => { if (confirm('Rimuovere l\'oggetto?')) state.sheet.removeInventoryItem(id); },
+  onEdit:   (id) => { editingInventoryId = id; SheetUI.renderInventory(state.sheetData.inventory, editingInventoryId, inventoryCallbacks); },
+  onCancel: ()    => { editingInventoryId = null; SheetUI.renderInventory(state.sheetData.inventory, editingInventoryId, inventoryCallbacks); },
+  onSave:   async (id, data) => {
+    try {
+      await state.sheet.updateInventoryItem(id, data);
+      editingInventoryId = null;
+      SheetUI.renderInventory(state.sheetData.inventory, editingInventoryId, inventoryCallbacks);
+    } catch (err) {
+      UI.showError('Errore salvataggio: ' + err.message);
+    }
+  }
+};
+
 export async function onDeathSave(type, count) {
   if (!state.sheet) return;
   await state.sheet.setField(`deathSaves/${type}`, count);
@@ -72,7 +88,7 @@ export function setupSheetListener() {
     SheetUI.renderAttacks(state.sheetData.attacks, state.sheetData, (id) => state.sheet.removeAttack(id));
     SheetUI.renderCantrips(state.sheetData.cantrips, (id) => state.sheet.removeCantrip(id));
     SheetUI.renderSpellsByLevel(state.sheetData.spells, (lvl, id) => state.sheet.removeSpell(lvl, id), (lvl, id) => state.sheet.toggleSpellPrepared(lvl, id), (lvl, name) => state.sheet.addSpell(lvl, name));
-    SheetUI.renderInventory(state.sheetData.inventory);
+    SheetUI.renderInventory(state.sheetData.inventory, editingInventoryId, inventoryCallbacks);
     SheetUI.renderClassFeatures(
       state.sheetData.classFeatures,
       state.sheetData.classStats,
@@ -221,7 +237,7 @@ export function openCharacterSheet() {
   SheetUI.renderAttacks(state.sheetData?.attacks, state.sheetData, (id) => state.sheet.removeAttack(id));
   SheetUI.renderCantrips(state.sheetData?.cantrips, (id) => state.sheet.removeCantrip(id));
   SheetUI.renderSpellsByLevel(state.sheetData?.spells, (lvl, id) => state.sheet.removeSpell(lvl, id), (lvl, id) => state.sheet.toggleSpellPrepared(lvl, id), (lvl, name) => state.sheet.addSpell(lvl, name));
-  SheetUI.renderInventory(state.sheetData?.inventory);
+  SheetUI.renderInventory(state.sheetData?.inventory, editingInventoryId, inventoryCallbacks);
   bindSheetEvents();
   if (!isSheetEmbedded()) {
     document.body.classList.add('sheet-only');
@@ -244,7 +260,7 @@ export async function openLibrarySheet(charId) {
     SheetUI.renderAttacks(state.sheetData?.attacks, state.sheetData, (id) => state.sheet.removeAttack(id));
     SheetUI.renderCantrips(state.sheetData?.cantrips, (id) => state.sheet.removeCantrip(id));
     SheetUI.renderSpellsByLevel(state.sheetData?.spells, (lvl, id) => state.sheet.removeSpell(lvl, id), (lvl, id) => state.sheet.toggleSpellPrepared(lvl, id), (lvl, name) => state.sheet.addSpell(lvl, name));
-    SheetUI.renderInventory(state.sheetData?.inventory);
+    SheetUI.renderInventory(state.sheetData?.inventory, editingInventoryId, inventoryCallbacks);
     bindSheetEvents();
     UI.showView('view-combat');
   } catch (err) {
@@ -360,15 +376,6 @@ export function bindSheetEvents() {
       } catch (err) {
         UI.showError('Errore aggiunta oggetto: ' + err.message);
       }
-    });
-  }
-
-  const inventoryList = document.getElementById('inventory-list');
-  if (inventoryList && !inventoryList._sheetBound) {
-    inventoryList._sheetBound = true;
-    inventoryList.addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-action="remove-item"]');
-      if (btn) state.sheet.removeInventoryItem(btn.dataset.id);
     });
   }
 }

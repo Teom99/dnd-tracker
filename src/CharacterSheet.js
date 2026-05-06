@@ -91,6 +91,14 @@ export class CharacterSheet {
     await remove(this._ref(`inventory/${id}`));
   }
 
+  async updateInventoryItem(id, data) {
+    await set(this._ref(`inventory/${id}`), {
+      name: data.name.trim(),
+      quantity: parseInt(data.quantity) || 1,
+      notes: (data.notes || '').trim()
+    });
+  }
+
   async addAttack(attackData) {
     const newRef = push(this._ref('attacks'));
     await set(newRef, {

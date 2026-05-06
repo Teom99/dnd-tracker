@@ -300,7 +300,7 @@ export function renderSpellsByLevel(spells, onRemove, onTogglePrepared, onAddSpe
 
 // ─── Inventory ───────────────────────────────────────────────────────────────
 
-export function renderInventory(inventory) {
+export function renderInventory(inventory, editingId, callbacks = {}) {
   const container = document.getElementById('inventory-list');
   if (!container) return;
   const entries = Object.entries(inventory || {});
@@ -308,15 +308,60 @@ export function renderInventory(inventory) {
     container.innerHTML = '<p class="empty-hint">Inventario vuoto.</p>';
     return;
   }
-  container.innerHTML = entries.map(([id, item]) => `
-    <div class="inventory-entry" data-id="${id}">
-      <span class="item-qty">${item.quantity ?? 1}×</span>
-      <div class="item-main-content">
-        <span class="item-name">${escapeHtml(item.name)}</span>
-        ${item.notes ? `<span class="item-notes">${escapeHtml(item.notes)}</span>` : ''}
-      </div>
-      <button class="btn-remove-sm" data-action="remove-item" data-id="${id}" aria-label="Rimuovi">×</button>
-    </div>`).join('');
+
+  container.innerHTML = entries.map(([id, item]) => {
+    if (id === editingId) {
+      return `
+        <div class="inventory-entry editing" data-id="${id}">
+          <input type="number" class="edit-qty" value="${item.quantity ?? 1}" min="1">
+          <div class="item-main-content">
+            <input type="text" class="edit-name" value="${escapeHtml(item.name)}" placeholder="Nome">
+            <input type="text" class="edit-notes" value="${escapeHtml(item.notes || '')}" placeholder="Note (opz.)">
+          </div>
+          <div class="item-actions">
+            <button class="btn-save-sm" data-action="save-item" data-id="${id}" title="Salva">✔</button>
+            <button class="btn-cancel-sm" data-action="cancel-item" data-id="${id}" title="Annulla">✖</button>
+          </div>
+        </div>`;
+    }
+
+    return `
+      <div class="inventory-entry" data-id="${id}">
+        <span class="item-qty clickable" data-action="edit-qty" data-id="${id}">${item.quantity ?? 1}×</span>
+        <div class="item-main-content">
+          <span class="item-name">${escapeHtml(item.name)}</span>
+          ${item.notes ? `<span class="item-notes">${escapeHtml(item.notes)}</span>` : ''}
+        </div>
+        <div class="item-actions">
+          <button class="btn-edit-sm" data-action="edit-item" data-id="${id}" aria-label="Modifica">✎</button>
+          <button class="btn-remove-sm" data-action="remove-item" data-id="${id}" aria-label="Rimuovi">×</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  if (!container._bound) {
+    container._bound = true;
+    container.addEventListener('click', (e) => {
+      const target = e.target.closest('[data-action]');
+      if (!target) return;
+      const action = target.dataset.action;
+      const id = target.dataset.id;
+
+      if (action === 'remove-item') {
+        callbacks.onRemove?.(id);
+      } else if (action === 'edit-item' || action === 'edit-qty') {
+        callbacks.onEdit?.(id);
+      } else if (action === 'cancel-item') {
+        callbacks.onCancel?.();
+      } else if (action === 'save-item') {
+        const row = target.closest('.inventory-entry');
+        const name = row.querySelector('.edit-name').value.trim();
+        const quantity = parseInt(row.querySelector('.edit-qty').value) || 1;
+        const notes = row.querySelector('.edit-notes').value.trim();
+        callbacks.onSave?.(id, { name, quantity, notes });
+      }
+    });
+  }
 }
 
 // ─── Death save interaction ───────────────────────────────────────────────────
