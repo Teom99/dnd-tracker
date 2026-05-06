@@ -242,8 +242,8 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         <div class="initiative-block">
           ${isMaster && isCreature ? `
             <div class="faction-switch">
-              <button class="faction-btn evil ${(c.faction || 'evil') === 'evil' ? 'active' : ''}" data-id="${c.id}" data-action="set-faction" data-faction="evil" title="Fazione Cattiva">Cattivo</button>
-              <button class="faction-btn good ${c.faction === 'good' ? 'active' : ''}" data-id="${c.id}" data-action="set-faction" data-faction="good" title="Fazione Buona">Buono</button>
+              <button class="faction-btn evil ${(c.faction || 'evil') === 'evil' ? 'active' : ''}" data-id="${c.id}" data-action="set-faction" data-faction="evil" title="Fazione Cattiva">Avversario</button>
+              <button class="faction-btn good ${c.faction === 'good' ? 'active' : ''}" data-id="${c.id}" data-action="set-faction" data-faction="good" title="Fazione Buona">Alleato</button>
             </div>
           ` : ''}
           ${canEdit
