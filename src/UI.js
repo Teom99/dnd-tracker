@@ -400,6 +400,12 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         </button>
       ` : ''}
 
+      ${isMaster && isCreature && c.monsterApiIndex ? `
+        <button class="btn-stat-block" data-id="${c.id}" data-api-index="${c.monsterApiIndex}" data-action="view-stat-block">
+          📖 Visualizza Dati
+        </button>
+      ` : ''}
+
       ${isOwnCard ? `
         <button class="btn-sheet" data-id="${c.id}" data-action="open-sheet">📜 Scheda Personaggio</button>
       ` : ''}

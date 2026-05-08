@@ -2063,6 +2063,22 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 /* ─── Sheet button on combat card ─── */
+.btn-stat-block {
+  width: 100%;
+  padding: 0.3rem 0.6rem;
+  background: transparent;
+  border: 1px dashed rgba(255,255,255,0.2);
+  color: var(--text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-family: 'Cinzel', serif;
+  min-height: 34px;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.btn-stat-block:hover { background: rgba(255,255,255,0.04); border-color: var(--gold); color: var(--gold-light); }
+
 .btn-sheet {
   width: 100%;
   padding: 0.3rem 0.6rem;

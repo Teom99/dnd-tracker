@@ -199,12 +199,14 @@ document.getElementById('form-add-creature').addEventListener('submit', async (e
   const name       = document.getElementById('input-creature-name').value.trim();
   const hp         = document.getElementById('input-creature-hp').value;
   const initiative = document.getElementById('input-creature-initiative').value || '0';
-  const ac         = document.getElementById('input-creature-ac').value || null;
+  const ac       = document.getElementById('input-creature-ac').value || null;
+  const apiIndex = document.getElementById('input-creature-api-index').value || null;
 
   if (!name || !hp) return;
 
   const charId = state.selectedCreatureCharId ?? null;
-  await state.combatantManager.add(name, initiative, hp, 'creature', state.myUid, charId, ac);
+  await state.combatantManager.add(name, initiative, hp, 'creature', state.myUid, charId, ac, apiIndex);
+  document.getElementById('input-creature-api-index').value = '';
   state.selectedCreatureCharId = null;
   document.querySelectorAll('#creature-library-list .char-pick-btn').forEach(b => b.classList.remove('selected'));
   e.target.reset();
@@ -314,10 +316,11 @@ function _renderMonsterStatBlock(data) {
 document.getElementById('btn-monster-add').addEventListener('click', () => {
   if (!_currentMonster) return;
   const d = _currentMonster;
-  document.getElementById('input-creature-name').value      = d.name ?? '';
-  document.getElementById('input-creature-hp').value        = d.hit_points ?? '';
-  document.getElementById('input-creature-ac').value        = d.armor_class?.[0]?.value ?? '';
+  document.getElementById('input-creature-name').value       = d.name ?? '';
+  document.getElementById('input-creature-hp').value         = d.hit_points ?? '';
+  document.getElementById('input-creature-ac').value         = d.armor_class?.[0]?.value ?? '';
   document.getElementById('input-creature-initiative').value = _mod(d.dexterity ?? 10);
+  document.getElementById('input-creature-api-index').value  = d.index ?? '';
   document.getElementById('monster-stat-block-modal').classList.add('hidden');
 });
 document.getElementById('btn-monster-sb-close').addEventListener('click', () => {
@@ -326,6 +329,20 @@ document.getElementById('btn-monster-sb-close').addEventListener('click', () => 
 document.getElementById('monster-stat-block-modal').addEventListener('click', (e) => {
   if (e.target === document.getElementById('monster-stat-block-modal'))
     document.getElementById('monster-stat-block-modal').classList.add('hidden');
+});
+
+// Bottone "📖 Visualizza Dati" nelle card creature (master-only, riapre il stat block)
+document.getElementById('creature-list').addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-action="view-stat-block"]');
+  if (!btn) return;
+  const idx = btn.dataset.apiIndex;
+  if (!idx) return;
+  btn.textContent = '⏳';
+  try {
+    const data = await getMonster(idx);
+    _renderMonsterStatBlock(data);
+  } catch { /* API non raggiungibile */ }
+  finally { btn.textContent = '📖 Visualizza Dati'; }
 });
 
 {

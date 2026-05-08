@@ -13,7 +13,7 @@ export class Combatant {
     return ref(this._db, path ? `${base}/${path}` : base);
   }
 
-  async add(name, initiative, hpMax, type, ownerUid, charId = null, armorClass = null) {
+  async add(name, initiative, hpMax, type, ownerUid, charId = null, armorClass = null, monsterApiIndex = null) {
     const newRef = push(this._ref());
     const data = {
       name,
@@ -27,6 +27,7 @@ export class Combatant {
       charId: charId ?? null,
     };
     if (armorClass !== null && armorClass !== '') data.armorClass = parseInt(armorClass) || 0;
+    if (monsterApiIndex) data.monsterApiIndex = monsterApiIndex;
     await set(newRef, data);
     return newRef.key;
   }
