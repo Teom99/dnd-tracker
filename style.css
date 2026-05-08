@@ -2638,6 +2638,50 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 .archive-note-empty { font-size: 0.85rem; color: var(--text-muted); font-style: italic; }
 
 /* ═══════════════════════════════════════════
+   D&D API — Monster Search & Condition Desc
+═══════════════════════════════════════════ */
+.monster-api-search { position: relative; }
+
+.api-suggestions {
+  position: absolute;
+  top: 100%; left: 0; right: 0;
+  z-index: 50;
+  background: var(--bg-card);
+  border: 1px solid var(--border-warm);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  list-style: none;
+  max-height: 220px;
+  overflow-y: auto;
+  box-shadow: var(--shadow);
+}
+
+.api-suggestion-item {
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.1s, color 0.1s;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.api-suggestion-item:last-child { border-bottom: none; }
+.api-suggestion-item:hover { background: rgba(255,255,255,0.06); color: var(--gold-light); }
+
+.condition-api-desc {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  min-height: 2.4rem;
+  padding: 0.4rem 0.65rem;
+  background: rgba(0,0,0,0.2);
+  border-radius: 4px;
+  border-left: 2px solid var(--border-warm);
+  font-style: italic;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+/* ═══════════════════════════════════════════
    MODAL UPLOAD SCENA
 ═══════════════════════════════════════════ */
 .scene-upload-content {

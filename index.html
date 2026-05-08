@@ -165,11 +165,17 @@
               <div id="creature-library-list" class="char-picker-list"></div>
               <p class="or-divider">oppure inserisci manualmente:</p>
             </div>
+            <div class="monster-api-search" id="monster-api-search">
+              <input type="text" id="input-monster-search"
+                     placeholder="🔍 Cerca mostro D&D 5e (opzionale)..."
+                     autocomplete="off">
+              <ul id="monster-suggestions" class="api-suggestions hidden"></ul>
+            </div>
             <input
               type="text"
               id="input-creature-name"
               placeholder="Nome creatura"
-              maxlength="30"
+              maxlength="50"
             >
             <div class="input-row">
               <input
@@ -184,6 +190,13 @@
                 id="input-creature-initiative"
                 placeholder="Iniziativa"
                 min="-10"
+                max="30"
+              >
+              <input
+                type="number"
+                id="input-creature-ac"
+                placeholder="CA"
+                min="0"
                 max="30"
               >
             </div>
@@ -384,7 +397,7 @@
                 <h4 class="subsection-title">Trucchetti</h4>
                 <div id="cantrips-list" class="cantrip-list"></div>
                 <form id="form-add-cantrip" class="add-form-inline" novalidate>
-                  <input type="text" id="cantrip-name" placeholder="Nome trucchetto" maxlength="40">
+                  <input type="text" id="cantrip-name" placeholder="Nome trucchetto" maxlength="60" list="dnd-spells-list">
                   <button type="submit" class="btn-secondary btn-sm">+ Aggiungi</button>
                 </form>
                 <div id="spells-by-level"></div>
@@ -525,6 +538,7 @@
       <h3>Condizioni</h3>
       <p class="modal-hint">Tocca per attivare/disattivare</p>
       <div id="condition-list" class="condition-grid"></div>
+      <p id="condition-api-desc" class="condition-api-desc"></p>
       <button id="btn-close-modal" class="btn-secondary">Chiudi</button>
     </div>
   </div>
@@ -555,6 +569,7 @@
   </div>
 
   <input type="file" id="input-scene-image" accept="image/*" style="display:none">
+  <datalist id="dnd-spells-list"></datalist>
 
   <!-- ═══════════════════════════════════════════════
        MODAL — carica immagine scena

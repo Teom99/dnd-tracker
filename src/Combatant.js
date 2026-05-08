@@ -13,9 +13,9 @@ export class Combatant {
     return ref(this._db, path ? `${base}/${path}` : base);
   }
 
-  async add(name, initiative, hpMax, type, ownerUid, charId = null) {
+  async add(name, initiative, hpMax, type, ownerUid, charId = null, armorClass = null) {
     const newRef = push(this._ref());
-    await set(newRef, {
+    const data = {
       name,
       initiative: parseInt(initiative) || 0,
       hpMax:      parseInt(hpMax)      || 1,
@@ -25,7 +25,9 @@ export class Combatant {
       ownerUid,
       faction: 'evil',
       charId: charId ?? null,
-    });
+    };
+    if (armorClass !== null && armorClass !== '') data.armorClass = parseInt(armorClass) || 0;
+    await set(newRef, data);
     return newRef.key;
   }
 

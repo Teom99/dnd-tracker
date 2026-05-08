@@ -3,6 +3,7 @@ import { getDatabase, ref, get, remove } from 'https://www.gstatic.com/firebasej
 import { getAuth }            from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 import { FIREBASE_CONFIG, DISCORD_WEBHOOK_URL } from './config.js';
+import { getMonsterList, getMonster, getSpellList, getConditionDescriptions } from './src/DndApi.js';
 import { Session }           from './src/Session.js';
 import { CharacterLibrary }  from './src/CharacterLibrary.js';
 import * as UI               from './src/UI.js';
@@ -198,16 +199,105 @@ document.getElementById('form-add-creature').addEventListener('submit', async (e
   const name       = document.getElementById('input-creature-name').value.trim();
   const hp         = document.getElementById('input-creature-hp').value;
   const initiative = document.getElementById('input-creature-initiative').value || '0';
+  const ac         = document.getElementById('input-creature-ac').value || null;
 
   if (!name || !hp) return;
 
   const charId = state.selectedCreatureCharId ?? null;
-  await state.combatantManager.add(name, initiative, hp, 'creature', state.myUid, charId);
+  await state.combatantManager.add(name, initiative, hp, 'creature', state.myUid, charId, ac);
   state.selectedCreatureCharId = null;
   document.querySelectorAll('#creature-library-list .char-pick-btn').forEach(b => b.classList.remove('selected'));
   e.target.reset();
   document.getElementById('input-creature-name').focus();
 });
+
+// ─── D&D API: Monster Search ──────────────────────────────────────────────────
+
+let _monsterList = null;
+
+async function _ensureMonsterList() {
+  if (!_monsterList) _monsterList = await getMonsterList();
+  return _monsterList;
+}
+
+{
+  const searchInput   = document.getElementById('input-monster-search');
+  const suggestionBox = document.getElementById('monster-suggestions');
+
+  searchInput.addEventListener('focus', () => _ensureMonsterList().catch(() => {}));
+
+  searchInput.addEventListener('input', async () => {
+    const q = searchInput.value.trim().toLowerCase();
+    suggestionBox.innerHTML = '';
+    if (q.length < 2) { suggestionBox.classList.add('hidden'); return; }
+
+    const list    = await _ensureMonsterList().catch(() => []);
+    const matches = list.filter(m => m.name.toLowerCase().includes(q)).slice(0, 8);
+    if (!matches.length) { suggestionBox.classList.add('hidden'); return; }
+
+    matches.forEach(m => {
+      const li       = document.createElement('li');
+      li.className   = 'api-suggestion-item';
+      li.textContent = m.name;
+      li.addEventListener('mousedown', async (ev) => {
+        ev.preventDefault();
+        suggestionBox.classList.add('hidden');
+        searchInput.value = '';
+        li.textContent = '⏳ Caricamento...';
+        try {
+          const data = await getMonster(m.index);
+          document.getElementById('input-creature-name').value      = data.name ?? '';
+          document.getElementById('input-creature-hp').value        = data.hit_points ?? '';
+          document.getElementById('input-creature-ac').value        = data.armor_class?.[0]?.value ?? '';
+          document.getElementById('input-creature-initiative').value =
+            Math.floor(((data.dexterity ?? 10) - 10) / 2);
+        } catch { /* lascia i campi vuoti — l'utente li compila manualmente */ }
+      });
+      suggestionBox.appendChild(li);
+    });
+    suggestionBox.classList.remove('hidden');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#monster-api-search')) suggestionBox.classList.add('hidden');
+  });
+}
+
+// ─── D&D API: Spell Datalist (background) ────────────────────────────────────
+
+setTimeout(async () => {
+  try {
+    const spells = await getSpellList();
+    const dl     = document.getElementById('dnd-spells-list');
+    if (dl) dl.innerHTML = spells.map(s => `<option value="${s.name}">`).join('');
+  } catch { /* graceful degradation */ }
+}, 2000);
+
+// ─── D&D API: Condition Descriptions (background) ────────────────────────────
+
+let _conditionDescriptions = null;
+
+setTimeout(async () => {
+  try { _conditionDescriptions = await getConditionDescriptions(); }
+  catch { /* graceful degradation */ }
+}, 3000);
+
+{
+  const condList = document.getElementById('condition-list');
+  const descEl   = document.getElementById('condition-api-desc');
+
+  condList.addEventListener('mouseover', (e) => {
+    const btn = e.target.closest('[data-condition]');
+    if (!btn || !descEl) return;
+    const desc = _conditionDescriptions?.get(btn.dataset.condition) ?? '';
+    descEl.textContent  = desc;
+    descEl.style.opacity = desc ? '1' : '0';
+  });
+
+  condList.addEventListener('mouseleave', () => {
+    if (descEl) descEl.style.opacity = '0';
+  });
+}
 
 // ─── COMBAT: Turno, Reset, Copia, Esci ───────────────────────────────────────
 
