@@ -116,7 +116,7 @@ export function renderSessionNotes(notesObj, canEdit, expandedIds) {
     const headerHtml = `
       <div class="note-header" data-action="toggle" data-note-id="${note.id}">
         <span class="note-chevron">${isExpanded ? '▼' : '▶'}</span>
-        <input class="note-title-input" data-note-id="${note.id}" value="${esc(note.title ?? '')}" title="Modifica titolo">
+        <input class="note-title-input" data-note-id="${note.id}" value="${escapeHtml(note.title ?? '')}" title="Modifica titolo">
         <input type="date" class="note-date-input" data-note-id="${note.id}" value="${dateVal}">
         ${canEdit ? `<button class="btn-remove-sm note-delete-btn" data-action="delete" data-note-id="${note.id}" title="Elimina">×</button>` : ''}
       </div>`;
@@ -125,7 +125,7 @@ export function renderSessionNotes(notesObj, canEdit, expandedIds) {
       <div class="note-body">
         <textarea class="note-textarea" data-note-id="${note.id}"
                   placeholder="Scrivi qui cosa è successo in questa sessione..."
-                  rows="6">${esc(note.content ?? '')}</textarea>
+                  rows="6">${escapeHtml(note.content ?? '')}</textarea>
       </div>` : '';
 
     if (note.id !== focusedNoteId) {

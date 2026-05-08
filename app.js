@@ -361,7 +361,13 @@ setTimeout(async () => {
     descEl.style.opacity = desc ? '1' : '0';
   });
 
-  condList.addEventListener('mouseleave', () => {
+  condList.addEventListener('mouseleave', (e) => {
+    if (descEl?.contains(e.relatedTarget)) return;
+    if (descEl) descEl.style.opacity = '0';
+  });
+
+  descEl?.addEventListener('mouseleave', (e) => {
+    if (condList.contains(e.relatedTarget)) return;
     if (descEl) descEl.style.opacity = '0';
   });
 }
