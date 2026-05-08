@@ -2634,6 +2634,115 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 .archive-note-empty { font-size: 0.85rem; color: var(--text-muted); font-style: italic; }
 
 /* ═══════════════════════════════════════════
+   MODAL — Stat Block Mostro
+═══════════════════════════════════════════ */
+.monster-sb-content {
+  max-width: 560px;
+  gap: 0.75rem;
+  border-radius: var(--radius);
+}
+
+.monster-sb-name {
+  font-family: 'Cinzel', serif;
+  font-size: 1.3rem;
+  color: var(--gold);
+  text-shadow: 0 0 16px var(--gold-glow);
+  text-align: left;
+  margin: 0;
+}
+
+.monster-sb-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.88rem;
+  line-height: 1.55;
+  max-height: 65dvh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-warm) transparent;
+  padding-right: 0.25rem;
+}
+
+.sb-meta {
+  font-style: italic;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-bottom: 0.2rem;
+}
+
+.sb-divider {
+  height: 1px;
+  background: var(--gold);
+  opacity: 0.35;
+  margin: 0.4rem 0;
+}
+
+.sb-prop {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.sb-label {
+  font-family: 'Cinzel', serif;
+  font-size: 0.82rem;
+  color: var(--gold-light);
+  flex-shrink: 0;
+}
+
+.sb-abilities {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.3rem;
+  text-align: center;
+  margin: 0.4rem 0;
+}
+
+.sb-ability {
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-warm);
+  border-radius: 6px;
+  padding: 0.3rem 0.15rem;
+}
+
+.sb-ab-name {
+  font-family: 'Cinzel', serif;
+  font-size: 0.68rem;
+  color: var(--gold-light);
+  letter-spacing: 0.04em;
+}
+
+.sb-ab-score {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.sb-ab-mod {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.sb-section-title {
+  font-family: 'Cinzel', serif;
+  font-size: 0.9rem;
+  color: var(--gold);
+  border-bottom: 1px solid var(--gold);
+  opacity: 0.9;
+  padding-bottom: 0.15rem;
+  margin: 0.5rem 0 0.3rem;
+}
+
+.sb-action {
+  margin: 0.25rem 0;
+  line-height: 1.55;
+}
+
+.sb-action strong { color: var(--text); }
+.sb-action em     { color: var(--text-muted); font-style: normal; }
+
+/* ═══════════════════════════════════════════
    D&D API — Monster Search & Condition Desc
 ═══════════════════════════════════════════ */
 .monster-api-search { position: relative; }

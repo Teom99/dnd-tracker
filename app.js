@@ -211,14 +211,122 @@ document.getElementById('form-add-creature').addEventListener('submit', async (e
   document.getElementById('input-creature-name').focus();
 });
 
-// ─── D&D API: Monster Search ──────────────────────────────────────────────────
+// ─── D&D API: Monster Search + Stat Block ─────────────────────────────────────
 
-let _monsterList = null;
+let _monsterList    = null;
+let _currentMonster = null;
 
 async function _ensureMonsterList() {
   if (!_monsterList) _monsterList = await getMonsterList();
   return _monsterList;
 }
+
+function _mod(score) {
+  const m = Math.floor((score - 10) / 2);
+  return m >= 0 ? `+${m}` : `${m}`;
+}
+
+function _renderMonsterStatBlock(data) {
+  _currentMonster = data;
+  document.getElementById('monster-sb-name').textContent = data.name ?? '';
+
+  const AB  = ['strength','dexterity','constitution','intelligence','wisdom','charisma'];
+  const ABL = ['FOR','DES','COS','INT','SAG','CAR'];
+
+  const acStr    = (data.armor_class ?? []).map(a => a.type === 'natural' || a.type === 'armor' ? `${a.value}` : `${a.value} (${a.type})`).join(', ') || '—';
+  const speedStr = Object.entries(data.speed ?? {}).map(([k,v]) => k === 'walk' ? v : `${k} ${v}`).join(', ') || '—';
+
+  const savingThrows = (data.proficiencies ?? [])
+    .filter(p => p.proficiency.index.startsWith('saving-throw'))
+    .map(p => `${p.proficiency.name.replace('Saving Throw: ','')} +${p.value}`)
+    .join(', ');
+
+  const skills = (data.proficiencies ?? [])
+    .filter(p => p.proficiency.index.startsWith('skill'))
+    .map(p => `${p.proficiency.name.replace('Skill: ','')} +${p.value}`)
+    .join(', ');
+
+  const renderList = (arr) => Array.isArray(arr) && arr.length
+    ? arr.map(x => typeof x === 'string' ? x : x.name).join(', ')
+    : null;
+
+  function prop(label, value) {
+    return value ? `<div class="sb-prop"><span class="sb-label">${label}</span> ${value}</div>` : '';
+  }
+
+  const specialHtml = (data.special_abilities ?? []).map(a =>
+    `<p class="sb-action"><strong><em>${a.name}.</em></strong> ${a.desc ?? ''}</p>`
+  ).join('');
+
+  const actionsHtml = (data.actions ?? []).map(a => {
+    let extra = '';
+    if (a.attack_bonus !== undefined) extra += ` <em>Attacco:</em> +${a.attack_bonus} al colpo,`;
+    const dmg = (a.damage ?? []).map(d => [d.damage_dice, d.damage_type?.name].filter(Boolean).join(' ')).join(' + ');
+    if (dmg) extra += ` <em>Danni:</em> ${dmg}.`;
+    return `<p class="sb-action"><strong>${a.name}.</strong> ${a.desc ?? ''}${extra}</p>`;
+  }).join('');
+
+  const legendaryHtml = (data.legendary_actions ?? []).length ? `
+    <div class="sb-section-title">Azioni Leggendarie</div>
+    ${(data.legendary_actions ?? []).map(a =>
+      `<p class="sb-action"><strong>${a.name}.</strong> ${a.desc ?? ''}</p>`
+    ).join('')}` : '';
+
+  const reactionsHtml = (data.reactions ?? []).length ? `
+    <div class="sb-section-title">Reazioni</div>
+    ${(data.reactions ?? []).map(a =>
+      `<p class="sb-action"><strong>${a.name}.</strong> ${a.desc ?? ''}</p>`
+    ).join('')}` : '';
+
+  const sensesStr = Object.entries(data.senses ?? {})
+    .map(([k,v]) => `${k.replace(/_/g,' ')} ${v}`).join(', ') || '—';
+
+  document.getElementById('monster-sb-body').innerHTML = `
+    <div class="sb-meta">${[data.size, data.type, data.alignment].filter(Boolean).join(' • ')}</div>
+    <div class="sb-divider"></div>
+    ${prop('Classe Armatura', acStr)}
+    ${prop('Punti Ferita', `${data.hit_points}${data.hit_points_roll ? ` (${data.hit_points_roll})` : ''}`)}
+    ${prop('Velocità', speedStr)}
+    <div class="sb-divider"></div>
+    <div class="sb-abilities">
+      ${AB.map((ab,i) => `<div class="sb-ability"><div class="sb-ab-name">${ABL[i]}</div><div class="sb-ab-score">${data[ab] ?? '—'}</div><div class="sb-ab-mod">${_mod(data[ab] ?? 10)}</div></div>`).join('')}
+    </div>
+    <div class="sb-divider"></div>
+    ${prop('Tiri Salvezza', savingThrows)}
+    ${prop('Abilità', skills)}
+    ${prop('Immunità ai Danni', renderList(data.damage_immunities))}
+    ${prop('Resistenze ai Danni', renderList(data.damage_resistances))}
+    ${prop('Vulnerabilità', renderList(data.damage_vulnerabilities))}
+    ${prop('Immunità alle Condizioni', renderList(data.condition_immunities))}
+    ${prop('Sensi', sensesStr)}
+    ${prop('Lingue', data.languages || '—')}
+    ${prop('Grado di Sfida', `${data.challenge_rating} (${(data.xp ?? 0).toLocaleString('it-IT')} PE)`)}
+    ${specialHtml ? `<div class="sb-divider"></div><div class="sb-section-title">Capacità Speciali</div>${specialHtml}` : ''}
+    ${actionsHtml ? `<div class="sb-divider"></div><div class="sb-section-title">Azioni</div>${actionsHtml}` : ''}
+    ${reactionsHtml}
+    ${legendaryHtml}
+  `;
+
+  document.getElementById('monster-stat-block-modal').classList.remove('hidden');
+}
+
+// Bottoni del modal
+document.getElementById('btn-monster-add').addEventListener('click', () => {
+  if (!_currentMonster) return;
+  const d = _currentMonster;
+  document.getElementById('input-creature-name').value      = d.name ?? '';
+  document.getElementById('input-creature-hp').value        = d.hit_points ?? '';
+  document.getElementById('input-creature-ac').value        = d.armor_class?.[0]?.value ?? '';
+  document.getElementById('input-creature-initiative').value = _mod(d.dexterity ?? 10);
+  document.getElementById('monster-stat-block-modal').classList.add('hidden');
+});
+document.getElementById('btn-monster-sb-close').addEventListener('click', () => {
+  document.getElementById('monster-stat-block-modal').classList.add('hidden');
+});
+document.getElementById('monster-stat-block-modal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('monster-stat-block-modal'))
+    document.getElementById('monster-stat-block-modal').classList.add('hidden');
+});
 
 {
   const searchInput   = document.getElementById('input-monster-search');
@@ -242,16 +350,12 @@ async function _ensureMonsterList() {
       li.addEventListener('mousedown', async (ev) => {
         ev.preventDefault();
         suggestionBox.classList.add('hidden');
-        searchInput.value = '';
-        li.textContent = '⏳ Caricamento...';
+        searchInput.value  = '';
+        li.textContent     = '⏳ Caricamento...';
         try {
           const data = await getMonster(m.index);
-          document.getElementById('input-creature-name').value      = data.name ?? '';
-          document.getElementById('input-creature-hp').value        = data.hit_points ?? '';
-          document.getElementById('input-creature-ac').value        = data.armor_class?.[0]?.value ?? '';
-          document.getElementById('input-creature-initiative').value =
-            Math.floor(((data.dexterity ?? 10) - 10) / 2);
-        } catch { /* lascia i campi vuoti — l'utente li compila manualmente */ }
+          _renderMonsterStatBlock(data);
+        } catch { li.textContent = m.name; }
       });
       suggestionBox.appendChild(li);
     });
