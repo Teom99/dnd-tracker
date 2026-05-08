@@ -275,7 +275,7 @@ export function renderSpellsByLevel(spells, onRemove, onTogglePrepared, onAddSpe
         <div class="spell-level-header">${lvl}° livello</div>
         <div class="spell-level-entries" id="spell-level-${lvl}">${spellItems}</div>
         <form class="add-form-inline" data-spell-level="${lvl}" novalidate>
-          <input type="text" placeholder="Nome incantesimo" maxlength="60" list="dnd-spells-list">
+          <input type="text" placeholder="Nome incantesimo" maxlength="60">
           <button type="submit" class="btn-secondary btn-sm">+ Aggiungi</button>
         </form>
       </div>`;

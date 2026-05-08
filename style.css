@@ -1139,12 +1139,10 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
    MASTER CONTROLS footer
 ═══════════════════════════════════════════ */
 .master-controls {
-  position: sticky;
-  bottom: 0;
   display: flex;
   gap: 0.6rem;
-  padding: 1rem 0 0.6rem;
-  background: linear-gradient(transparent, var(--bg-deep) 25%);
+  padding: 0.5rem 0;
+  align-items: stretch;
 }
 
 /* ═══════════════════════════════════════════
@@ -1276,8 +1274,6 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   h1 { font-size: 2rem; }
 
   .master-controls {
-    position: static;
-    background: transparent;
     padding: 0;
   }
 }

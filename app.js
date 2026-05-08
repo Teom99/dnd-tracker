@@ -263,15 +263,66 @@ async function _ensureMonsterList() {
   });
 }
 
-// ─── D&D API: Spell Datalist (background) ────────────────────────────────────
+// ─── D&D API: Spell Autocomplete (custom floating dropdown) ──────────────────
 
-setTimeout(async () => {
-  try {
-    const spells = await getSpellList();
-    const dl     = document.getElementById('dnd-spells-list');
-    if (dl) dl.innerHTML = spells.map(s => `<option value="${s.name}">`).join('');
-  } catch { /* graceful degradation */ }
-}, 2000);
+{
+  let _spellList        = null;
+  let _activeSpellInput = null;
+
+  // Box flotante condiviso — appeso a <body> per evitare clipping da overflow:hidden
+  const _spellBox = document.createElement('ul');
+  _spellBox.id        = 'spell-suggestions';
+  _spellBox.className = 'api-suggestions hidden';
+  _spellBox.style.cssText = 'position:fixed;z-index:200;';
+  document.body.appendChild(_spellBox);
+
+  async function _showSpellSuggestions(input, q) {
+    _activeSpellInput = input;
+    _spellBox.innerHTML = '';
+    if (q.length < 1) { _spellBox.classList.add('hidden'); return; }
+
+    if (!_spellList) _spellList = await getSpellList().catch(() => []);
+    const matches = _spellList.filter(s => s.name.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
+    if (!matches.length) { _spellBox.classList.add('hidden'); return; }
+
+    const rect = input.getBoundingClientRect();
+    _spellBox.style.top   = `${rect.bottom}px`;
+    _spellBox.style.left  = `${rect.left}px`;
+    _spellBox.style.width = `${rect.width}px`;
+
+    matches.forEach(s => {
+      const li = document.createElement('li');
+      li.className   = 'api-suggestion-item';
+      li.textContent = s.name;
+      li.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        if (_activeSpellInput) _activeSpellInput.value = s.name;
+        _spellBox.classList.add('hidden');
+      });
+      _spellBox.appendChild(li);
+    });
+    _spellBox.classList.remove('hidden');
+  }
+
+  // Event delegation su tutto il documento — funziona anche dopo re-render di SheetUI
+  document.addEventListener('input', (e) => {
+    const el = e.target;
+    if (el.id === 'cantrip-name' ||
+        el.closest('form[data-spell-level]')) {
+      _showSpellSuggestions(el, el.value);
+    }
+  });
+
+  document.addEventListener('focusout', (e) => {
+    if (e.target === _activeSpellInput)
+      setTimeout(() => _spellBox.classList.add('hidden'), 150);
+  });
+
+  document.addEventListener('click', (e) => {
+    if (e.target !== _activeSpellInput && !_spellBox.contains(e.target))
+      _spellBox.classList.add('hidden');
+  });
+}
 
 // ─── D&D API: Condition Descriptions (background) ────────────────────────────
 

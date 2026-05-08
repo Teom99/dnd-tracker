@@ -152,6 +152,13 @@
 
     <div id="error-message-combat" class="error-banner hidden"></div>
 
+    <!-- Controlli turno (visibili solo al master) -->
+    <div id="master-controls" class="master-controls hidden">
+      <button id="btn-next-turn" class="btn-primary btn-next">Turno Successivo ▶</button>
+      <button id="btn-upload-scene" class="btn-secondary btn-sm hidden">Carica Scena</button>
+      <button id="btn-reset" class="btn-danger">↺ Reset Incontro</button>
+    </div>
+
     <!-- Due colonne: Creature | Giocatori -->
     <div class="combat-cols">
 
@@ -397,7 +404,7 @@
                 <h4 class="subsection-title">Trucchetti</h4>
                 <div id="cantrips-list" class="cantrip-list"></div>
                 <form id="form-add-cantrip" class="add-form-inline" novalidate>
-                  <input type="text" id="cantrip-name" placeholder="Nome trucchetto" maxlength="60" list="dnd-spells-list">
+                  <input type="text" id="cantrip-name" placeholder="Nome trucchetto" maxlength="60">
                   <button type="submit" class="btn-secondary btn-sm">+ Aggiungi</button>
                 </form>
                 <div id="spells-by-level"></div>
@@ -521,12 +528,6 @@
       <div id="session-notes-list" class="session-notes-list"></div>
     </section>
 
-    <!-- Controlli turno (visibili solo al master) -->
-    <footer id="master-controls" class="master-controls hidden">
-      <button id="btn-next-turn" class="btn-primary btn-next">Turno Successivo ▶</button>
-      <button id="btn-upload-scene" class="btn-secondary btn-sm hidden">Carica Scena</button>
-      <button id="btn-reset" class="btn-danger">↺ Reset Incontro</button>
-    </footer>
 
   </div>
 
@@ -569,7 +570,6 @@
   </div>
 
   <input type="file" id="input-scene-image" accept="image/*" style="display:none">
-  <datalist id="dnd-spells-list"></datalist>
 
   <!-- ═══════════════════════════════════════════════
        MODAL — carica immagine scena
