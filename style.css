@@ -2667,7 +2667,8 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   font-size: 0.8rem;
   color: var(--text-muted);
   line-height: 1.5;
-  min-height: 2.4rem;
+  height: 5.5rem;
+  overflow-y: auto;
   padding: 0.4rem 0.65rem;
   background: rgba(0,0,0,0.2);
   border-radius: 4px;
