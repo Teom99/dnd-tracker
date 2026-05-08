@@ -479,7 +479,15 @@ document.getElementById('btn-clear-scene').addEventListener('click', async () =>
 document.getElementById('btn-add-session-note').addEventListener('click', async () => {
   if (!state.session) return;
   const newId = await state.session.addSessionNote();
-  if (newId) _expandedNoteIds.add(newId);
+  if (newId) {
+    _expandedNoteIds.add(newId);
+    // Firebase listener potrebbe aver già re-renderizzato prima che newId fosse in _expandedNoteIds;
+    // forziamo subito un secondo render con la nota espansa.
+    UI.renderSessionNotes(state.snapshot?.sessionNotes ?? {}, true, _expandedNoteIds);
+    document.getElementById('session-notes-list')
+      ?.querySelector(`[data-note-id="${newId}"] .note-textarea`)
+      ?.focus();
+  }
 });
 
 document.getElementById('session-notes-list').addEventListener('click', async (e) => {
