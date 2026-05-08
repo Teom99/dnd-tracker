@@ -269,26 +269,38 @@ async function _ensureMonsterList() {
   let _spellList        = null;
   let _activeSpellInput = null;
 
-  // Box flotante condiviso — appeso a <body> per evitare clipping da overflow:hidden
+  // Preload in background: ready when the user opens the sheet
+  getSpellList().then(list => { _spellList = list; }).catch(() => {});
+
+  // Box flotante — stile completamente inline per evitare conflitti con .api-suggestions
   const _spellBox = document.createElement('ul');
-  _spellBox.id        = 'spell-suggestions';
-  _spellBox.className = 'api-suggestions hidden';
-  _spellBox.style.cssText = 'position:fixed;z-index:200;';
+  _spellBox.id = 'spell-suggestions';
+  _spellBox.style.cssText = [
+    'position:fixed', 'z-index:200', 'list-style:none', 'display:none',
+    `background:var(--bg-card)`, `border:1px solid var(--border-warm)`,
+    `border-radius:0 0 var(--radius) var(--radius)`,
+    'max-height:220px', 'overflow-y:auto',
+    `box-shadow:var(--shadow)`, 'margin:0', 'padding:0',
+  ].join(';');
   document.body.appendChild(_spellBox);
+
+  function _hideSpellBox() { _spellBox.style.display = 'none'; }
+  function _showSpellBox()  { _spellBox.style.display = 'block'; }
 
   async function _showSpellSuggestions(input, q) {
     _activeSpellInput = input;
     _spellBox.innerHTML = '';
-    if (q.length < 1) { _spellBox.classList.add('hidden'); return; }
+    if (q.length < 1) { _hideSpellBox(); return; }
 
     if (!_spellList) _spellList = await getSpellList().catch(() => []);
     const matches = _spellList.filter(s => s.name.toLowerCase().includes(q.toLowerCase())).slice(0, 8);
-    if (!matches.length) { _spellBox.classList.add('hidden'); return; }
+    if (!matches.length) { _hideSpellBox(); return; }
 
     const rect = input.getBoundingClientRect();
-    _spellBox.style.top   = `${rect.bottom}px`;
+    _spellBox.style.top   = `${rect.bottom + window.scrollY}px`;
     _spellBox.style.left  = `${rect.left}px`;
     _spellBox.style.width = `${rect.width}px`;
+    _spellBox.style.right = 'auto';
 
     matches.forEach(s => {
       const li = document.createElement('li');
@@ -297,30 +309,34 @@ async function _ensureMonsterList() {
       li.addEventListener('mousedown', (e) => {
         e.preventDefault();
         if (_activeSpellInput) _activeSpellInput.value = s.name;
-        _spellBox.classList.add('hidden');
+        _hideSpellBox();
       });
       _spellBox.appendChild(li);
     });
-    _spellBox.classList.remove('hidden');
+    _showSpellBox();
   }
 
   // Event delegation su tutto il documento — funziona anche dopo re-render di SheetUI
   document.addEventListener('input', (e) => {
     const el = e.target;
-    if (el.id === 'cantrip-name' ||
-        el.closest('form[data-spell-level]')) {
+    if (el.id === 'cantrip-name' || el.closest('form[data-spell-level]')) {
       _showSpellSuggestions(el, el.value);
     }
   });
 
   document.addEventListener('focusout', (e) => {
     if (e.target === _activeSpellInput)
-      setTimeout(() => _spellBox.classList.add('hidden'), 150);
+      setTimeout(() => _hideSpellBox(), 150);
   });
 
   document.addEventListener('click', (e) => {
     if (e.target !== _activeSpellInput && !_spellBox.contains(e.target))
-      _spellBox.classList.add('hidden');
+      _hideSpellBox();
+  });
+
+  document.addEventListener('click', (e) => {
+    if (e.target !== _activeSpellInput && !_spellBox.contains(e.target))
+      _hideSpellBox();
   });
 }
 
