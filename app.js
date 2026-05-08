@@ -513,20 +513,23 @@ document.getElementById('btn-add-session-note').addEventListener('click', async 
 });
 
 document.getElementById('session-notes-list').addEventListener('click', async (e) => {
-  // Non propagare click da input/textarea
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+  // Delete va controllato PRIMA di toggle: il bottone × è dentro l'header toggle
+  const deleteEl = e.target.closest('[data-action="delete"]');
+  if (deleteEl) {
+    if (confirm('Eliminare questa nota di sessione?')) {
+      _expandedNoteIds.delete(deleteEl.dataset.noteId);
+      await state.session.deleteSessionNote(deleteEl.dataset.noteId);
+    }
+    return;
+  }
 
   const toggleEl = e.target.closest('[data-action="toggle"]');
   if (toggleEl) {
     const id = toggleEl.dataset.noteId;
     _expandedNoteIds.has(id) ? _expandedNoteIds.delete(id) : _expandedNoteIds.add(id);
     UI.renderSessionNotes(state.snapshot?.sessionNotes, true, _expandedNoteIds);
-    return;
-  }
-  const deleteEl = e.target.closest('[data-action="delete"]');
-  if (deleteEl && confirm('Eliminare questa nota di sessione?')) {
-    _expandedNoteIds.delete(deleteEl.dataset.noteId);
-    await state.session.deleteSessionNote(deleteEl.dataset.noteId);
   }
 });
 
