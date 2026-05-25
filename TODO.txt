@@ -2,6 +2,9 @@
 
 - FEAT: Il master dovrebbe poter caricare immagini da mostrare al party (aggiungere/rimuovere a piacimento)
 - FEAT: Le creature e pg possono settare le proprie resistenze ai danni. Quando viene fatto un danno, questo viene dimezzato in automatico in base alle resistenze.
+- FEAT: Integrare un db di creature da DnD 5e 2024
+- FEAT: Creare un'interfaccia lato master per creare combattimenti in base alla CR delle creature nemiche e al livello dei giocatori e/o NPC. L'interfaccia calcola il grado di difficoltà automaticamente e lo mostra al DM.
+- FEAT: Mettere un'impostazione attivabile opzionalmente lato master per non vedere la salute precisa dei giocatori. I giocatori possono vedere la salute di ciascuno di loro, il master vede solo quella delle creature ostili e degli NPC (e una stima di quelle dei giocatori).
 
 
 ## Fatto
