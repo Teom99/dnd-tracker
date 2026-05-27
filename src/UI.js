@@ -264,7 +264,10 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const showFullHp    = isMaster || isOwnCard || !isCreature;
     const showHint      = !isOwnCard && !isMaster && isCreature && c.showHealthHint;
     const canEditMaxHp  = isOwnCard || isOwnPet || (isMaster && (isCreature || isPet));
-    const ac            = acMap[c.ownerUid] ?? c.armorClass ?? null;
+    const canEditAc     = isOwnPet || (isMaster && isCreature);
+    const ac            = isPet ? (c.armorClass ?? null) : (acMap[c.ownerUid] ?? c.armorClass ?? null);
+    const tempHp        = c.tempHp ?? 0;
+    const tempHpPercent = c.hpMax > 0 ? Math.min(100, (tempHp / c.hpMax) * 100) : 0;
     const successes     = isOwnCard && isKO ? (myDeathSaves?.successes ?? 0) : 0;
     const failures      = isOwnCard && isKO ? (myDeathSaves?.failures  ?? 0) : 0;
     const turnNumber    = fullList.findIndex(x => x.id === c.id) + 1;
@@ -298,7 +301,9 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
           <span class="combatant-name">${escapeHtml(c.name)}${isKO ? ' 💀' : ''}</span>
           <span class="type-badge ${c.type} ${isCreature ? (c.faction || 'evil') : ''}">${c.type === 'player' ? 'PG' : isPet ? '🐾' : 'CR'}</span>
           ${c.type === 'player' && c.level ? `<span class="level-badge">Lv.${c.level}</span>` : ''}
-          ${ac !== null ? `<span class="ac-badge">CA ${ac}</span>` : ''}
+          ${ac !== null ? (canEditAc
+            ? `<button class="ac-badge ac-edit-btn" data-id="${c.id}" data-action="edit-ac" title="Modifica CA">CA ${ac}</button>`
+            : `<span class="ac-badge">CA ${ac}</span>`) : ''}
         </div>
         <div class="initiative-block">
           ${isMaster && isCreature ? `
@@ -326,10 +331,19 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
                 : c.hpMax
               }
             </span>
+            ${canEdit
+              ? `<button class="btn-temp-hp${tempHp > 0 ? ' active' : ''}" data-id="${c.id}" data-action="edit-temp-hp" data-temp-hp="${tempHp}" title="HP Temporanei">${tempHp > 0 ? `THP: ${tempHp}` : '+ HP Temp.'}</button>`
+              : tempHp > 0 ? `<span class="temp-hp-label">THP: ${tempHp}</span>` : ''
+            }
           </div>
           <div class="hp-bar-container">
             <div class="hp-bar" style="width:${hpPercent}%;background:${hpBarColor(hpPercent)}"></div>
           </div>
+          ${tempHp > 0 ? `
+            <div class="temp-hp-bar-container">
+              <div class="temp-hp-bar" style="width:${tempHpPercent}%"></div>
+            </div>
+          ` : ''}
           ${isMaster && isCreature ? `
             <button
               class="btn-health-hint ${c.showHealthHint ? 'hint-active' : ''}"
@@ -520,6 +534,8 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     if (action === 'open-conditions') { callbacks.onOpenConditions(id); return; }
     if (action === 'edit-initiative') { openInitiativeEdit(btn, id, callbacks.onInitiativeChange); return; }
     if (action === 'edit-hp-max')     { openHpMaxEdit(btn, id, callbacks.onSetMaxHp); return; }
+    if (action === 'edit-ac')         { openAcEdit(btn, id, callbacks.onSetAc); return; }
+    if (action === 'edit-temp-hp')    { openTempHpEdit(btn, id, callbacks.onSetTempHp); return; }
     if (action === 'open-sheet')      { callbacks.onOpenSheet?.(); return; }
   };
 }
@@ -570,6 +586,63 @@ function openHpMaxEdit(btn, id, onSetMaxHp) {
     btn.textContent = isNaN(val) ? original : String(val);
     input.replaceWith(btn);
     if (!isNaN(val) && val !== parseInt(original)) onSetMaxHp(id, val);
+  };
+
+  input.onblur    = confirm;
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter')  { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { input.value = original; input.blur(); }
+  };
+
+  btn.replaceWith(input);
+  input.focus();
+  input.select();
+}
+
+function openTempHpEdit(btn, id, onSetTempHp) {
+  const original = parseInt(btn.dataset.tempHp ?? '0') || 0;
+  const input    = document.createElement('input');
+  input.type        = 'number';
+  input.value       = original;
+  input.className   = 'hp-max-edit-input';
+  input.min         = '0';
+  input.max         = '9999';
+  input.placeholder = '0 = rimuovi';
+
+  const confirm = () => {
+    const val = Math.max(0, parseInt(input.value) || 0);
+    btn.dataset.tempHp  = val;
+    btn.textContent     = val > 0 ? `THP: ${val}` : '+ HP Temp.';
+    btn.classList.toggle('active', val > 0);
+    input.replaceWith(btn);
+    if (val !== original) onSetTempHp(id, val);
+  };
+
+  input.onblur    = confirm;
+  input.onkeydown = (e) => {
+    if (e.key === 'Enter')  { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { input.value = original; input.blur(); }
+  };
+
+  btn.replaceWith(input);
+  input.focus();
+  input.select();
+}
+
+function openAcEdit(btn, id, onSetAc) {
+  const original = btn.textContent.replace('CA ', '').trim();
+  const input    = document.createElement('input');
+  input.type      = 'number';
+  input.value     = original;
+  input.className = 'hp-max-edit-input';
+  input.min       = '0';
+  input.max       = '30';
+
+  const confirm = () => {
+    const val = parseInt(input.value);
+    btn.textContent = isNaN(val) ? `CA ${original}` : `CA ${val}`;
+    input.replaceWith(btn);
+    if (!isNaN(val) && val !== parseInt(original)) onSetAc(id, val);
   };
 
   input.onblur    = confirm;

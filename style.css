@@ -851,6 +851,40 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 .hp-max-btn:hover { border-color: var(--gold); color: var(--gold); }
 
+.btn-temp-hp {
+  background: transparent;
+  border: 1px dashed var(--border-warm);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-family: 'Cinzel', serif;
+  cursor: pointer;
+  padding: 0.05rem 0.35rem;
+  white-space: nowrap;
+  transition: border-color 0.15s, color 0.15s;
+}
+.btn-temp-hp:hover       { border-color: #7ae0a0; color: #7ae0a0; }
+.btn-temp-hp.active      { border-color: #7ae0a0; border-style: solid; color: #7ae0a0; }
+
+.temp-hp-bar-container {
+  height: 5px;
+  background: var(--hp-bar-bg);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(122, 224, 160, 0.2);
+}
+.temp-hp-bar {
+  height: 100%;
+  border-radius: 4px;
+  background: #7ae0a0;
+  transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.temp-hp-label {
+  font-size: 0.68rem;
+  color: #7ae0a0;
+  font-family: 'Cinzel', serif;
+}
+
 .hp-max-edit-input {
   width: 3.5rem;
   min-height: 28px;

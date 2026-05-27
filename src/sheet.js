@@ -208,6 +208,8 @@ function _makeCallbacks() {
     },
     onToggleHealthHint: (id, current)                     => state.combatantManager.setHealthHint(id, !current),
     onSetMaxHp:         (id, val)                         => state.combatantManager.setMaxHp(id, val),
+    onSetAc:            (id, val)                         => state.combatantManager.setArmorClass(id, val),
+    onSetTempHp:        (id, val)                         => state.combatantManager.setTempHp(id, val),
     onSetFaction:       (id, faction)                     => state.combatantManager.setFaction(id, faction),
     onOpenSheet:        ()                                => openCharacterSheet(),
     onDeathSave:        async (type, count)               => onDeathSave(type, count),
