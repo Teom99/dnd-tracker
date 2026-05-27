@@ -5,6 +5,13 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants)
   const container = document.getElementById('grid-container');
   if (!container) return;
 
+  const comb = combatants || {};
+  const myOwnedIds = new Set(
+    state.myUid
+      ? Object.entries(comb).filter(([, c]) => c.ownerUid === state.myUid).map(([id]) => id)
+      : []
+  );
+
   GridUI.renderInitiativeList(
     document.getElementById('grid-initiative-list'),
     sortedCombatants,
@@ -27,6 +34,7 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants)
     gridPos,
     combatants,
     state.myCombatantId,
+    myOwnedIds,
     state.session.isMaster,
     state.selectedGridTokenId,
     currentTurnId,
@@ -48,9 +56,15 @@ export function renderTokenBar(gridPos, combatants) {
   const pos  = gridPos   || {};
   const comb = combatants || {};
 
+  const myOwnedIds = new Set(
+    state.myUid
+      ? Object.entries(comb).filter(([, c]) => c.ownerUid === state.myUid).map(([id]) => id)
+      : []
+  );
+
   const entries = Object.entries(comb).filter(([id, c]) => {
     if (state.session.isMaster) return c.type === 'creature';
-    return id === state.myCombatantId;
+    return myOwnedIds.has(id);
   });
 
   if (entries.length === 0) { bar.innerHTML = ''; return; }

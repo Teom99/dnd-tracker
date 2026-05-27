@@ -63,7 +63,7 @@ function esc(s) {
  * @param {function(string|null)} onSelect  callback(combatantId|null)
  * @param {function(string,number,number)} onMove  callback(id,col,row)
  */
-export function renderGrid(container, gridPos, combatants, myCombatantId, isMaster, selectedId, currentTurnId, onSelect, onMove) {
+export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, onSelect, onMove) {
   const pos  = gridPos   || {};
   const comb = combatants || {};
 
@@ -250,14 +250,19 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, isMast
       onSelect(occupantId === selectedId ? null : occupantId);
     } else if (selectedId) {
       // Solo il master o il proprietario del token possono muoverlo
-      const canMove = isMaster || selectedId === myCombatantId;
+      const canMove = isMaster || myOwnedIds.has(selectedId);
       if (canMove) {
         onMove(selectedId, col, row);
       }
       onSelect(null);
-    } else if (!isMaster && myCombatantId && pos[myCombatantId] == null) {
-      // Giocatore non ancora posizionato: piazza il suo token
-      onMove(myCombatantId, col, row);
+    } else if (!isMaster) {
+      // Auto-posiziona: prima il PG, poi eventuali pet non ancora posizionati
+      if (myCombatantId && pos[myCombatantId] == null) {
+        onMove(myCombatantId, col, row);
+      } else {
+        const unplaced = [...myOwnedIds].find(id => id !== myCombatantId && pos[id] == null);
+        if (unplaced) onMove(unplaced, col, row);
+      }
     }
   });
 }

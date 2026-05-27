@@ -36,9 +36,17 @@ export class Combatant {
     await runTransaction(
       ref(this._db, `sessions/${this._code}/combatants/${id}`),
       (current) => {
-        if (current == null) return current; // abort se il nodo non esiste
+        if (current == null) return current;
         const hpMax = current.hpMax ?? 1;
-        current.hpCurrent = Math.max(0, Math.min(hpMax, (current.hpCurrent ?? hpMax) + delta));
+        if (delta < 0) {
+          const dmg      = -delta;
+          const temp     = current.tempHp ?? 0;
+          const absorbed = Math.min(temp, dmg);
+          current.tempHp    = temp - absorbed;
+          current.hpCurrent = Math.max(0, (current.hpCurrent ?? hpMax) - (dmg - absorbed));
+        } else {
+          current.hpCurrent = Math.max(0, Math.min(hpMax, (current.hpCurrent ?? hpMax) + delta));
+        }
         return current;
       }
     );
