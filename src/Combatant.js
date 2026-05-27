@@ -84,7 +84,15 @@ export class Combatant {
   }
 
   async setTempHp(id, val) {
-    await set(ref(this._db, `sessions/${this._code}/combatants/${id}/tempHp`), Math.max(0, parseInt(val) || 0));
+    const hp = Math.max(0, parseInt(val) || 0);
+    await runTransaction(
+      ref(this._db, `sessions/${this._code}/combatants/${id}`),
+      (current) => {
+        if (current == null) return current;
+        current.tempHp = hp;
+        return current;
+      }
+    );
   }
 
   async setMaxHp(id, val) {
