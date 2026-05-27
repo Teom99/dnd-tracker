@@ -258,7 +258,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const hpPercent     = c.hpMax > 0 ? (c.hpCurrent / c.hpMax) * 100 : 0;
     const conditions    = c.conditions ? Object.keys(c.conditions) : [];
     const hpClass       = hpPercent <= 25 ? 'hp-critical' : hpPercent <= 50 ? 'hp-low' : '';
-    const showFullHp    = isOwnCard || (isMaster && isCreature) || (!isMaster && !isCreature);
+    const showFullHp    = isMaster || isOwnCard || !isCreature;
     const showHint      = !isOwnCard && !isMaster && isCreature && c.showHealthHint;
     const canEditMaxHp  = isOwnCard || (isMaster && isCreature);
     const ac            = acMap[c.ownerUid] ?? c.armorClass ?? null;
