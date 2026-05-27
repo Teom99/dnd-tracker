@@ -213,6 +213,23 @@ document.getElementById('form-add-creature').addEventListener('submit', async (e
   document.getElementById('input-creature-name').focus();
 });
 
+// ─── COMBAT: Aggiungi compagno (player only) ──────────────────────────────────
+
+document.getElementById('form-add-pet').addEventListener('submit', async (e) => {
+  e.preventDefault();
+
+  const name       = document.getElementById('input-pet-name').value.trim();
+  const hp         = document.getElementById('input-pet-hp').value;
+  const initiative = document.getElementById('input-pet-initiative').value || '0';
+  const ac         = document.getElementById('input-pet-ac').value || null;
+
+  if (!name || !hp) return;
+
+  await state.combatantManager.add(name, initiative, hp, 'pet', state.myUid, null, ac, null);
+  e.target.reset();
+  document.getElementById('input-pet-name').focus();
+});
+
 // ─── D&D API: Monster Search + Stat Block ─────────────────────────────────────
 
 let _monsterList    = null;
@@ -765,7 +782,7 @@ function _startListening() {
 
     const sorted   = state.tracker.sortedCombatants(data.combatants);
     const creatures = sorted.filter(c => c.type === 'creature');
-    const players   = sorted.filter(c => c.type === 'player');
+    const players   = sorted.filter(c => c.type === 'player' || c.type === 'pet');
     UI.renderRound(data.round ?? 1);
     const callbacks = makeCallbacks();
     UI.renderCombatantList(creatures, data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, null,                               'creature-list', 'empty-creatures-msg', sorted);

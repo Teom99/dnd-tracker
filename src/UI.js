@@ -201,6 +201,7 @@ export function renderRound(round) {
 export function renderMasterPanel(isMaster) {
   document.getElementById('master-add-form')?.classList.toggle('hidden', !isMaster);
   document.getElementById('master-controls')?.classList.toggle('hidden', !isMaster);
+  document.getElementById('player-pet-form')?.classList.toggle('hidden', isMaster);
 }
 
 // Stato modulo: flag anti-blur, tracking turno attivo per-lista, selezioni bersagli
@@ -254,20 +255,22 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const canEdit       = myUid === c.ownerUid || myUid === masterUid;
     const isMaster      = myUid === masterUid;
     const isCreature    = c.type === 'creature';
-    const isOwnCard     = myUid === c.ownerUid && !isCreature;
+    const isPet         = c.type === 'pet';
+    const isOwnCard     = myUid === c.ownerUid && c.type === 'player';
+    const isOwnPet      = myUid === c.ownerUid && isPet;
     const hpPercent     = c.hpMax > 0 ? (c.hpCurrent / c.hpMax) * 100 : 0;
     const conditions    = c.conditions ? Object.keys(c.conditions) : [];
     const hpClass       = hpPercent <= 25 ? 'hp-critical' : hpPercent <= 50 ? 'hp-low' : '';
     const showFullHp    = isMaster || isOwnCard || !isCreature;
     const showHint      = !isOwnCard && !isMaster && isCreature && c.showHealthHint;
-    const canEditMaxHp  = isOwnCard || (isMaster && isCreature);
+    const canEditMaxHp  = isOwnCard || isOwnPet || (isMaster && (isCreature || isPet));
     const ac            = acMap[c.ownerUid] ?? c.armorClass ?? null;
     const successes     = isOwnCard && isKO ? (myDeathSaves?.successes ?? 0) : 0;
     const failures      = isOwnCard && isKO ? (myDeathSaves?.failures  ?? 0) : 0;
     const turnNumber    = fullList.findIndex(x => x.id === c.id) + 1;
 
     // Pulisce bersagli non più validi dalla selezione persistente
-    const validIds = new Set(fullList.filter(x => x.hpCurrent > 0 || x.type === 'player').map(x => x.id));
+    const validIds = new Set(fullList.filter(x => x.hpCurrent > 0 || x.type === 'player' || x.type === 'pet').map(x => x.id));
     validIds.add(c.id);
     const ownerSel = _selectedTargets.get(c.id);
     if (ownerSel) for (const tid of [...ownerSel]) { if (!validIds.has(tid)) ownerSel.delete(tid); }
@@ -276,9 +279,9 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const targetChips = [
       `<button class="target-chip${isSel(c.id) ? ' selected' : ''}" data-action="toggle-target" data-target-id="${c.id}">👤 Sé stesso</button>`,
       ...fullList
-        .filter(x => x.id !== c.id && (x.hpCurrent > 0 || x.type === 'player'))
+        .filter(x => x.id !== c.id && (x.hpCurrent > 0 || x.type === 'player' || x.type === 'pet'))
         .map(x => {
-          const prefix = x.type === 'player' ? '👤' : '👹';
+          const prefix = x.type === 'player' ? '👤' : x.type === 'pet' ? '🐾' : '👹';
           return `<button class="target-chip${isSel(x.id) ? ' selected' : ''}" data-action="toggle-target" data-target-id="${x.id}">${prefix} ${escapeHtml(x.name)}</button>`;
         })
     ].join('');
@@ -293,7 +296,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         <span class="turn-number">${turnNumber}</span>
         <div class="card-name-block">
           <span class="combatant-name">${escapeHtml(c.name)}${isKO ? ' 💀' : ''}</span>
-          <span class="type-badge ${c.type} ${isCreature ? (c.faction || 'evil') : ''}">${c.type === 'player' ? 'PG' : 'CR'}</span>
+          <span class="type-badge ${c.type} ${isCreature ? (c.faction || 'evil') : ''}">${c.type === 'player' ? 'PG' : isPet ? '🐾' : 'CR'}</span>
           ${c.type === 'player' && c.level ? `<span class="level-badge">Lv.${c.level}</span>` : ''}
           ${ac !== null ? `<span class="ac-badge">CA ${ac}</span>` : ''}
         </div>
@@ -423,7 +426,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         </div>
       ` : ''}
 
-      ${isActive && isOwnCard ? `
+      ${isActive && (isOwnCard || isOwnPet) ? `
         <button class="btn-end-turn" data-id="${c.id}" data-action="end-turn">✓ Fine Turno</button>
       ` : ''}
     `;
