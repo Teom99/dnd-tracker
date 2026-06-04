@@ -567,6 +567,24 @@ async function _uploadToDiscord(file) {
 
 const _expandedNoteIds    = new Set();
 const _noteDebounceTimers = {};
+let   _noteLocks          = {};
+
+const _PLAYER_COLORS = ['#ff6b6b','#4ecdc4','#45b7d1','#96e6a1','#ffd93d','#ff9a3c','#c779d0','#6bcb77'];
+function _playerColor(uid) {
+  let h = 0;
+  for (const c of uid) h = (Math.imul(31, h) + c.charCodeAt(0)) | 0;
+  return _PLAYER_COLORS[Math.abs(h) % _PLAYER_COLORS.length];
+}
+
+function _renderSessionNotes() {
+  UI.renderSessionNotes(
+    state.snapshot?.sessionNotes ?? {},
+    true,
+    _expandedNoteIds,
+    _noteLocks,
+    state.myUid
+  );
+}
 
 const _inputSceneImage   = document.getElementById('input-scene-image');
 const _btnUploadScene    = document.getElementById('btn-upload-scene');
@@ -643,7 +661,7 @@ document.getElementById('btn-add-session-note').addEventListener('click', async 
     _expandedNoteIds.add(newId);
     // Firebase listener potrebbe aver già re-renderizzato prima che newId fosse in _expandedNoteIds;
     // forziamo subito un secondo render con la nota espansa.
-    UI.renderSessionNotes(state.snapshot?.sessionNotes ?? {}, true, _expandedNoteIds);
+    _renderSessionNotes();
     document.getElementById('session-notes-list')
       ?.querySelector(`[data-note-id="${newId}"] .note-textarea`)
       ?.focus();
@@ -667,7 +685,7 @@ document.getElementById('session-notes-list').addEventListener('click', async (e
   if (toggleEl) {
     const id = toggleEl.dataset.noteId;
     _expandedNoteIds.has(id) ? _expandedNoteIds.delete(id) : _expandedNoteIds.add(id);
-    UI.renderSessionNotes(state.snapshot?.sessionNotes, true, _expandedNoteIds);
+    _renderSessionNotes();
   }
 });
 
@@ -692,6 +710,26 @@ document.getElementById('session-notes-list').addEventListener('input', (e) => {
   if (e.target.classList.contains('note-date-input') && e.target.value) {
     state.session.updateSessionNote(noteId, { date: new Date(e.target.value).getTime() });
   }
+});
+
+document.getElementById('session-notes-list').addEventListener('focusin', (e) => {
+  const el = e.target.closest('.note-textarea, .note-title-input');
+  if (!el || !state.session || !state.myUid) return;
+  const noteId = el.dataset.noteId;
+  const lock = _noteLocks[noteId];
+  if (lock && lock.uid !== state.myUid) return;
+  const name  = state.sheetData?.characterName || state.session.displayName || 'Giocatore';
+  state.session.acquireNoteLock(noteId, state.myUid, name, _playerColor(state.myUid));
+});
+
+document.getElementById('session-notes-list').addEventListener('focusout', (e) => {
+  const el = e.target.closest('.note-textarea, .note-title-input');
+  if (!el || !state.session) return;
+  const noteId    = el.dataset.noteId;
+  const noteEntry = e.target.closest('.note-entry');
+  // Rilascia solo se il focus esce dalla nota intera (es. da textarea a titolo = mantieni lock)
+  if (noteEntry && noteEntry.contains(e.relatedTarget)) return;
+  state.session.releaseNoteLock(noteId);
 });
 
 // Modal archivio note (aperto da home.js tramite evento)
@@ -753,6 +791,11 @@ function _enterCombatView(code, isMaster) {
 }
 
 function _startListening() {
+  state.session.listenNoteLocks(locks => {
+    _noteLocks = locks;
+    _renderSessionNotes();
+  });
+
   state.session.listen((snap) => {
     const data = snap.val();
     if (!data) return;
@@ -793,7 +836,7 @@ function _startListening() {
     const isMaster = data.masterUid === state.myUid;
     UI.renderScenePanel(data.sceneImageUrl ?? null, data.sceneImageName ?? null, isMaster);
     _btnUploadScene.classList.toggle('hidden', !isMaster);
-    UI.renderSessionNotes(data.sessionNotes ?? {}, true, _expandedNoteIds);
+    _renderSessionNotes();
   });
 }
 

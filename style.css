@@ -2563,6 +2563,34 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   border: 1px solid var(--border-warm);
   border-radius: var(--radius);
   overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.note-editing-self {
+  border-color: var(--lock-color, #888) !important;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--lock-color, #888) 50%, transparent), 0 0 2px var(--lock-color, #888);
+}
+
+.note-locked {
+  border-color: var(--lock-color, #888) !important;
+  box-shadow: 0 0 10px color-mix(in srgb, var(--lock-color, #888) 50%, transparent), 0 0 2px var(--lock-color, #888);
+  opacity: 0.88;
+}
+
+.note-presence-tag {
+  padding: 3px 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: var(--lock-color, #888);
+  color: #0a0a1a;
+  letter-spacing: 0.03em;
+}
+
+.note-locked .note-textarea,
+.note-locked .note-title-input,
+.note-locked .note-date-input {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 .note-header {

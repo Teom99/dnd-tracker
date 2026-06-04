@@ -84,7 +84,7 @@ export function renderScenePanel(sceneImageUrl, sceneImageName, isMaster) {
   changeBtn.classList.toggle('hidden', !isMaster);
 }
 
-export function renderSessionNotes(notesObj, canEdit, expandedIds) {
+export function renderSessionNotes(notesObj, canEdit, expandedIds, noteLocks = {}, myUid = null) {
   const container = document.getElementById('session-notes-list');
   if (!container) return;
 
@@ -102,22 +102,34 @@ export function renderSessionNotes(notesObj, canEdit, expandedIds) {
   }
 
   notes.forEach(note => {
-    const isExpanded = expandedIds.has(note.id);
-    const dateVal    = new Date(note.date).toISOString().slice(0, 10);
+    const isExpanded      = expandedIds.has(note.id);
+    const dateVal         = new Date(note.date).toISOString().slice(0, 10);
+    const lock            = noteLocks[note.id] ?? null;
+    const isLockedByOther = lock && lock.uid !== myUid;
+    const isEditingByMe   = lock && lock.uid === myUid;
+    const disabledAttr    = isLockedByOther ? ' disabled' : '';
 
     let el = container.querySelector(`.note-entry[data-note-id="${note.id}"]`);
     if (!el) {
       el = document.createElement('div');
-      el.className      = 'note-entry';
       el.dataset.noteId = note.id;
       container.appendChild(el);
     }
 
+    // Aggiorna classe e colore del lock
+    el.className = 'note-entry' + (isLockedByOther ? ' note-locked' : isEditingByMe ? ' note-editing-self' : '');
+    if (lock) el.style.setProperty('--lock-color', lock.color);
+    else      el.style.removeProperty('--lock-color');
+
+    const presenceTagHtml = lock
+      ? `<div class="note-presence-tag">✏️ ${escapeHtml(lock.name)}</div>`
+      : '';
+
     const headerHtml = `
       <div class="note-header" data-action="toggle" data-note-id="${note.id}">
         <span class="note-chevron">${isExpanded ? '▼' : '▶'}</span>
-        <input class="note-title-input" data-note-id="${note.id}" value="${escapeHtml(note.title ?? '')}" title="Modifica titolo">
-        <input type="date" class="note-date-input" data-note-id="${note.id}" value="${dateVal}">
+        <input class="note-title-input" data-note-id="${note.id}" value="${escapeHtml(note.title ?? '')}" title="Modifica titolo"${disabledAttr}>
+        <input type="date" class="note-date-input" data-note-id="${note.id}" value="${dateVal}"${disabledAttr}>
         ${canEdit ? `<button class="btn-remove-sm note-delete-btn" data-action="delete" data-note-id="${note.id}" title="Elimina">×</button>` : ''}
       </div>`;
 
@@ -125,14 +137,24 @@ export function renderSessionNotes(notesObj, canEdit, expandedIds) {
       <div class="note-body">
         <textarea class="note-textarea" data-note-id="${note.id}"
                   placeholder="Scrivi qui cosa è successo in questa sessione..."
-                  rows="6">${escapeHtml(note.content ?? '')}</textarea>
+                  rows="6"${disabledAttr}>${escapeHtml(note.content ?? '')}</textarea>
       </div>` : '';
 
     if (note.id !== focusedNoteId) {
-      el.innerHTML = headerHtml + bodyHtml;
+      el.innerHTML = presenceTagHtml + headerHtml + bodyHtml;
     } else {
+      // Nota con focus: aggiorna header e tag presenza senza toccare il textarea
       const existingHeader = el.querySelector('.note-header');
       if (existingHeader) existingHeader.outerHTML = headerHtml;
+
+      const existingTag = el.querySelector('.note-presence-tag');
+      if (lock && !existingTag) {
+        el.insertAdjacentHTML('afterbegin', presenceTagHtml);
+      } else if (!lock && existingTag) {
+        existingTag.remove();
+      } else if (lock && existingTag) {
+        existingTag.innerHTML = `✏️ ${escapeHtml(lock.name)}`;
+      }
     }
   });
 

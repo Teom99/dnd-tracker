@@ -1,4 +1,4 @@
-import { ref, set, get, remove, onValue, runTransaction, push, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { ref, set, get, remove, onValue, onDisconnect, runTransaction, push, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import {
   signInAnonymously, signInWithPopup, GoogleAuthProvider
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -201,6 +201,25 @@ export class Session {
   async deleteSessionNote(noteId) {
     if (!this.code) return;
     await remove(ref(this._db, `sessions/${this.code}/sessionNotes/${noteId}`));
+  }
+
+  async acquireNoteLock(noteId, uid, name, color) {
+    if (!this.code) return;
+    const r = ref(this._db, `sessions/${this.code}/noteLocks/${noteId}`);
+    await set(r, { uid, name, color });
+    onDisconnect(r).remove();
+  }
+
+  async releaseNoteLock(noteId) {
+    if (!this.code) return;
+    await set(ref(this._db, `sessions/${this.code}/noteLocks/${noteId}`), null);
+  }
+
+  listenNoteLocks(callback) {
+    if (!this.code) return;
+    onValue(ref(this._db, `sessions/${this.code}/noteLocks`), snap => {
+      callback(snap.val() || {});
+    });
   }
 
   _generateCode() {
