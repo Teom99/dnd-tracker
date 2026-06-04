@@ -75,6 +75,10 @@ export class Combatant {
     await set(ref(this._db, `sessions/${this._code}/combatants/${id}/level`), parseInt(level) || 1);
   }
 
+  async setName(id, name) {
+    await set(ref(this._db, `sessions/${this._code}/combatants/${id}/name`), name || '');
+  }
+
   async setFaction(id, faction) {
     await set(ref(this._db, `sessions/${this._code}/combatants/${id}/faction`), faction || 'evil');
   }

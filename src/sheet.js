@@ -38,6 +38,7 @@ export function setupSheetListener() {
   let prevAc     = undefined;
   let prevHpMax  = undefined;
   let prevLevel  = undefined;
+  let prevName   = undefined;
   state.sheet.listen((snap) => {
     state.sheetData = snap.val() || {};
 
@@ -61,6 +62,13 @@ export function setupSheetListener() {
     if (level !== null && level !== prevLevel && state.myCombatantId) {
       prevLevel = level;
       state.combatantManager.setLevel(state.myCombatantId, level);
+    }
+
+    // Sincronizza nome al combattente
+    const charName = state.sheetData.characterName ?? null;
+    if (charName !== null && charName !== prevName && state.myCombatantId) {
+      prevName = charName;
+      state.combatantManager.setName(state.myCombatantId, charName);
     }
 
     // Re-render lista combattenti subito per aggiornare death saves senza aspettare il prossimo snapshot sessione
