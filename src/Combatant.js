@@ -67,6 +67,10 @@ export class Combatant {
     await set(ref(this._db, `sessions/${this._code}/combatants/${id}/showHealthHint`), visible);
   }
 
+  async setShowAC(id, visible) {
+    await set(ref(this._db, `sessions/${this._code}/combatants/${id}/showAC`), visible);
+  }
+
   async setArmorClass(id, ac) {
     await set(ref(this._db, `sessions/${this._code}/combatants/${id}/armorClass`), parseInt(ac) || 0);
   }

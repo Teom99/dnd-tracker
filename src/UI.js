@@ -291,6 +291,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const canEditMaxHp  = isOwnCard || isOwnPet || (isMaster && (isCreature || isPet));
     const canEditAc     = isOwnPet || (isMaster && isCreature);
     const ac            = isPet ? (c.armorClass ?? null) : (acMap[c.ownerUid] ?? c.armorClass ?? null);
+    const acVisible     = !isCreature || isMaster || (c.showAC === true);
     const tempHp        = c.tempHp ?? 0;
     const tempHpPercent = c.hpMax > 0 ? Math.min(100, (tempHp / c.hpMax) * 100) : 0;
     const successes     = isOwnCard && isKO ? (myDeathSaves?.successes ?? 0) : 0;
@@ -362,7 +363,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
           <span class="combatant-name">${escapeHtml(c.name)}${isKO ? ' 💀' : ''}</span>
           <span class="type-badge ${c.type} ${isCreature ? (c.faction || 'evil') : ''}">${c.type === 'player' ? 'PG' : isPet ? '🐾' : 'CR'}</span>
           ${c.type === 'player' && c.level ? `<span class="level-badge">Lv.${c.level}</span>` : ''}
-          ${ac !== null ? (canEditAc
+          ${ac !== null && acVisible ? (canEditAc
             ? `<button class="ac-badge ac-edit-btn" data-id="${c.id}" data-action="edit-ac" title="Modifica CA">CA ${ac}</button>`
             : `<span class="ac-badge">CA ${ac}</span>`) : ''}
         </div>
@@ -413,6 +414,16 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
               title="${c.showHealthHint ? 'I giocatori vedono lo stato di salute' : 'I giocatori non vedono lo stato di salute'}"
             >
               ${c.showHealthHint ? '👁 Stato salute visibile ai giocatori' : '👁 Stato di salute nascosto ai giocatori'}
+            </button>
+          ` : ''}
+          ${isMaster && isCreature && ac !== null ? `
+            <button
+              class="btn-health-hint ${c.showAC ? 'hint-active' : ''}"
+              data-id="${c.id}"
+              data-action="toggle-show-ac"
+              title="${c.showAC ? 'CA visibile ai giocatori' : 'CA nascosta ai giocatori'}"
+            >
+              ${c.showAC ? '🛡 CA visibile ai giocatori' : '🛡 CA nascosta ai giocatori'}
             </button>
           ` : ''}
         </div>
@@ -578,6 +589,10 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     if (action === 'toggle-health-hint') {
       const c = list.querySelector(`[data-id="${id}"][data-action="toggle-health-hint"]`);
       callbacks.onToggleHealthHint(id, c?.classList.contains('hint-active'));
+      return;
+    }
+    if (action === 'toggle-show-ac') {
+      callbacks.onToggleShowAC?.(id, btn.classList.contains('hint-active'));
       return;
     }
     if (action === 'end-turn')        { callbacks.onEndTurn?.(); return; }
