@@ -84,7 +84,7 @@ export function renderScenePanel(sceneImageUrl, sceneImageName, isMaster) {
   imgLink.href = sceneImageUrl;
 
   clearBtn.classList.toggle('hidden', !isMaster);
-  changeBtn.classList.toggle('hidden', !isMaster);
+  changeBtn.classList.remove('hidden');
 }
 
 export function renderSessionNotes(notesObj, canEdit, expandedIds, noteLocks = {}, myUid = null) {
