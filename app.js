@@ -15,6 +15,8 @@ import { renderGrid }        from './src/grid.js';
 import { initSheet, setupSheetListener, makeCallbacks } from './src/sheet.js';
 import { LevelUp }   from './src/LevelUp.js';
 import { LevelUpUI } from './src/LevelUpUI.js';
+import { Ship }    from './src/Ship.js';
+import * as ShipUI from './src/ShipUI.js';
 import { updateHomeAuthUI, loadCharacterLibrary, populateJoinPicker, populateCreaturePicker, saveUserSession, loadUserSessions } from './src/home.js';
 
 // --- Theme Management ---
@@ -553,6 +555,13 @@ document.getElementById('btn-clear-log').addEventListener('click', () => {
   }
 });
 
+document.getElementById('btn-toggle-ship').addEventListener('click', () => {
+  state.shipPanelOpen = !state.shipPanelOpen;
+  document.querySelector('.combat-cols').classList.toggle('hidden', state.shipPanelOpen);
+  document.getElementById('ship-panel').classList.toggle('hidden', !state.shipPanelOpen);
+  if (state.shipPanelOpen) _renderShipPanel();
+});
+
 // ─── SCENA: Upload immagine via Discord Webhook ───────────────────────────────
 
 async function _uploadToDiscord(file) {
@@ -794,13 +803,92 @@ document.addEventListener('dnd:rejoin', (e) => {
 
 // ─── Core orchestration ───────────────────────────────────────────────────────
 
+function _renderShipPanel() {
+  const el = document.getElementById('ship-panel');
+  if (!el || !state.shipPanelOpen) return;
+  const combatants = Object.entries(state.snapshot?.combatants ?? {})
+    .map(([id, c]) => ({ id, ...c }));
+  el.innerHTML = ShipUI.renderShipPanel(
+    state.shipData,
+    combatants,
+    state.myUid,
+    state.session.isMaster,
+    state.localDeck,
+    state._selectedShipToken
+  );
+}
+
+function _bindShipEvents() {
+  const el = document.getElementById('ship-panel');
+  if (!el) return;
+
+  el.addEventListener('click', async (e) => {
+    const target = e.target.closest('[data-action]');
+    if (!target) return;
+    const action = target.dataset.action;
+
+    if (action === 'ship-hp') {
+      if (!state.session.isMaster) return;
+      await state.ship.updateHp(parseInt(target.dataset.delta) || 0);
+      return;
+    }
+    if (action === 'toggle-crew') {
+      const cId = target.dataset.combatant;
+      const c   = state.snapshot?.combatants?.[cId];
+      if (!c) return;
+      if (!state.session.isMaster && c.ownerUid !== state.myUid) return;
+      await state.ship.toggleCrewMember(target.dataset.weapon, cId);
+      return;
+    }
+    if (action === 'switch-deck') {
+      state.localDeck = target.dataset.deck;
+      state._selectedShipToken = null;
+      _renderShipPanel();
+      return;
+    }
+    if (action === 'select-token') {
+      const cId = target.closest('[data-combatant]')?.dataset.combatant;
+      if (!cId) return;
+      const c = state.snapshot?.combatants?.[cId];
+      if (!c) return;
+      if (!state.session.isMaster && c.ownerUid !== state.myUid) return;
+      state._selectedShipToken = state._selectedShipToken === cId ? null : cId;
+      _renderShipPanel();
+      return;
+    }
+    if (action === 'place-token') {
+      if (!state._selectedShipToken) return;
+      await state.ship.setTokenPosition(
+        state._selectedShipToken,
+        state.localDeck,
+        parseInt(target.dataset.col),
+        parseInt(target.dataset.row)
+      );
+      state._selectedShipToken = null;
+      return;
+    }
+  });
+
+  el.addEventListener('change', async (e) => {
+    const target = e.target.closest('[data-action]');
+    if (!target || target.dataset.action !== 'weapon-state') return;
+    await state.ship.setWeaponState(target.dataset.weapon, target.value);
+  });
+}
+
 function _enterCombatView(code, isMaster) {
   UI.renderSessionCode(code);
   UI.renderMasterPanel(isMaster);
   if (isMaster) populateCreaturePicker();
-  state.sheetReturnView = 'view-combat';
+  state.sheetReturnView    = 'view-combat';
+  state.ship               = new Ship(db, code);
+  state.shipData           = null;
+  state.localDeck          = 'main';
+  state.shipPanelOpen      = false;
+  state._selectedShipToken = null;
   document.body.classList.add('in-combat');
   _startListening();
+  _bindShipEvents();
   GridUI.initZoomControls();
   UI.showView('view-combat');
 }
@@ -873,6 +961,9 @@ function _startListening() {
         </label>`;
       }).join('');
     }
+
+    state.shipData = data.ship ?? null;
+    if (state.shipPanelOpen) _renderShipPanel();
 
     _renderSessionNotes();
   });
