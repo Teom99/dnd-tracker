@@ -64,8 +64,10 @@ export function renderShipPanel(shipData, combatants, myUid, isMaster, localDeck
     const crewChips = combatants.map(c => {
       const inCrew    = !!crewIds[c.id];
       const canToggle = isMaster || c.ownerUid === myUid;
-      return `<span class="ship-crew-chip${inCrew ? ' in-crew' : ''}${canToggle ? ' toggleable' : ''}"
-                    data-action="toggle-crew" data-weapon="${esc(wId)}" data-combatant="${esc(c.id)}">${esc(c.name)}</span>`;
+      const toggleAttrs = canToggle
+        ? `data-action="toggle-crew" data-weapon="${esc(wId)}" data-combatant="${esc(c.id)}"`
+        : '';
+      return `<span class="ship-crew-chip${inCrew ? ' in-crew' : ''}${canToggle ? ' toggleable' : ''}" ${toggleAttrs}>${esc(c.name)}</span>`;
     }).join('');
 
     return `<div class="ship-weapon-card">

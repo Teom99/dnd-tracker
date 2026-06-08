@@ -820,7 +820,8 @@ function _renderShipPanel() {
 
 function _bindShipEvents() {
   const el = document.getElementById('ship-panel');
-  if (!el) return;
+  if (!el || el._shipBound) return;
+  el._shipBound = true;
 
   el.addEventListener('click', async (e) => {
     const target = e.target.closest('[data-action]');
