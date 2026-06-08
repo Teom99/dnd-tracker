@@ -1,3 +1,6 @@
+const XP_THRESHOLDS = [0,300,900,2700,6500,14000,23000,34000,48000,64000,
+                        85000,100000,120000,140000,165000,195000,225000,265000,305000,355000];
+
 export const CONDITIONS = [
   { name: 'Avvelenato',   color: 'var(--gold)' },
   { name: 'Stordito',     color: '#d97706' },
@@ -231,7 +234,7 @@ let _rendering = false;
 const _lastActiveTurn  = {};
 const _selectedTargets = new Map(); // combatantId (owner) → Set<targetId>
 
-export function renderCombatantList(combatants, currentTurnId, myUid, masterUid, callbacks, acMap = {}, myDeathSaves = null, listId = 'combatant-list', emptyMsgId = 'empty-list-msg', allCombatants = null) {
+export function renderCombatantList(combatants, currentTurnId, myUid, masterUid, callbacks, acMap = {}, myDeathSaves = null, progressionData = {}, listId = 'combatant-list', emptyMsgId = 'empty-list-msg', allCombatants = null) {
   const list     = document.getElementById(listId);
   const emptyMsg = document.getElementById(emptyMsgId);
   if (!list) return;
@@ -316,6 +319,42 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       .filter(Boolean).join(' ');
     li.dataset.combatantId = c.id;
 
+    // ─ Barra XP / level-up (solo player)
+    let xpSectionHtml = '';
+    if (c.type === 'player') {
+      const { mode = 'xp', xp = {}, levelUpGranted = {} } = progressionData;
+      const combXp      = xp[c.id] ?? 0;
+      const level       = c.level ?? 1;
+      const levelUpReady = mode === 'xp'
+        ? (level < 20 && combXp >= XP_THRESHOLDS[level])
+        : (levelUpGranted[c.id] === true);
+
+      if (mode === 'xp') {
+        if (level >= 20) {
+          xpSectionHtml = `<div class="xp-section"><span class="xp-label">XP: ${combXp.toLocaleString('it')} — Livello massimo</span></div>`;
+        } else {
+          const lo  = XP_THRESHOLDS[level - 1];
+          const hi  = XP_THRESHOLDS[level];
+          const pct = Math.min(100, Math.round((combXp - lo) / (hi - lo) * 100));
+          xpSectionHtml = `<div class="xp-section">
+            <span class="xp-label">XP: ${combXp.toLocaleString('it')} / ${hi.toLocaleString('it')} per Lv.${level + 1}</span>
+            <div class="xp-bar-track"><div class="xp-bar-fill" style="width:${pct}%"></div></div>
+          </div>`;
+        }
+      }
+
+      if (levelUpReady) {
+        xpSectionHtml += `<div class="levelup-badge">✨ Pronto per salire!</div>`;
+        if (isOwnCard) {
+          xpSectionHtml += `<button class="btn-levelup btn-primary btn-sm" data-id="${c.id}" data-action="levelup">⬆ Sali di livello</button>`;
+        }
+      }
+
+      if (isMaster && mode === 'milestone' && !levelUpGranted[c.id]) {
+        xpSectionHtml += `<button class="btn-secondary btn-sm btn-grant-levelup" data-id="${c.id}" data-action="grant-levelup">🎖 Concedi Level-up</button>`;
+      }
+    }
+
     li.innerHTML = `
       <div class="card-header">
         <span class="turn-number">${turnNumber}</span>
@@ -382,6 +421,8 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
           ${healthHintText(hpPercent)}
         </div>
       ` : ''}
+
+      ${xpSectionHtml}
 
       ${canEdit ? `
         <div class="action-panel">
@@ -559,6 +600,8 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     if (action === 'edit-ac')         { openAcEdit(btn, id, callbacks.onSetAc); return; }
     if (action === 'edit-temp-hp')    { openTempHpEdit(btn, id, callbacks.onSetTempHp); return; }
     if (action === 'open-sheet')      { callbacks.onOpenSheet?.(); return; }
+    if (action === 'levelup')         { callbacks.onLevelUp?.(id); return; }
+    if (action === 'grant-levelup')   { callbacks.onGrantLevelUp?.(id); return; }
   };
 }
 

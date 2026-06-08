@@ -42,17 +42,18 @@ export class Session {
 
   // ─── Session lifecycle ───────────────────────────────────────────────────────
 
-  async create() {
+  async create(options = {}) {
     if (!this._auth.currentUser) await signInAnonymously(this._auth);
     const uid  = this._auth.currentUser.uid;
     const code = this._generateCode();
 
     await set(ref(this._db, `sessions/${code}`), {
-      masterUid:     uid,
-      round:         1,
-      currentTurnId: null,
-      combatants:    {},
-      logs:          {}
+      masterUid:       uid,
+      round:           1,
+      currentTurnId:   null,
+      combatants:      {},
+      logs:            {},
+      progressionMode: options.progressionMode ?? 'xp',
     });
 
     this.code      = code;
@@ -201,6 +202,25 @@ export class Session {
   async deleteSessionNote(noteId) {
     if (!this.code) return;
     await remove(ref(this._db, `sessions/${this.code}/sessionNotes/${noteId}`));
+  }
+
+  async setProgressionMode(mode) {
+    await set(ref(this._db, `sessions/${this.code}/progressionMode`), mode);
+  }
+
+  async addXp(combatantId, amount) {
+    await runTransaction(
+      ref(this._db, `sessions/${this.code}/xp/${combatantId}`),
+      (current) => (current ?? 0) + amount
+    );
+  }
+
+  async grantLevelUp(combatantId) {
+    await set(ref(this._db, `sessions/${this.code}/levelUpGranted/${combatantId}`), true);
+  }
+
+  async clearLevelUpGrant(combatantId) {
+    await set(ref(this._db, `sessions/${this.code}/levelUpGranted/${combatantId}`), null);
   }
 
   async acquireNoteLock(noteId, uid, name, color) {

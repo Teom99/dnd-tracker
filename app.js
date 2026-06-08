@@ -9,7 +9,7 @@ import { CharacterLibrary }  from './src/CharacterLibrary.js';
 import * as UI               from './src/UI.js';
 import * as GridUI           from './src/GridUI.js';
 import { state }             from './src/state.js';
-import { initCombatManagers, exitToHome, closeConditionModal } from './src/core.js';
+import { initCombatManagers, exitToHome, esc, closeConditionModal } from './src/core.js';
 import { CharacterSheet } from './src/CharacterSheet.js';
 import { renderGrid }        from './src/grid.js';
 import { initSheet, setupSheetListener, makeCallbacks } from './src/sheet.js';
@@ -113,7 +113,8 @@ document.getElementById('btn-create-creature').addEventListener('click', async (
 
 document.getElementById('btn-create-session').addEventListener('click', async () => {
   try {
-    const code = await state.session.create();
+    const progressionMode = document.getElementById('select-progression-mode')?.value ?? 'xp';
+    const code = await state.session.create({ progressionMode });
     state.myUid = state.session.currentUid;
     initCombatManagers(code);
     await saveUserSession(state.myUid, code, null, null, 'master', null);
@@ -741,6 +742,20 @@ document.getElementById('notes-archive-modal').addEventListener('click', (e) => 
     document.getElementById('notes-archive-modal').classList.add('hidden');
 });
 
+// ─── PROGRESSIONE: Modalità e assegnazione XP ────────────────────────────────
+
+document.getElementById('select-progression-mode-live').addEventListener('change', (e) => {
+  if (state.session) state.session.setProgressionMode(e.target.value);
+});
+
+document.getElementById('btn-award-xp').addEventListener('click', async () => {
+  const amount = parseInt(document.getElementById('input-xp-amount')?.value) || 0;
+  if (!amount || !state.session) return;
+  const checked = [...document.querySelectorAll('.xp-player-check:checked')];
+  for (const cb of checked) await state.session.addXp(cb.dataset.id, amount);
+  document.getElementById('input-xp-amount').value = '';
+});
+
 // ─── SCHEDA: Torna indietro ───────────────────────────────────────────────────
 
 document.getElementById('btn-back-to-combat').addEventListener('click', () => {
@@ -828,14 +843,37 @@ function _startListening() {
     const players   = sorted.filter(c => c.type === 'player' || c.type === 'pet');
     UI.renderRound(data.round ?? 1);
     const callbacks = makeCallbacks();
-    UI.renderCombatantList(creatures, data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, null,                               'creature-list', 'empty-creatures-msg', sorted);
-    UI.renderCombatantList(players,   data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, state.sheetData?.deathSaves ?? null, 'player-list',   'empty-players-msg', sorted);
+    const progressionData = {
+      mode:           data.progressionMode ?? 'xp',
+      xp:             data.xp ?? {},
+      levelUpGranted: data.levelUpGranted ?? {},
+    };
+    UI.renderCombatantList(creatures, data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, null,                               progressionData, 'creature-list', 'empty-creatures-msg', sorted);
+    UI.renderCombatantList(players,   data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, state.sheetData?.deathSaves ?? null, progressionData, 'player-list',   'empty-players-msg', sorted);
 
     renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null, sorted);
 
     const isMaster = data.masterUid === state.myUid;
     UI.renderScenePanel(data.sceneImageUrl ?? null, data.sceneImageName ?? null, isMaster);
     _btnUploadScene.classList.toggle('hidden', !isMaster);
+
+    // Progressione: aggiorna controlli master
+    const selLive = document.getElementById('select-progression-mode-live');
+    if (selLive) selLive.value = data.progressionMode ?? 'xp';
+    document.getElementById('xp-award-section')?.classList.toggle('hidden', (data.progressionMode ?? 'xp') !== 'xp');
+    const onlyPlayers = sorted.filter(c => c.type === 'player');
+    const xpPlayersEl = document.getElementById('xp-award-players');
+    if (xpPlayersEl && isMaster) {
+      xpPlayersEl.innerHTML = onlyPlayers.map(c => {
+        const xp  = data.xp?.[c.id] ?? 0;
+        const lvl = c.level ?? 1;
+        return `<label class="xp-player-row">
+          <input type="checkbox" class="xp-player-check" data-id="${c.id}" checked>
+          ${esc(c.name)} <span class="xp-player-meta">Lv.${lvl} — ${xp.toLocaleString('it')} XP</span>
+        </label>`;
+      }).join('');
+    }
+
     _renderSessionNotes();
   });
 }

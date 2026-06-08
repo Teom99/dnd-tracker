@@ -179,6 +179,8 @@ async function _openLevelUpModal() {
     for (const { name, description } of confirmed.features ?? [])
       state.sheet.addClassFeature(name, description, fromLevel + 1);
 
+    if (state.myCombatantId) state.session.clearLevelUpGrant(state.myCombatantId);
+
     LevelUpUI.close();
   });
 }
@@ -188,8 +190,13 @@ function _renderCombatantLists() {
   const creatures2 = sorted2.filter(c => c.type === 'creature');
   const players2   = sorted2.filter(c => c.type === 'player');
   const cb = _makeCallbacks();
-  UI.renderCombatantList(creatures2, state.snapshot.currentTurnId ?? null, state.myUid, state.session.masterUid, cb, state.acMap, null,                               'creature-list', 'empty-creatures-msg', sorted2);
-  UI.renderCombatantList(players2,   state.snapshot.currentTurnId ?? null, state.myUid, state.session.masterUid, cb, state.acMap, state.sheetData?.deathSaves ?? null, 'player-list',   'empty-players-msg', sorted2);
+  const pd = {
+    mode:           state.snapshot?.progressionMode ?? 'xp',
+    xp:             state.snapshot?.xp ?? {},
+    levelUpGranted: state.snapshot?.levelUpGranted ?? {},
+  };
+  UI.renderCombatantList(creatures2, state.snapshot.currentTurnId ?? null, state.myUid, state.session.masterUid, cb, state.acMap, null,                               pd, 'creature-list', 'empty-creatures-msg', sorted2);
+  UI.renderCombatantList(players2,   state.snapshot.currentTurnId ?? null, state.myUid, state.session.masterUid, cb, state.acMap, state.sheetData?.deathSaves ?? null, pd, 'player-list',   'empty-players-msg', sorted2);
 }
 
 function _makeCallbacks() {
@@ -221,6 +228,8 @@ function _makeCallbacks() {
     onSetFaction:       (id, faction)                     => state.combatantManager.setFaction(id, faction),
     onOpenSheet:        ()                                => openCharacterSheet(),
     onDeathSave:        async (type, count)               => onDeathSave(type, count),
+    onLevelUp:          ()                                => _openLevelUpModal(),
+    onGrantLevelUp:     (id)                              => state.session.grantLevelUp(id),
   };
 }
 

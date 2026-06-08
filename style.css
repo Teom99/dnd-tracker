@@ -2187,6 +2187,18 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   box-shadow: 0 0 12px rgba(78,160,100,0.3);
 }
 
+/* ─── XP / Progressione ─── */
+.xp-section     { padding: 4px 12px 6px; }
+.xp-label       { font-size: 0.78rem; color: var(--text-muted); display: block; }
+.xp-bar-track   { height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; margin-top: 4px; overflow: hidden; }
+.xp-bar-fill    { height: 100%; background: #45b7d1; border-radius: 3px; transition: width 0.4s ease; }
+.levelup-badge  { font-size: 0.78rem; color: #ffd93d; padding: 2px 12px 4px; font-weight: 700; display: block; }
+.btn-levelup    { margin: 2px 12px 6px; }
+.btn-grant-levelup { margin: 2px 12px 6px; }
+.xp-award-players { padding: 4px 0 4px; }
+.xp-player-row  { display: flex; align-items: center; gap: 0.5rem; padding: 4px 0; font-size: 0.85rem; cursor: pointer; }
+.xp-player-meta { color: var(--text-muted); font-size: 0.75rem; margin-left: auto; }
+
 /* ─── CA badge on combat card ─── */
 .ac-badge {
   font-size: 0.78rem;

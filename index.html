@@ -89,6 +89,13 @@
       <div class="home-card">
         <h2>Sei il Master?</h2>
         <p>Crea una nuova sessione e condividi il codice con i tuoi giocatori.</p>
+        <div class="input-row" style="align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
+          <label for="select-progression-mode" style="white-space:nowrap; font-size:0.9rem;">Progressione:</label>
+          <select id="select-progression-mode" class="input-inline">
+            <option value="xp">XP</option>
+            <option value="milestone">Milestone</option>
+          </select>
+        </div>
         <button id="btn-create-session" class="btn-primary">⚔ Crea Sessione</button>
       </div>
 
@@ -157,6 +164,20 @@
       <button id="btn-next-turn" class="btn-primary btn-next">Turno Successivo ▶</button>
       <button id="btn-upload-scene" class="btn-secondary btn-sm hidden">Carica Scena</button>
       <button id="btn-reset" class="btn-danger">↺ Reset Incontro</button>
+      <select id="select-progression-mode-live" class="btn-secondary btn-sm" title="Modalità progressione">
+        <option value="xp">XP</option>
+        <option value="milestone">Milestone</option>
+      </select>
+      <div id="xp-award-section" class="hidden">
+        <details id="xp-award-form">
+          <summary class="btn-secondary btn-sm">✨ Assegna XP</summary>
+          <div id="xp-award-players" class="xp-award-players"></div>
+          <div class="input-row" style="padding:4px 0 6px; gap:0.4rem;">
+            <input type="number" id="input-xp-amount" min="0" placeholder="XP" class="input-inline" style="width:90px">
+            <button id="btn-award-xp" class="btn-primary btn-sm">Assegna</button>
+          </div>
+        </details>
+      </div>
     </div>
 
     <!-- Due colonne: Creature | Giocatori -->
