@@ -203,9 +203,9 @@ function _makeCallbacks() {
   return {
     onEndTurn:          async ()                          => { const s = state.tracker.sortedCombatants(state.snapshot.combatants); await state.tracker.nextTurn(s); },
     onRemove: async (id) => {
-  await removeCombatant(id);
-  await state.ship?.removeToken(id);
-},
+      await removeCombatant(id);
+      await state.ship?.removeToken(id);
+    },
     onInitiativeChange: (id, val)                         => state.combatantManager.setInitiative(id, val),
     onOpenConditions:   (id)                              => openConditionModal(id, state.snapshot.combatants?.[id]?.conditions),
     onSetAction:        (id, text)                        => state.combatantManager.setAction(id, text),
