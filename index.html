@@ -153,6 +153,7 @@
       </div>
       <div class="combat-header-right">
         <span id="round-display" class="round-display">Round 1</span>
+        <button id="btn-toggle-ship" class="btn-secondary btn-sm" title="Apri pannello nave">🚢 Nave</button>
         <button id="btn-exit-session" class="btn-exit-session" title="Esci dalla sessione">← Esci</button>
       </div>
     </header>
@@ -179,6 +180,9 @@
         </details>
       </div>
     </div>
+
+    <!-- Pannello nave (visibile al posto della lista combattenti) -->
+    <div id="ship-panel" class="hidden"></div>
 
     <!-- Due colonne: Creature | Giocatori -->
     <div class="combat-cols">
