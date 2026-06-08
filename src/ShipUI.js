@@ -94,6 +94,30 @@ export function renderShipPanel(shipData, combatants, myUid, isMaster, localDeck
        </div>`
     : '';
 
+  const DECK_LABELS = { top: 'Top', main: 'Main', forward: 'Prua' };
+  const trayChips = combatants.map(c => {
+    const canSelect  = isMaster || c.ownerUid === myUid;
+    if (!canSelect) return '';
+    const isSelected = c.id === selectedTokenId;
+    const tokenPos   = tokens[c.id];
+    const deckBadge  = tokenPos
+      ? `<span class="ship-tray-badge${tokenPos.deck === localDeck ? ' same-deck' : ''}">${DECK_LABELS[tokenPos.deck] ?? tokenPos.deck}</span>`
+      : '';
+    const dotColor = c.faction === 'good' ? 'var(--faction-good, #4caf50)' : 'var(--faction-evil, #e53935)';
+    return `<span class="ship-tray-chip${isSelected ? ' selected' : ''}"
+                  data-action="select-token" data-combatant="${esc(c.id)}">
+              <span class="ship-tray-dot" style="background:${dotColor}"></span>
+              ${esc(c.name)}${deckBadge}
+            </span>`;
+  }).join('');
+
+  const selectedName = selectedTokenId
+    ? (combatants.find(c => c.id === selectedTokenId)?.name ?? '')
+    : null;
+  const trayHint = selectedName
+    ? `<div class="ship-tray-hint">🎯 <strong>${esc(selectedName)}</strong> selezionato — clicca una cella per posizionarlo</div>`
+    : `<div class="ship-tray-hint muted">Clicca un personaggio, poi clicca una cella sulla mappa per posizionarlo</div>`;
+
   return `<div class="ship-panel-inner">
     <div class="ship-header">
       <span class="ship-name">🚢 Damselfly</span>
@@ -105,6 +129,10 @@ export function renderShipPanel(shipData, combatants, myUid, isMaster, localDeck
     </div>
     <div class="ship-weapons">${weaponCardsHtml}</div>
     <div class="ship-deck-tabs">${deckTabs}</div>
+    <div class="ship-token-tray">
+      <div class="ship-tray-chips">${trayChips || '<span class="ship-crew-empty">Nessun personaggio</span>'}</div>
+      ${trayHint}
+    </div>
     <div class="ship-svg-container">${svgHtml}</div>
   </div>`;
 }

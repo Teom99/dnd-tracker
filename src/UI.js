@@ -334,9 +334,9 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         if (level >= 20) {
           xpSectionHtml = `<div class="xp-section"><span class="xp-label">XP: ${combXp.toLocaleString('it')} — Livello massimo</span></div>`;
         } else {
-          const lo  = XP_THRESHOLDS[level - 1];
-          const hi  = XP_THRESHOLDS[level];
-          const pct = Math.min(100, Math.round((combXp - lo) / (hi - lo) * 100));
+          const lo  = XP_THRESHOLDS[Math.max(0, level - 1)] ?? 0;
+          const hi  = XP_THRESHOLDS[level] ?? XP_THRESHOLDS[19];
+          const pct = Math.min(100, Math.max(0, Math.round((combXp - lo) / (hi - lo) * 100))) || 0;
           xpSectionHtml = `<div class="xp-section">
             <span class="xp-label">XP: ${combXp.toLocaleString('it')} / ${hi.toLocaleString('it')} per Lv.${level + 1}</span>
             <div class="xp-bar-track"><div class="xp-bar-fill" style="width:${pct}%"></div></div>

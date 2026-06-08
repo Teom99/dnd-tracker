@@ -2191,7 +2191,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 .xp-section     { padding: 4px 12px 6px; }
 .xp-label       { font-size: 0.78rem; color: var(--text-muted); display: block; }
 .xp-bar-track   { height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; margin-top: 4px; overflow: hidden; }
-.xp-bar-fill    { height: 100%; background: #45b7d1; border-radius: 3px; transition: width 0.4s ease; }
+.xp-bar-fill    { height: 100%; background: #45b7d1; border-radius: 3px; }
 .levelup-badge  { font-size: 0.78rem; color: #ffd93d; padding: 2px 12px 4px; font-weight: 700; display: block; }
 .btn-levelup    { margin: 2px 12px 6px; }
 .btn-grant-levelup { margin: 2px 12px 6px; }
@@ -3629,3 +3629,54 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   border-radius: 6px;
   background: #1a1a2e;
 }
+
+/* ─── Ship token tray ─── */
+.ship-token-tray {
+  padding: 6px 12px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.ship-tray-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.ship-tray-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px 3px 6px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05);
+  font-size: 0.8rem;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.ship-tray-chip:hover { border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.1); }
+.ship-tray-chip.selected {
+  border-color: #ffd93d;
+  background: rgba(255,217,61,0.12);
+  color: #ffd93d;
+}
+.ship-tray-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.ship-tray-badge {
+  font-size: 0.68rem;
+  padding: 1px 5px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.1);
+  color: var(--text-muted);
+  margin-left: 2px;
+}
+.ship-tray-badge.same-deck { background: rgba(100,200,120,0.18); color: #80d09a; }
+.ship-tray-hint {
+  font-size: 0.75rem;
+  color: var(--text);
+}
+.ship-tray-hint.muted { color: var(--text-muted); }
