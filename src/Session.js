@@ -54,6 +54,14 @@ export class Session {
       combatants:      {},
       logs:            {},
       progressionMode: options.progressionMode ?? 'xp',
+      ship: {
+        hp:      200,
+        hpMax:   200,
+        weapons: {
+          ballista: { state: 'ready' },
+          mangonel: { state: 'ready' },
+        },
+      },
     });
 
     this.code      = code;
