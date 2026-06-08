@@ -81,7 +81,7 @@ export function renderShipPanel(shipData, combatants, myUid, isMaster, localDeck
     `<button class="ship-deck-tab${localDeck === key ? ' active' : ''}" data-action="switch-deck" data-deck="${key}">${esc(cfg.label)}</button>`
   ).join('');
 
-  const deckCfg       = DAMSELFLY_CONFIG[localDeck];
+  const deckCfg       = DAMSELFLY_CONFIG[localDeck] ?? DAMSELFLY_CONFIG['main'];
   const roomOverrides = roomsData[localDeck] ?? {};
   const svgHtml       = renderShipSvg(localDeck, deckCfg, roomOverrides, tokens, combatants, selectedTokenId, myUid, isMaster);
 
