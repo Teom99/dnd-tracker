@@ -17,4 +17,9 @@ export const state = {
   selectedCreatureCharId: null,
   sheetReturnView:        'view-combat',
   selectedGridTokenId:    null,
+  ship:                   null,
+  shipData:               null,
+  localDeck:              'main',
+  shipPanelOpen:          false,
+  _selectedShipToken:     null,
 };
