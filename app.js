@@ -838,6 +838,7 @@ function _bindShipEvents() {
       if (!c) return;
       if (!state.session.isMaster && c.ownerUid !== state.myUid) return;
       await state.ship.toggleCrewMember(target.dataset.weapon, cId);
+      _renderShipPanel();
       return;
     }
     if (action === 'switch-deck') {
@@ -865,6 +866,7 @@ function _bindShipEvents() {
         parseInt(target.dataset.row)
       );
       state._selectedShipToken = null;
+      _renderShipPanel();
       return;
     }
   });
