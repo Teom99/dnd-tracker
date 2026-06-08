@@ -418,7 +418,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
           ` : ''}
           ${isMaster && isCreature && ac !== null ? `
             <button
-              class="btn-health-hint ${c.showAC ? 'hint-active' : ''}"
+              class="btn-health-hint ${c.showAC ? '' : 'hint-active'}"
               data-id="${c.id}"
               data-action="toggle-show-ac"
               title="${c.showAC ? 'CA visibile ai giocatori' : 'CA nascosta ai giocatori'}"
