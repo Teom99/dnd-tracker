@@ -33,34 +33,15 @@ export function showError(message, targetId = 'error-message') {
 }
 
 export function showNotification(message, type = 'info') {
-  // Crea un elemento di notifica temporaneo
+  // Toast-pergamena: stile interamente in CSS (.notification-*)
   const notification = document.createElement('div');
   notification.className = `notification notification-${type}`;
   notification.textContent = message;
-  
-  // Stili inline per posizionamento
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: ${type === 'damage' ? '#8b2020' : type === 'heal' ? '#2d6b3a' : '#4a4a4a'};
-    color: white;
-    padding: 12px 20px;
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    z-index: 1000;
-    font-family: 'Cinzel', serif;
-    font-size: 14px;
-    max-width: 300px;
-    word-wrap: break-word;
-    animation: slideIn 0.3s ease-out;
-  `;
-  
   document.body.appendChild(notification);
-  
+
   // Rimuovi dopo 3 secondi
   setTimeout(() => {
-    notification.style.animation = 'slideOut 0.3s ease-in';
+    notification.classList.add('notification-out');
     setTimeout(() => notification.remove(), 300);
   }, 3000);
 }
