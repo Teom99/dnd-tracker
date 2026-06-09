@@ -2398,19 +2398,13 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 .grid-token-chip.ko { opacity: 0.4; }
 
 .grid-container {
-  overflow-x: auto;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border-warm) transparent;
+  overflow: hidden;
   flex: 1;
   min-width: 0;
   min-height: 300px;
+  border: 2px solid rgba(201, 168, 76, 0.4);
+  border-radius: 4px;
 }
-
-.grid-container::-webkit-scrollbar       { height: 4px; }
-.grid-container::-webkit-scrollbar-track { background: transparent; }
-.grid-container::-webkit-scrollbar-thumb { background: var(--border-warm); border-radius: 2px; }
 
 .grid-zoom-controls {
   display: flex;
