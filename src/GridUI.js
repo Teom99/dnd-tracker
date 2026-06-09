@@ -156,11 +156,11 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     const isDead     = occ.hpCurrent <= 0;
 
     let fill, stroke;
-    if (isMyToken)      { fill = '#0d2d0d'; stroke = isSelected ? '#70d070' : '#4aba4a'; }
-    else if (isPlayer)  { fill = '#142d4a'; stroke = isSelected ? 'var(--gold)' : isActive ? 'var(--gold-light)' : '#4a8abf'; }
-    else if (occ.faction === 'good') { fill = 'rgba(124,88,0,0.4)'; stroke = isSelected ? 'var(--gold)' : isActive ? 'var(--gold-light)' : '#d4af37'; }
-    else                { fill = '#2d1010'; stroke = isSelected ? 'var(--gold)' : isActive ? 'var(--gold-light)' : '#bf4a4a'; }
-    if (isDead) { fill = '#666'; stroke = '#999'; }
+    if (isMyToken)      { fill = '#16240f'; stroke = isSelected ? '#9ccf6e' : '#5e8f54'; }
+    else if (isPlayer)  { fill = '#13241c'; stroke = isSelected ? '#d4af5e' : isActive ? '#e3c87e' : '#4a8a6e'; }
+    else if (occ.faction === 'good') { fill = 'rgba(138,109,50,0.35)'; stroke = isSelected ? '#d4af5e' : isActive ? '#e3c87e' : '#b8954a'; }
+    else                { fill = '#2a100c'; stroke = isSelected ? '#d4af5e' : isActive ? '#e3c87e' : '#a84a3a'; }
+    if (isDead) { fill = '#3a352c'; stroke = '#6e6657'; }
 
     const sw       = (isSelected || isActive) ? 3 : 2;
     const inset    = 3;

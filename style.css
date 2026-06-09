@@ -2416,12 +2416,11 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
    GRIGLIA DI BATTAGLIA (esagonale)
 ═══════════════════════════════════════════ */
 .grid-section {
-  background: var(--bg-card);
-  border: 1px solid var(--border-warm);
-  border-top: 1px solid rgba(255,255,255,0.05);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-dim);
   border-radius: var(--radius);
   padding: 0.85rem 1rem;
-  box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.03);
+  box-shadow: inset 0 0 24px rgba(0,0,0,0.3);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -2461,17 +2460,17 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 
 .grid-token-chip {
   padding: 0.25rem 0.6rem;
-  background: #12122a;
-  border: 1px solid #2a2040;
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--border-dim);
   border-radius: 4px;
   color: var(--text-muted);
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-heading);
   font-size: 0.78rem;
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
 }
 .grid-token-chip:hover { border-color: var(--border-warm); color: var(--text); }
-.grid-token-chip.selected { border-color: var(--gold); color: var(--gold); background: rgba(124,58,237,0.1); }
+.grid-token-chip.selected { border-color: var(--gold); color: var(--gold); background: rgba(212,175,94,0.08); }
 .grid-token-chip.ko { opacity: 0.4; }
 
 .grid-container {
@@ -2611,12 +2610,11 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
    CRONACHE — Note di sessione
 ═══════════════════════════════════════════ */
 .session-notes-section {
-  background: var(--bg-card);
-  border: 1px solid var(--border-warm);
-  border-top: 1px solid rgba(255,255,255,0.05);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-dim);
   border-radius: var(--radius);
   padding: 0.85rem 1rem;
-  box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.03);
+  box-shadow: inset 0 0 24px rgba(0,0,0,0.3);
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -3081,12 +3079,11 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
    LOG EVENTI
 ═══════════════════════════════════════════ */
 .event-log-section {
-  background: var(--bg-card);
-  border: 1px solid var(--border-warm);
-  border-top: 1px solid rgba(255,255,255,0.05);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-dim);
   border-radius: var(--radius);
   padding: 0.85rem 1rem;
-  box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.03);
+  box-shadow: inset 0 0 24px rgba(0,0,0,0.3);
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -3134,15 +3131,30 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 .event-log::-webkit-scrollbar-track { background: transparent; }
 .event-log::-webkit-scrollbar-thumb { background: var(--border-warm); border-radius: 2px; }
 
+/* Voci come cronaca scritta a penna */
 .event-entry {
-  font-size: 0.85rem;
+  font-family: var(--font-fell);
+  font-style: italic;
+  font-size: 0.9rem;
   color: var(--text);
-  padding: 0.45rem 0.7rem;
-  border-radius: 6px;
+  padding: 0.45rem 0.7rem 0.45rem 1.6rem;
+  border-radius: 0;
   border-left: 3px solid;
-  background: rgba(0,0,0,0.25);
+  border-bottom: 1px solid rgba(110, 85, 38, 0.15);
+  background: rgba(0,0,0,0.18);
   line-height: 1.45;
   margin-bottom: 0.4rem;
+  position: relative;
+}
+
+.event-entry::before {
+  content: '✒';
+  position: absolute;
+  left: 0.5rem;
+  top: 0.45rem;
+  font-size: 0.8rem;
+  font-style: normal;
+  color: var(--wax);
 }
 
 .animate-new {
@@ -3160,18 +3172,19 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   }
 }
 
-.event-entry.damage { border-color: #e07070; background: rgba(224,112,112,0.1); }
-.event-entry.heal   { border-color: #70c070; background: rgba(112,192,112,0.1); }
-.event-entry.turn   { border-color: var(--gold); background: rgba(124,58,237,0.1); }
-.event-entry.ko     { border-color: #888; background: rgba(136,136,136,0.1); }
-.event-entry.revive { border-color: #4aba4a; background: rgba(74,186,74,0.1); }
-.event-entry.condition { border-color: #a070e0; background: rgba(160,112,224,0.1); }
+.event-entry.damage { border-color: var(--wax);   background: rgba(168,50,50,0.1); }
+.event-entry.heal   { border-color: var(--green); background: rgba(94,143,84,0.1); }
+.event-entry.turn   { border-color: var(--gold);  background: rgba(212,175,94,0.07); }
+.event-entry.ko     { border-color: #57503f;      background: rgba(80,75,60,0.12); }
+.event-entry.revive { border-color: #7ab872;      background: rgba(122,184,114,0.1); }
+.event-entry.condition { border-color: var(--arcane); background: rgba(110,74,138,0.12); }
 
 .event-timestamp {
-  font-size: 0.75rem;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
   color: var(--text-muted);
   margin-bottom: 0.2rem;
-  font-style: italic;
+  font-style: normal;
 }
 
 /* ─── SVG elementi ─── */
@@ -3181,15 +3194,16 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .sq {
-  fill: var(--bg-deep);
-  stroke: var(--border-warm);
+  fill: #181208;
+  stroke: rgba(212, 175, 94, 0.13);
   stroke-width: 1;
   transition: fill 0.1s;
 }
 
+/* Muri come blocchi di pietra */
 .sq-wall {
-  fill: #4a3a2a;
-  stroke: #6b5538;
+  fill: #3c372e;
+  stroke: #57503f;
 }
 
 .sq-hit {
@@ -3199,7 +3213,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .sq-hover {
-  fill: rgba(255,255,255,0.06);
+  fill: #241b0e;
 }
 
 .sq-name {
@@ -3431,7 +3445,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 
 .class-feature-level-badge {
   font-size: 0.72rem;
-  background: rgba(124,58,237,0.3);
+  background: rgba(110,74,138,0.25);
   border: 1px solid var(--purple-main);
   color: var(--gold-light);
   border-radius: 4px;
@@ -3475,7 +3489,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  background: rgba(124,58,237,0.2);
+  background: rgba(110,74,138,0.18);
   border: 1px solid var(--purple-main);
   border-radius: 20px;
   padding: 0.15rem 0.5rem;
@@ -3524,7 +3538,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 .level-badge {
   font-family: 'Cinzel', serif;
   font-size: 0.7rem;
-  background: rgba(124,58,237,0.25);
+  background: rgba(110,74,138,0.2);
   border: 1px solid var(--purple-main, #7c3aed);
   color: var(--gold-light);
   border-radius: 4px;
