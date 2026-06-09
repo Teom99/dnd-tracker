@@ -642,7 +642,9 @@ body.sheet-only #col-sheet {
 
 /* Scheda aperta dalla home (non in sessione): nascondi chrome combat */
 body.sheet-only:not(.in-combat) .combat-header  { display: none; }
-body.sheet-only:not(.in-combat) .battle-area    { display: none; }
+body.sheet-only:not(.in-combat) .dashboard      { display: none; }
+body.sheet-only:not(.in-combat) .detail-area    { display: none; }
+body.sheet-only:not(.in-combat) #session-notes-section { display: none; }
 body.sheet-only:not(.in-combat) #master-controls { display: none; }
 
 /* Su desktop dalla home: scheda a larghezza contenuta, centrata */
@@ -3058,22 +3060,6 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .scene-image:hover { opacity: 0.9; }
-
-/* ═══════════════════════════════════════════
-   AREA BATTAGLIA (griglia + log)
-═══════════════════════════════════════════ */
-.battle-area {
-  display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 1rem;
-  align-items: start;
-}
-
-@media (max-width: 1000px) {
-  .battle-area {
-    grid-template-columns: 1fr;
-  }
-}
 
 /* ═══════════════════════════════════════════
    LOG EVENTI

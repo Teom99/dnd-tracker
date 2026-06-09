@@ -149,112 +149,118 @@
         <button id="btn-toggle-ship" class="btn-secondary btn-sm" title="Apri pannello nave">🚢 Damselfly</button>
         <button id="btn-exit-session" class="btn-exit-session" title="Esci dalla sessione">← Esci</button>
       </div>
+      <!-- Controlli turno (visibili solo al master) -->
+      <div id="master-controls" class="master-controls hidden">
+        <button id="btn-next-turn" class="btn-primary btn-next">Turno Successivo ▶</button>
+        <button id="btn-reset" class="btn-danger">↺ Reset Incontro</button>
+        <select id="select-progression-mode-live" class="btn-secondary btn-sm" title="Modalità progressione">
+          <option value="xp">XP</option>
+          <option value="milestone">Milestone</option>
+        </select>
+        <div id="xp-award-section" class="hidden">
+          <details id="xp-award-form">
+            <summary class="btn-secondary btn-sm">✨ Assegna XP</summary>
+            <div id="xp-award-players" class="xp-award-players"></div>
+            <div class="input-row" style="padding:4px 0 6px; gap:0.4rem;">
+              <input type="number" id="input-xp-amount" min="0" placeholder="XP" class="input-inline" style="width:90px">
+              <button id="btn-award-xp" class="btn-primary btn-sm">Assegna</button>
+            </div>
+          </details>
+        </div>
+      </div>
     </header>
 
     <div id="error-message-combat" class="error-banner hidden"></div>
 
-    <!-- Controlli turno (visibili solo al master) -->
-    <div id="master-controls" class="master-controls hidden">
-      <button id="btn-next-turn" class="btn-primary btn-next">Turno Successivo ▶</button>
-      <button id="btn-reset" class="btn-danger">↺ Reset Incontro</button>
-      <select id="select-progression-mode-live" class="btn-secondary btn-sm" title="Modalità progressione">
-        <option value="xp">XP</option>
-        <option value="milestone">Milestone</option>
-      </select>
-      <div id="xp-award-section" class="hidden">
-        <details id="xp-award-form">
-          <summary class="btn-secondary btn-sm">✨ Assegna XP</summary>
-          <div id="xp-award-players" class="xp-award-players"></div>
-          <div class="input-row" style="padding:4px 0 6px; gap:0.4rem;">
-            <input type="number" id="input-xp-amount" min="0" placeholder="XP" class="input-inline" style="width:90px">
-            <button id="btn-award-xp" class="btn-primary btn-sm">Assegna</button>
-          </div>
-        </details>
-      </div>
-    </div>
+    <!-- Dashboard tattica: rail turni | griglia (+nave/scena) | cronaca -->
+    <div class="dashboard">
 
-    <!-- Pannello nave (visibile al posto della lista combattenti) -->
-    <div id="ship-panel" class="hidden"></div>
+      <aside id="turn-rail" class="turn-rail">
+        <div id="grid-initiative-list-container" class="grid-initiative-list-container">
+          <h3 class="grid-initiative-list-title">Iniziativa</h3>
+          <ol id="grid-initiative-list" class="grid-initiative-list"></ol>
+        </div>
+      </aside>
+
+      <div id="combat-center" class="combat-center">
+        <!-- Pannello nave (si scambia con la griglia) -->
+        <div id="ship-panel" class="hidden"></div>
+
+        <!-- Pannello Scena (immagine condivisa dal master) -->
+        <section id="scene-section" class="scene-section hidden">
+          <div class="scene-header">
+            <span class="scene-title">Scena</span>
+            <div class="scene-header-actions">
+              <button id="btn-change-scene" class="btn-copy scene-btn hidden">Cambia</button>
+              <button id="btn-clear-scene" class="btn-copy scene-btn scene-btn-remove hidden">✕</button>
+            </div>
+          </div>
+          <a id="scene-image-link" href="#" target="_blank" rel="noopener">
+            <img id="scene-image" class="scene-image" src="" alt="">
+          </a>
+        </section>
+
+        <!-- Griglia di battaglia -->
+        <section id="grid-section" class="grid-section">
+          <div class="grid-header">
+            <span class="grid-title">Griglia di Battaglia</span>
+            <div class="grid-zoom-controls">
+              <button id="btn-grid-edit" class="grid-zoom-btn" title="Modifica dimensioni e muri" style="display:none">✏️ Modifica griglia</button>
+              <button id="btn-grid-reset" class="grid-zoom-btn" title="Svuota la griglia (token e muri)" style="display:none">🗑</button>
+            </div>
+            <div id="grid-master-controls" class="grid-master-controls" style="display:none">
+              <span id="grid-edit-controls" class="grid-edit-controls" style="display:none">
+                <label>Dimensioni:</label>
+                <input type="number" id="input-grid-cols" min="1" max="60" class="grid-dim-input" title="Larghezza (caselle)">
+                <span>×</span>
+                <input type="number" id="input-grid-rows" min="1" max="60" class="grid-dim-input" title="Altezza (caselle)">
+              </span>
+              <label class="grid-size-label">Token sel.:</label>
+              <select id="select-token-size" class="grid-dim-select" disabled title="Dimensione del token selezionato">
+                <option value="small">Piccola (1×1)</option>
+                <option value="medium">Media (1×1)</option>
+                <option value="large">Grande (2×2)</option>
+                <option value="huge">Enorme (3×3)</option>
+                <option value="gargantuan">Mastodontica (4×4)</option>
+              </select>
+            </div>
+            <span id="grid-hint" class="grid-hint">1 casella = 1 m · Seleziona un token, poi tocca la destinazione</span>
+          </div>
+          <div id="grid-token-bar" class="grid-token-bar"></div>
+          <div class="grid-layout">
+            <div id="grid-container" class="grid-container"></div>
+          </div>
+        </section>
+      </div><!-- /#combat-center -->
+
+      <!-- Log eventi -->
+      <section id="event-log-section" class="event-log-section">
+        <div class="event-log-header">
+          <span class="event-log-title">📜 Log Eventi</span>
+          <button id="btn-clear-log" class="btn-clear-log" title="Cancella log">🗑</button>
+        </div>
+        <div id="event-log" class="event-log"></div>
+      </section>
+
+    </div><!-- /.dashboard -->
+
+    <!-- Dettaglio combattente selezionato -->
+    <div class="detail-area">
+      <ol id="detail-list" class="combatant-list combatant-detail"></ol>
+      <p id="empty-detail-msg" class="empty-msg hidden">Seleziona un combattente.</p>
+    </div>
 
     <!-- Due colonne: Creature | Giocatori -->
     <div class="combat-cols">
 
       <div class="combat-col" id="col-creatures">
         <h2 class="col-title">Creature</h2>
-        <section id="master-add-form" class="master-panel hidden">
-          <h3 class="master-panel-title">Aggiungi Creatura</h3>
-          <form id="form-add-creature" novalidate>
-            <div id="creature-library-picker" class="char-picker hidden">
-              <p class="char-picker-label">Dalla libreria:</p>
-              <div id="creature-library-list" class="char-picker-list"></div>
-              <p class="or-divider">oppure inserisci manualmente:</p>
-            </div>
-            <div class="monster-api-search" id="monster-api-search">
-              <input type="text" id="input-monster-search"
-                     placeholder="🔍 Cerca mostro D&D 5e (opzionale)..."
-                     autocomplete="off">
-              <ul id="monster-suggestions" class="api-suggestions hidden"></ul>
-            </div>
-            <input
-              type="text"
-              id="input-creature-name"
-              placeholder="Nome creatura"
-              maxlength="50"
-            >
-            <div class="input-row">
-              <input
-                type="number"
-                id="input-creature-hp"
-                placeholder="HP massimi"
-                min="1"
-                max="9999"
-              >
-              <input
-                type="number"
-                id="input-creature-initiative"
-                placeholder="Iniziativa"
-                min="-10"
-                max="30"
-              >
-              <input
-                type="number"
-                id="input-creature-ac"
-                placeholder="CA"
-                min="0"
-                max="30"
-              >
-            </div>
-            <select id="input-creature-size" class="input-select">
-              <option value="small">Piccola (1×1)</option>
-              <option value="medium" selected>Media (1×1)</option>
-              <option value="large">Grande (2×2)</option>
-              <option value="huge">Enorme (3×3)</option>
-              <option value="gargantuan">Mastodontica (4×4)</option>
-            </select>
-            <input type="hidden" id="input-creature-api-index" value="">
-            <button type="submit" class="btn-secondary">+ Aggiungi</button>
-          </form>
-        </section>
         <ol id="creature-list" class="combatant-list"></ol>
         <p id="empty-creatures-msg" class="empty-msg hidden">Nessuna creatura.</p>
       </div>
 
       <div class="combat-col" id="col-players">
         <h2 class="col-title">Giocatori</h2>
-
-        <section id="player-pet-form" class="master-panel hidden">
-          <h3 class="master-panel-title">Aggiungi Compagno</h3>
-          <form id="form-add-pet" novalidate>
-            <input type="text" id="input-pet-name" placeholder="Nome compagno (es. Fido, Gufo)" maxlength="50">
-            <div class="input-row">
-              <input type="number" id="input-pet-hp" placeholder="HP massimi" min="1" max="9999">
-              <input type="number" id="input-pet-initiative" placeholder="Iniziativa" min="-10" max="30">
-              <input type="number" id="input-pet-ac" placeholder="CA (opz.)" min="0" max="30">
-            </div>
-            <button type="submit" class="btn-secondary">+ Aggiungi</button>
-          </form>
-        </section>
-
         <ol id="player-list" class="combatant-list"></ol>
         <p id="empty-players-msg" class="empty-msg hidden">
           In attesa dei giocatori...<br>
@@ -511,69 +517,6 @@
 
     </div><!-- /.combat-cols -->
 
-    <!-- Griglia di battaglia e Log eventi -->
-    <div class="battle-area">
-
-      <!-- Pannello Scena (immagine condivisa dal master) -->
-      <section id="scene-section" class="scene-section hidden">
-        <div class="scene-header">
-          <span class="scene-title">Scena</span>
-          <div class="scene-header-actions">
-            <button id="btn-change-scene" class="btn-copy scene-btn hidden">Cambia</button>
-            <button id="btn-clear-scene" class="btn-copy scene-btn scene-btn-remove hidden">✕</button>
-          </div>
-        </div>
-        <a id="scene-image-link" href="#" target="_blank" rel="noopener">
-          <img id="scene-image" class="scene-image" src="" alt="">
-        </a>
-      </section>
-
-      <!-- Griglia di battaglia -->
-      <section id="grid-section" class="grid-section">
-        <div class="grid-header">
-          <span class="grid-title">Griglia di Battaglia</span>
-          <div class="grid-zoom-controls">
-            <button id="btn-grid-edit" class="grid-zoom-btn" title="Modifica dimensioni e muri" style="display:none">✏️ Modifica griglia</button>
-            <button id="btn-grid-reset" class="grid-zoom-btn" title="Svuota la griglia (token e muri)" style="display:none">🗑</button>
-          </div>
-          <div id="grid-master-controls" class="grid-master-controls" style="display:none">
-            <span id="grid-edit-controls" class="grid-edit-controls" style="display:none">
-              <label>Dimensioni:</label>
-              <input type="number" id="input-grid-cols" min="1" max="60" class="grid-dim-input" title="Larghezza (caselle)">
-              <span>×</span>
-              <input type="number" id="input-grid-rows" min="1" max="60" class="grid-dim-input" title="Altezza (caselle)">
-            </span>
-            <label class="grid-size-label">Token sel.:</label>
-            <select id="select-token-size" class="grid-dim-select" disabled title="Dimensione del token selezionato">
-              <option value="small">Piccola (1×1)</option>
-              <option value="medium">Media (1×1)</option>
-              <option value="large">Grande (2×2)</option>
-              <option value="huge">Enorme (3×3)</option>
-              <option value="gargantuan">Mastodontica (4×4)</option>
-            </select>
-          </div>
-          <span id="grid-hint" class="grid-hint">1 casella = 1 m · Seleziona un token, poi tocca la destinazione</span>
-        </div>
-        <div id="grid-token-bar" class="grid-token-bar"></div>
-        <div class="grid-layout">
-          <div id="grid-initiative-list-container" class="grid-initiative-list-container">
-            <h3 class="grid-initiative-list-title">Iniziativa</h3>
-            <ol id="grid-initiative-list" class="grid-initiative-list"></ol>
-          </div>
-          <div id="grid-container" class="grid-container"></div>
-        </div>
-      </section>
-
-      <!-- Log eventi -->
-      <section id="event-log-section" class="event-log-section">
-        <div class="event-log-header">
-          <span class="event-log-title">📜 Log Eventi</span>
-          <button id="btn-clear-log" class="btn-clear-log" title="Cancella log">🗑</button>
-        </div>
-        <div id="event-log" class="event-log"></div>
-      </section>
-    </div>
-
     <!-- Cronache della campagna -->
     <section id="session-notes-section" class="session-notes-section">
       <div class="session-notes-header">
@@ -584,6 +527,85 @@
     </section>
 
 
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       MODAL — aggiungi alla battaglia (creatura / compagno)
+  ═══════════════════════════════════════════════ -->
+  <div id="add-combatant-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Aggiungi alla battaglia">
+    <div class="modal-content add-combatant-content">
+      <h3>Aggiungi alla battaglia</h3>
+
+      <section id="master-add-form" class="master-panel hidden">
+        <h3 class="master-panel-title">Aggiungi Creatura</h3>
+        <form id="form-add-creature" novalidate>
+          <div id="creature-library-picker" class="char-picker hidden">
+            <p class="char-picker-label">Dalla libreria:</p>
+            <div id="creature-library-list" class="char-picker-list"></div>
+            <p class="or-divider">oppure inserisci manualmente:</p>
+          </div>
+          <div class="monster-api-search" id="monster-api-search">
+            <input type="text" id="input-monster-search"
+                   placeholder="🔍 Cerca mostro D&D 5e (opzionale)..."
+                   autocomplete="off">
+            <ul id="monster-suggestions" class="api-suggestions hidden"></ul>
+          </div>
+          <input
+            type="text"
+            id="input-creature-name"
+            placeholder="Nome creatura"
+            maxlength="50"
+          >
+          <div class="input-row">
+            <input
+              type="number"
+              id="input-creature-hp"
+              placeholder="HP massimi"
+              min="1"
+              max="9999"
+            >
+            <input
+              type="number"
+              id="input-creature-initiative"
+              placeholder="Iniziativa"
+              min="-10"
+              max="30"
+            >
+            <input
+              type="number"
+              id="input-creature-ac"
+              placeholder="CA"
+              min="0"
+              max="30"
+            >
+          </div>
+          <select id="input-creature-size" class="input-select">
+            <option value="small">Piccola (1×1)</option>
+            <option value="medium" selected>Media (1×1)</option>
+            <option value="large">Grande (2×2)</option>
+            <option value="huge">Enorme (3×3)</option>
+            <option value="gargantuan">Mastodontica (4×4)</option>
+          </select>
+          <input type="hidden" id="input-creature-api-index" value="">
+          <button type="submit" class="btn-secondary">+ Aggiungi</button>
+        </form>
+      </section>
+
+      <section id="player-pet-form" class="master-panel hidden">
+        <h3 class="master-panel-title">Aggiungi Compagno</h3>
+        <form id="form-add-pet" novalidate>
+          <input type="text" id="input-pet-name" placeholder="Nome compagno (es. Fido, Gufo)" maxlength="50">
+          <div class="input-row">
+            <input type="number" id="input-pet-hp" placeholder="HP massimi" min="1" max="9999">
+            <input type="number" id="input-pet-initiative" placeholder="Iniziativa" min="-10" max="30">
+            <input type="number" id="input-pet-ac" placeholder="CA (opz.)" min="0" max="30">
+          </div>
+          <button type="submit" class="btn-secondary">+ Aggiungi</button>
+        </form>
+      </section>
+
+      <button id="btn-add-combatant-close" class="btn-secondary">Chiudi</button>
+    </div>
   </div>
 
   <!-- ═══════════════════════════════════════════════
