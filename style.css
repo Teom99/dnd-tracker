@@ -559,10 +559,14 @@ form { display: flex; flex-direction: column; gap: 0.6rem; }
 .session-label { color: var(--text-muted); font-size: 0.85rem; }
 
 .session-code {
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-heading);
   font-size: 1rem;
   color: var(--gold);
   letter-spacing: 0.1em;
+  border: 1px solid var(--gold-dim);
+  border-radius: 4px;
+  padding: 0.15rem 0.6rem;
+  background: rgba(212, 175, 94, 0.07);
 }
 
 .btn-copy {
@@ -590,16 +594,15 @@ form { display: flex; flex-direction: column; gap: 0.6rem; }
    COMBAT VIEW — pannello master (aggiungi creatura)
 ═══════════════════════════════════════════ */
 .master-panel {
-  background: var(--bg-card);
-  border: 1px solid var(--border-warm);
-  border-top: 1px solid rgba(255,255,255,0.05);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-dim);
   border-radius: var(--radius);
   padding: 1rem 1.1rem;
-  box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.03);
+  box-shadow: inset 0 0 24px rgba(0,0,0,0.3);
 }
 
 .master-panel form { display: flex; flex-direction: column; gap: 0.6rem; }
-.master-panel-title { font-family: 'Cinzel', serif; font-size: 0.95rem; margin-bottom: 0.4rem; }
+.master-panel-title { font-family: var(--font-heading); font-size: 0.95rem; margin-bottom: 0.4rem; }
 
 /* ═══════════════════════════════════════════
    LAYOUT 3 COLONNE COMBAT
@@ -660,14 +663,21 @@ body.sheet-only:not(.in-combat) #master-controls { display: none; }
 }
 
 .col-title {
-  font-family: 'Cinzel', serif;
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-heading);
+  font-size: 0.85rem;
+  color: var(--gold-light);
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  padding-bottom: 0.4rem;
   margin-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border-warm);
+}
+.col-title::before, .col-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-dim), transparent);
 }
 
 /* Header interno alla colonna scheda */
@@ -722,29 +732,27 @@ body.sheet-only .sheet-back-btn {
 
 /* ─── Scheda combattente ─── */
 .combatant-card {
-  background: var(--bg-card);
+  background: linear-gradient(170deg, var(--bg-card), #0e0a05);
   border: 1px solid var(--border-warm);
-  border-left: 3px solid var(--border-warm);
-  border-top: 1px solid rgba(255,255,255,0.04);
   border-radius: var(--radius);
   padding: 0.85rem 0.95rem;
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
-  box-shadow: var(--shadow);
+  box-shadow: inset 0 0 24px rgba(0,0,0,0.5), 0 4px 14px rgba(0,0,0,0.45);
   transition: border-color 0.22s, box-shadow 0.25s, background 0.22s, opacity 0.22s;
 }
 
+/* La "pagina corrente" del libro */
 .combatant-card.active-turn {
-  border-left-color: var(--gold);
-  background: linear-gradient(170deg, rgba(255,255,255,0.025) 0%, var(--active-turn-bg) 100%);
-  box-shadow: 0 0 0 1px rgba(255,255,255,0.04), 0 0 30px rgba(0,0,0,0.5), 0 0 18px var(--gold-glow), var(--shadow);
+  border-color: var(--gold);
+  background: linear-gradient(170deg, var(--active-turn-bg), #0e0a05);
+  box-shadow: 0 0 18px var(--gold-glow), inset 0 0 24px rgba(0,0,0,0.5);
 }
 
 .combatant-card.knocked-out {
-  opacity: 0.4;
-  border-left-color: #333;
-  filter: saturate(0.3);
+  opacity: 0.55;
+  filter: saturate(0.25) brightness(0.75);
 }
 
 /* ─── Header scheda ─── */
@@ -755,12 +763,18 @@ body.sheet-only .sheet-back-btn {
 }
 
 .turn-number {
-  font-family: 'Cinzel', serif;
-  font-size: 0.85rem;
+  font-family: var(--font-heading);
+  font-size: 0.78rem;
   color: var(--text-muted);
-  min-width: 1.2rem;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  line-height: 1.4rem;
   text-align: center;
+  border: 1px solid var(--border-dim);
+  border-radius: 50%;
 }
+
+.active-turn .turn-number { border-color: var(--gold-dim); }
 
 .active-turn .turn-number { color: var(--gold); font-weight: bold; }
 
@@ -774,8 +788,10 @@ body.sheet-only .sheet-back-btn {
 }
 
 .combatant-name {
-  font-size: 1.1rem;
+  font-family: var(--font-heading);
+  font-size: 1.02rem;
   font-weight: 600;
+  color: var(--gold-light);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -792,11 +808,12 @@ body.sheet-only .sheet-back-btn {
   flex-shrink: 0;
 }
 
-.type-badge.player   { background: #1a3a5c; color: #7ab4e0; border: 1px solid #2a5a8c; }
-.type-badge.pet      { background: #1a3a2a; color: #7ae0a0; border: 1px solid #2a7a4a; }
-.type-badge.creature      { background: #3a1a1a; color: #e07070; border: 1px solid #6b2020; }
-.type-badge.creature.evil { background: #3a1a1a; color: #e07070; border: 1px solid #6b2020; }
-.type-badge.creature.good { background: #2d2610; color: #d4af37; border: 1px solid #d4af37; }
+.type-badge { border-radius: 99px; }
+.type-badge.player   { background: rgba(94,143,84,0.14);  color: #9cc794; border: 1px solid #3e5e38; }
+.type-badge.pet      { background: rgba(94,143,84,0.1);   color: #8ab882; border: 1px solid #36502f; }
+.type-badge.creature      { background: rgba(168,50,50,0.12); color: #e89090; border: 1px solid #7a2828; }
+.type-badge.creature.evil { background: rgba(168,50,50,0.12); color: #e89090; border: 1px solid #7a2828; }
+.type-badge.creature.good { background: rgba(212,175,94,0.08); color: var(--gold); border: 1px solid var(--gold-dim); }
 
 .faction-switch {
   display: flex;
@@ -974,9 +991,9 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 .hp-numbers.hp-critical { color: var(--red-bright); }
 
 .hp-bar-container {
-  height: 8px;
+  height: 9px;
   background: var(--hp-bar-bg);
-  border-radius: 4px;
+  border-radius: 99px;
   overflow: hidden;
   border: 1px solid var(--hp-bar-border);
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
@@ -984,7 +1001,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 
 .hp-bar {
   height: 100%;
-  border-radius: 4px;
+  border-radius: 99px;
   transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1), background 0.4s ease;
   position: relative;
 }
@@ -1006,7 +1023,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .btn-health-hint:hover       { color: var(--text-muted); border-color: var(--text-muted); }
-.btn-health-hint.hint-active { color: var(--gold); border-color: var(--gold); border-style: solid; background: rgba(124,58,237,0.12); }
+.btn-health-hint.hint-active { color: var(--gold); border-color: var(--gold-dim); border-style: solid; background: rgba(212,175,94,0.08); }
 
 /* ─── Suggerimento salute creatura (visibile ai giocatori quando il master lo attiva) ─── */
 .health-hint {
@@ -1017,12 +1034,13 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   border-left: 3px solid;
 }
 
-.health-hint.hint-full     { color: #70c070; border-color: #4a7c59; background: rgba(74,124,89,0.1); }
-.health-hint.hint-good     { color: #8ecf8e; border-color: #5a9a5a; background: rgba(90,154,90,0.1); }
-.health-hint.hint-hurt     { color: #e0923a; border-color: #b56d10; background: rgba(224,146,58,0.1); }
-.health-hint.hint-bad      { color: #e08040; border-color: #c4621d; background: rgba(196,98,29,0.1); }
-.health-hint.hint-critical { color: #e07070; border-color: #8b2020; background: rgba(139,32,32,0.1); }
-.health-hint.hint-ko       { color: #888;    border-color: #555;    background: rgba(80,80,80,0.1); }
+.health-hint { font-family: var(--font-fell); }
+.health-hint.hint-full     { color: #9cc794; border-color: #5e8f54; background: rgba(94,143,84,0.1); }
+.health-hint.hint-good     { color: #8ab882; border-color: #4e7a46; background: rgba(94,143,84,0.08); }
+.health-hint.hint-hurt     { color: var(--gold);  border-color: var(--gold-dim); background: rgba(212,175,94,0.08); }
+.health-hint.hint-bad      { color: #d88a5a; border-color: #9c5a2a; background: rgba(200,120,60,0.1); }
+.health-hint.hint-critical { color: #e89090; border-color: var(--wax); background: rgba(168,50,50,0.12); }
+.health-hint.hint-ko       { color: #8a8275; border-color: #57503f;   background: rgba(80,75,60,0.12); }
 
 /* ─── Pannello azione (arma/incantesimo + bersaglio + danno/cura) ─── */
 .action-panel {
@@ -1092,10 +1110,11 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .target-chip.selected {
-  background: rgba(124, 58, 237, 0.18);
+  background: rgba(212, 175, 94, 0.12);
   border-color: var(--gold);
   color: var(--gold);
   font-weight: 600;
+  box-shadow: 0 0 8px var(--gold-glow);
 }
 
 .attack-controls {
@@ -1138,23 +1157,23 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .btn-apply-damage {
-  background: linear-gradient(160deg, #6a1515 0%, #420a0a 100%);
-  color: #f09090;
-  border-color: #8b2020;
+  background: linear-gradient(170deg, #3a1010 0%, #240808 100%);
+  color: #e8b0b0;
+  border-color: #7a2828;
   text-shadow: 0 1px 3px rgba(0,0,0,0.7);
-  box-shadow: 0 2px 10px rgba(100,10,10,0.4);
+  box-shadow: 0 2px 10px rgba(80,15,15,0.4);
 }
 
 .btn-apply-heal {
-  background: linear-gradient(160deg, #1a5028 0%, #0d3018 100%);
-  color: #78d878;
-  border-color: #2d7040;
+  background: linear-gradient(170deg, #1e3a18 0%, #10240c 100%);
+  color: #9cc794;
+  border-color: #3e5e38;
   text-shadow: 0 1px 3px rgba(0,0,0,0.7);
-  box-shadow: 0 2px 10px rgba(10,70,30,0.4);
+  box-shadow: 0 2px 10px rgba(20,60,15,0.35);
 }
 
-.btn-apply-damage:hover { filter: brightness(1.25); transform: translateY(-2px); box-shadow: 0 5px 20px rgba(139,32,32,0.5); }
-.btn-apply-heal:hover   { filter: brightness(1.25); transform: translateY(-2px); box-shadow: 0 5px 20px rgba(45,112,64,0.5); }
+.btn-apply-damage:hover { filter: brightness(1.25); transform: translateY(-2px); box-shadow: 0 5px 20px rgba(168,50,50,0.4); }
+.btn-apply-heal:hover   { filter: brightness(1.25); transform: translateY(-2px); box-shadow: 0 5px 20px rgba(94,143,84,0.35); }
 .btn-apply-damage:active, .btn-apply-heal:active { transform: translateY(0); filter: brightness(0.88); }
 
 /* Testo azione dichiarata (visibile agli altri, read-only) */
@@ -1177,10 +1196,12 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 
 .condition-badge {
   font-size: 0.75rem;
-  padding: 0.15rem 0.5rem;
+  padding: 0.15rem 0.6rem;
   border-radius: 99px;
-  color: #fff;
-  font-weight: 600;
+  background: color-mix(in srgb, var(--cond-color, var(--gold-dim)) 14%, transparent);
+  border: 1px solid var(--cond-color, var(--gold-dim));
+  color: var(--text);
+  font-family: var(--font-body);
   letter-spacing: 0.02em;
 }
 
@@ -2174,7 +2195,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   transition: background 0.15s, color 0.15s;
 }
 
-.btn-sheet:hover { background: rgba(124,58,237,0.14); }
+.btn-sheet:hover { background: rgba(212,175,94,0.1); }
 
 /* ─── Death saves inline nella card KO ─── */
 .death-saves-inline {
@@ -2182,8 +2203,8 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   flex-direction: column;
   gap: 0.35rem;
   padding: 0.5rem 0.6rem;
-  background: rgba(139, 32, 32, 0.15);
-  border: 1px solid rgba(139, 32, 32, 0.4);
+  background: rgba(168, 50, 50, 0.1);
+  border: 1px solid var(--wax-dark);
   border-radius: 6px;
 }
 
@@ -2194,7 +2215,9 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .ds-label {
-  font-size: 0.75rem;
+  font-family: var(--font-heading);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
   color: var(--text-muted);
   width: 5rem;
   flex-shrink: 0;
@@ -2210,27 +2233,29 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   color: var(--text-muted);
   transition: color 0.15s;
 }
-.ds-pip:hover { color: var(--text); }
-.ds-pip.filled { color: #dc2626; }
+.ds-pip:hover { color: var(--gold-light); }
+.ds-row:first-of-type .ds-pip.filled { color: var(--gold); }
+.ds-pip.filled { color: var(--wax); }
 
 .btn-end-turn {
   width: 100%;
   padding: 0.4rem 0.6rem;
-  background: linear-gradient(160deg, #1a4020 0%, #0e2810 100%);
-  border: 1px solid rgba(78,160,100,0.4);
-  color: #80d09a;
-  border-radius: 8px;
-  font-family: 'Cinzel', serif;
+  background: var(--btn-primary-bg);
+  border: 1px solid var(--gold-dim);
+  color: var(--gold-light);
+  border-radius: 6px;
+  font-family: var(--font-heading);
   font-size: 0.85rem;
+  letter-spacing: 0.05em;
   cursor: pointer;
   min-height: 38px;
   transition: background 0.18s, border-color 0.18s, box-shadow 0.18s;
   text-shadow: 0 1px 3px rgba(0,0,0,0.5);
 }
 .btn-end-turn:hover {
-  background: linear-gradient(160deg, #1f4a25 0%, #122e14 100%);
-  border-color: rgba(100,200,120,0.5);
-  box-shadow: 0 0 12px rgba(78,160,100,0.3);
+  filter: brightness(1.15);
+  border-color: var(--gold);
+  box-shadow: 0 0 12px var(--gold-glow);
 }
 
 /* ─── XP / Progressione ─── */

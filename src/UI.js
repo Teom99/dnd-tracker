@@ -2,7 +2,7 @@ const XP_THRESHOLDS = [0,300,900,2700,6500,14000,23000,34000,48000,64000,
                         85000,100000,120000,140000,165000,195000,225000,265000,305000,355000];
 
 export const CONDITIONS = [
-  { name: 'Avvelenato',   color: 'var(--gold)' },
+  { name: 'Avvelenato',   color: 'var(--arcane)' },
   { name: 'Stordito',     color: '#d97706' },
   { name: 'Spaventato',   color: '#dc2626' },
   { name: 'Bloccato',     color: '#ea580c' },
@@ -11,8 +11,8 @@ export const CONDITIONS = [
   { name: 'Prono',        color: '#9ca3af' },
   { name: 'Invisibile',   color: '#0891b2' },
   { name: 'Incapacitato', color: '#d97706' },
-  { name: 'Paralizzato',  color: 'var(--gold)' },
-  { name: 'Pietrificato', color: 'var(--gold)' },
+  { name: 'Paralizzato',  color: '#8a8a93' },
+  { name: 'Pietrificato', color: '#8a8a93' },
   { name: 'Affascinato',  color: '#ec4899' },
   { name: 'Esausto',      color: '#dc2626' },
   { name: 'Nascosto',     color: '#0891b2' },
@@ -479,7 +479,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         <div class="active-conditions">
           ${conditions.map(cond => {
             const meta = CONDITIONS.find(x => x.name === cond);
-            return `<span class="condition-badge" style="background:${meta?.color ?? '#666'}">${cond}</span>`;
+            return `<span class="condition-badge" style="--cond-color:${meta?.color ?? 'var(--gold-dim)'}">${cond}</span>`;
           }).join('')}
         </div>
       ` : ''}
