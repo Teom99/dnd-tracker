@@ -136,6 +136,51 @@ export class Session {
     await set(ref(this._db, `sessions/${this.code}/grid`), null);
   }
 
+  async setGridConfig(cols, rows) {
+    const c = Math.max(1, Math.min(60, parseInt(cols) || 20));
+    const r = Math.max(1, Math.min(60, parseInt(rows) || 20));
+    await set(ref(this._db, `sessions/${this.code}/gridConfig`), { cols: c, rows: r });
+
+    // Drop tokens whose footprint no longer fits, and out-of-bounds walls.
+    const snap = await get(ref(this._db, `sessions/${this.code}`));
+    const data = snap.val() || {};
+    const sizeFootprint = { tiny: 1, small: 1, medium: 1, large: 2, huge: 3, gargantuan: 4 };
+
+    const grid = data.grid || {};
+    const combatants = data.combatants || {};
+    for (const [id, p] of Object.entries(grid)) {
+      const n = sizeFootprint[combatants[id]?.size] || 1;
+      if (p == null || p.col == null || p.col < 0 || p.row < 0 ||
+          p.col + n > c || p.row + n > r) {
+        await set(ref(this._db, `sessions/${this.code}/grid/${id}`), null);
+      }
+    }
+
+    const walls = data.walls || {};
+    for (const key of Object.keys(walls)) {
+      const [wc, wr] = key.split('_').map(Number);
+      if (wc < 0 || wr < 0 || wc >= c || wr >= r) {
+        await set(ref(this._db, `sessions/${this.code}/walls/${key}`), null);
+      }
+    }
+  }
+
+  async toggleWall(cellKey) {
+    await runTransaction(
+      ref(this._db, `sessions/${this.code}/walls/${cellKey}`),
+      (current) => (current ? null : true)
+    );
+  }
+
+  async clearWalls() {
+    await set(ref(this._db, `sessions/${this.code}/walls`), null);
+  }
+
+  async resetGrid() {
+    await set(ref(this._db, `sessions/${this.code}/grid`), null);
+    await set(ref(this._db, `sessions/${this.code}/walls`), null);
+  }
+
   async addLogEvent(message, type = 'info', meta = {}) {
     if (!this.code) return;
     const newRef = push(ref(this._db, `sessions/${this.code}/logs`));

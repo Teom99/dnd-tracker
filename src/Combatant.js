@@ -13,7 +13,7 @@ export class Combatant {
     return ref(this._db, path ? `${base}/${path}` : base);
   }
 
-  async add(name, initiative, hpMax, type, ownerUid, charId = null, armorClass = null, monsterApiIndex = null) {
+  async add(name, initiative, hpMax, type, ownerUid, charId = null, armorClass = null, monsterApiIndex = null, size = 'medium') {
     const newRef = push(this._ref());
     const data = {
       name,
@@ -25,6 +25,7 @@ export class Combatant {
       ownerUid,
       faction: 'evil',
       charId: charId ?? null,
+      size: size || 'medium',
     };
     if (armorClass !== null && armorClass !== '') data.armorClass = parseInt(armorClass) || 0;
     if (monsterApiIndex) data.monsterApiIndex = monsterApiIndex;
@@ -73,6 +74,12 @@ export class Combatant {
 
   async setArmorClass(id, ac) {
     await set(ref(this._db, `sessions/${this._code}/combatants/${id}/armorClass`), parseInt(ac) || 0);
+  }
+
+  async setSize(id, size) {
+    const valid = ['tiny', 'small', 'medium', 'large', 'huge', 'gargantuan'];
+    const s = valid.includes(size) ? size : 'medium';
+    await set(ref(this._db, `sessions/${this._code}/combatants/${id}/size`), s);
   }
 
   async setLevel(id, level) {
