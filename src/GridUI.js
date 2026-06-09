@@ -17,6 +17,8 @@ let _didPan               = false;
 let _dragStartX           = 0;
 let _dragStartY           = 0;
 let _dragListenersAttached = false;
+let viewOffsetX = 0;
+let viewOffsetY = 0;
 
 function hexR() { return BASE_HEX_R * currentZoom; }
 
@@ -27,13 +29,21 @@ function computeGridSize(containerW, containerH) {
   return { cols, rows };
 }
 
+function gridStart() {
+  const r = hexR();
+  return {
+    startCol: Math.floor(viewOffsetX / (r * SQRT3)),
+    startRow: Math.floor(viewOffsetY / (r * 1.5)),
+  };
+}
+
 // ─── Coordinate helpers ──────────────────────────────────────────────────────
 
 function hexCenter(col, row) {
   const r = hexR();
   return {
-    x: r * SQRT3 * (col + 0.5 * (row & 1)) + PAD,
-    y: r * 1.5 * row + PAD,
+    x: r * SQRT3 * (col + 0.5 * (row & 1)) - viewOffsetX + PAD,
+    y: r * 1.5 * row - viewOffsetY + PAD,
   };
 }
 
@@ -106,8 +116,9 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
 
   let inner = '';
 
-  for (let row = 0; row < rows; row++) {
-    for (let col = 0; col < cols; col++) {
+  const { startCol, startRow } = gridStart();
+  for (let row = startRow; row < startRow + rows; row++) {
+    for (let col = startCol; col < startCol + cols; col++) {
       const { x, y }   = hexCenter(col, row);
       const key        = `${col}_${row}`;
       const occupantId = cellMap[key];
@@ -317,6 +328,8 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
 export function zoomIn() {
   if (currentZoom < MAX_ZOOM) {
     currentZoom = Math.min(MAX_ZOOM, parseFloat((currentZoom + ZOOM_STEP).toFixed(2)));
+    viewOffsetX = 0;
+    viewOffsetY = 0;
     _reRenderCallback?.();
   }
 }
@@ -324,12 +337,16 @@ export function zoomIn() {
 export function zoomOut() {
   if (currentZoom > MIN_ZOOM) {
     currentZoom = Math.max(MIN_ZOOM, parseFloat((currentZoom - ZOOM_STEP).toFixed(2)));
+    viewOffsetX = 0;
+    viewOffsetY = 0;
     _reRenderCallback?.();
   }
 }
 
 export function zoomReset() {
   currentZoom = 1;
+  viewOffsetX = 0;
+  viewOffsetY = 0;
   _reRenderCallback?.();
 }
 
@@ -366,11 +383,20 @@ export function initZoomControls(onGridReset) {
   });
 
   container.addEventListener('mouseup', () => {
+    if (_isDragging && _didPan) {
+      viewOffsetX -= panX;
+      viewOffsetY -= panY;
+      _reRenderCallback?.();
+    }
     _isDragging = false;
     container.style.cursor = 'grab';
   });
 
   container.addEventListener('mouseleave', () => {
+    if (_isDragging) {
+      const svg = container.querySelector('svg');
+      if (svg) svg.style.transform = '';
+    }
     _isDragging = false;
     _didPan     = false;
     container.style.cursor = 'grab';
