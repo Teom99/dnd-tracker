@@ -4,6 +4,8 @@
 const BASE_HEX_R = 28;   // raggio di default (px screen)
 const PAD        = 8;    // margine SVG fisso (px)
 const SQRT3      = Math.sqrt(3);
+const GRID_COLS  = 60;
+const GRID_ROWS  = 40;
 
 let currentZoom = 1;
 const MIN_ZOOM  = 0.25;
@@ -17,24 +19,16 @@ let _didPan               = false;
 let _dragStartX           = 0;
 let _dragStartY           = 0;
 let _dragListenersAttached = false;
-let viewOffsetX = 0;
-let viewOffsetY = 0;
 
-function hexR() { return BASE_HEX_R * currentZoom; }
+function hexR() { return BASE_HEX_R; }
 
-function computeGridSize(containerW, containerH) {
-  const r    = hexR();
-  const cols = Math.min(80, Math.max(4, Math.floor((containerW - PAD * 2) / (r * SQRT3) - 0.5)));
-  const rows = Math.min(50, Math.max(3, Math.floor(((containerH - PAD * 2) / r - 0.5) / 1.5)));
-  return { cols, rows };
-}
-
-function gridStart() {
-  const r = hexR();
-  return {
-    startCol: Math.floor(viewOffsetX / (r * SQRT3)),
-    startRow: Math.floor(viewOffsetY / (r * 1.5)),
-  };
+function applyTransform() {
+  const container = document.getElementById('grid-container');
+  const svg = container?.querySelector('svg');
+  if (svg) {
+    svg.style.transformOrigin = '0 0';
+    svg.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
+  }
 }
 
 // ─── Coordinate helpers ──────────────────────────────────────────────────────
@@ -42,8 +36,8 @@ function gridStart() {
 function hexCenter(col, row) {
   const r = hexR();
   return {
-    x: r * SQRT3 * (col + 0.5 * (row & 1)) - viewOffsetX + PAD,
-    y: r * 1.5 * row - viewOffsetY + PAD,
+    x: r * SQRT3 * (col + 0.5 * (row & 1)) + PAD,
+    y: r * 1.5 * row + PAD,
   };
 }
 
@@ -106,19 +100,16 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
 
   const selPos = selectedId ? pos[selectedId] : null;
 
-  const rect       = container.getBoundingClientRect();
-  const containerW = Math.max(400, rect.width  || container.clientWidth  || 600);
-  const containerH = Math.max(300, rect.height || container.clientHeight || 400);
-  const { cols, rows } = computeGridSize(containerW, containerH);
+  const cols = GRID_COLS;
+  const rows = GRID_ROWS;
 
   const svgW = (r * SQRT3 * (cols + 0.5) + PAD * 2).toFixed(0);
   const svgH = (r * (1.5 * rows + 0.5) + PAD * 2).toFixed(0);
 
   let inner = '';
 
-  const { startCol, startRow } = gridStart();
-  for (let row = startRow; row < startRow + rows; row++) {
-    for (let col = startCol; col < startCol + cols; col++) {
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
       const { x, y }   = hexCenter(col, row);
       const key        = `${col}_${row}`;
       const occupantId = cellMap[key];
@@ -186,8 +177,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
 
   container.innerHTML =
     `<svg class="hex-svg" width="${svgW}" height="${svgH}">${inner}</svg>`;
-  panX = 0;
-  panY = 0;
+  applyTransform();
 
   const svg = container.querySelector('svg');
 
@@ -328,26 +318,22 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
 export function zoomIn() {
   if (currentZoom < MAX_ZOOM) {
     currentZoom = Math.min(MAX_ZOOM, parseFloat((currentZoom + ZOOM_STEP).toFixed(2)));
-    viewOffsetX = 0;
-    viewOffsetY = 0;
-    _reRenderCallback?.();
+    applyTransform();
   }
 }
 
 export function zoomOut() {
   if (currentZoom > MIN_ZOOM) {
     currentZoom = Math.max(MIN_ZOOM, parseFloat((currentZoom - ZOOM_STEP).toFixed(2)));
-    viewOffsetX = 0;
-    viewOffsetY = 0;
-    _reRenderCallback?.();
+    applyTransform();
   }
 }
 
 export function zoomReset() {
   currentZoom = 1;
-  viewOffsetX = 0;
-  viewOffsetY = 0;
-  _reRenderCallback?.();
+  panX = 0;
+  panY = 0;
+  applyTransform();
 }
 
 export function initZoomControls(onGridReset) {
@@ -379,30 +365,17 @@ export function initZoomControls(onGridReset) {
     panY = e.clientY - _dragStartY;
     _didPan = true;
     const svg = container.querySelector('svg');
-    if (svg) svg.style.transform = `translate(${panX}px,${panY}px)`;
+    if (svg) svg.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
   });
 
   container.addEventListener('mouseup', () => {
-    if (_isDragging && _didPan) {
-      viewOffsetX -= panX;
-      viewOffsetY -= panY;
-      _reRenderCallback?.();
-    }
     _isDragging = false;
     container.style.cursor = 'grab';
   });
 
   container.addEventListener('mouseleave', () => {
-    if (_isDragging) {
-      const svg = container.querySelector('svg');
-      if (svg) svg.style.transform = '';
-    }
     _isDragging = false;
     _didPan     = false;
     container.style.cursor = 'grab';
   });
-
-  if (typeof ResizeObserver !== 'undefined') {
-    new ResizeObserver(() => { _reRenderCallback?.(); }).observe(container);
-  }
 }
