@@ -1,7 +1,7 @@
 import * as GridUI from './GridUI.js';
 import { state }   from './state.js';
 
-export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants) {
+export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants, gridConfig, walls) {
   const container = document.getElementById('grid-container');
   if (!container) return;
 
@@ -9,7 +9,7 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants)
   GridUI.setReRenderCallback(() => {
     if (state.snapshot) {
       const sorted = state.tracker.sortedCombatants(state.snapshot.combatants);
-      renderGrid(state.snapshot.grid || {}, state.snapshot.combatants || {}, state.snapshot.currentTurnId ?? null, sorted);
+      renderGrid(state.snapshot.grid || {}, state.snapshot.combatants || {}, state.snapshot.currentTurnId ?? null, sorted, state.snapshot.gridConfig || null, state.snapshot.walls || {});
     }
   });
 
@@ -20,6 +20,13 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants)
       : []
   );
 
+  const reRender = () => {
+    if (state.snapshot) {
+      const sorted = state.tracker.sortedCombatants(state.snapshot.combatants);
+      renderGrid(state.snapshot.grid || {}, state.snapshot.combatants || {}, state.snapshot.currentTurnId ?? null, sorted, state.snapshot.gridConfig || null, state.snapshot.walls || {});
+    }
+  };
+
   GridUI.renderInitiativeList(
     document.getElementById('grid-initiative-list'),
     sortedCombatants,
@@ -28,13 +35,8 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants)
     state.selectedGridTokenId,
     currentTurnId,
     state.session.isMaster,
-    (id) => {
-      state.selectedGridTokenId = id;
-      if (state.snapshot) {
-        const sorted = state.tracker.sortedCombatants(state.snapshot.combatants);
-        renderGrid(state.snapshot.grid || {}, state.snapshot.combatants || {}, state.snapshot.currentTurnId ?? null, sorted);
-      }
-    }
+    (id) => { state.selectedGridTokenId = id; reRender(); },
+    comb
   );
 
   GridUI.renderGrid(
@@ -46,14 +48,11 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants)
     state.session.isMaster,
     state.selectedGridTokenId,
     currentTurnId,
-    (id) => {
-      state.selectedGridTokenId = id;
-      if (state.snapshot) {
-        const sorted = state.tracker.sortedCombatants(state.snapshot.combatants);
-        renderGrid(state.snapshot.grid || {}, state.snapshot.combatants || {}, state.snapshot.currentTurnId ?? null, sorted);
-      }
-    },
-    (id, col, row) => state.session.setGridPosition(id, col, row)
+    gridConfig,
+    walls,
+    (id) => { state.selectedGridTokenId = id; reRender(); },
+    (id, col, row) => state.session.setGridPosition(id, col, row),
+    (cellKey) => state.session.toggleWall(cellKey)
   );
   renderTokenBar(gridPos, combatants);
 }
@@ -95,7 +94,7 @@ export function renderTokenBar(gridPos, combatants) {
     state.selectedGridTokenId = state.selectedGridTokenId === id ? null : id;
     if (state.snapshot) {
       const sorted = state.tracker.sortedCombatants(state.snapshot.combatants);
-      renderGrid(state.snapshot.grid || {}, state.snapshot.combatants || {}, state.snapshot.currentTurnId ?? null, sorted);
+      renderGrid(state.snapshot.grid || {}, state.snapshot.combatants || {}, state.snapshot.currentTurnId ?? null, sorted, state.snapshot.gridConfig || null, state.snapshot.walls || {});
     }
   };
 }

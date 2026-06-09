@@ -892,7 +892,7 @@ function _enterCombatView(code, isMaster) {
   document.body.classList.add('in-combat');
   _startListening();
   _bindShipEvents();
-  GridUI.initZoomControls(() => state.session.clearAllGridPositions());
+  GridUI.initZoomControls(() => state.session.resetGrid());
   const _btnGridReset = document.getElementById('btn-grid-reset');
   if (_btnGridReset) _btnGridReset.style.display = isMaster ? '' : 'none';
   UI.showView('view-combat');
@@ -944,7 +944,7 @@ function _startListening() {
     UI.renderCombatantList(creatures, data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, null,                               progressionData, 'creature-list', 'empty-creatures-msg', sorted);
     UI.renderCombatantList(players,   data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, state.sheetData?.deathSaves ?? null, progressionData, 'player-list',   'empty-players-msg', sorted);
 
-    renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null, sorted);
+    renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null, sorted, data.gridConfig || null, data.walls || {});
 
     const isMaster = data.masterUid === state.myUid;
     UI.renderScenePanel(data.sceneImageUrl ?? null, data.sceneImageName ?? null, isMaster);
