@@ -204,11 +204,12 @@ document.getElementById('form-add-creature').addEventListener('submit', async (e
   const initiative = document.getElementById('input-creature-initiative').value || '0';
   const ac       = document.getElementById('input-creature-ac').value || null;
   const apiIndex = document.getElementById('input-creature-api-index').value || null;
+  const size     = document.getElementById('input-creature-size').value || 'medium';
 
   if (!name || !hp) return;
 
   const charId = state.selectedCreatureCharId ?? null;
-  await state.combatantManager.add(name, initiative, hp, 'creature', state.myUid, charId, ac, apiIndex);
+  await state.combatantManager.add(name, initiative, hp, 'creature', state.myUid, charId, ac, apiIndex, size);
   document.getElementById('input-creature-api-index').value = '';
   state.selectedCreatureCharId = null;
   document.querySelectorAll('#creature-library-list .char-pick-btn').forEach(b => b.classList.remove('selected'));

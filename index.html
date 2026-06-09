@@ -232,6 +232,13 @@
                 max="30"
               >
             </div>
+            <select id="input-creature-size" class="input-select">
+              <option value="small">Piccola (1×1)</option>
+              <option value="medium" selected>Media (1×1)</option>
+              <option value="large">Grande (2×2)</option>
+              <option value="huge">Enorme (3×3)</option>
+              <option value="gargantuan">Mastodontica (4×4)</option>
+            </select>
             <input type="hidden" id="input-creature-api-index" value="">
             <button type="submit" class="btn-secondary">+ Aggiungi</button>
           </form>
@@ -322,6 +329,7 @@
                   <div class="field-row field-row-center"><label>Velocità (m)</label><input type="number" data-path="speed" data-number min="0" placeholder="9" class="input-big"></div>
                   <div class="field-row field-row-center"><label>Mod. Iniziativa</label><input type="number" data-path="initiativeMod" data-number min="-10" max="20" placeholder="0" class="input-big"></div>
                 </div>
+                <div class="field-row field-row-center"><label>Taglia</label><select data-path="size" class="input-select"><option value="small">Piccola (1×1)</option><option value="medium">Media (1×1)</option><option value="large">Grande (2×2)</option><option value="huge">Enorme (3×3)</option><option value="gargantuan">Mastodontica (4×4)</option></select></div>
                 <div class="field-grid-2">
                   <div class="field-row field-row-center"><label>HP Massimi</label><input type="number" data-path="hpMax" data-number min="1" placeholder="0" class="input-big"></div>
                   <div class="field-row field-row-center"><label>HP Temporanei</label><input type="number" data-path="tempHp" data-number min="0" placeholder="0" class="input-big"></div>

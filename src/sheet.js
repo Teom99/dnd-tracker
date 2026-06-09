@@ -39,6 +39,7 @@ export function setupSheetListener() {
   let prevHpMax  = undefined;
   let prevLevel  = undefined;
   let prevName   = undefined;
+  let prevSize   = undefined;
   state.sheet.listen((snap) => {
     state.sheetData = snap.val() || {};
 
@@ -55,6 +56,13 @@ export function setupSheetListener() {
     if (hpMax !== null && hpMax > 0 && hpMax !== prevHpMax && state.myCombatantId) {
       prevHpMax = hpMax;
       state.combatantManager.setMaxHp(state.myCombatantId, hpMax);
+    }
+
+    // Sincronizza taglia al combattente solo se cambiata
+    const size = state.sheetData.size ?? null;
+    if (size !== null && size !== prevSize && state.myCombatantId) {
+      prevSize = size;
+      state.combatantManager.setSize(state.myCombatantId, size);
     }
 
     // Sincronizza livello al combattente
