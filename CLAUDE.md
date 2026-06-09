@@ -78,7 +78,7 @@ userSessions/{uid}/{code}/
 - Visibilità HP: master vede solo creature · player vede tutti i PG · hint opzionale su creature
 - HP max editabile inline (card combat) e dalla scheda PG, con sync automatico al combattente
 - CA sincronizzata dalla scheda al combattente in real-time
-- Griglia quadrata: dimensioni decise dal master in sessione (`gridConfig`, default 20x20, resize anytime con drop fuori bordi); muri disegnabili dal master cliccando una casella vuota senza token selezionato (bloccano il movimento); reset (solo master) svuota token e muri; zoom 0.25–4.0 e pan con drag LMB (CSS transform)
+- Griglia quadrata: si adatta sempre al contenitore (SVG `viewBox` + `preserveAspectRatio`), niente pan/zoom né bordo perimetrale; dimensioni fisse decise dal master in "Modifica griglia" (`gridConfig`, default 20x20, resize anytime con drop fuori bordi); in modalità modifica il master clicca le caselle vuote per disegnare/rimuovere muri (bloccano il movimento); reset (solo master) svuota token e muri
 - Taglia token: Piccola/Media (1×1), Grande (2×2), Enorme (3×3), Mastodontica (4×4); default dalla libreria/scheda, override del master in sessione; distanza Chebyshev bordo-a-bordo (1 casella = 1m)
 - Token giocatore evidenziati in verde; movimento valida bordi, muri e sovrapposizioni sull'intero footprint
 - Token morti grigi con teschio

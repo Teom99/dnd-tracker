@@ -17,6 +17,7 @@ export const state = {
   selectedCreatureCharId: null,
   sheetReturnView:        'view-combat',
   selectedGridTokenId:    null,
+  gridEditMode:           false,
   ship:                   null,
   shipData:               null,
   localDeck:              'main',

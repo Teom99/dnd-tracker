@@ -50,6 +50,7 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
     currentTurnId,
     gridConfig,
     walls,
+    state.gridEditMode,
     (id) => { state.selectedGridTokenId = id; reRender(); },
     (id, col, row) => state.session.setGridPosition(id, col, row),
     (cellKey) => state.session.toggleWall(cellKey)

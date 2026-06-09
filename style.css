@@ -1503,7 +1503,23 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 .input-small { max-width: 80px; }
 .input-big   { font-size: 1.4rem; font-weight: 700; text-align: center; min-height: 52px; }
 
-.input-select { max-width: 100%; }
+.input-select {
+  width: 100%;
+  max-width: 100%;
+  padding: 0.65rem 0.85rem;
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius);
+  outline: none;
+  min-height: 48px;
+  cursor: pointer;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+.input-select:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px var(--gold-glow), 0 2px 8px rgba(0,0,0,0.3);
+}
 
 .hint-text {
   font-size: 0.8rem;
@@ -2401,10 +2417,9 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   overflow: hidden;
   flex: 1;
   min-width: 0;
-  min-height: 300px;
-  border: 2px solid rgba(201, 168, 76, 0.4);
-  border-radius: 4px;
+  height: min(70vh, 620px);
 }
+.grid-container.grid-edit-active .sq-hit { cursor: crosshair; }
 
 .grid-zoom-controls {
   display: flex;
@@ -3160,6 +3175,17 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   margin-top: 0.15rem;
 }
 .grid-master-controls label { color: var(--text-muted); }
+.grid-edit-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+.grid-zoom-btn.active {
+  background: var(--gold);
+  color: #1a1a2e;
+  border-color: var(--gold);
+}
 .grid-dim-input {
   width: 3.2rem;
   background: var(--bg-card-alt);

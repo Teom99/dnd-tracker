@@ -893,7 +893,7 @@ function _enterCombatView(code, isMaster) {
   document.body.classList.add('in-combat');
   _startListening();
   _bindShipEvents();
-  GridUI.initZoomControls(() => state.session.resetGrid());
+  GridUI.initGridControls(() => state.session.resetGrid());
   const _btnGridReset = document.getElementById('btn-grid-reset');
   if (_btnGridReset) _btnGridReset.style.display = isMaster ? '' : 'none';
   _initGridMasterControls(isMaster);
@@ -902,10 +902,19 @@ function _enterCombatView(code, isMaster) {
 
 let _gridMasterBound = false;
 function _initGridMasterControls(isMaster) {
-  const wrap = document.getElementById('grid-master-controls');
-  if (wrap) wrap.style.display = isMaster ? 'flex' : 'none';
-  if (!isMaster || _gridMasterBound) return;
+  const wrap    = document.getElementById('grid-master-controls');
+  const editBtn = document.getElementById('btn-grid-edit');
+  if (wrap)    wrap.style.display    = isMaster ? 'flex' : 'none';
+  if (editBtn) editBtn.style.display = isMaster ? '' : 'none';
+  if (!isMaster) { state.gridEditMode = false; _applyGridEditUI(); return; }
+  if (_gridMasterBound) { _applyGridEditUI(); return; }
   _gridMasterBound = true;
+
+  editBtn?.addEventListener('click', () => {
+    state.gridEditMode = !state.gridEditMode;
+    _applyGridEditUI();
+    _rerenderGridFromSnapshot();
+  });
 
   document.getElementById('btn-grid-apply')?.addEventListener('click', () => {
     const cols = document.getElementById('input-grid-cols').value;
@@ -917,6 +926,32 @@ function _initGridMasterControls(isMaster) {
     const id = state.selectedGridTokenId;
     if (id) state.combatantManager.setSize(id, e.target.value);
   });
+
+  _applyGridEditUI();
+}
+
+function _applyGridEditUI() {
+  const on       = state.gridEditMode;
+  const editCtrl = document.getElementById('grid-edit-controls');
+  const editBtn  = document.getElementById('btn-grid-edit');
+  const hint     = document.getElementById('grid-hint');
+  if (editCtrl) editCtrl.style.display = on ? 'flex' : 'none';
+  if (editBtn) {
+    editBtn.textContent = on ? '✓ Fine modifica' : '✏️ Modifica griglia';
+    editBtn.classList.toggle('active', on);
+  }
+  if (hint) {
+    hint.textContent = on
+      ? '✏️ Modifica: imposta le dimensioni e clicca le caselle vuote per i muri'
+      : '1 casella = 1 m · Seleziona un token, poi tocca la destinazione';
+  }
+}
+
+function _rerenderGridFromSnapshot() {
+  if (!state.snapshot) return;
+  const data   = state.snapshot;
+  const sorted = state.tracker.sortedCombatants(data.combatants);
+  renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null, sorted, data.gridConfig || null, data.walls || {});
 }
 
 function _startListening() {

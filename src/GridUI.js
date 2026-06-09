@@ -1,33 +1,12 @@
 // Griglia quadrata. 1 cella = 1 m. Dimensioni guidate da gridConfig.
+// La griglia si adatta sempre al contenitore (viewBox), non è zoomabile né trascinabile.
 // Distanza Chebyshev (diagonali = 1), misurata bordo-a-bordo tra footprint.
 
-const CELL = 40;        // lato cella in px (screen, prima dello zoom)
-const PAD  = 8;         // margine SVG fisso (px)
+const CELL = 40;        // lato cella nelle coordinate del viewBox
+const PAD  = 8;         // margine interno (coordinate viewBox)
 
 const SIZE_FOOTPRINT = { tiny: 1, small: 1, medium: 1, large: 2, huge: 3, gargantuan: 4 };
 export function footprintOf(size) { return SIZE_FOOTPRINT[size] || 1; }
-
-let currentZoom = 1;
-const MIN_ZOOM  = 0.25;
-const MAX_ZOOM  = 4.0;
-const ZOOM_STEP = 0.15;
-
-let panX = 0;
-let panY = 0;
-let _isDragging            = false;
-let _didPan                = false;
-let _dragStartX            = 0;
-let _dragStartY            = 0;
-let _dragListenersAttached = false;
-
-function applyTransform() {
-  const container = document.getElementById('grid-container');
-  const svg = container?.querySelector('svg');
-  if (svg) {
-    svg.style.transformOrigin = '0 0';
-    svg.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
-  }
-}
 
 // ─── Coordinate / distanza ────────────────────────────────────────────────────
 
@@ -55,7 +34,7 @@ function esc(s) {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// ─── Re-render callback (zoom e resize) ──────────────────────────────────────
+// ─── Re-render callback (resize) ─────────────────────────────────────────────
 
 let _reRenderCallback = null;
 export function setReRenderCallback(fn) { _reRenderCallback = fn; }
@@ -63,10 +42,11 @@ export function setReRenderCallback(fn) { _reRenderCallback = fn; }
 // ─── Render ──────────────────────────────────────────────────────────────────
 
 /**
- * Ridisegna la griglia quadrata.
- * @param onToggleWall (cellKey) => void   — solo master, toggle muro
+ * Ridisegna la griglia quadrata, adattata al contenitore.
+ * @param editMode boolean       — modalità modifica del master (disegno muri)
+ * @param onToggleWall (cellKey) => void
  */
-export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, onSelect, onMove, onToggleWall) {
+export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onToggleWall) {
   const pos   = gridPos    || {};
   const comb  = combatants || {};
   const wall  = walls      || {};
@@ -88,8 +68,8 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   const selPos  = selectedId ? pos[selectedId] : null;
   const selSide = selectedId ? footprintOf(comb[selectedId]?.size) : 1;
 
-  const svgW = (PAD * 2 + cols * CELL).toFixed(0);
-  const svgH = (PAD * 2 + rows * CELL).toFixed(0);
+  const vbW = (PAD * 2 + cols * CELL).toFixed(0);
+  const vbH = (PAD * 2 + rows * CELL).toFixed(0);
 
   let inner = '';
 
@@ -149,8 +129,9 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     }
   }
 
-  container.innerHTML = `<svg class="sq-svg" width="${svgW}" height="${svgH}">${inner}</svg>`;
-  applyTransform();
+  container.innerHTML =
+    `<svg class="sq-svg" viewBox="0 0 ${vbW} ${vbH}" preserveAspectRatio="xMidYMid meet" width="100%" height="100%">${inner}</svg>`;
+  container.classList.toggle('grid-edit-active', !!editMode);
 
   const svg = container.querySelector('svg');
 
@@ -205,12 +186,17 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   });
 
   svg.addEventListener('click', (e) => {
-    if (_didPan) { _didPan = false; return; }
     const el = e.target.closest('[data-c]');
     if (!el) return;
     const col = parseInt(el.dataset.c);
     const row = parseInt(el.dataset.r);
     const occupantId = occCell[`${col}_${row}`];
+
+    // Modalità modifica (master): i click disegnano/rimuovono muri sulle celle vuote
+    if (editMode && isMaster) {
+      if (!occupantId) onToggleWall?.(`${col}_${row}`);
+      return;
+    }
 
     if (occupantId) {
       // Click su token → seleziona/deseleziona
@@ -227,19 +213,15 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
       return;
     }
 
-    if (isMaster) {
-      // Nessun token selezionato + master + cella vuota → toggle muro
-      onToggleWall?.(`${col}_${row}`);
-      return;
-    }
-
     // Player senza selezione → piazza il proprio token (se non ancora sulla griglia)
-    const placeId = (myCombatantId && pos[myCombatantId] == null)
-      ? myCombatantId
-      : [...myOwnedIds].find(id => id !== myCombatantId && pos[id] == null);
-    if (placeId) {
-      const side = footprintOf(comb[placeId]?.size);
-      if (canPlace(col, row, side, placeId)) onMove(placeId, col, row);
+    if (!isMaster) {
+      const placeId = (myCombatantId && pos[myCombatantId] == null)
+        ? myCombatantId
+        : [...myOwnedIds].find(id => id !== myCombatantId && pos[id] == null);
+      if (placeId) {
+        const side = footprintOf(comb[placeId]?.size);
+        if (canPlace(col, row, side, placeId)) onMove(placeId, col, row);
+      }
     }
   });
 }
@@ -289,41 +271,11 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
   };
 }
 
-// ─── Zoom ────────────────────────────────────────────────────────────────────
+// ─── Controlli griglia (solo reset; nessun pan/zoom) ─────────────────────────
 
-export function zoomIn()  { if (currentZoom < MAX_ZOOM) { currentZoom = Math.min(MAX_ZOOM, parseFloat((currentZoom + ZOOM_STEP).toFixed(2))); applyTransform(); } }
-export function zoomOut() { if (currentZoom > MIN_ZOOM) { currentZoom = Math.max(MIN_ZOOM, parseFloat((currentZoom - ZOOM_STEP).toFixed(2))); applyTransform(); } }
-export function zoomReset() { currentZoom = 1; panX = 0; panY = 0; applyTransform(); }
-
-export function initZoomControls(onGridReset) {
-  if (_dragListenersAttached) return;
-  _dragListenersAttached = true;
-
-  document.getElementById('btn-zoom-in')?.addEventListener('click', zoomIn);
-  document.getElementById('btn-zoom-out')?.addEventListener('click', zoomOut);
-  document.getElementById('btn-zoom-reset')?.addEventListener('click', zoomReset);
+let _gridControlsBound = false;
+export function initGridControls(onGridReset) {
+  if (_gridControlsBound) return;
+  _gridControlsBound = true;
   document.getElementById('btn-grid-reset')?.addEventListener('click', () => onGridReset?.());
-
-  const container = document.getElementById('grid-container');
-  if (!container) return;
-  container.style.cursor = 'grab';
-
-  container.addEventListener('mousedown', (e) => {
-    if (e.button !== 0) return;
-    _isDragging = true;
-    _didPan     = false;
-    _dragStartX = e.clientX - panX;
-    _dragStartY = e.clientY - panY;
-    container.style.cursor = 'grabbing';
-  });
-  container.addEventListener('mousemove', (e) => {
-    if (!_isDragging) return;
-    panX = e.clientX - _dragStartX;
-    panY = e.clientY - _dragStartY;
-    _didPan = true;
-    const svg = container.querySelector('svg');
-    if (svg) svg.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
-  });
-  container.addEventListener('mouseup', () => { _isDragging = false; container.style.cursor = 'grab'; });
-  container.addEventListener('mouseleave', () => { _isDragging = false; _didPan = false; container.style.cursor = 'grab'; });
 }
