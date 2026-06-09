@@ -535,10 +535,25 @@
           <div class="grid-zoom-controls">
             <button id="btn-zoom-in" class="grid-zoom-btn" title="Ingrandisci">🔍+</button>
             <button id="btn-zoom-out" class="grid-zoom-btn" title="Rimpicciolisci">🔍−</button>
-            <button id="btn-zoom-reset" class="grid-zoom-btn" title="Reset">↺</button>
-            <button id="btn-grid-reset" class="grid-zoom-btn" title="Rimuovi tutti i token dalla griglia" style="display:none">🗑</button>
+            <button id="btn-zoom-reset" class="grid-zoom-btn" title="Reset vista">↺</button>
+            <button id="btn-grid-reset" class="grid-zoom-btn" title="Svuota la griglia (token e muri)" style="display:none">🗑</button>
           </div>
-          <span class="grid-hint">1 esagono = 1 m · Seleziona un token, poi tocca la destinazione</span>
+          <div id="grid-master-controls" class="grid-master-controls" style="display:none">
+            <label>Dimensioni:</label>
+            <input type="number" id="input-grid-cols" min="1" max="60" class="grid-dim-input" title="Larghezza (caselle)">
+            <span>×</span>
+            <input type="number" id="input-grid-rows" min="1" max="60" class="grid-dim-input" title="Altezza (caselle)">
+            <button id="btn-grid-apply" class="grid-zoom-btn" title="Applica dimensioni">✔</button>
+            <label class="grid-size-label">Token sel.:</label>
+            <select id="select-token-size" class="grid-dim-select" disabled title="Dimensione del token selezionato">
+              <option value="small">Piccola (1×1)</option>
+              <option value="medium">Media (1×1)</option>
+              <option value="large">Grande (2×2)</option>
+              <option value="huge">Enorme (3×3)</option>
+              <option value="gargantuan">Mastodontica (4×4)</option>
+            </select>
+          </div>
+          <span class="grid-hint">1 casella = 1 m · Seleziona un token, poi tocca la destinazione · Master: clicca una casella vuota per muri</span>
         </div>
         <div id="grid-token-bar" class="grid-token-bar"></div>
         <div class="grid-layout">

@@ -3098,81 +3098,87 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 /* ─── SVG elementi ─── */
-.hex-svg {
+.sq-svg {
   display: block;
   margin: 0 auto;
 }
 
-.hx {
+.sq {
   fill: var(--bg-deep);
   stroke: var(--border-warm);
   stroke-width: 1;
   transition: fill 0.1s;
 }
 
-.hx-occ {
-  fill: var(--bg-card);
+.sq-wall {
+  fill: #4a3a2a;
+  stroke: #6b5538;
 }
 
-.hx-sel {
-  fill: var(--gold-glow);
-  stroke: var(--gold);
-  stroke-width: 1.5;
-}
-
-.hx-sel-my {
-  fill: transparent;
-  stroke: none;
-}
-
-.hx-hit {
+.sq-hit {
   fill: transparent;
   stroke: none;
   cursor: pointer;
 }
 
-.hx-hover {
-  fill: rgba(255,255,255,0.05);
+.sq-hover {
+  fill: rgba(255,255,255,0.06);
 }
 
-.hx-name {
+.sq-name {
   fill: var(--text);
   font-family: 'Cinzel', serif;
-  font-size: 9px;
   font-weight: 700;
-  pointer-events: none;
   user-select: none;
 }
 
-.hx-dist {
+.sq-dist {
   fill: var(--gold-light);
   font-family: 'Cinzel', serif;
-  font-size: 13px;
   font-weight: 700;
-  pointer-events: none;
   user-select: none;
   text-shadow: 0 0 3px rgba(0,0,0,0.9);
 }
 
-.hx-tooltip-dist {
-  fill: var(--gold-light);
-  font-family: 'Cinzel', serif;
-  font-size: 13px;
-  font-weight: 700;
-  pointer-events: none;
-  user-select: none;
-  text-shadow: 0 0 3px rgba(0,0,0,0.9);
-}
-
-.hx-tooltip-name {
+.sq-tooltip-name {
   fill: #ffffff;
   font-family: 'Cinzel', serif;
-  font-size: 12px;
   font-weight: 700;
   pointer-events: none;
   user-select: none;
   text-shadow: 0 0 4px rgba(0,0,0,1);
 }
+
+.grid-master-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  justify-content: center;
+  margin-top: 0.15rem;
+}
+.grid-master-controls label { color: var(--text-muted); }
+.grid-dim-input {
+  width: 3.2rem;
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 0.1rem 0.3rem;
+  font-size: 0.72rem;
+}
+.grid-size-label { margin-left: 0.5rem; }
+.grid-dim-select {
+  background: var(--bg-card-alt);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  padding: 0.1rem 0.3rem;
+  font-size: 0.72rem;
+}
+.grid-dim-select:disabled { opacity: 0.4; }
 
 /* ─── Level Up / Class Features ─────────────────────────────────────── */
 

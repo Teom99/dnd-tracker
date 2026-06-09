@@ -895,7 +895,27 @@ function _enterCombatView(code, isMaster) {
   GridUI.initZoomControls(() => state.session.resetGrid());
   const _btnGridReset = document.getElementById('btn-grid-reset');
   if (_btnGridReset) _btnGridReset.style.display = isMaster ? '' : 'none';
+  _initGridMasterControls(isMaster);
   UI.showView('view-combat');
+}
+
+let _gridMasterBound = false;
+function _initGridMasterControls(isMaster) {
+  const wrap = document.getElementById('grid-master-controls');
+  if (wrap) wrap.style.display = isMaster ? 'flex' : 'none';
+  if (!isMaster || _gridMasterBound) return;
+  _gridMasterBound = true;
+
+  document.getElementById('btn-grid-apply')?.addEventListener('click', () => {
+    const cols = document.getElementById('input-grid-cols').value;
+    const rows = document.getElementById('input-grid-rows').value;
+    state.session.setGridConfig(cols, rows);
+  });
+
+  document.getElementById('select-token-size')?.addEventListener('change', (e) => {
+    const id = state.selectedGridTokenId;
+    if (id) state.combatantManager.setSize(id, e.target.value);
+  });
 }
 
 function _startListening() {
@@ -945,6 +965,22 @@ function _startListening() {
     UI.renderCombatantList(players,   data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, state.sheetData?.deathSaves ?? null, progressionData, 'player-list',   'empty-players-msg', sorted);
 
     renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null, sorted, data.gridConfig || null, data.walls || {});
+
+    if (state.session.isMaster) {
+      const cfg = data.gridConfig || { cols: 20, rows: 20 };
+      const colsInput = document.getElementById('input-grid-cols');
+      const rowsInput = document.getElementById('input-grid-rows');
+      if (colsInput && document.activeElement !== colsInput) colsInput.value = cfg.cols;
+      if (rowsInput && document.activeElement !== rowsInput) rowsInput.value = cfg.rows;
+
+      const sizeSel = document.getElementById('select-token-size');
+      const sel = state.selectedGridTokenId;
+      const selComb = sel ? (data.combatants || {})[sel] : null;
+      if (sizeSel) {
+        sizeSel.disabled = !selComb;
+        if (selComb) sizeSel.value = selComb.size || 'medium';
+      }
+    }
 
     const isMaster = data.masterUid === state.myUid;
     UI.renderScenePanel(data.sceneImageUrl ?? null, data.sceneImageName ?? null, isMaster);
