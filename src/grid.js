@@ -56,6 +56,19 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
     (cellKey) => state.session.toggleWall(cellKey)
   );
   renderTokenBar(gridPos, combatants);
+  updateTokenSizeControl(combatants);
+}
+
+// Riflette la taglia del token selezionato sul controllo del master.
+// Chiamata a ogni render (snapshot e cambi di selezione locali) per aggiornare subito.
+function updateTokenSizeControl(combatants) {
+  if (!state.session.isMaster) return;
+  const sizeSel = document.getElementById('select-token-size');
+  if (!sizeSel) return;
+  const sel = state.selectedGridTokenId;
+  const selComb = sel ? (combatants || {})[sel] : null;
+  sizeSel.disabled = !selComb;
+  if (selComb) sizeSel.value = selComb.size || 'medium';
 }
 
 export function renderTokenBar(gridPos, combatants) {

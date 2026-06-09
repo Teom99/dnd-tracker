@@ -1008,14 +1008,6 @@ function _startListening() {
       const rowsInput = document.getElementById('input-grid-rows');
       if (colsInput && document.activeElement !== colsInput) colsInput.value = cfg.cols;
       if (rowsInput && document.activeElement !== rowsInput) rowsInput.value = cfg.rows;
-
-      const sizeSel = document.getElementById('select-token-size');
-      const sel = state.selectedGridTokenId;
-      const selComb = sel ? (data.combatants || {})[sel] : null;
-      if (sizeSel) {
-        sizeSel.disabled = !selComb;
-        if (selComb) sizeSel.value = selComb.size || 'medium';
-      }
     }
 
     const isMaster = data.masterUid === state.myUid;
