@@ -953,6 +953,35 @@ function _rerenderGridFromSnapshot() {
   renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null, sorted, data.gridConfig || null, data.walls || {});
 }
 
+// ─── Pannello dettaglio (dashboard): selezione griglia/rail, fallback sul turno attivo ───
+let _lastTurnIdSeen = null;
+
+function _renderDetailPanel(data, sorted, callbacks, progressionData) {
+  const detailId   = state.selectedGridTokenId ?? data.currentTurnId ?? null;
+  const detailComb = detailId ? sorted.filter(c => c.id === detailId) : [];
+  UI.renderCombatantList(detailComb, data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, state.sheetData?.deathSaves ?? null, progressionData, 'detail-list', 'empty-detail-msg', sorted);
+}
+
+// Selezione cambiata da griglia/rail/token-bar: ri-renderizza solo il dettaglio
+document.addEventListener('dnd:selection-changed', () => {
+  const data = state.snapshot;
+  if (!data) return;
+  const sorted    = state.tracker.sortedCombatants(data.combatants);
+  const callbacks = makeCallbacks();
+  const progressionData = {
+    mode:           data.progressionMode ?? 'xp',
+    xp:             data.xp ?? {},
+    levelUpGranted: data.levelUpGranted ?? {},
+  };
+  _renderDetailPanel(data, sorted, callbacks, progressionData);
+});
+
+// Modal "Aggiungi alla battaglia" (aperto dal rail dei turni)
+document.getElementById('btn-add-combatant-close')?.addEventListener('click', () =>
+  document.getElementById('add-combatant-modal')?.classList.add('hidden'));
+document.addEventListener('dnd:add-combatant', () =>
+  document.getElementById('add-combatant-modal')?.classList.remove('hidden'));
+
 function _startListening() {
   state.session.listenNoteLocks(locks => {
     _noteLocks = locks;
@@ -986,6 +1015,12 @@ function _startListening() {
       state.lastKnownHp = currentHp;
     }
 
+    // Al cambio turno la selezione torna sul combattente attivo
+    if (data.currentTurnId !== _lastTurnIdSeen) {
+      _lastTurnIdSeen = data.currentTurnId ?? null;
+      state.selectedGridTokenId = null;
+    }
+
     const sorted   = state.tracker.sortedCombatants(data.combatants);
     const creatures = sorted.filter(c => c.type === 'creature');
     const players   = sorted.filter(c => c.type === 'player' || c.type === 'pet');
@@ -998,6 +1033,8 @@ function _startListening() {
     };
     UI.renderCombatantList(creatures, data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, null,                               progressionData, 'creature-list', 'empty-creatures-msg', sorted);
     UI.renderCombatantList(players,   data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, state.sheetData?.deathSaves ?? null, progressionData, 'player-list',   'empty-players-msg', sorted);
+
+    _renderDetailPanel(data, sorted, callbacks, progressionData);
 
     renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null, sorted, data.gridConfig || null, data.walls || {});
 

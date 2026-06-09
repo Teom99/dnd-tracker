@@ -35,8 +35,9 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
     state.selectedGridTokenId,
     currentTurnId,
     state.session.isMaster,
-    (id) => { state.selectedGridTokenId = id; reRender(); },
-    comb
+    (id) => { state.selectedGridTokenId = id; reRender(); document.dispatchEvent(new CustomEvent('dnd:selection-changed')); },
+    comb,
+    () => document.dispatchEvent(new CustomEvent('dnd:add-combatant'))
   );
 
   GridUI.renderGrid(
@@ -51,7 +52,7 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
     gridConfig,
     walls,
     state.gridEditMode,
-    (id) => { state.selectedGridTokenId = id; reRender(); },
+    (id) => { state.selectedGridTokenId = id; reRender(); document.dispatchEvent(new CustomEvent('dnd:selection-changed')); },
     (id, col, row) => state.session.setGridPosition(id, col, row),
     (cellKey, value) => state.session.setWall(cellKey, value)
   );
@@ -110,5 +111,6 @@ export function renderTokenBar(gridPos, combatants) {
       const sorted = state.tracker.sortedCombatants(state.snapshot.combatants);
       renderGrid(state.snapshot.grid || {}, state.snapshot.combatants || {}, state.snapshot.currentTurnId ?? null, sorted, state.snapshot.gridConfig || null, state.snapshot.walls || {});
     }
+    document.dispatchEvent(new CustomEvent('dnd:selection-changed'));
   };
 }
