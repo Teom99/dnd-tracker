@@ -1,26 +1,24 @@
-// Griglia esagonale punta-in-alto, offset dispari per riga (odd-r)
-// 1 esagono = 1 m
+// Griglia quadrata. 1 cella = 1 m. Dimensioni guidate da gridConfig.
+// Distanza Chebyshev (diagonali = 1), misurata bordo-a-bordo tra footprint.
 
-const BASE_HEX_R = 28;   // raggio di default (px screen)
-const PAD        = 8;    // margine SVG fisso (px)
-const SQRT3      = Math.sqrt(3);
-const GRID_COLS  = 60;
-const GRID_ROWS  = 40;
+const CELL = 40;        // lato cella in px (screen, prima dello zoom)
+const PAD  = 8;         // margine SVG fisso (px)
+
+const SIZE_FOOTPRINT = { tiny: 1, small: 1, medium: 1, large: 2, huge: 3, gargantuan: 4 };
+export function footprintOf(size) { return SIZE_FOOTPRINT[size] || 1; }
 
 let currentZoom = 1;
 const MIN_ZOOM  = 0.25;
 const MAX_ZOOM  = 4.0;
 const ZOOM_STEP = 0.15;
 
-let panX        = 0;
-let panY        = 0;
-let _isDragging           = false;
-let _didPan               = false;
-let _dragStartX           = 0;
-let _dragStartY           = 0;
+let panX = 0;
+let panY = 0;
+let _isDragging            = false;
+let _didPan                = false;
+let _dragStartX            = 0;
+let _dragStartY            = 0;
 let _dragListenersAttached = false;
-
-function hexR() { return BASE_HEX_R; }
 
 function applyTransform() {
   const container = document.getElementById('grid-container');
@@ -31,217 +29,179 @@ function applyTransform() {
   }
 }
 
-// ─── Coordinate helpers ──────────────────────────────────────────────────────
+// ─── Coordinate / distanza ────────────────────────────────────────────────────
 
-function hexCenter(col, row) {
-  const r = hexR();
-  return {
-    x: r * SQRT3 * (col + 0.5 * (row & 1)) + PAD,
-    y: r * 1.5 * row + PAD,
-  };
+function cellXY(col, row) {
+  return { x: PAD + col * CELL, y: PAD + row * CELL };
 }
 
-function hexPoints(cx, cy) {
-  const r = hexR();
-  return Array.from({ length: 6 }, (_, i) => {
-    const a = Math.PI / 3 * i - Math.PI / 6;
-    return `${(cx + r * Math.cos(a)).toFixed(1)},${(cy + r * Math.sin(a)).toFixed(1)}`;
-  }).join(' ');
+// Separazione su un asse tra due intervalli [a1,a2] e [b1,b2] (0 se si toccano/sovrappongono, +1 se adiacenti)
+function axisDist(a1, a2, b1, b2) {
+  return Math.max(0, Math.max(a1, b1) - Math.min(a2, b2));
 }
 
-function offsetToCube(col, row) {
-  const x = col - (row - (row & 1)) / 2;
-  const z = row;
-  return { x, y: -x - z, z };
-}
-
-export function hexDistance(c1, r1, c2, r2) {
-  const a = offsetToCube(c1, r1), b = offsetToCube(c2, r2);
-  return (Math.abs(a.x - b.x) + Math.abs(a.y - b.y) + Math.abs(a.z - b.z)) / 2;
+// Distanza Chebyshev bordo-a-bordo tra due footprint quadrati.
+export function squareDistance(c1, r1, n1, c2, r2, n2) {
+  const dc = axisDist(c1, c1 + n1 - 1, c2, c2 + n2 - 1);
+  const dr = axisDist(r1, r1 + n1 - 1, r2, r2 + n2 - 1);
+  return Math.max(dc, dr);
 }
 
 function fmtM(d) {
-  const m = d * 1;
-  return m === Math.floor(m) ? `${m}m` : `${m.toFixed(1)}m`;
+  return d === Math.floor(d) ? `${d}m` : `${d.toFixed(1)}m`;
 }
 
 function esc(s) {
-  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
 // ─── Re-render callback (zoom e resize) ──────────────────────────────────────
 
 let _reRenderCallback = null;
-
-export function setReRenderCallback(fn) {
-  _reRenderCallback = fn;
-}
+export function setReRenderCallback(fn) { _reRenderCallback = fn; }
 
 // ─── Render ──────────────────────────────────────────────────────────────────
 
 /**
- * Ridisegna la griglia all'interno di `container`.
+ * Ridisegna la griglia quadrata.
+ * @param onToggleWall (cellKey) => void   — solo master, toggle muro
  */
-export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, onSelect, onMove) {
-  const pos  = gridPos   || {};
-  const comb = combatants || {};
+export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, onSelect, onMove, onToggleWall) {
+  const pos   = gridPos    || {};
+  const comb  = combatants || {};
+  const wall  = walls      || {};
+  const cols  = Math.max(1, gridConfig?.cols || 20);
+  const rows  = Math.max(1, gridConfig?.rows || 20);
 
-  const r          = hexR();
-  const tokenR     = Math.max(3, r * 0.8).toFixed(1);
-  const nameFsz    = Math.max(5, Math.min(14, r * 0.42)).toFixed(1);
-  const distFsz    = Math.max(4, Math.min(11, r * 0.35)).toFixed(1);
-  const tooltipFsz = Math.max(6, Math.min(14, r * 0.44)).toFixed(1);
-
-  // "col_row" → combatantId
-  const cellMap = {};
+  // Mappa cella → id del token che la occupa (considerando il footprint)
+  const occCell = {};
   Object.entries(pos).forEach(([id, p]) => {
-    if (p != null && p.col != null) cellMap[`${p.col}_${p.row}`] = id;
+    if (p == null || p.col == null) return;
+    const n = footprintOf(comb[id]?.size);
+    for (let dc = 0; dc < n; dc++) {
+      for (let dr = 0; dr < n; dr++) {
+        occCell[`${p.col + dc}_${p.row + dr}`] = id;
+      }
+    }
   });
 
-  const selPos = selectedId ? pos[selectedId] : null;
+  const selPos  = selectedId ? pos[selectedId] : null;
+  const selSide = selectedId ? footprintOf(comb[selectedId]?.size) : 1;
 
-  const cols = GRID_COLS;
-  const rows = GRID_ROWS;
-
-  const svgW = (r * SQRT3 * (cols + 0.5) + PAD * 2).toFixed(0);
-  const svgH = (r * (1.5 * rows + 0.5) + PAD * 2).toFixed(0);
+  const svgW = (PAD * 2 + cols * CELL).toFixed(0);
+  const svgH = (PAD * 2 + rows * CELL).toFixed(0);
 
   let inner = '';
 
+  // 1) Celle di sfondo + muri
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
-      const { x, y }   = hexCenter(col, row);
-      const key        = `${col}_${row}`;
-      const occupantId = cellMap[key];
-      const occupant   = occupantId ? comb[occupantId] : null;
-      const isSelected = occupantId === selectedId;
-      const isActive   = occupantId === currentTurnId;
-
-      // ─ Esagono di sfondo
-      let cls = 'hx';
-      if (isSelected)      cls += occupantId === myCombatantId ? ' hx-sel-my' : ' hx-sel';
-      else if (occupantId) cls += ' hx-occ';
-      inner += `<polygon class="${cls}" points="${hexPoints(x, y)}" data-c="${col}" data-r="${row}"/>`;
-
-      // ─ Token
-      if (occupant) {
-        const isPlayer  = occupant.type === 'player';
-        const isMyToken = occupantId === myCombatantId;
-        const isDead    = occupant.hpCurrent <= 0;
-
-        let fill, stroke;
-        if (isMyToken) {
-          fill   = '#0d2d0d';
-          stroke = isSelected ? '#70d070' : '#4aba4a';
-        } else if (isPlayer) {
-          fill   = '#142d4a';
-          stroke = isSelected ? 'var(--gold)' : isActive ? 'var(--gold-light)' : '#4a8abf';
-        } else {
-          const isGood = occupant.faction === 'good';
-          if (isGood) {
-            fill   = 'rgba(124,88,0,0.4)';
-            stroke = isSelected ? 'var(--gold)' : isActive ? 'var(--gold-light)' : '#d4af37';
-          } else {
-            fill   = '#2d1010';
-            stroke = isSelected ? 'var(--gold)' : isActive ? 'var(--gold-light)' : '#bf4a4a';
-          }
-        }
-
-        if (isDead) { fill = '#666'; stroke = '#999'; }
-
-        const sw       = (isSelected || isActive) ? 2.5 : 1.5;
-        const initials = esc((occupant.name || '?').slice(0, 2).toUpperCase());
-        const yText    = (y + r * 0.16).toFixed(1);
-
-        inner += `<circle cx="${x}" cy="${y}" r="${tokenR}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" data-c="${col}" data-r="${row}"/>`;
-        inner += `<text x="${x}" y="${yText}" text-anchor="middle" font-size="${nameFsz}" class="hx-name" data-c="${col}" data-r="${row}">${initials}</text>`;
-
-        if (isDead) {
-          const aboveRow = row - 1;
-          if (aboveRow >= 0 && !cellMap[`${col}_${aboveRow}`]) {
-            const { x: ax, y: ay } = hexCenter(col, aboveRow);
-            inner += `<text x="${ax}" y="${(ay + r * 0.16).toFixed(1)}" text-anchor="middle" font-size="${nameFsz}" class="hx-name" data-c="${col}" data-r="${aboveRow}">💀</text>`;
-          }
-        }
-
-        if (selPos && !isSelected) {
-          const d = hexDistance(selPos.col, selPos.row, col, row);
-          inner += `<text x="${x}" y="${(y - r + 2).toFixed(1)}" text-anchor="middle" font-size="${distFsz}" class="hx-dist" data-c="${col}" data-r="${row}">${esc(fmtM(d))}</text>`;
-        }
-      }
-
-      // ─ Target trasparente (intercetta click)
-      inner += `<polygon class="hx-hit" points="${hexPoints(x, y)}" data-c="${col}" data-r="${row}"/>`;
+      const { x, y } = cellXY(col, row);
+      const key  = `${col}_${row}`;
+      const cls  = wall[key] ? 'sq sq-wall' : 'sq';
+      inner += `<rect class="${cls}" x="${x}" y="${y}" width="${CELL}" height="${CELL}" data-c="${col}" data-r="${row}"/>`;
     }
   }
 
-  container.innerHTML =
-    `<svg class="hex-svg" width="${svgW}" height="${svgH}">${inner}</svg>`;
+  // 2) Token (un rect per footprint)
+  Object.entries(pos).forEach(([id, p]) => {
+    if (p == null || p.col == null) return;
+    const occ = comb[id];
+    if (!occ) return;
+    const n    = footprintOf(occ.size);
+    const { x, y } = cellXY(p.col, p.row);
+    const w    = n * CELL;
+    const cx   = x + w / 2;
+    const cy   = y + w / 2;
+    const isSelected = id === selectedId;
+    const isActive   = id === currentTurnId;
+    const isMyToken  = id === myCombatantId;
+    const isPlayer   = occ.type === 'player';
+    const isDead     = occ.hpCurrent <= 0;
+
+    let fill, stroke;
+    if (isMyToken)      { fill = '#0d2d0d'; stroke = isSelected ? '#70d070' : '#4aba4a'; }
+    else if (isPlayer)  { fill = '#142d4a'; stroke = isSelected ? 'var(--gold)' : isActive ? 'var(--gold-light)' : '#4a8abf'; }
+    else if (occ.faction === 'good') { fill = 'rgba(124,88,0,0.4)'; stroke = isSelected ? 'var(--gold)' : isActive ? 'var(--gold-light)' : '#d4af37'; }
+    else                { fill = '#2d1010'; stroke = isSelected ? 'var(--gold)' : isActive ? 'var(--gold-light)' : '#bf4a4a'; }
+    if (isDead) { fill = '#666'; stroke = '#999'; }
+
+    const sw       = (isSelected || isActive) ? 3 : 2;
+    const inset    = 3;
+    const initials = esc((occ.name || '?').slice(0, 3).toUpperCase());
+    const fsz      = Math.max(8, Math.min(18, n * 11)).toFixed(0);
+
+    inner += `<rect x="${x + inset}" y="${y + inset}" width="${w - inset * 2}" height="${w - inset * 2}" rx="4" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" pointer-events="none"/>`;
+    inner += `<text x="${cx}" y="${(cy + n * 3).toFixed(1)}" text-anchor="middle" font-size="${fsz}" class="sq-name" pointer-events="none">${initials}${isDead ? ' 💀' : ''}</text>`;
+
+    // Distanza dal token selezionato (etichetta sopra il token)
+    if (selPos && !isSelected) {
+      const d = squareDistance(selPos.col, selPos.row, selSide, p.col, p.row, n);
+      inner += `<text x="${cx}" y="${(y - 3).toFixed(1)}" text-anchor="middle" font-size="11" class="sq-dist" pointer-events="none">${esc(fmtM(d))}</text>`;
+    }
+  });
+
+  // 3) Hit layer trasparente (intercetta i click su ogni cella)
+  for (let row = 0; row < rows; row++) {
+    for (let col = 0; col < cols; col++) {
+      const { x, y } = cellXY(col, row);
+      inner += `<rect class="sq-hit" x="${x}" y="${y}" width="${CELL}" height="${CELL}" data-c="${col}" data-r="${row}"/>`;
+    }
+  }
+
+  container.innerHTML = `<svg class="sq-svg" width="${svgW}" height="${svgH}">${inner}</svg>`;
   applyTransform();
 
   const svg = container.querySelector('svg');
 
-  let distanceTooltip = null;
-  let nameTooltip     = null;
-
-  svg.addEventListener('mousemove', (e) => {
-    const hit = e.target.closest('.hx-hit');
-    if (!hit) {
-      distanceTooltip?.remove(); distanceTooltip = null;
-      nameTooltip?.remove();     nameTooltip     = null;
-      return;
+  // Validazione piazzamento: footprint dentro i bordi, niente muri, niente sovrapposizioni
+  function canPlace(anchorCol, anchorRow, side, movingId) {
+    if (anchorCol < 0 || anchorRow < 0 || anchorCol + side > cols || anchorRow + side > rows) return false;
+    for (let dc = 0; dc < side; dc++) {
+      for (let dr = 0; dr < side; dr++) {
+        const key = `${anchorCol + dc}_${anchorRow + dr}`;
+        if (wall[key]) return false;
+        const occId = occCell[key];
+        if (occId && occId !== movingId) return false;
+      }
     }
+    return true;
+  }
 
-    const c   = parseInt(hit.dataset.c);
-    const row = parseInt(hit.dataset.r);
-    const { x, y } = hexCenter(c, row);
-    const rr  = hexR();
-
-    const occId = cellMap[`${c}_${row}`];
+  // Tooltip nome al passaggio del mouse
+  let nameTooltip = null;
+  svg.addEventListener('mousemove', (e) => {
+    const hit = e.target.closest('.sq-hit');
+    if (!hit) { nameTooltip?.remove(); nameTooltip = null; return; }
+    const c = parseInt(hit.dataset.c), r = parseInt(hit.dataset.r);
+    const occId = occCell[`${c}_${r}`];
     const occ   = occId ? comb[occId] : null;
     if (occ) {
+      const { x, y } = cellXY(c, r);
       if (!nameTooltip) {
         nameTooltip = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        nameTooltip.setAttribute('class', 'hx-tooltip-name');
+        nameTooltip.setAttribute('class', 'sq-tooltip-name');
         nameTooltip.setAttribute('text-anchor', 'middle');
-        nameTooltip.setAttribute('font-size', tooltipFsz);
+        nameTooltip.setAttribute('font-size', '13');
         svg.appendChild(nameTooltip);
       }
-      nameTooltip.setAttribute('x', x);
-      nameTooltip.setAttribute('y', y - rr - 5);
+      nameTooltip.setAttribute('x', x + CELL / 2);
+      nameTooltip.setAttribute('y', y - 6);
       nameTooltip.textContent = occ.name;
     } else {
       nameTooltip?.remove(); nameTooltip = null;
     }
-
-    if (selectedId) {
-      if (selPos && c === selPos.col && row === selPos.row) {
-        distanceTooltip?.remove(); distanceTooltip = null;
-      } else {
-        const d = selPos ? hexDistance(selPos.col, selPos.row, c, row) : 0;
-        if (!distanceTooltip) {
-          distanceTooltip = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-          distanceTooltip.setAttribute('class', 'hx-tooltip-dist');
-          distanceTooltip.setAttribute('text-anchor', 'middle');
-          distanceTooltip.setAttribute('font-size', tooltipFsz);
-          svg.appendChild(distanceTooltip);
-        }
-        distanceTooltip.setAttribute('x', x);
-        distanceTooltip.setAttribute('y', y + rr + 12);
-        distanceTooltip.textContent = fmtM(d);
-      }
-    }
   });
 
   svg.addEventListener('mouseover', (e) => {
-    const hit = e.target.closest('.hx-hit');
+    const hit = e.target.closest('.sq-hit');
     if (!hit) return;
-    svg.querySelectorAll('.hx.hx-hover').forEach(h => h.classList.remove('hx-hover'));
-    svg.querySelector(`.hx[data-c="${hit.dataset.c}"][data-r="${hit.dataset.r}"]`)?.classList.add('hx-hover');
+    svg.querySelectorAll('.sq.sq-hover').forEach(h => h.classList.remove('sq-hover'));
+    svg.querySelector(`.sq[data-c="${hit.dataset.c}"][data-r="${hit.dataset.r}"]`)?.classList.add('sq-hover');
   });
   svg.addEventListener('mouseleave', () => {
-    svg.querySelectorAll('.hx.hx-hover').forEach(h => h.classList.remove('hx-hover'));
-    distanceTooltip?.remove(); distanceTooltip = null;
+    svg.querySelectorAll('.sq.sq-hover').forEach(h => h.classList.remove('sq-hover'));
+    nameTooltip?.remove(); nameTooltip = null;
   });
 
   svg.addEventListener('click', (e) => {
@@ -250,40 +210,57 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     if (!el) return;
     const col = parseInt(el.dataset.c);
     const row = parseInt(el.dataset.r);
-    const occupantId = cellMap[`${col}_${row}`];
+    const occupantId = occCell[`${col}_${row}`];
 
     if (occupantId) {
+      // Click su token → seleziona/deseleziona
       onSelect(occupantId === selectedId ? null : occupantId);
-    } else if (selectedId) {
-      if (isMaster || myOwnedIds.has(selectedId)) onMove(selectedId, col, row);
-      onSelect(null);
-    } else if (!isMaster) {
-      if (myCombatantId && pos[myCombatantId] == null) {
-        onMove(myCombatantId, col, row);
-      } else {
-        const unplaced = [...myOwnedIds].find(id => id !== myCombatantId && pos[id] == null);
-        if (unplaced) onMove(unplaced, col, row);
+      return;
+    }
+
+    if (selectedId) {
+      // Sposta il token selezionato (la cella cliccata diventa l'angolo top-left)
+      if (isMaster || myOwnedIds.has(selectedId)) {
+        if (canPlace(col, row, selSide, selectedId)) onMove(selectedId, col, row);
       }
+      onSelect(null);
+      return;
+    }
+
+    if (isMaster) {
+      // Nessun token selezionato + master + cella vuota → toggle muro
+      onToggleWall?.(`${col}_${row}`);
+      return;
+    }
+
+    // Player senza selezione → piazza il proprio token (se non ancora sulla griglia)
+    const placeId = (myCombatantId && pos[myCombatantId] == null)
+      ? myCombatantId
+      : [...myOwnedIds].find(id => id !== myCombatantId && pos[id] == null);
+    if (placeId) {
+      const side = footprintOf(comb[placeId]?.size);
+      if (canPlace(col, row, side, placeId)) onMove(placeId, col, row);
     }
   });
 }
 
-export function renderInitiativeList(container, sortedCombatants, gridPos, myCombatantId, selectedId, currentTurnId, isMaster, onSelect) {
+export function renderInitiativeList(container, sortedCombatants, gridPos, myCombatantId, selectedId, currentTurnId, isMaster, onSelect, combatants) {
   if (!container) return;
 
   const pos = gridPos || {};
+  const comb = combatants || {};
   const referenceId = selectedId || myCombatantId;
-  const refPos = referenceId ? pos[referenceId] : null;
+  const refPos  = referenceId ? pos[referenceId] : null;
+  const refSide = referenceId ? footprintOf(comb[referenceId]?.size) : 1;
 
   let html = '';
-
   for (const c of sortedCombatants) {
     const isActive = c.id === currentTurnId;
     const cPos = pos[c.id];
 
     let distText = '';
     if (refPos && cPos && c.id !== referenceId) {
-      const d = hexDistance(refPos.col, refPos.row, cPos.col, cPos.row);
+      const d = squareDistance(refPos.col, refPos.row, refSide, cPos.col, cPos.row, footprintOf(c.size));
       distText = `<span class="grid-initiative-dist">${fmtM(d)}</span>`;
     }
 
@@ -305,7 +282,6 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
   }
 
   container.innerHTML = html;
-
   container.onclick = (e) => {
     const li = e.target.closest('li[data-id]');
     if (!li) return;
@@ -315,26 +291,9 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
 
 // ─── Zoom ────────────────────────────────────────────────────────────────────
 
-export function zoomIn() {
-  if (currentZoom < MAX_ZOOM) {
-    currentZoom = Math.min(MAX_ZOOM, parseFloat((currentZoom + ZOOM_STEP).toFixed(2)));
-    applyTransform();
-  }
-}
-
-export function zoomOut() {
-  if (currentZoom > MIN_ZOOM) {
-    currentZoom = Math.max(MIN_ZOOM, parseFloat((currentZoom - ZOOM_STEP).toFixed(2)));
-    applyTransform();
-  }
-}
-
-export function zoomReset() {
-  currentZoom = 1;
-  panX = 0;
-  panY = 0;
-  applyTransform();
-}
+export function zoomIn()  { if (currentZoom < MAX_ZOOM) { currentZoom = Math.min(MAX_ZOOM, parseFloat((currentZoom + ZOOM_STEP).toFixed(2))); applyTransform(); } }
+export function zoomOut() { if (currentZoom > MIN_ZOOM) { currentZoom = Math.max(MIN_ZOOM, parseFloat((currentZoom - ZOOM_STEP).toFixed(2))); applyTransform(); } }
+export function zoomReset() { currentZoom = 1; panX = 0; panY = 0; applyTransform(); }
 
 export function initZoomControls(onGridReset) {
   if (_dragListenersAttached) return;
@@ -347,7 +306,6 @@ export function initZoomControls(onGridReset) {
 
   const container = document.getElementById('grid-container');
   if (!container) return;
-
   container.style.cursor = 'grab';
 
   container.addEventListener('mousedown', (e) => {
@@ -358,7 +316,6 @@ export function initZoomControls(onGridReset) {
     _dragStartY = e.clientY - panY;
     container.style.cursor = 'grabbing';
   });
-
   container.addEventListener('mousemove', (e) => {
     if (!_isDragging) return;
     panX = e.clientX - _dragStartX;
@@ -367,15 +324,6 @@ export function initZoomControls(onGridReset) {
     const svg = container.querySelector('svg');
     if (svg) svg.style.transform = `translate(${panX}px, ${panY}px) scale(${currentZoom})`;
   });
-
-  container.addEventListener('mouseup', () => {
-    _isDragging = false;
-    container.style.cursor = 'grab';
-  });
-
-  container.addEventListener('mouseleave', () => {
-    _isDragging = false;
-    _didPan     = false;
-    container.style.cursor = 'grab';
-  });
+  container.addEventListener('mouseup', () => { _isDragging = false; container.style.cursor = 'grab'; });
+  container.addEventListener('mouseleave', () => { _isDragging = false; _didPan = false; container.style.cursor = 'grab'; });
 }
