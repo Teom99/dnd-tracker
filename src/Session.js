@@ -132,6 +132,10 @@ export class Session {
     await set(ref(this._db, `sessions/${this.code}/grid/${combatantId}`), null);
   }
 
+  async clearAllGridPositions() {
+    await set(ref(this._db, `sessions/${this.code}/grid`), null);
+  }
+
   async addLogEvent(message, type = 'info', meta = {}) {
     if (!this.code) return;
     const newRef = push(ref(this._db, `sessions/${this.code}/logs`));

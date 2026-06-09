@@ -892,7 +892,9 @@ function _enterCombatView(code, isMaster) {
   document.body.classList.add('in-combat');
   _startListening();
   _bindShipEvents();
-  GridUI.initZoomControls();
+  GridUI.initZoomControls(() => state.session.clearAllGridPositions());
+  const _btnGridReset = document.getElementById('btn-grid-reset');
+  if (_btnGridReset) _btnGridReset.style.display = isMaster ? '' : 'none';
   UI.showView('view-combat');
 }
 
