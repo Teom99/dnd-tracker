@@ -2,74 +2,57 @@
    Variabili e reset
 ═══════════════════════════════════════════ */
 :root {
-  --bg-deep:       #06060e;
-  --bg-card:       #0d0d24;
-  --bg-card-alt:   #121236;
-  --border-warm:   #2c1f60;
-  --gold:          #8b48f0;
-  --gold-light:    #b472ff;
-  --gold-dim:      #6030b8;
-  --gold-glow:     rgba(139, 72, 240, 0.38);
-  --text:          #e4dafc;
-  --text-muted:    #8878b8;
-  --red:           #8b2020;
-  --red-bright:    #cc3333;
-  --green:         #4a7c59;
-  --radius:        10px;
-  --radius-sm:     6px;
-  --shadow:        0 4px 24px rgba(0,0,0,0.8);
+  /* ── Grimorio: palette ── */
+  --bg-deep:       #14100a;   /* cuoio */
+  --bg-page:       #1f1812;   /* pagina */
+  --bg-card:       #171108;   /* pannello pieno */
+  --bg-card-alt:   #221a0e;
+  --bg-panel:      rgba(0, 0, 0, 0.28);
+  --border-warm:   #5e4a20;
+  --border-dim:    #4a3a1c;
+  --gold:          #d4af5e;
+  --gold-light:    #e3c87e;
+  --gold-dim:      #8a6d32;
+  --gold-glow:     rgba(212, 175, 94, 0.32);
+  --text:          #dcc9a4;
+  --text-muted:    #9c8a66;
+  --wax:           #a83232;
+  --wax-dark:      #7a1d1d;
+  --red:           var(--wax-dark);
+  --red-bright:    #c24040;
+  --green:         #5e8f54;
+  --arcane:        #6e4a8a;
+  --radius:        8px;
+  --radius-sm:     5px;
+  --shadow:        0 4px 18px rgba(0,0,0,0.6);
 
-  /* Theme specific components */
-  --btn-primary-bg: linear-gradient(160deg, #7030d8 0%, #4e18a8 50%, #3c1290 100%);
-  --btn-primary-color: #ede0ff;
-  --btn-primary-border: rgba(139, 72, 240, 0.65);
-  --btn-primary-radius: 10px;
-  --btn-primary-shadow: 0 2px 14px rgba(80, 20, 190, 0.55), inset 0 1px 0 rgba(255,255,255,0.14);
-  --btn-primary-hover-shadow: 0 5px 28px rgba(139, 72, 240, 0.6), inset 0 1px 0 rgba(255,255,255,0.2);
+  /* ── Componenti ── */
+  --btn-primary-bg: linear-gradient(170deg, #3a2a10 0%, #241806 100%);
+  --btn-primary-color: var(--gold-light);
+  --btn-primary-border: var(--gold-dim);
+  --btn-primary-radius: 6px;
+  --btn-primary-shadow: 0 2px 10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+  --btn-primary-hover-shadow: 0 4px 18px var(--gold-glow), inset 0 1px 0 rgba(255,255,255,0.1);
 
-  --active-turn-bg: #0b0820;
-  --input-bg: #07071a;
-  --hp-low: #e0923a;
-  --hp-bar-bg: #09091e;
-  --hp-bar-border: #1e1a42;
-  --bg-hover:    #181840;
+  --active-turn-bg: #1a1306;
+  --input-bg: #0e0a06;
+  --hp-low: #c98a3a;
+  --hp-bar-bg: #0a0703;
+  --hp-bar-border: #3a2d12;
+  --bg-hover:    #2a2010;
   --danger:      var(--red-bright);
-  --purple-main: var(--gold);
-}
+  --purple-main: var(--arcane);
 
-.theme-old {
-  --bg-deep:       #07070f;
-  --bg-card:       #0e0d1e;
-  --bg-card-alt:   #131228;
-  --border-warm:   #3c2410;
-  --gold:          #c9a84c;
-  --gold-light:    #e8cc78;
-  --gold-dim:      #9e7e2e;
-  --gold-glow:     rgba(201, 168, 76, 0.32);
-  --text:          #ead6b4;
-  --text-muted:    #9e8c72;
-  --red:           #8b2020;
-  --red-bright:    #cc3333;
-  --green:         #4a7c59;
-  --radius:        10px;
-  --radius-sm:     6px;
-  --shadow:        0 4px 24px rgba(0,0,0,0.8);
+  /* Alias per regole legacy che li referenziavano senza definizione */
+  --gold-muted:   var(--gold-dim);
+  --green-bright: #7ab872;
+  --text-bright:  #f0e4c8;
 
-  --btn-primary-bg: linear-gradient(160deg, #7a3c0c 0%, #522808 50%, #3c1a06 100%);
-  --btn-primary-color: #e8cc78;
-  --btn-primary-border: rgba(201, 168, 76, 0.55);
-  --btn-primary-radius: 10px;
-  --btn-primary-shadow: 0 2px 14px rgba(90, 45, 10, 0.6), inset 0 1px 0 rgba(255,255,255,0.12);
-  --btn-primary-hover-shadow: 0 5px 28px rgba(201, 168, 76, 0.38), inset 0 1px 0 rgba(255,255,255,0.18);
-
-  --active-turn-bg: #120d04;
-  --input-bg: #070712;
-  --hp-low: var(--gold);
-  --hp-bar-bg: #0b0b1a;
-  --hp-bar-border: #1c1830;
-  --bg-hover:    #1a1628;
-  --danger:      var(--red-bright);
-  --purple-main: #7c3aed;
+  /* ── Font ── */
+  --font-display: 'UnifrakturMaguntia', serif;   /* SOLO titoli app/vista */
+  --font-heading: 'Cinzel', serif;               /* sezioni, nomi, bottoni */
+  --font-body:    'EB Garamond', Georgia, serif; /* testo e dati */
+  --font-fell:    'IM Fell English', serif;      /* note, placeholder, log */
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -77,8 +60,8 @@
 html { font-size: 16px; }
 
 body {
-  font-family: 'EB Garamond', 'Crimson Text', Georgia, serif;
-  background: var(--bg-deep);
+  font-family: var(--font-body);
+  background: radial-gradient(ellipse at 50% 0%, var(--bg-page) 0%, var(--bg-deep) 60%) fixed;
   color: var(--text);
   min-height: 100dvh;
   display: flex;
@@ -109,25 +92,26 @@ body {
    Tipografia
 ═══════════════════════════════════════════ */
 h1 {
-  font-family: 'Cinzel', serif;
-  font-size: 1.9rem;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 2.6rem;
   color: var(--gold);
   text-align: center;
-  letter-spacing: 0.07em;
-  text-shadow: 0 0 22px var(--gold-glow), 0 0 50px var(--gold-glow), 0 2px 6px rgba(0,0,0,0.9);
-  line-height: 1.2;
+  letter-spacing: 0.01em;
+  text-shadow: 0 0 24px var(--gold-glow), 0 2px 6px rgba(0,0,0,0.9);
+  line-height: 1.15;
 }
 
 h2 {
-  font-family: 'Cinzel', serif;
-  font-size: 1.1rem;
+  font-family: var(--font-heading);
+  font-size: 1.05rem;
   color: var(--gold-light);
   margin-bottom: 0.5rem;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.04em;
 }
 
 h3 {
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-heading);
   font-size: 1rem;
   color: var(--gold-light);
   text-align: center;
@@ -135,6 +119,12 @@ h3 {
 }
 
 p { line-height: 1.5; }
+
+.subtitle {
+  font-family: var(--font-fell);
+  font-style: italic;
+  color: var(--text-muted);
+}
 
 /* ═══════════════════════════════════════════
    Bottoni
@@ -153,9 +143,10 @@ button, input, select {
   border: 1px solid var(--btn-primary-border);
   border-radius: var(--btn-primary-radius);
   cursor: pointer;
-  font-family: 'Cinzel', serif;
-  font-size: 0.95rem;
+  font-family: var(--font-heading);
+  font-size: 0.9rem;
   letter-spacing: 0.06em;
+  text-transform: uppercase;
   min-height: 50px;
   box-shadow: var(--btn-primary-shadow);
   transition: box-shadow 0.2s, transform 0.12s, filter 0.2s;
@@ -167,31 +158,31 @@ button, input, select {
 
 .btn-secondary {
   padding: 0.6rem 1rem;
-  background: var(--bg-card-alt);
+  background: transparent;
   color: var(--text);
-  border: 1px solid var(--border-warm);
-  border-radius: 10px;
+  border: 1px solid var(--border-dim);
+  border-radius: 6px;
   cursor: pointer;
   min-height: 44px;
   transition: border-color 0.18s, box-shadow 0.18s, color 0.18s, background 0.18s;
 }
 
-.btn-secondary:hover { border-color: var(--gold); color: var(--gold-light); background: rgba(255,255,255,0.03); box-shadow: 0 0 12px var(--gold-glow); }
+.btn-secondary:hover { border-color: var(--gold-dim); color: var(--gold-light); background: rgba(212,175,94,0.05); box-shadow: 0 0 12px var(--gold-glow); }
 
 .btn-danger {
   padding: 0.6rem 1rem;
-  background: #3d1010;
-  color: #e07070;
-  border: 1px solid #6b2020;
-  border-radius: 8px;
+  background: linear-gradient(170deg, #3a1010, #240808);
+  color: #e8b0b0;
+  border: 1px solid #7a2828;
+  border-radius: 6px;
   cursor: pointer;
   min-height: 44px;
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-heading);
   font-size: 0.85rem;
   transition: filter 0.15s, box-shadow 0.15s;
 }
 
-.btn-danger:hover { filter: brightness(1.25); box-shadow: 0 0 8px rgba(139,32,32,0.5); }
+.btn-danger:hover { filter: brightness(1.25); box-shadow: 0 0 10px rgba(168,50,50,0.45); }
 
 .btn-next {
   flex: 1;
@@ -207,20 +198,27 @@ input[type="number"] {
   padding: 0.65rem 0.85rem;
   background: var(--input-bg);
   color: var(--text);
-  border: 1px solid var(--border-warm);
-  border-radius: var(--radius);
+  border: 1px solid var(--border-dim);
+  border-radius: 5px;
   outline: none;
   min-height: 48px;
   transition: border-color 0.18s, box-shadow 0.18s;
 }
 
 input[type="text"]:focus,
-input[type="number"]:focus {
-  border-color: var(--gold);
+input[type="number"]:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--gold-dim);
   box-shadow: 0 0 0 2px var(--gold-glow), 0 2px 8px rgba(0,0,0,0.3);
 }
 
-input::placeholder { color: var(--text-muted); }
+input::placeholder, textarea::placeholder {
+  font-family: var(--font-fell);
+  font-style: italic;
+  color: #6e5f48;
+}
 
 .input-row {
   display: flex;
@@ -233,12 +231,14 @@ input::placeholder { color: var(--text-muted); }
    Errori
 ═══════════════════════════════════════════ */
 .error-banner {
-  background: #3d1010;
-  border: 1px solid #6b2020;
-  color: #e07070;
+  background: linear-gradient(170deg, #3a1010, #2a0a0a);
+  border: 1px solid #7a2828;
+  border-left: 3px solid var(--wax);
+  color: #e8b0b0;
   padding: 0.65rem 0.9rem;
   border-radius: var(--radius);
   font-size: 0.95rem;
+  font-family: var(--font-body);
   text-align: center;
 }
 
