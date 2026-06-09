@@ -331,21 +331,13 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         : (levelUpGranted[c.id] === true);
 
       if (mode === 'xp') {
-        // Derive the display level from actual XP so the bar is never negative
-        let xpLevel = 1;
-        for (let i = XP_THRESHOLDS.length - 1; i >= 0; i--) {
-          if (combXp >= XP_THRESHOLDS[i]) { xpLevel = i + 1; break; }
-        }
-        xpLevel = Math.min(20, xpLevel);
-
-        if (xpLevel >= 20) {
+        if (level >= 20) {
           xpSectionHtml = `<div class="xp-section"><span class="xp-label">XP: ${combXp.toLocaleString('it')} — Livello massimo</span></div>`;
         } else {
-          const lo  = XP_THRESHOLDS[xpLevel - 1] ?? 0;
-          const hi  = XP_THRESHOLDS[xpLevel] ?? XP_THRESHOLDS[19];
-          const pct = Math.min(100, Math.max(0, Math.round((combXp - lo) / (hi - lo) * 100))) || 0;
+          const hi  = XP_THRESHOLDS[level] ?? XP_THRESHOLDS[19];
+          const pct = Math.min(100, Math.max(0, Math.round(combXp / hi * 100))) || 0;
           xpSectionHtml = `<div class="xp-section">
-            <span class="xp-label">XP: ${combXp.toLocaleString('it')} / ${hi.toLocaleString('it')} per Lv.${xpLevel + 1}</span>
+            <span class="xp-label">XP: ${combXp.toLocaleString('it')} / ${hi.toLocaleString('it')} per Lv.${level + 1}</span>
             <div class="xp-bar-track"><div class="xp-bar-fill" style="width:${pct}%"></div></div>
           </div>`;
         }
