@@ -5,6 +5,14 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants)
   const container = document.getElementById('grid-container');
   if (!container) return;
 
+  // Registra il callback usato da zoom e ResizeObserver
+  GridUI.setReRenderCallback(() => {
+    if (state.snapshot) {
+      const sorted = state.tracker.sortedCombatants(state.snapshot.combatants);
+      renderGrid(state.snapshot.grid || {}, state.snapshot.combatants || {}, state.snapshot.currentTurnId ?? null, sorted);
+    }
+  });
+
   const comb = combatants || {};
   const myOwnedIds = new Set(
     state.myUid

@@ -75,7 +75,7 @@ userSessions/{uid}/{code}/
 - Visibilità HP: master vede solo creature · player vede tutti i PG · hint opzionale su creature
 - HP max editabile inline (card combat) e dalla scheda PG, con sync automatico al combattente
 - CA sincronizzata dalla scheda al combattente in real-time
-- Griglia esagonale con token selector bar, selezione + posizionamento, distanze in metri (1m per hex, centrata)
+- Griglia esagonale dinamica: riempie il container, numero di esagoni adattivo a zoom e resize (BASE_HEX_R=28, zoom 0.25–4.0, ResizeObserver); pan con drag LMB (CSS transform); reset griglia solo master
 - Token giocatore evidenziati in verde; token selezionato del proprio personaggio con highlight verde (`hx-sel-my`)
 - Token morti grigi con teschio nella cella sopra
 - Tasto "Fine Turno" sulla card del giocatore attivo
