@@ -1425,17 +1425,20 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .sheet-section {
-  background: var(--bg-card);
-  border: 1px solid var(--border-warm);
-  border-top: 1px solid rgba(255,255,255,0.05);
+  background: var(--bg-panel);
+  border: 1px solid var(--border-dim);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  box-shadow: inset 0 0 24px rgba(0,0,0,0.3);
   overflow: hidden;
   transition: border-color 0.2s;
 }
 
 .sheet-section[open] {
-  border-color: rgba(255,255,255,0.08);
+  border-color: var(--border-warm);
+}
+
+.sheet-section[open] > summary {
+  background: rgba(212, 175, 94, 0.05);
 }
 
 .sheet-section > summary {
@@ -1468,7 +1471,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  border-top: 1px solid var(--border-warm);
+  border-top: 1px solid var(--border-dim);
 }
 
 /* ─── Field rows ─── */
@@ -1574,16 +1577,17 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   gap: 0.5rem;
 }
 
+/* Medaglione caratteristica */
 .ability-block {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.25rem;
-  background: var(--bg-card-alt);
+  background: linear-gradient(170deg, var(--bg-card), #0e0a05);
   border: 1px solid var(--border-warm);
-  border-top: 1px solid rgba(255,255,255,0.05);
-  border-radius: var(--radius);
+  border-radius: 10px;
   padding: 0.6rem 0.35rem;
+  box-shadow: inset 0 0 14px rgba(0,0,0,0.4);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
@@ -1593,9 +1597,9 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .ability-label {
-  font-family: 'Cinzel', serif;
+  font-family: var(--font-heading);
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: var(--gold-dim);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -1690,7 +1694,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   padding: 0;
 }
 
-.skill-prof.active    { border-color: var(--gold); color: var(--gold); background: rgba(124,58,237,0.14); }
+.skill-prof.active    { border-color: var(--gold); color: var(--gold); background: rgba(212,175,94,0.12); }
 .skill-prof.expertise { border-color: var(--gold-light); color: var(--gold-light); background: rgba(229,201,122,0.18); }
 
 .skill-name    { flex: 1; font-size: 0.9rem; }
@@ -1785,7 +1789,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .attack-entry-name { flex: 1; font-size: 0.95rem; font-weight: 600; min-width: 0; }
-.attack-stat       { font-family: 'Cinzel', serif; font-size: 0.85rem; color: var(--gold); background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.3); border-radius: 4px; padding: 0.1rem 0.4rem; white-space: nowrap; }
+.attack-stat       { font-family: var(--font-heading); font-size: 0.85rem; color: var(--gold); background: rgba(212,175,94,0.08); border: 1px solid var(--gold-dim); border-radius: 4px; padding: 0.1rem 0.4rem; white-space: nowrap; }
 .attack-damage     { font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; }
 
 /* ─── Small remove button ─── */
@@ -2065,7 +2069,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   padding: 0;
 }
 
-.spell-prepared.prepared { border-color: var(--gold); color: var(--gold); background: rgba(124,58,237,0.14); }
+.spell-prepared.prepared { border-color: var(--gold); color: var(--gold); background: rgba(212,175,94,0.12); }
 
 .spell-name { flex: 1; font-size: 0.9rem; }
 
@@ -2076,11 +2080,25 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
-  background: var(--bg-card-alt);
-  border: 1px solid var(--border-warm);
+  background: rgba(0,0,0,0.2);
+  border: 1px solid var(--border-dim);
   border-radius: 4px;
   padding: 0.35rem 0.55rem;
+  position: relative;
+  padding-left: 1.4rem;
 }
+
+/* Puntatura a penna */
+.inventory-entry::before {
+  content: '✒';
+  position: absolute;
+  left: 0.45rem;
+  top: 0.4rem;
+  font-size: 0.7rem;
+  color: var(--gold-dim);
+}
+
+.inventory-entry.editing::before { content: ''; }
 
 .inventory-entry.editing {
   background: rgba(0,0,0,0.3);
