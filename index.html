@@ -6,14 +6,8 @@
   <title>D&D Combat Tracker</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=UnifrakturMaguntia&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500&family=IM+Fell+English:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <script>
-    (function() {
-      const theme = localStorage.getItem('theme');
-      if (theme === 'old') document.documentElement.classList.add('theme-old');
-    })();
-  </script>
 </head>
 <body>
 
@@ -22,7 +16,7 @@
   ═══════════════════════════════════════════════ -->
   <div id="view-home" class="view">
     <header class="home-header">
-      <h1>⚔ Combat Tracker ⚔</h1>
+      <h1>Combat Tracker</h1>
       <p class="subtitle">Dungeons &amp; Dragons</p>
     </header>
 
@@ -47,7 +41,6 @@
     <div id="user-info-bar" class="user-info-bar hidden">
       <span id="user-display-name" class="user-display-name"></span>
       <div class="user-info-actions">
-        <button id="btn-theme-toggle-home" class="btn-copy" title="Cambia stile">🎨 Stile</button>
         <button id="btn-upgrade-google" class="btn-upgrade-google hidden">
           <svg class="google-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
             <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -149,7 +142,6 @@
         <span class="session-label">Sessione:</span>
         <span id="session-code-display" class="session-code"></span>
         <button id="btn-copy-code" class="btn-copy" title="Copia codice">📋 Copia</button>
-        <button id="btn-theme-toggle-combat" class="btn-copy" title="Cambia stile">🎨 Stile</button>
       </div>
       <div class="combat-header-right">
         <span id="round-display" class="round-display">Round 1</span>
