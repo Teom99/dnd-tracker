@@ -27,7 +27,7 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | `src/CharacterSheet.js` | Scheda PG: lettura/scrittura su `characters/{uid}/{charId}/` |
 | `src/UI.js` | Render lista combattenti, modal condizioni, death saves inline, render log (`renderLogs`) |
 | `src/SheetUI.js` | Render scheda personaggio (abilità, slot, incantesimi, inventario) |
-| `src/GridUI.js` | Griglia esagonale SVG (punta in alto, odd-r offset, 20x12, 1 hex = 1m) |
+| `src/GridUI.js` | Griglia quadrata SVG (dimensioni da `gridConfig`, 1 casella = 1m), muri, token multi-cella per taglia |
 
 ---
 
@@ -36,10 +36,13 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 ```
 sessions/{code}/
   masterUid, round, currentTurnId
+  gridConfig/  cols, rows                  (dimensioni decise dal master, default 20x20)
   combatants/{id}/  name, type (player|creature), initiative, hpMax, hpCurrent,
                     conditions/{name: true}, ownerUid, charId, armorClass,
-                    currentAction, showHealthHint
-  grid/{combatantId}/  col, row
+                    currentAction, showHealthHint,
+                    size (tiny|small|medium|large|huge|gargantuan)
+  grid/{combatantId}/  col, row            (angolo top-left del footprint)
+  walls/{col_row}: true
   logs/{logId}/
     message, type, actor, target, amount, createdByUid,
     timestamp (serverTimestamp), clientTimestamp
@@ -48,7 +51,7 @@ characters/{uid}/{charId}/
   name, type, armorClass, hpMax, abilities/{str,dex,...}, skills/,
   savingThrows/, spellSlots/, spells/, cantrips/, attacks/,
   inventory/, deathSaves/{successes, failures}, tempHp, hitDiceUsed,
-  spellBonusModifier, spellcastingAbility, ...
+  spellBonusModifier, spellcastingAbility, size, ...
 
 userSessions/{uid}/{code}/
   combatantId, characterName, role, charId, lastSeen
@@ -75,9 +78,10 @@ userSessions/{uid}/{code}/
 - Visibilità HP: master vede solo creature · player vede tutti i PG · hint opzionale su creature
 - HP max editabile inline (card combat) e dalla scheda PG, con sync automatico al combattente
 - CA sincronizzata dalla scheda al combattente in real-time
-- Griglia esagonale dinamica: riempie il container, numero di esagoni adattivo a zoom e resize (BASE_HEX_R=28, zoom 0.25–4.0, ResizeObserver); pan con drag LMB (CSS transform); reset griglia solo master
-- Token giocatore evidenziati in verde; token selezionato del proprio personaggio con highlight verde (`hx-sel-my`)
-- Token morti grigi con teschio nella cella sopra
+- Griglia quadrata: dimensioni decise dal master in sessione (`gridConfig`, default 20x20, resize anytime con drop fuori bordi); muri disegnabili dal master cliccando una casella vuota senza token selezionato (bloccano il movimento); reset (solo master) svuota token e muri; zoom 0.25–4.0 e pan con drag LMB (CSS transform)
+- Taglia token: Piccola/Media (1×1), Grande (2×2), Enorme (3×3), Mastodontica (4×4); default dalla libreria/scheda, override del master in sessione; distanza Chebyshev bordo-a-bordo (1 casella = 1m)
+- Token giocatore evidenziati in verde; movimento valida bordi, muri e sovrapposizioni sull'intero footprint
+- Token morti grigi con teschio
 - Tasto "Fine Turno" sulla card del giocatore attivo
 - Death saves inline nella card quando KO: 3 successi = revive a 1 HP
 - `nextTurn` atomico con `runTransaction` (no race condition)
