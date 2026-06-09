@@ -2419,6 +2419,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   min-width: 0;
   height: min(70vh, 620px);
 }
+.grid-container.grid-edit-active { user-select: none; }
 .grid-container.grid-edit-active .sq-hit { cursor: crosshair; }
 
 .grid-zoom-controls {

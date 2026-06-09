@@ -8,6 +8,62 @@ const PAD  = 8;         // margine interno (coordinate viewBox)
 const SIZE_FOOTPRINT = { tiny: 1, small: 1, medium: 1, large: 2, huge: 3, gargantuan: 4 };
 export function footprintOf(size) { return SIZE_FOOTPRINT[size] || 1; }
 
+// ─── Disegno muri con drag (tieni premuto LMB in modalità modifica) ──────────
+// Le listener stanno sul container (persiste tra i re-render); leggono _ctx,
+// il contesto dell'ultimo render, aggiornato a ogni renderGrid.
+let _ctx               = null;
+let _paintBound        = false;
+let _painting          = false;
+let _paintValue        = false;
+let _paintedThisStroke = null;
+
+function _cellFromEvent(e) {
+  let hit = e.target?.closest?.('.sq-hit');
+  if (!hit) hit = document.elementFromPoint(e.clientX, e.clientY)?.closest?.('.sq-hit');
+  if (!hit) return null;
+  return { col: parseInt(hit.dataset.c), row: parseInt(hit.dataset.r) };
+}
+
+function _paintAt(col, row) {
+  if (!_ctx) return;
+  const key = `${col}_${row}`;
+  if (_paintedThisStroke.has(key)) return;
+  _paintedThisStroke.add(key);
+  if (_ctx.occCell[key]) return;                       // niente muri sotto i token
+  if (Boolean(_ctx.wall[key]) === _paintValue) return; // già nello stato voluto
+  _ctx.onSetWall(key, _paintValue);
+}
+
+function _bindWallPaint(container) {
+  if (_paintBound) return;
+  _paintBound = true;
+
+  container.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    if (!_ctx || !_ctx.isMaster || !_ctx.editMode) return;
+    const cell = _cellFromEvent(e);
+    if (!cell) return;
+    const key = `${cell.col}_${cell.row}`;
+    if (_ctx.occCell[key]) return;
+    _painting          = true;
+    _paintValue        = !_ctx.wall[key];   // cella vuota → disegna; muro → cancella
+    _paintedThisStroke = new Set();
+    _paintAt(cell.col, cell.row);
+    e.preventDefault();
+  });
+
+  container.addEventListener('mousemove', (e) => {
+    if (!_painting) return;
+    const cell = _cellFromEvent(e);
+    if (cell) _paintAt(cell.col, cell.row);
+  });
+
+  const stop = () => { _painting = false; };
+  container.addEventListener('mouseup', stop);
+  container.addEventListener('mouseleave', stop);
+  window.addEventListener('mouseup', stop);
+}
+
 // ─── Coordinate / distanza ────────────────────────────────────────────────────
 
 function cellXY(col, row) {
@@ -44,9 +100,9 @@ export function setReRenderCallback(fn) { _reRenderCallback = fn; }
 /**
  * Ridisegna la griglia quadrata, adattata al contenitore.
  * @param editMode boolean       — modalità modifica del master (disegno muri)
- * @param onToggleWall (cellKey) => void
+ * @param onSetWall (cellKey, value) => void   — imposta/rimuove un muro
  */
-export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onToggleWall) {
+export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onSetWall) {
   const pos   = gridPos    || {};
   const comb  = combatants || {};
   const wall  = walls      || {};
@@ -133,6 +189,10 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     `<svg class="sq-svg" viewBox="0 0 ${vbW} ${vbH}" preserveAspectRatio="xMidYMid meet" width="100%" height="100%">${inner}</svg>`;
   container.classList.toggle('grid-edit-active', !!editMode);
 
+  // Aggiorna il contesto usato dal disegno muri con drag e assicura il binding.
+  _ctx = { cols, rows, wall, occCell, isMaster, editMode: !!editMode, onSetWall };
+  _bindWallPaint(container);
+
   const svg = container.querySelector('svg');
 
   // Validazione piazzamento: footprint dentro i bordi, niente muri, niente sovrapposizioni
@@ -192,11 +252,8 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     const row = parseInt(el.dataset.r);
     const occupantId = occCell[`${col}_${row}`];
 
-    // Modalità modifica (master): i click disegnano/rimuovono muri sulle celle vuote
-    if (editMode && isMaster) {
-      if (!occupantId) onToggleWall?.(`${col}_${row}`);
-      return;
-    }
+    // Modalità modifica (master): i muri si disegnano con mousedown/drag (vedi _bindWallPaint)
+    if (editMode && isMaster) return;
 
     if (occupantId) {
       // Click su token → seleziona/deseleziona

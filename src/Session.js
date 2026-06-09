@@ -165,11 +165,8 @@ export class Session {
     }
   }
 
-  async toggleWall(cellKey) {
-    await runTransaction(
-      ref(this._db, `sessions/${this.code}/walls/${cellKey}`),
-      (current) => (current ? null : true)
-    );
+  async setWall(cellKey, on) {
+    await set(ref(this._db, `sessions/${this.code}/walls/${cellKey}`), on ? true : null);
   }
 
   async clearWalls() {

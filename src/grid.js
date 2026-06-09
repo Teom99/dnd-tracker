@@ -53,7 +53,7 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
     state.gridEditMode,
     (id) => { state.selectedGridTokenId = id; reRender(); },
     (id, col, row) => state.session.setGridPosition(id, col, row),
-    (cellKey) => state.session.toggleWall(cellKey)
+    (cellKey, value) => state.session.setWall(cellKey, value)
   );
   renderTokenBar(gridPos, combatants);
   updateTokenSizeControl(combatants);
