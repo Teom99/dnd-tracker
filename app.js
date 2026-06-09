@@ -911,15 +911,21 @@ function _initGridMasterControls(isMaster) {
   _gridMasterBound = true;
 
   editBtn?.addEventListener('click', () => {
+    const turningOff = state.gridEditMode;
     state.gridEditMode = !state.gridEditMode;
+    if (turningOff) _applyGridDims();   // commit eventuali dimensioni in sospeso
     _applyGridEditUI();
     _rerenderGridFromSnapshot();
   });
 
-  document.getElementById('btn-grid-apply')?.addEventListener('click', () => {
-    const cols = document.getElementById('input-grid-cols').value;
-    const rows = document.getElementById('input-grid-rows').value;
-    state.session.setGridConfig(cols, rows);
+  // Le dimensioni si applicano al blur / Enter (change), senza tasto dedicato
+  ['input-grid-cols', 'input-grid-rows'].forEach((id) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('change', _applyGridDims);
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); _applyGridDims(); el.blur(); }
+    });
   });
 
   document.getElementById('select-token-size')?.addEventListener('change', (e) => {
@@ -928,6 +934,14 @@ function _initGridMasterControls(isMaster) {
   });
 
   _applyGridEditUI();
+}
+
+function _applyGridDims() {
+  const cols = document.getElementById('input-grid-cols')?.value;
+  const rows = document.getElementById('input-grid-rows')?.value;
+  if (cols != null && cols !== '' && rows != null && rows !== '') {
+    state.session.setGridConfig(cols, rows);
+  }
 }
 
 function _applyGridEditUI() {
