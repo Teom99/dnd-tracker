@@ -543,7 +543,8 @@ document.getElementById('btn-clear-log').addEventListener('click', () => {
 
 document.getElementById('btn-toggle-ship').addEventListener('click', () => {
   state.shipPanelOpen = !state.shipPanelOpen;
-  document.querySelector('.combat-cols').classList.toggle('hidden', state.shipPanelOpen);
+  // La nave si scambia con la griglia nello slot centrale della dashboard
+  document.getElementById('grid-section').classList.toggle('hidden', state.shipPanelOpen);
   document.getElementById('ship-panel').classList.toggle('hidden', !state.shipPanelOpen);
   if (state.shipPanelOpen) _renderShipPanel();
 });
@@ -875,6 +876,8 @@ function _enterCombatView(code, isMaster) {
   state.localDeck          = 'main';
   state.shipPanelOpen      = false;
   state._selectedShipToken = null;
+  document.getElementById('grid-section')?.classList.remove('hidden');
+  document.getElementById('ship-panel')?.classList.add('hidden');
   document.body.classList.add('in-combat');
   _startListening();
   _bindShipEvents();

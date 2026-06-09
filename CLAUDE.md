@@ -12,7 +12,7 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | File | Ruolo |
 |---|---|
 | `index.html` | Struttura viste: `#view-home`, `#view-combat`, `#view-character` + modal condizioni |
-| `style.css` | Tema fantasy dark (Cinzel/Crimson Text, sfondo `#0f0f1a`, oro `#c9a84c`) |
+| `style.css` | Tema unico "Grimorio miniato" (UnifrakturMaguntia/Cinzel/EB Garamond/IM Fell, cuoio `#14100a`, oro `#d4af5e`, ceralacca `#a83232`); design token in `:root` |
 | `config.js` | `FIREBASE_CONFIG` — da non committare con dati reali |
 | `app.js` | Entry point: event listeners top-level, `_enterCombatView`, `_startListening`, `_rejoinSession` |
 | `src/state.js` | Singleton `state` con tutto lo stato globale (`db`, `auth`, `session`, `myUid`, `myCombatantId`, `snapshot`, ecc.) |
@@ -27,7 +27,7 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | `src/CharacterSheet.js` | Scheda PG: lettura/scrittura su `characters/{uid}/{charId}/` |
 | `src/UI.js` | Render lista combattenti, modal condizioni, death saves inline, render log (`renderLogs`) |
 | `src/SheetUI.js` | Render scheda personaggio (abilità, slot, incantesimi, inventario) |
-| `src/GridUI.js` | Griglia quadrata SVG (dimensioni da `gridConfig`, 1 casella = 1m), muri, token multi-cella per taglia |
+| `src/GridUI.js` | Griglia quadrata SVG (dimensioni da `gridConfig`, 1 casella = 1m), muri, token multi-cella per taglia; `renderInitiativeList` = rail dei turni (ritratti + mini-barre HP + bottone aggiungi) |
 
 ---
 
@@ -96,6 +96,7 @@ userSessions/{uid}/{code}/
 - Campo `spellBonusModifier` per modificatore extra su CD e bonus attacco magia
 - Refactor struttura progetto: `app.js` ridotto, stato in `src/state.js`, logica in moduli separati
 - Fix inventario: risolta eliminazione oggetti e blocco form; allineamento tasti rimozione a destra
+- Redesign "Grimorio miniato" (spec in `docs/superpowers/specs/2026-06-10-grimoire-redesign-design.md`): tema unico (rimossi toggle 🎨 e `theme-old`), design system a token CSS, vista combat come dashboard tattica — rail turni (`#grid-initiative-list` con classi `rail-*`), griglia centrale (nave/scena si scambiano col tabellone), cronaca laterale, pannello dettaglio (`#detail-list`) che mostra `state.selectedGridTokenId ?? currentTurnId` (selezione resettata a ogni cambio turno); form aggiungi-creatura/compagno nel modal `#add-combatant-modal` (eventi `dnd:add-combatant`, `dnd:selection-changed`); su desktop ≥1100px le colonne card sono nascoste, su mobile restano come "altri combattenti"
 
 ### Bug noti non ancora risolti
 Nessuno al momento.
