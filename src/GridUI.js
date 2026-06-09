@@ -283,10 +283,10 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   });
 }
 
-export function renderInitiativeList(container, sortedCombatants, gridPos, myCombatantId, selectedId, currentTurnId, isMaster, onSelect, combatants) {
+export function renderInitiativeList(container, sortedCombatants, gridPos, myCombatantId, selectedId, currentTurnId, isMaster, onSelect, combatants, onAddCombatant) {
   if (!container) return;
 
-  const pos = gridPos || {};
+  const pos  = gridPos || {};
   const comb = combatants || {};
   const referenceId = selectedId || myCombatantId;
   const refPos  = referenceId ? pos[referenceId] : null;
@@ -294,34 +294,49 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
 
   let html = '';
   for (const c of sortedCombatants) {
-    const isActive = c.id === currentTurnId;
+    const isActive   = c.id === currentTurnId;
+    const isSelected = c.id === selectedId;
+    const isKO       = c.hpCurrent === 0;
     const cPos = pos[c.id];
 
     let distText = '';
     if (refPos && cPos && c.id !== referenceId) {
       const d = squareDistance(refPos.col, refPos.row, refSide, cPos.col, cPos.row, footprintOf(c.size));
-      distText = `<span class="grid-initiative-dist">${fmtM(d)}</span>`;
+      distText = `<span class="rail-dist">${fmtM(d)}</span>`;
     }
 
-    const isSelected = c.id === selectedId;
-    let cls = 'grid-initiative-item';
-    if (isActive)          cls += ' active-turn';
-    if (isSelected)        cls += ' selected';
-    if (c.hpCurrent === 0) cls += ' ko';
+    // HP visibile: master sempre; per i player solo PG/pet (le creature restano nascoste)
+    const hpVisible = isMaster || c.type !== 'creature';
+    const hpPct = c.hpMax > 0 ? Math.max(0, Math.min(100, (c.hpCurrent / c.hpMax) * 100)) : 0;
+    const hpBar = hpVisible
+      ? `<div class="rail-hp"><div class="rail-hp-fill${c.type === 'creature' ? '' : ' pg'}" style="width:${hpPct}%"></div></div>`
+      : '<div class="rail-hp rail-hp-hidden"></div>';
 
-    const koIcon = c.hpCurrent === 0
-      ? `<span class="grid-initiative-ko">💀</span>`
-      : '<span class="grid-initiative-ko"></span>';
+    let cls = 'rail-item';
+    if (isActive)   cls += ' active-turn';
+    if (isSelected) cls += ' selected';
+    if (isKO)       cls += ' ko';
+    if (c.type === 'player' || c.type === 'pet') cls += ' pg';
 
     html += `
-      <li class="${cls}" style="cursor:pointer" data-id="${c.id}">
-        <span class="grid-initiative-name">${esc(c.name)}</span>
-        <div class="grid-initiative-meta">${koIcon}${distText}</div>
+      <li class="${cls}" data-id="${c.id}" title="${esc(c.name)}">
+        <span class="rail-portrait">${isKO ? '💀' : esc((c.name || '?').slice(0, 2).toUpperCase())}</span>
+        ${hpBar}
+        <span class="rail-name">${esc(c.name)}</span>
+        ${distText}
       </li>`;
+  }
+
+  if (isMaster && onAddCombatant) {
+    html += `<li class="rail-item rail-add" data-action="add-combatant" title="Aggiungi alla battaglia"><span class="rail-portrait">＋</span></li>`;
+  } else if (!isMaster && onAddCombatant) {
+    html += `<li class="rail-item rail-add" data-action="add-combatant" title="Aggiungi compagno"><span class="rail-portrait">🐾</span></li>`;
   }
 
   container.innerHTML = html;
   container.onclick = (e) => {
+    const add = e.target.closest('[data-action="add-combatant"]');
+    if (add) { onAddCombatant?.(); return; }
     const li = e.target.closest('li[data-id]');
     if (!li) return;
     onSelect(li.dataset.id === selectedId ? null : li.dataset.id);
