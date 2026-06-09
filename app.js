@@ -948,7 +948,6 @@ function _startListening() {
 
     const isMaster = data.masterUid === state.myUid;
     UI.renderScenePanel(data.sceneImageUrl ?? null, data.sceneImageName ?? null, isMaster);
-    _btnUploadScene.classList.toggle('hidden', !isMaster);
 
     // Progressione: aggiorna controlli master
     const selLive = document.getElementById('select-progression-mode-live');
