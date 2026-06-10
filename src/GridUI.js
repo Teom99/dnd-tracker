@@ -126,6 +126,14 @@ export function hideCombatTooltip() {
   _tipEl?.classList.remove('visible');
 }
 
+// Colori base di un token (variante non selezionata/attiva), usati anche dal ghost
+function tokenBaseColors(occ, isMyToken) {
+  if (isMyToken)              return { fill: '#16240f', stroke: '#5e8f54' };
+  if (occ.type === 'player')  return { fill: '#13241c', stroke: '#4a8a6e' };
+  if (occ.faction === 'good') return { fill: '#2b2110', stroke: '#b8954a' };
+  return { fill: '#2a100c', stroke: '#a84a3a' };
+}
+
 // ─── Re-render callback (resize) ─────────────────────────────────────────────
 
 let _reRenderCallback = null;
@@ -188,14 +196,13 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     const isSelected = id === selectedId;
     const isActive   = id === currentTurnId;
     const isMyToken  = id === myCombatantId;
-    const isPlayer   = occ.type === 'player';
     const isDead     = occ.hpCurrent <= 0;
 
-    let fill, stroke;
-    if (isMyToken)      { fill = '#16240f'; stroke = isSelected ? '#9ccf6e' : '#5e8f54'; }
-    else if (isPlayer)  { fill = '#13241c'; stroke = isSelected ? '#d4af5e' : isActive ? '#e3c87e' : '#4a8a6e'; }
-    else if (occ.faction === 'good') { fill = '#2b2110'; stroke = isSelected ? '#d4af5e' : isActive ? '#e3c87e' : '#b8954a'; }
-    else                { fill = '#2a100c'; stroke = isSelected ? '#d4af5e' : isActive ? '#e3c87e' : '#a84a3a'; }
+    const base = tokenBaseColors(occ, isMyToken);
+    let fill   = base.fill;
+    let stroke = isMyToken
+      ? (isSelected ? '#9ccf6e' : base.stroke)
+      : (isSelected ? '#d4af5e' : isActive ? '#e3c87e' : base.stroke);
     if (isDead) { fill = '#3a352c'; stroke = '#6e6657'; }
 
     const sw       = (isSelected || isActive) ? 3 : 2;
@@ -245,13 +252,44 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     return true;
   }
 
-  // Tooltip combattente al passaggio del mouse (condiviso con la rail)
+  // Ghost di anteprima: impronta del token selezionato sulla destinazione sotto il cursore
+  const canMoveSelected = !!selectedId && (isMaster || myOwnedIds.has(selectedId)) && !(editMode && isMaster);
+  let ghostEl = null;
+
+  function hideGhost() { ghostEl?.remove(); ghostEl = null; }
+
+  function showGhost(col, row) {
+    const occ = comb[selectedId];
+    if (!occ) { hideGhost(); return; }
+    const { x, y } = cellXY(col, row);
+    const inset = 3;
+    if (!ghostEl) {
+      const w      = selSide * CELL;
+      const colors = tokenBaseColors(occ, selectedId === myCombatantId);
+      const fsz    = Math.max(8, Math.min(18, selSide * 11)).toFixed(0);
+      ghostEl = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      ghostEl.setAttribute('class', 'sq-ghost');
+      ghostEl.setAttribute('pointer-events', 'none');
+      ghostEl.innerHTML =
+        `<rect width="${w - inset * 2}" height="${w - inset * 2}" rx="4" fill="${colors.fill}" stroke="${colors.stroke}" stroke-width="2"/>` +
+        `<text x="${(w / 2 - inset).toFixed(1)}" y="${(w / 2 - inset + selSide * 3).toFixed(1)}" text-anchor="middle" font-size="${fsz}" class="sq-name">${esc((occ.name || '?').slice(0, 3).toUpperCase())}</text>`;
+      svg.appendChild(ghostEl);
+    }
+    ghostEl.setAttribute('transform', `translate(${x + inset}, ${y + inset})`);
+  }
+
+  // Tooltip combattente + ghost di anteprima al passaggio del mouse
   svg.addEventListener('mousemove', (e) => {
     const hit = e.target.closest('.sq-hit');
     const occId = hit ? occCell[`${parseInt(hit.dataset.c)}_${parseInt(hit.dataset.r)}`] : null;
     const occ   = occId ? comb[occId] : null;
     if (occ) showCombatTooltip(occ, isMaster, e.clientX, e.clientY);
     else hideCombatTooltip();
+
+    if (!canMoveSelected || !hit) { hideGhost(); return; }
+    const col = parseInt(hit.dataset.c), row = parseInt(hit.dataset.r);
+    if (occId === selectedId || !canPlace(col, row, selSide, selectedId)) { hideGhost(); return; }
+    showGhost(col, row);
   });
 
   svg.addEventListener('mouseover', (e) => {
@@ -263,6 +301,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   svg.addEventListener('mouseleave', () => {
     svg.querySelectorAll('.sq.sq-hover').forEach(h => h.classList.remove('sq-hover'));
     hideCombatTooltip();
+    hideGhost();
   });
 
   svg.addEventListener('click', (e) => {

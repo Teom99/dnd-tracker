@@ -3311,6 +3311,8 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   text-shadow: 0 0 3px rgba(0,0,0,0.9);
 }
 
+.sq-ghost { opacity: 0.45; }
+
 
 .grid-master-controls {
   display: flex;
