@@ -1055,7 +1055,7 @@ function _startListening() {
     // Progressione: aggiorna controlli master
     const selLive = document.getElementById('select-progression-mode-live');
     if (selLive) selLive.value = data.progressionMode ?? 'xp';
-    document.getElementById('xp-award-section')?.classList.toggle('hidden', (data.progressionMode ?? 'xp') !== 'xp');
+    document.getElementById('btn-award-xp-open')?.classList.toggle('hidden', (data.progressionMode ?? 'xp') !== 'xp');
     const onlyPlayers = sorted.filter(c => c.type === 'player');
     const xpPlayersEl = document.getElementById('xp-award-players');
     if (xpPlayersEl && isMaster) {

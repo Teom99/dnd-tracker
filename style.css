@@ -1293,13 +1293,33 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 .btn-conditions:hover { border-color: var(--gold); color: var(--gold); }
 
 /* ═══════════════════════════════════════════
-   MASTER CONTROLS footer
+   COMBAT TOOLBAR + MASTER CONTROLS
 ═══════════════════════════════════════════ */
+.combat-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.75rem;
+  box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.04);
+}
+
 .master-controls {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 0.6rem;
-  padding: 0.5rem 0;
-  align-items: stretch;
+}
+
+.combat-toolbar-shared {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
 }
 
 /* ═══════════════════════════════════════════
@@ -1417,23 +1437,11 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 ═══════════════════════════════════════════ */
 @media (min-width: 600px) {
   h1 { font-size: 2.9rem; }
-
-  .master-controls {
-    padding: 0;
-  }
 }
 
 /* ═══════════════════════════════════════════
-   COMBAT HEADER — aggiornamenti (exit + right)
+   COMBAT HEADER — exit button
 ═══════════════════════════════════════════ */
-.combat-header-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.25rem;
-  flex-shrink: 0;
-}
-
 .btn-exit-session {
   padding: 0.25rem 0.55rem;
   background: transparent;
@@ -2346,6 +2354,9 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 .xp-award-players { padding: 4px 0 4px; }
 .xp-player-row  { display: flex; align-items: center; gap: 0.5rem; padding: 4px 0; font-size: 0.85rem; cursor: pointer; }
 .xp-player-meta { color: var(--text-muted); font-size: 0.75rem; margin-left: auto; }
+.xp-quick-row     { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.xp-award-preview { min-height: 1.1em; margin: 0; font-size: 0.85rem; font-style: italic; color: var(--text-muted); }
+#btn-award-xp:disabled { opacity: 0.5; cursor: default; }
 
 /* ─── CA badge on combat card ─── */
 .ac-badge {

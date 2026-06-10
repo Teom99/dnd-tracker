@@ -143,31 +143,8 @@
         <span id="session-code-display" class="session-code"></span>
         <button id="btn-copy-code" class="btn-copy" title="Copia codice">📋 Copia</button>
       </div>
-      <div class="combat-header-right">
-        <span id="round-display" class="round-display">Round 1</span>
-        <button id="btn-upload-scene" class="btn-secondary btn-sm" title="Carica immagine scena">🖼 Upload image</button>
-        <button id="btn-toggle-ship" class="btn-secondary btn-sm" title="Apri pannello nave">🚢 Damselfly</button>
-        <button id="btn-exit-session" class="btn-exit-session" title="Esci dalla sessione">← Esci</button>
-      </div>
-      <!-- Controlli turno (visibili solo al master) -->
-      <div id="master-controls" class="master-controls hidden">
-        <button id="btn-next-turn" class="btn-primary btn-next">Turno Successivo ▶</button>
-        <button id="btn-reset" class="btn-danger">↺ Reset Incontro</button>
-        <select id="select-progression-mode-live" class="btn-secondary btn-sm" title="Modalità progressione">
-          <option value="xp">XP</option>
-          <option value="milestone">Milestone</option>
-        </select>
-        <div id="xp-award-section" class="hidden">
-          <details id="xp-award-form">
-            <summary class="btn-secondary btn-sm">✨ Assegna XP</summary>
-            <div id="xp-award-players" class="xp-award-players"></div>
-            <div class="input-row" style="padding:4px 0 6px; gap:0.4rem;">
-              <input type="number" id="input-xp-amount" min="0" placeholder="XP" class="input-inline" style="width:90px">
-              <button id="btn-award-xp" class="btn-primary btn-sm">Assegna</button>
-            </div>
-          </details>
-        </div>
-      </div>
+      <span id="round-display" class="round-display">Round 1</span>
+      <button id="btn-exit-session" class="btn-exit-session" title="Esci dalla sessione">← Esci</button>
     </header>
 
     <div id="error-message-combat" class="error-banner hidden"></div>
@@ -183,6 +160,23 @@
       </aside>
 
       <div id="combat-center" class="combat-center">
+        <!-- Toolbar azioni: controlli master a sinistra, scena/nave (tutti) a destra -->
+        <div id="combat-toolbar" class="combat-toolbar">
+          <div id="master-controls" class="master-controls hidden">
+            <button id="btn-next-turn" class="btn-primary btn-next">Turno Successivo ▶</button>
+            <button id="btn-award-xp-open" class="btn-secondary btn-sm">✨ Assegna XP</button>
+            <select id="select-progression-mode-live" class="btn-secondary btn-sm" title="Modalità progressione">
+              <option value="xp">XP</option>
+              <option value="milestone">Milestone</option>
+            </select>
+            <button id="btn-reset" class="btn-danger">↺ Reset Incontro</button>
+          </div>
+          <div class="combat-toolbar-shared">
+            <button id="btn-upload-scene" class="btn-secondary btn-sm" title="Carica immagine scena">🖼 Scena</button>
+            <button id="btn-toggle-ship" class="btn-secondary btn-sm" title="Apri pannello nave">🚢 Damselfly</button>
+          </div>
+        </div>
+
         <!-- Pannello nave (si scambia con la griglia) -->
         <div id="ship-panel" class="hidden"></div>
 
@@ -605,6 +599,29 @@
       </section>
 
       <button id="btn-add-combatant-close" class="btn-secondary">Chiudi</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       MODAL — assegna XP (solo master, modalità XP)
+  ═══════════════════════════════════════════════ -->
+  <div id="xp-award-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Assegna punti esperienza">
+    <div class="modal-content">
+      <h3>✨ Assegna Punti Esperienza</h3>
+      <div id="xp-award-players" class="xp-award-players"></div>
+      <div class="xp-quick-row">
+        <button type="button" class="btn-secondary btn-sm xp-quick" data-xp="25">+25</button>
+        <button type="button" class="btn-secondary btn-sm xp-quick" data-xp="50">+50</button>
+        <button type="button" class="btn-secondary btn-sm xp-quick" data-xp="100">+100</button>
+        <button type="button" class="btn-secondary btn-sm xp-quick" data-xp="250">+250</button>
+        <button type="button" class="btn-secondary btn-sm xp-quick" data-xp="500">+500</button>
+      </div>
+      <input type="number" id="input-xp-amount" min="0" placeholder="XP a ciascuno">
+      <p id="xp-award-preview" class="xp-award-preview"></p>
+      <div class="input-row">
+        <button id="btn-award-xp" class="btn-primary" disabled>Assegna</button>
+        <button id="btn-xp-award-close" class="btn-secondary">Annulla</button>
+      </div>
     </div>
   </div>
 
