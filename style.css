@@ -586,8 +586,8 @@ form { display: flex; flex-direction: column; gap: 0.6rem; }
   color: var(--gold-light);
   white-space: nowrap;
 }
-.round-display::before { content: '⚜  '; color: var(--gold-dim); font-size: 0.8em; }
-.round-display::after  { content: '  ⚜'; color: var(--gold-dim); font-size: 0.8em; }
+.round-display::before { content: '⚜\FE0E'; margin-right: 0.45em; color: var(--gold-dim); font-size: 0.8em; }
+.round-display::after  { content: '⚜\FE0E'; margin-left: 0.45em; color: var(--gold-dim); font-size: 0.8em; }
 
 /* ═══════════════════════════════════════════
    COMBAT VIEW — pannello master (aggiungi creatura)
