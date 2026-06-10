@@ -2673,9 +2673,14 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   color: var(--text);
 }
 
-.rail-item.active-turn .rail-ring { box-shadow: 0 0 12px var(--gold-glow); }
+.rail-item.active-turn .rail-ring { animation: rail-turn-glow 2s ease-in-out infinite; }
 .rail-item.selected .rail-ring    { outline: 2px solid var(--gold-light); outline-offset: 2px; }
 .rail-item.ko { opacity: 0.45; }
+
+@keyframes rail-turn-glow {
+  0%, 100% { box-shadow: 0 0 10px var(--gold-glow), 0 0 22px var(--gold-glow); }
+  50%      { box-shadow: 0 0 16px var(--gold-glow), 0 0 34px 6px var(--gold-glow); }
+}
 
 .rail-add .rail-ring     { background: none; }
 .rail-add .rail-portrait { border-style: dashed; border-color: var(--border-warm); color: var(--gold); }
