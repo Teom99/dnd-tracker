@@ -694,7 +694,7 @@ body.sheet-only:not(.in-combat) #session-notes-section { display: none; }
     align-items: start;
   }
   .turn-rail { position: sticky; top: 0.5rem; }
-  .detail-area { position: sticky; top: 0.5rem; }
+  .detail-area { position: sticky; top: 0.5rem; max-height: calc(100vh - 1rem); overflow-y: auto; }
 
   /* Su desktop il rail + dettaglio sostituiscono le colonne card;
      resta visibile solo la colonna scheda quando aperta */
