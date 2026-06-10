@@ -155,7 +155,20 @@
 
     <div id="error-message-combat" class="error-banner hidden"></div>
 
-    <!-- Dashboard tattica: rail turni | griglia (+nave/scena) | cronaca -->
+    <!-- Toolbar azioni a tutta pagina: controlli master a sinistra, scena/nave (tutti) a destra -->
+    <div id="combat-toolbar" class="combat-toolbar">
+      <div id="master-controls" class="master-controls hidden">
+        <button id="btn-next-turn" class="btn-primary btn-next">Turno Successivo ▶</button>
+        <button id="btn-reset" class="btn-danger">↺ Reset Incontro</button>
+      </div>
+      <div class="combat-toolbar-shared">
+        <button id="btn-award-xp-open" class="btn-secondary btn-sm hidden">✨ Assegna XP</button>
+        <button id="btn-upload-scene" class="btn-secondary btn-sm" title="Carica immagine scena">🖼 Scena</button>
+        <button id="btn-toggle-ship" class="btn-secondary btn-sm" title="Apri pannello nave">🚢 Damselfly</button>
+      </div>
+    </div>
+
+    <!-- Dashboard tattica: rail turni | griglia + cronaca | dettaglio -->
     <div class="dashboard">
 
       <aside id="turn-rail" class="turn-rail">
@@ -166,18 +179,6 @@
       </aside>
 
       <div id="combat-center" class="combat-center">
-        <!-- Toolbar azioni: controlli master a sinistra, scena/nave (tutti) a destra -->
-        <div id="combat-toolbar" class="combat-toolbar">
-          <div id="master-controls" class="master-controls hidden">
-            <button id="btn-next-turn" class="btn-primary btn-next">Turno Successivo ▶</button>
-            <button id="btn-reset" class="btn-danger">↺ Reset Incontro</button>
-          </div>
-          <div class="combat-toolbar-shared">
-            <button id="btn-award-xp-open" class="btn-secondary btn-sm hidden">✨ Assegna XP</button>
-            <button id="btn-upload-scene" class="btn-secondary btn-sm" title="Carica immagine scena">🖼 Scena</button>
-            <button id="btn-toggle-ship" class="btn-secondary btn-sm" title="Apri pannello nave">🚢 Damselfly</button>
-          </div>
-        </div>
 
         <!-- Pannello nave (si scambia con la griglia) -->
         <div id="ship-panel" class="hidden"></div>
@@ -229,24 +230,23 @@
             <div id="grid-container" class="grid-container"></div>
           </div>
         </section>
+
+        <!-- Log eventi -->
+        <section id="event-log-section" class="event-log-section">
+          <div class="event-log-header">
+            <span class="event-log-title">📜 Log Eventi</span>
+            <button id="btn-clear-log" class="btn-clear-log" title="Cancella log">🗑</button>
+          </div>
+          <div id="event-log" class="event-log"></div>
+        </section>
       </div><!-- /#combat-center -->
 
-      <!-- Log eventi -->
-      <section id="event-log-section" class="event-log-section">
-        <div class="event-log-header">
-          <span class="event-log-title">📜 Log Eventi</span>
-          <button id="btn-clear-log" class="btn-clear-log" title="Cancella log">🗑</button>
-        </div>
-        <div id="event-log" class="event-log"></div>
-      </section>
-
+      <!-- Dettaglio combattente selezionato -->
+      <div class="detail-area">
+        <ol id="detail-list" class="combatant-list combatant-detail"></ol>
+        <p id="empty-detail-msg" class="empty-msg hidden">Seleziona un combattente.</p>
+      </div>
     </div><!-- /.dashboard -->
-
-    <!-- Dettaglio combattente selezionato -->
-    <div class="detail-area">
-      <ol id="detail-list" class="combatant-list combatant-detail"></ol>
-      <p id="empty-detail-msg" class="empty-msg hidden">Seleziona un combattente.</p>
-    </div>
 
     <!-- Due colonne: Creature | Giocatori -->
     <div class="combat-cols">

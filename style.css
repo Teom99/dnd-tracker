@@ -642,6 +642,7 @@ body.sheet-only #col-sheet {
 
 /* Scheda aperta dalla home (non in sessione): nascondi chrome combat */
 body.sheet-only:not(.in-combat) .combat-header  { display: none; }
+body.sheet-only:not(.in-combat) #combat-toolbar { display: none; }
 body.sheet-only:not(.in-combat) .dashboard      { display: none; }
 body.sheet-only:not(.in-combat) .detail-area    { display: none; }
 body.sheet-only:not(.in-combat) #session-notes-section { display: none; }
@@ -689,11 +690,11 @@ body.sheet-only:not(.in-combat) #session-notes-section { display: none; }
 @media (min-width: 1100px) {
   .dashboard {
     display: grid;
-    grid-template-columns: 84px minmax(0, 1fr) 280px;
+    grid-template-columns: 84px minmax(0, 1fr) 340px;
     align-items: start;
   }
   .turn-rail { position: sticky; top: 0.5rem; }
-  #event-log-section { max-height: min(70vh, 640px); overflow-y: auto; }
+  .detail-area { position: sticky; top: 0.5rem; }
 
   /* Su desktop il rail + dettaglio sostituiscono le colonne card;
      resta visibile solo la colonna scheda quando aperta */
@@ -704,22 +705,21 @@ body.sheet-only:not(.in-combat) #session-notes-section { display: none; }
     margin: 0 auto;
     width: 100%;
   }
-  .detail-area { max-width: 900px; margin: 0 auto; width: 100%; }
 }
 
-/* Mobile: ordine Turni → Mia card/dettaglio → Griglia → Altri → Cronaca.
-   display:contents fa partecipare rail/center/cronaca direttamente
-   all'ordine flex di #view-combat (il dettaglio è fuori da .dashboard) */
+/* Mobile: ordine Toolbar → Turni → Mia card/dettaglio → Griglia (+cronaca) → Altri.
+   display:contents fa partecipare i figli della dashboard direttamente
+   all'ordine flex di #view-combat */
 @media (max-width: 1099px) {
   #view-combat { display: flex; flex-direction: column; }
   .dashboard       { display: contents; }
   .combat-header   { order: 0; }
   #error-message-combat { order: 1; }
-  .turn-rail       { order: 2; }
-  .detail-area     { order: 3; }
-  .combat-center   { order: 4; }
-  .combat-cols     { order: 5; }
-  #event-log-section { order: 6; }
+  #combat-toolbar  { order: 2; }
+  .turn-rail       { order: 3; }
+  .detail-area     { order: 4; }
+  .combat-center   { order: 5; }
+  .combat-cols     { order: 6; }
   #session-notes-section { order: 7; }
 
   /* Rail orizzontale scorrevole in cima */
