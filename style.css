@@ -536,16 +536,12 @@ form { display: flex; flex-direction: column; gap: 0.6rem; }
 /* ═══════════════════════════════════════════
    COMBAT VIEW — header
 ═══════════════════════════════════════════ */
+/* Header sottile: solo testo, la presenza visiva va alla toolbar sottostante */
 .combat-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: var(--bg-card);
-  border: 1px solid var(--border-warm);
-  border-top: 1px solid rgba(255,255,255,0.06);
-  border-radius: var(--radius);
-  padding: 0.7rem 1rem;
-  box-shadow: var(--shadow), inset 0 1px 0 rgba(255,255,255,0.04);
+  padding: 0 0.25rem;
   gap: 0.5rem;
 }
 
@@ -585,10 +581,13 @@ form { display: flex; flex-direction: column; gap: 0.6rem; }
 
 .round-display {
   font-family: 'Cinzel', serif;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
+  letter-spacing: 0.08em;
   color: var(--gold-light);
   white-space: nowrap;
 }
+.round-display::before { content: '⚜  '; color: var(--gold-dim); font-size: 0.8em; }
+.round-display::after  { content: '  ⚜'; color: var(--gold-dim); font-size: 0.8em; }
 
 /* ═══════════════════════════════════════════
    COMBAT VIEW — pannello master (aggiungi creatura)
