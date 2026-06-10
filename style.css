@@ -645,7 +645,6 @@ body.sheet-only:not(.in-combat) .combat-header  { display: none; }
 body.sheet-only:not(.in-combat) .dashboard      { display: none; }
 body.sheet-only:not(.in-combat) .detail-area    { display: none; }
 body.sheet-only:not(.in-combat) #session-notes-section { display: none; }
-body.sheet-only:not(.in-combat) #master-controls { display: none; }
 
 /* Su desktop dalla home: scheda a larghezza contenuta, centrata */
 @media (min-width: 1100px) {

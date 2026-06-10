@@ -748,8 +748,12 @@ document.getElementById('btn-award-xp').addEventListener('click', async () => {
   const amount = parseInt(document.getElementById('input-xp-amount')?.value) || 0;
   if (!amount || !state.session) return;
   const checked = [...document.querySelectorAll('.xp-player-check:checked')];
+  if (!checked.length) return;
   for (const cb of checked) await state.session.addXp(cb.dataset.id, amount);
+  const names = checked.map(cb => cb.dataset.name);
+  state.session.addLogEvent(`Il master ha assegnato ${amount} XP a ${_joinNames(names)}`, 'info', { amount });
   document.getElementById('input-xp-amount').value = '';
+  _xpModal.classList.add('hidden');
 });
 
 // ─── SCHEDA: Torna indietro ───────────────────────────────────────────────────
@@ -985,6 +989,49 @@ document.getElementById('btn-add-combatant-close')?.addEventListener('click', ()
 document.addEventListener('dnd:add-combatant', () =>
   document.getElementById('add-combatant-modal')?.classList.remove('hidden'));
 
+// Modal "Assegna XP" (aperto dalla toolbar, solo master in modalità XP)
+const _xpModal = document.getElementById('xp-award-modal');
+
+function _joinNames(names) {
+  return names.length > 1 ? names.slice(0, -1).join(', ') + ' e ' + names.at(-1) : (names[0] ?? '');
+}
+
+function _updateXpPreview() {
+  const amount = parseInt(document.getElementById('input-xp-amount').value) || 0;
+  const names  = [...document.querySelectorAll('.xp-player-check:checked')].map(cb => cb.dataset.name);
+  const valid  = amount > 0 && names.length > 0;
+  document.getElementById('xp-award-preview').textContent = valid ? `→ ${amount} XP a ${_joinNames(names)}` : '';
+  document.getElementById('btn-award-xp').disabled = !valid;
+}
+
+function _openXpModal() {
+  const data = state.snapshot;
+  if (!data) return;
+  const players = state.tracker.sortedCombatants(data.combatants).filter(c => c.type === 'player');
+  document.getElementById('xp-award-players').innerHTML = players.map(c => {
+    const xp  = data.xp?.[c.id] ?? 0;
+    const lvl = c.level ?? 1;
+    return `<label class="xp-player-row">
+      <input type="checkbox" class="xp-player-check" data-id="${c.id}" data-name="${esc(c.name)}" checked>
+      ${esc(c.name)} <span class="xp-player-meta">Lv.${lvl} — ${xp.toLocaleString('it')} XP</span>
+    </label>`;
+  }).join('');
+  document.getElementById('input-xp-amount').value = '';
+  _updateXpPreview();
+  _xpModal.classList.remove('hidden');
+}
+
+document.getElementById('btn-award-xp-open').addEventListener('click', _openXpModal);
+document.getElementById('btn-xp-award-close').addEventListener('click', () => _xpModal.classList.add('hidden'));
+_xpModal.addEventListener('click', (e) => { if (e.target === _xpModal) _xpModal.classList.add('hidden'); });
+_xpModal.addEventListener('input', _updateXpPreview);
+_xpModal.addEventListener('change', _updateXpPreview);
+_xpModal.querySelectorAll('.xp-quick').forEach(btn => btn.addEventListener('click', () => {
+  const inp = document.getElementById('input-xp-amount');
+  inp.value = (parseInt(inp.value) || 0) + parseInt(btn.dataset.xp);
+  _updateXpPreview();
+}));
+
 function _startListening() {
   state.session.listenNoteLocks(locks => {
     _noteLocks = locks;
@@ -1056,18 +1103,6 @@ function _startListening() {
     const selLive = document.getElementById('select-progression-mode-live');
     if (selLive) selLive.value = data.progressionMode ?? 'xp';
     document.getElementById('btn-award-xp-open')?.classList.toggle('hidden', (data.progressionMode ?? 'xp') !== 'xp');
-    const onlyPlayers = sorted.filter(c => c.type === 'player');
-    const xpPlayersEl = document.getElementById('xp-award-players');
-    if (xpPlayersEl && isMaster) {
-      xpPlayersEl.innerHTML = onlyPlayers.map(c => {
-        const xp  = data.xp?.[c.id] ?? 0;
-        const lvl = c.level ?? 1;
-        return `<label class="xp-player-row">
-          <input type="checkbox" class="xp-player-check" data-id="${c.id}" checked>
-          ${esc(c.name)} <span class="xp-player-meta">Lv.${lvl} — ${xp.toLocaleString('it')} XP</span>
-        </label>`;
-      }).join('');
-    }
 
     state.shipData = data.ship ?? null;
     if (state.shipPanelOpen) _renderShipPanel();
