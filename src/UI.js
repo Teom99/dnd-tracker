@@ -747,7 +747,7 @@ function healthHintKey(percent) {
   return 'ko';
 }
 
-function healthHintText(percent) {
+export function healthHintText(percent) {
   if (percent === 100) return '⚔ Nel pieno delle forze';
   if (percent >= 75)   return '⚔ Leggermente ferito';
   if (percent >= 50)   return '⚔ Ferito';

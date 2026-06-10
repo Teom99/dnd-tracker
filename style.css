@@ -2673,6 +2673,28 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 .rail-add .rail-ring     { background: none; }
 .rail-add .rail-portrait { border-style: dashed; border-color: var(--border-warm); color: var(--gold); }
 
+/* ─── Tooltip combattente (rail + griglia, solo desktop) ─── */
+#combat-tooltip {
+  position: fixed;
+  z-index: 200;
+  max-width: 190px;
+  background: linear-gradient(175deg, var(--bg-page), var(--bg-deep));
+  border: 1px solid var(--border-warm);
+  border-radius: 6px;
+  padding: 0.45rem 0.65rem;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.7);
+  pointer-events: none;
+  display: none;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+#combat-tooltip.visible { display: block; }
+#combat-tooltip .ct-name  { font-family: var(--font-heading); font-size: 0.85rem; color: var(--gold-light); margin-bottom: 2px; }
+#combat-tooltip .ct-hp    { color: var(--text); }
+#combat-tooltip .ct-hint  { color: var(--text-muted); font-style: italic; }
+#combat-tooltip .ct-ac    { color: #7ab4e0; }
+#combat-tooltip .ct-conds { color: var(--text-muted); }
+
 /* ═══════════════════════════════════════════
    CRONACHE — Note di sessione
 ═══════════════════════════════════════════ */
@@ -3282,14 +3304,6 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   text-shadow: 0 0 3px rgba(0,0,0,0.9);
 }
 
-.sq-tooltip-name {
-  fill: #ffffff;
-  font-family: 'Cinzel', serif;
-  font-weight: 700;
-  pointer-events: none;
-  user-select: none;
-  text-shadow: 0 0 4px rgba(0,0,0,1);
-}
 
 .grid-master-controls {
   display: flex;

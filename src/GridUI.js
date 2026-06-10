@@ -2,6 +2,8 @@
 // La griglia si adatta sempre al contenitore (viewBox), non è zoomabile né trascinabile.
 // Distanza Chebyshev (diagonali = 1), misurata bordo-a-bordo tra footprint.
 
+import { healthHintText } from './UI.js';
+
 const CELL = 40;        // lato cella nelle coordinate del viewBox
 const PAD  = 8;         // margine interno (coordinate viewBox)
 
@@ -88,6 +90,40 @@ function fmtM(d) {
 
 function esc(s) {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// ─── Tooltip combattente (solo dispositivi con hover reale) ─────────────────
+const _canHover = typeof window !== 'undefined' && window.matchMedia?.('(hover: hover)').matches;
+let _tipEl = null;
+
+function _tooltipHtml(c, isMaster) {
+  const hpVisible = isMaster || c.type !== 'creature';
+  const hpPct = c.hpMax > 0 ? Math.max(0, Math.min(100, (c.hpCurrent / c.hpMax) * 100)) : 0;
+  let hpLine = '';
+  if (hpVisible)               hpLine = `<div class="ct-hp">HP ${c.hpCurrent} / ${c.hpMax}</div>`;
+  else if (c.showHealthHint)   hpLine = `<div class="ct-hint">${esc(healthHintText(hpPct))}</div>`;
+  const acVisible = c.type !== 'creature' || isMaster || c.showAC === true;
+  const acLine = (acVisible && c.armorClass != null) ? `<div class="ct-ac">CA ${esc(String(c.armorClass))}</div>` : '';
+  const conds = c.conditions ? Object.keys(c.conditions) : [];
+  const condLine = conds.length ? `<div class="ct-conds">${conds.map(esc).join(' · ')}</div>` : '';
+  return `<div class="ct-name">${esc(c.name)}</div>${hpLine}${acLine}${condLine}`;
+}
+
+export function showCombatTooltip(c, isMaster, x, y) {
+  if (!_canHover || !c) return;
+  if (!_tipEl) {
+    _tipEl = document.createElement('div');
+    _tipEl.id = 'combat-tooltip';
+    document.body.appendChild(_tipEl);
+  }
+  _tipEl.innerHTML = _tooltipHtml(c, isMaster);
+  _tipEl.style.left = `${Math.min(x + 14, window.innerWidth - 200)}px`;
+  _tipEl.style.top  = `${Math.min(y + 14, window.innerHeight - 130)}px`;
+  _tipEl.classList.add('visible');
+}
+
+export function hideCombatTooltip() {
+  _tipEl?.classList.remove('visible');
 }
 
 // ─── Re-render callback (resize) ─────────────────────────────────────────────
@@ -209,29 +245,13 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     return true;
   }
 
-  // Tooltip nome al passaggio del mouse
-  let nameTooltip = null;
+  // Tooltip combattente al passaggio del mouse (condiviso con la rail)
   svg.addEventListener('mousemove', (e) => {
     const hit = e.target.closest('.sq-hit');
-    if (!hit) { nameTooltip?.remove(); nameTooltip = null; return; }
-    const c = parseInt(hit.dataset.c), r = parseInt(hit.dataset.r);
-    const occId = occCell[`${c}_${r}`];
+    const occId = hit ? occCell[`${parseInt(hit.dataset.c)}_${parseInt(hit.dataset.r)}`] : null;
     const occ   = occId ? comb[occId] : null;
-    if (occ) {
-      const { x, y } = cellXY(c, r);
-      if (!nameTooltip) {
-        nameTooltip = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        nameTooltip.setAttribute('class', 'sq-tooltip-name');
-        nameTooltip.setAttribute('text-anchor', 'middle');
-        nameTooltip.setAttribute('font-size', '13');
-        svg.appendChild(nameTooltip);
-      }
-      nameTooltip.setAttribute('x', x + CELL / 2);
-      nameTooltip.setAttribute('y', y - 6);
-      nameTooltip.textContent = occ.name;
-    } else {
-      nameTooltip?.remove(); nameTooltip = null;
-    }
+    if (occ) showCombatTooltip(occ, isMaster, e.clientX, e.clientY);
+    else hideCombatTooltip();
   });
 
   svg.addEventListener('mouseover', (e) => {
@@ -242,7 +262,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   });
   svg.addEventListener('mouseleave', () => {
     svg.querySelectorAll('.sq.sq-hover').forEach(h => h.classList.remove('sq-hover'));
-    nameTooltip?.remove(); nameTooltip = null;
+    hideCombatTooltip();
   });
 
   svg.addEventListener('click', (e) => {
@@ -324,6 +344,13 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
     if (!li) return;
     onSelect(li.dataset.id === selectedId ? null : li.dataset.id);
   };
+  container.onmousemove = (e) => {
+    const li = e.target.closest('li[data-id]');
+    if (!li) { hideCombatTooltip(); return; }
+    const c = sortedCombatants.find(x => x.id === li.dataset.id);
+    if (c) showCombatTooltip(c, isMaster, e.clientX, e.clientY);
+  };
+  container.onmouseleave = () => hideCombatTooltip();
 }
 
 // ─── Controlli griglia (solo reset; nessun pan/zoom) ─────────────────────────
