@@ -169,6 +169,20 @@ export function markLogsSeen() {
   _updateLogBadge();
 }
 
+// Riporta la cronaca allo stato iniziale (chiusa, badge azzerato): da chiamare
+// quando si esce dalla sessione, perché lo stato è per client e in memoria.
+export function resetLogState() {
+  _logTotal    = 0;
+  _logSeen     = 0;
+  _logSeenInit = false;
+  lastLogId    = null;
+  const section = document.getElementById('event-log-section');
+  const chevron = document.getElementById('event-log-chevron');
+  if (section) section.classList.add('collapsed');
+  if (chevron) chevron.textContent = '▾';
+  document.getElementById('event-log-badge')?.classList.add('hidden');
+}
+
 let lastLogId = null;
 
 export function renderLogs(logsObj) {

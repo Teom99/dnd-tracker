@@ -26,6 +26,7 @@ export function exitToHome(errorMessage) {
   const submitBtn = document.querySelector('#form-join [type="submit"]');
   if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Entra nella Sessione'; }
   document.body.classList.remove('in-combat', 'has-sheet', 'sheet-only');
+  UI.resetLogState();
   UI.showView('view-home');
   if (errorMessage) UI.showError(errorMessage);
 }
