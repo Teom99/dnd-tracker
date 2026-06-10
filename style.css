@@ -1441,6 +1441,13 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 /* ═══════════════════════════════════════════
    COMBAT HEADER — exit button
 ═══════════════════════════════════════════ */
+.combat-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
 .btn-exit-session {
   padding: 0.25rem 0.55rem;
   background: transparent;

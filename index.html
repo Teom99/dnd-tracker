@@ -144,7 +144,13 @@
         <button id="btn-copy-code" class="btn-copy" title="Copia codice">📋 Copia</button>
       </div>
       <span id="round-display" class="round-display">Round 1</span>
-      <button id="btn-exit-session" class="btn-exit-session" title="Esci dalla sessione">← Esci</button>
+      <div class="combat-header-actions">
+        <select id="select-progression-mode-live" class="btn-secondary btn-sm hidden" title="Modalità progressione">
+          <option value="xp">XP</option>
+          <option value="milestone">Milestone</option>
+        </select>
+        <button id="btn-exit-session" class="btn-exit-session" title="Esci dalla sessione">← Esci</button>
+      </div>
     </header>
 
     <div id="error-message-combat" class="error-banner hidden"></div>
@@ -165,10 +171,6 @@
           <div id="master-controls" class="master-controls hidden">
             <button id="btn-next-turn" class="btn-primary btn-next">Turno Successivo ▶</button>
             <button id="btn-award-xp-open" class="btn-secondary btn-sm">✨ Assegna XP</button>
-            <select id="select-progression-mode-live" class="btn-secondary btn-sm" title="Modalità progressione">
-              <option value="xp">XP</option>
-              <option value="milestone">Milestone</option>
-            </select>
             <button id="btn-reset" class="btn-danger">↺ Reset Incontro</button>
           </div>
           <div class="combat-toolbar-shared">

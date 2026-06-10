@@ -207,6 +207,7 @@ export function renderRound(round) {
 export function renderMasterPanel(isMaster) {
   document.getElementById('master-add-form')?.classList.toggle('hidden', !isMaster);
   document.getElementById('master-controls')?.classList.toggle('hidden', !isMaster);
+  document.getElementById('select-progression-mode-live')?.classList.toggle('hidden', !isMaster);
   document.getElementById('player-pet-form')?.classList.toggle('hidden', isMaster);
 }
 
