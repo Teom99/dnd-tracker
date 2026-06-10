@@ -1,5 +1,5 @@
 // Griglia quadrata. 1 cella = 1 m. Dimensioni guidate da gridConfig.
-// La griglia si adatta sempre al contenitore (viewBox), non è zoomabile né trascinabile.
+// La griglia si adatta al contenitore (viewBox); zoom 1×-3× con bottoni, pan via scroll nativo.
 // Distanza euclidea bordo-a-bordo tra footprint, arrotondata al mezzo metro.
 
 import { healthHintText } from './UI.js';
@@ -134,6 +134,34 @@ function tokenBaseColors(occ, isMyToken) {
   return { fill: '#2a100c', stroke: '#a84a3a' };
 }
 
+// ─── Zoom griglia (stato locale per client; pan via scroll nativo) ──────────
+const ZOOM_LEVELS = [1, 1.5, 2, 2.5, 3];
+let _zoom = 1;
+
+function _applyZoom(container) {
+  const svg = container?.querySelector('svg');
+  if (!svg) return;
+  svg.setAttribute('width', `${_zoom * 100}%`);
+  svg.setAttribute('height', `${_zoom * 100}%`);
+  container.classList.toggle('grid-zoomed', _zoom > 1);
+}
+
+function _updateZoomButtons() {
+  const i = ZOOM_LEVELS.indexOf(_zoom);
+  const btnIn  = document.getElementById('btn-zoom-in');
+  const btnOut = document.getElementById('btn-zoom-out');
+  const btnFit = document.getElementById('btn-zoom-fit');
+  if (btnIn)  btnIn.disabled  = i >= ZOOM_LEVELS.length - 1;
+  if (btnOut) btnOut.disabled = i <= 0;
+  if (btnFit) btnFit.disabled = _zoom === 1;
+}
+
+function _setZoom(z) {
+  _zoom = z;
+  _applyZoom(document.getElementById('grid-container'));
+  _updateZoomButtons();
+}
+
 // ─── Re-render callback (resize) ─────────────────────────────────────────────
 
 let _reRenderCallback = null;
@@ -228,9 +256,16 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     }
   }
 
+  // Preserva lo scroll del contenitore attraverso il rebuild (il clamp temporaneo lo azzererebbe)
+  const prevScrollLeft = container.scrollLeft;
+  const prevScrollTop  = container.scrollTop;
+
   container.innerHTML =
     `<svg class="sq-svg" viewBox="0 0 ${vbW} ${vbH}" preserveAspectRatio="xMidYMid meet" width="100%" height="100%">${inner}</svg>`;
   container.classList.toggle('grid-edit-active', !!editMode);
+  _applyZoom(container);
+  container.scrollLeft = prevScrollLeft;
+  container.scrollTop  = prevScrollTop;
 
   // Aggiorna il contesto usato dal disegno muri con drag e assicura il binding.
   _ctx = { cols, rows, wall, occCell, isMaster, editMode: !!editMode, onSetWall };
@@ -405,11 +440,21 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
   container.onmouseleave = () => hideCombatTooltip();
 }
 
-// ─── Controlli griglia (solo reset; nessun pan/zoom) ─────────────────────────
+// ─── Controlli griglia (reset e zoom a bottoni) ──────────────────────────────
 
 let _gridControlsBound = false;
 export function initGridControls(onGridReset) {
   if (_gridControlsBound) return;
   _gridControlsBound = true;
   document.getElementById('btn-grid-reset')?.addEventListener('click', () => onGridReset?.());
+  document.getElementById('btn-zoom-in')?.addEventListener('click', () => {
+    const i = ZOOM_LEVELS.indexOf(_zoom);
+    if (i < ZOOM_LEVELS.length - 1) _setZoom(ZOOM_LEVELS[i + 1]);
+  });
+  document.getElementById('btn-zoom-out')?.addEventListener('click', () => {
+    const i = ZOOM_LEVELS.indexOf(_zoom);
+    if (i > 0) _setZoom(ZOOM_LEVELS[i - 1]);
+  });
+  document.getElementById('btn-zoom-fit')?.addEventListener('click', () => _setZoom(1));
+  _updateZoomButtons();
 }

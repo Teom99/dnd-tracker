@@ -2567,6 +2567,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   min-width: 0;
   height: min(70vh, 620px);
 }
+.grid-container.grid-zoomed { overflow: auto; }
 .grid-container.grid-edit-active { user-select: none; }
 .grid-container.grid-edit-active .sq-hit { cursor: crosshair; }
 
@@ -2593,6 +2594,8 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   color: var(--gold-light);
   border-color: var(--gold);
 }
+
+.grid-zoom-btn:disabled { opacity: 0.4; cursor: default; }
 
 .grid-layout {
   display: flex;
