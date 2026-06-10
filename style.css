@@ -2631,53 +2631,47 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 3px;
   cursor: pointer;
   min-width: 52px;
 }
 
+/* Fazione: anello HP (--ring-c) e bordo interno fisso (--ring-b) */
+.rail-item.pg   { --ring-c: #5e8f54; --ring-b: #3e5e38; }
+.rail-item.foe  { --ring-c: #a83232; --ring-b: #6e2222; }
+.rail-item.ally { --ring-c: #b8954a; --ring-b: #7a6230; }
+
+/* Anello esterno: si svuota in senso orario con gli HP (--hp = percentuale) */
+.rail-ring {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: conic-gradient(var(--ring-c) calc(var(--hp, 100) * 1%), var(--hp-bar-bg) 0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: box-shadow .15s;
+}
+
 .rail-portrait {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   background: var(--bg-card);
-  border: 2px solid var(--border-warm);
+  border: 2px solid var(--ring-b, var(--border-warm));
   font-family: var(--font-heading);
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: var(--text);
-  transition: border-color .15s, box-shadow .15s;
 }
-.rail-item.pg .rail-portrait { border-color: #4a7a42; }
-.rail-item.active-turn .rail-portrait {
-  border-color: var(--gold);
-  box-shadow: 0 0 12px var(--gold-glow);
-}
-.rail-item.selected .rail-portrait { border-color: var(--gold-light); border-style: double; }
+
+.rail-item.active-turn .rail-ring { box-shadow: 0 0 12px var(--gold-glow); }
+.rail-item.selected .rail-ring    { outline: 2px solid var(--gold-light); outline-offset: 2px; }
 .rail-item.ko { opacity: 0.45; }
 
-.rail-hp {
-  width: 42px;
-  height: 4px;
-  background: var(--hp-bar-bg);
-  border-radius: 99px;
-  overflow: hidden;
-}
-.rail-hp-fill     { height: 100%; background: linear-gradient(90deg, #5e1e1e, #9c3030); }
-.rail-hp-fill.pg  { background: linear-gradient(90deg, #3e5e38, #5e8f54); }
-.rail-hp-hidden   { visibility: hidden; }
-
-.rail-name {
-  font-size: 0.62rem;
-  color: var(--text-muted);
-  max-width: 64px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.rail-add .rail-portrait { border-style: dashed; color: var(--gold); }
+.rail-add .rail-ring     { background: none; }
+.rail-add .rail-portrait { border-style: dashed; border-color: var(--border-warm); color: var(--gold); }
 
 /* ═══════════════════════════════════════════
    CRONACHE — Note di sessione

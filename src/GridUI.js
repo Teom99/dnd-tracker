@@ -295,28 +295,25 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
     // HP visibile: master sempre; per i player solo PG/pet (le creature restano nascoste)
     const hpVisible = isMaster || c.type !== 'creature';
     const hpPct = c.hpMax > 0 ? Math.max(0, Math.min(100, (c.hpCurrent / c.hpMax) * 100)) : 0;
-    const hpBar = hpVisible
-      ? `<div class="rail-hp"><div class="rail-hp-fill${c.type === 'creature' ? '' : ' pg'}" style="width:${hpPct}%"></div></div>`
-      : '<div class="rail-hp rail-hp-hidden"></div>';
+    const ringPct = hpVisible ? hpPct : 100;
 
+    const isPg = c.type === 'player' || c.type === 'pet';
     let cls = 'rail-item';
+    cls += isPg ? ' pg' : (c.faction === 'good' ? ' ally' : ' foe');
     if (isActive)   cls += ' active-turn';
     if (isSelected) cls += ' selected';
     if (isKO)       cls += ' ko';
-    if (c.type === 'player' || c.type === 'pet') cls += ' pg';
 
     html += `
-      <li class="${cls}" data-id="${c.id}" title="${esc(c.name)}">
-        <span class="rail-portrait">${isKO ? '💀' : esc((c.name || '?').slice(0, 2).toUpperCase())}</span>
-        ${hpBar}
-        <span class="rail-name">${esc(c.name)}</span>
+      <li class="${cls}" data-id="${c.id}" style="--hp:${ringPct.toFixed(0)}">
+        <span class="rail-ring"><span class="rail-portrait">${isKO ? '💀' : esc((c.name || '?').slice(0, 2).toUpperCase())}</span></span>
       </li>`;
   }
 
   if (isMaster && onAddCombatant) {
-    html += `<li class="rail-item rail-add" data-action="add-combatant" title="Aggiungi alla battaglia"><span class="rail-portrait">＋</span></li>`;
+    html += `<li class="rail-item rail-add" data-action="add-combatant" title="Aggiungi alla battaglia"><span class="rail-ring"><span class="rail-portrait">＋</span></span></li>`;
   } else if (!isMaster && onAddCombatant) {
-    html += `<li class="rail-item rail-add" data-action="add-combatant" title="Aggiungi compagno"><span class="rail-portrait">🐾</span></li>`;
+    html += `<li class="rail-item rail-add" data-action="add-combatant" title="Aggiungi compagno"><span class="rail-ring"><span class="rail-portrait">🐾</span></span></li>`;
   }
 
   container.innerHTML = html;
