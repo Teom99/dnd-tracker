@@ -1102,7 +1102,7 @@ function _startListening() {
     // Progressione: aggiorna controlli master
     const selLive = document.getElementById('select-progression-mode-live');
     if (selLive) selLive.value = data.progressionMode ?? 'xp';
-    document.getElementById('btn-award-xp-open')?.classList.toggle('hidden', (data.progressionMode ?? 'xp') !== 'xp');
+    document.getElementById('btn-award-xp-open')?.classList.toggle('hidden', !isMaster || (data.progressionMode ?? 'xp') !== 'xp');
 
     state.shipData = data.ship ?? null;
     if (state.shipPanelOpen) _renderShipPanel();
