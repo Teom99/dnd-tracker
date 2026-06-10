@@ -148,6 +148,27 @@ export function renderSessionNotes(notesObj, canEdit, expandedIds, noteLocks = {
   });
 }
 
+// ─── Badge eventi non letti (cronaca a fisarmonica, stato per client) ────────
+let _logTotal    = 0;
+let _logSeen     = 0;
+let _logSeenInit = false;
+
+function _updateLogBadge() {
+  const badge   = document.getElementById('event-log-badge');
+  const section = document.getElementById('event-log-section');
+  if (!badge || !section) return;
+  if (_logSeen > _logTotal) _logSeen = _logTotal;                       // log cancellati
+  if (!section.classList.contains('collapsed')) _logSeen = _logTotal;  // aperta: tutto visto
+  const unseen = _logTotal - _logSeen;
+  badge.textContent = unseen > 99 ? '99+' : String(unseen);
+  badge.classList.toggle('hidden', unseen === 0);
+}
+
+export function markLogsSeen() {
+  _logSeen = _logTotal;
+  _updateLogBadge();
+}
+
 let lastLogId = null;
 
 export function renderLogs(logsObj) {
@@ -157,10 +178,13 @@ export function renderLogs(logsObj) {
   // Rendi vuoto il container per riscriverlo
   logContainer.innerHTML = '';
   
-  if (!logsObj) return;
-
   // Ordina i log per timestamp decrescente (più recenti in alto)
-  const logsArray = Object.values(logsObj).sort((a, b) => b.timestamp - a.timestamp);
+  const logsArray = Object.values(logsObj || {}).sort((a, b) => b.timestamp - a.timestamp);
+
+  // Badge non letti: al primo render i log già presenti contano come visti
+  _logTotal = logsArray.length;
+  if (!_logSeenInit) { _logSeenInit = true; _logSeen = _logTotal; }
+  _updateLogBadge();
   
   // Teniamo solo gli ultimi 100 per non appesantire il DOM
   const recentLogs = logsArray.slice(0, 100);

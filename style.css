@@ -3148,27 +3148,43 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   background: var(--bg-panel);
   border: 1px solid var(--border-dim);
   border-radius: var(--radius);
-  padding: 0.85rem 1rem;
   box-shadow: inset 0 0 24px rgba(0,0,0,0.3);
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  height: fit-content;
-  max-height: calc(100vh - 200px);
 }
 
 .event-log-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  cursor: pointer;
+  user-select: none;
 }
+.event-log-header:hover .event-log-title { color: var(--gold); }
 
 .event-log-title {
   font-family: 'Cinzel', serif;
   font-size: 0.95rem;
   color: var(--gold-light);
+  transition: color 0.15s;
 }
+
+.event-log-flex-spacer { flex: 1; }
+
+.event-log-badge {
+  background: var(--wax);
+  color: var(--text);
+  border-radius: 999px;
+  font-size: 0.72rem;
+  line-height: 1;
+  padding: 0.22rem 0.5rem;
+}
+
+.event-log-chevron { color: var(--text-muted); font-size: 0.8rem; }
+
+.event-log-section.collapsed .event-log { display: none; }
+.event-log-section.collapsed .btn-clear-log { display: none; }
 
 .btn-clear-log {
   background: transparent;
@@ -3187,7 +3203,8 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
-  max-height: 400px;
+  padding: 0 0.85rem 0.85rem;
+  max-height: 220px;
   overflow-y: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--border-warm) transparent;

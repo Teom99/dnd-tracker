@@ -541,6 +541,14 @@ document.getElementById('btn-clear-log').addEventListener('click', () => {
   }
 });
 
+document.getElementById('event-log-header').addEventListener('click', (e) => {
+  if (e.target.closest('#btn-clear-log')) return;
+  const section   = document.getElementById('event-log-section');
+  const collapsed = section.classList.toggle('collapsed');
+  document.getElementById('event-log-chevron').textContent = collapsed ? '▾' : '▴';
+  if (!collapsed) UI.markLogsSeen();
+});
+
 document.getElementById('btn-toggle-ship').addEventListener('click', () => {
   state.shipPanelOpen = !state.shipPanelOpen;
   // La nave si scambia con la griglia nello slot centrale della dashboard
@@ -969,7 +977,7 @@ function _renderDetailPanel(data, sorted, callbacks, progressionData) {
   UI.renderCombatantList(detailComb, data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, state.sheetData?.deathSaves ?? null, progressionData, 'detail-list', 'empty-detail-msg', sorted);
 }
 
-// Selezione cambiata da griglia/rail/token-bar: ri-renderizza solo il dettaglio
+// Selezione cambiata da griglia/rail: ri-renderizza solo il dettaglio
 document.addEventListener('dnd:selection-changed', () => {
   const data = state.snapshot;
   if (!data) return;

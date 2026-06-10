@@ -230,11 +230,14 @@
           </div>
         </section>
 
-        <!-- Log eventi -->
-        <section id="event-log-section" class="event-log-section">
-          <div class="event-log-header">
-            <span class="event-log-title">📜 Log Eventi</span>
+        <!-- Cronaca (fisarmonica sotto la griglia, default chiusa) -->
+        <section id="event-log-section" class="event-log-section collapsed">
+          <div id="event-log-header" class="event-log-header">
+            <span class="event-log-title">📜 Cronaca</span>
+            <span id="event-log-badge" class="event-log-badge hidden"></span>
+            <span class="event-log-flex-spacer"></span>
             <button id="btn-clear-log" class="btn-clear-log" title="Cancella log">🗑</button>
+            <span id="event-log-chevron" class="event-log-chevron">▾</span>
           </div>
           <div id="event-log" class="event-log"></div>
         </section>
