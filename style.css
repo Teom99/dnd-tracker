@@ -2677,7 +2677,6 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.rail-dist { font-size: 0.6rem; color: var(--gold-dim); }
 .rail-add .rail-portrait { border-style: dashed; color: var(--gold); }
 
 /* ═══════════════════════════════════════════

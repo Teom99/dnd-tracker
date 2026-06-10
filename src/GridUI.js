@@ -286,24 +286,11 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
 export function renderInitiativeList(container, sortedCombatants, gridPos, myCombatantId, selectedId, currentTurnId, isMaster, onSelect, combatants, onAddCombatant) {
   if (!container) return;
 
-  const pos  = gridPos || {};
-  const comb = combatants || {};
-  const referenceId = selectedId || myCombatantId;
-  const refPos  = referenceId ? pos[referenceId] : null;
-  const refSide = referenceId ? footprintOf(comb[referenceId]?.size) : 1;
-
   let html = '';
   for (const c of sortedCombatants) {
     const isActive   = c.id === currentTurnId;
     const isSelected = c.id === selectedId;
     const isKO       = c.hpCurrent === 0;
-    const cPos = pos[c.id];
-
-    let distText = '';
-    if (refPos && cPos && c.id !== referenceId) {
-      const d = squareDistance(refPos.col, refPos.row, refSide, cPos.col, cPos.row, footprintOf(c.size));
-      distText = `<span class="rail-dist">${fmtM(d)}</span>`;
-    }
 
     // HP visibile: master sempre; per i player solo PG/pet (le creature restano nascoste)
     const hpVisible = isMaster || c.type !== 'creature';
@@ -323,7 +310,6 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
         <span class="rail-portrait">${isKO ? '💀' : esc((c.name || '?').slice(0, 2).toUpperCase())}</span>
         ${hpBar}
         <span class="rail-name">${esc(c.name)}</span>
-        ${distText}
       </li>`;
   }
 
