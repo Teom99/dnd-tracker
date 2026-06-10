@@ -1,6 +1,6 @@
 // Griglia quadrata. 1 cella = 1 m. Dimensioni guidate da gridConfig.
 // La griglia si adatta sempre al contenitore (viewBox), non è zoomabile né trascinabile.
-// Distanza Chebyshev (diagonali = 1), misurata bordo-a-bordo tra footprint.
+// Distanza euclidea bordo-a-bordo tra footprint, arrotondata al mezzo metro.
 
 import { healthHintText } from './UI.js';
 
@@ -77,11 +77,11 @@ function axisDist(a1, a2, b1, b2) {
   return Math.max(0, Math.max(a1, b1) - Math.min(a2, b2));
 }
 
-// Distanza Chebyshev bordo-a-bordo tra due footprint quadrati.
+// Distanza euclidea bordo-a-bordo tra due footprint quadrati, arrotondata al mezzo metro.
 export function squareDistance(c1, r1, n1, c2, r2, n2) {
   const dc = axisDist(c1, c1 + n1 - 1, c2, c2 + n2 - 1);
   const dr = axisDist(r1, r1 + n1 - 1, r2, r2 + n2 - 1);
-  return Math.max(dc, dr);
+  return Math.round(Math.hypot(dc, dr) * 2) / 2;
 }
 
 function fmtM(d) {
