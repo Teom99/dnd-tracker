@@ -194,7 +194,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     let fill, stroke;
     if (isMyToken)      { fill = '#16240f'; stroke = isSelected ? '#9ccf6e' : '#5e8f54'; }
     else if (isPlayer)  { fill = '#13241c'; stroke = isSelected ? '#d4af5e' : isActive ? '#e3c87e' : '#4a8a6e'; }
-    else if (occ.faction === 'good') { fill = 'rgba(138,109,50,0.35)'; stroke = isSelected ? '#d4af5e' : isActive ? '#e3c87e' : '#b8954a'; }
+    else if (occ.faction === 'good') { fill = '#2b2110'; stroke = isSelected ? '#d4af5e' : isActive ? '#e3c87e' : '#b8954a'; }
     else                { fill = '#2a100c'; stroke = isSelected ? '#d4af5e' : isActive ? '#e3c87e' : '#a84a3a'; }
     if (isDead) { fill = '#3a352c'; stroke = '#6e6657'; }
 
