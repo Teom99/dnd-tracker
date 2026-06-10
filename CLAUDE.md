@@ -27,7 +27,7 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | `src/CharacterSheet.js` | Scheda PG: lettura/scrittura su `characters/{uid}/{charId}/` |
 | `src/UI.js` | Render lista combattenti, modal condizioni, death saves inline, render log (`renderLogs`) |
 | `src/SheetUI.js` | Render scheda personaggio (abilità, slot, incantesimi, inventario) |
-| `src/GridUI.js` | Griglia quadrata SVG (dimensioni da `gridConfig`, 1 casella = 1m), muri, token multi-cella per taglia; `renderInitiativeList` = rail dei turni (ritratti + mini-barre HP + bottone aggiungi) |
+| `src/GridUI.js` | Griglia quadrata SVG (dimensioni da `gridConfig`, 1 casella = 1m), muri, token multi-cella per taglia; `renderInitiativeList` = rail dei turni (ritratti con anello HP color fazione + bottone aggiungi); tooltip hover condiviso (`showCombatTooltip`) |
 
 ---
 
@@ -79,7 +79,7 @@ userSessions/{uid}/{code}/
 - HP max editabile inline (card combat) e dalla scheda PG, con sync automatico al combattente
 - CA sincronizzata dalla scheda al combattente in real-time
 - Griglia quadrata: si adatta sempre al contenitore (SVG `viewBox` + `preserveAspectRatio`), niente pan/zoom né bordo perimetrale; dimensioni fisse decise dal master in "Modifica griglia" (`gridConfig`, default 20x20, resize anytime con drop fuori bordi); in modalità modifica il master clicca le caselle vuote per disegnare/rimuovere muri (bloccano il movimento); reset (solo master) svuota token e muri
-- Taglia token: Piccola/Media (1×1), Grande (2×2), Enorme (3×3), Mastodontica (4×4); default dalla libreria/scheda, override del master in sessione; distanza Chebyshev bordo-a-bordo (1 casella = 1m)
+- Taglia token: Piccola/Media (1×1), Grande (2×2), Enorme (3×3), Mastodontica (4×4); default dalla libreria/scheda, override del master in sessione; distanza euclidea bordo-a-bordo arrotondata al mezzo metro (1 casella = 1m)
 - Token giocatore evidenziati in verde; movimento valida bordi, muri e sovrapposizioni sull'intero footprint
 - Token morti grigi con teschio
 - Tasto "Fine Turno" sulla card del giocatore attivo
@@ -96,7 +96,7 @@ userSessions/{uid}/{code}/
 - Campo `spellBonusModifier` per modificatore extra su CD e bonus attacco magia
 - Refactor struttura progetto: `app.js` ridotto, stato in `src/state.js`, logica in moduli separati
 - Fix inventario: risolta eliminazione oggetti e blocco form; allineamento tasti rimozione a destra
-- Redesign "Grimorio miniato" (spec in `docs/superpowers/specs/2026-06-10-grimoire-redesign-design.md`): tema unico (rimossi toggle 🎨 e `theme-old`), design system a token CSS, vista combat come dashboard tattica — rail turni (`#grid-initiative-list` con classi `rail-*`), griglia centrale (nave/scena si scambiano col tabellone), cronaca laterale, pannello dettaglio (`#detail-list`) che mostra `state.selectedGridTokenId ?? currentTurnId` (selezione resettata a ogni cambio turno); form aggiungi-creatura/compagno nel modal `#add-combatant-modal` (eventi `dnd:add-combatant`, `dnd:selection-changed`); su desktop ≥1100px le colonne card sono nascoste, su mobile restano come "altri combattenti"; header combat a una riga (sessione | round | esci) con toolbar azioni `#combat-toolbar` in cima a `#combat-center` (master: turno/XP/progressione/reset; tutti: scena/nave); assegnazione XP nel modal `#xp-award-modal` (importi rapidi, anteprima, log in cronaca, lista popolata all'apertura); rail iniziativa senza distanze (restano le etichette sui token della griglia)
+- Redesign "Grimorio miniato" (spec in `docs/superpowers/specs/2026-06-10-grimoire-redesign-design.md`): tema unico (rimossi toggle 🎨 e `theme-old`), design system a token CSS, vista combat come dashboard tattica — rail turni (`#grid-initiative-list` con classi `rail-*`), griglia centrale (nave/scena si scambiano col tabellone), cronaca laterale, pannello dettaglio (`#detail-list`) che mostra `state.selectedGridTokenId ?? currentTurnId` (selezione resettata a ogni cambio turno); form aggiungi-creatura/compagno nel modal `#add-combatant-modal` (eventi `dnd:add-combatant`, `dnd:selection-changed`); su desktop ≥1100px le colonne card sono nascoste, su mobile restano come "altri combattenti"; header combat a una riga (sessione | round | esci) con toolbar azioni `#combat-toolbar` in cima a `#combat-center` (master: turno/XP/progressione/reset; tutti: scena/nave); assegnazione XP nel modal `#xp-award-modal` (importi rapidi, anteprima, log in cronaca, lista popolata all'apertura); rail iniziativa senza distanze (restano le etichette sui token della griglia); rail con soli ritratti ad anello HP (verde PG, rosso avversari, oro alleati; pieno per i giocatori sulle creature), tooltip essenziale on hover su rail e griglia (solo desktop, regole visibilità HP/CA invariate), select XP/Milestone nell'header solo master
 
 ### Bug noti non ancora risolti
 Nessuno al momento.
