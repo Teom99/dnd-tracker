@@ -278,17 +278,20 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     ghostEl.setAttribute('transform', `translate(${x + inset}, ${y + inset})`);
   }
 
-  // Tooltip combattente + ghost di anteprima al passaggio del mouse
+  // Tooltip combattente + ghost di anteprima al passaggio del mouse.
+  // Durante lo spostamento (token selezionato spostabile) il tooltip è soppresso: si vede solo il ghost.
   svg.addEventListener('mousemove', (e) => {
     const hit = e.target.closest('.sq-hit');
     const occId = hit ? occCell[`${parseInt(hit.dataset.c)}_${parseInt(hit.dataset.r)}`] : null;
     const occ   = occId ? comb[occId] : null;
-    if (occ) showCombatTooltip(occ, isMaster, e.clientX, e.clientY);
+    if (occ && !canMoveSelected) showCombatTooltip(occ, isMaster, e.clientX, e.clientY);
     else hideCombatTooltip();
 
     if (!canMoveSelected || !hit) { hideGhost(); return; }
     const col = parseInt(hit.dataset.c), row = parseInt(hit.dataset.r);
-    if (occId === selectedId || !canPlace(col, row, selSide, selectedId)) { hideGhost(); return; }
+    const selAnchor = pos[selectedId];
+    const isAnchor  = selAnchor && col === selAnchor.col && row === selAnchor.row;
+    if (isAnchor || !canPlace(col, row, selSide, selectedId)) { hideGhost(); return; }
     showGhost(col, row);
   });
 
@@ -315,6 +318,16 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     if (editMode && isMaster) return;
 
     if (occupantId) {
+      // Click sul token selezionato e spostabile: le celle del footprint sono destinazioni
+      // (la cella cliccata diventa la nuova ancora top-left; sull'ancora attuale = deselezione)
+      if (occupantId === selectedId && (isMaster || myOwnedIds.has(selectedId))) {
+        const selAnchor = pos[selectedId];
+        if (selAnchor && !(col === selAnchor.col && row === selAnchor.row) && canPlace(col, row, selSide, selectedId)) {
+          onMove(selectedId, col, row);
+        }
+        onSelect(null);
+        return;
+      }
       // Click su token → seleziona/deseleziona
       onSelect(occupantId === selectedId ? null : occupantId);
       return;
