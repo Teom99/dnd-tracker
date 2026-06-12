@@ -326,34 +326,32 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       .filter(Boolean).join(' ');
     li.dataset.combatantId = c.id;
 
-    // ─ Barra XP / level-up (solo player)
+    // ─ XP / level-up (solo player): la barra è la cornice del ritratto (.fc-pframe)
     let xpSectionHtml = '';
+    let xpPct         = 0;
+    let xpTitle       = '';
+    let levelUpReady  = false;
     if (c.type === 'player') {
       const { mode = 'xp', xp = {}, levelUpGranted = {} } = progressionData;
-      const combXp      = xp[c.id] ?? 0;
-      const level       = c.level ?? 1;
-      const levelUpReady = mode === 'xp'
+      const combXp = xp[c.id] ?? 0;
+      const level  = c.level ?? 1;
+      levelUpReady = mode === 'xp'
         ? (level < 20 && combXp >= XP_THRESHOLDS[level])
         : (levelUpGranted[c.id] === true);
 
       if (mode === 'xp') {
         if (level >= 20) {
-          xpSectionHtml = `<div class="xp-section"><span class="xp-label">XP: ${combXp.toLocaleString('it')} — Livello massimo</span></div>`;
+          xpPct   = 1;
+          xpTitle = `XP: ${combXp.toLocaleString('it')} — Livello massimo`;
         } else {
-          const hi  = XP_THRESHOLDS[level] ?? XP_THRESHOLDS[19];
-          const pct = Math.min(100, Math.max(0, Math.round(combXp / hi * 100))) || 0;
-          xpSectionHtml = `<div class="xp-section">
-            <span class="xp-label">XP: ${combXp.toLocaleString('it')} / ${hi.toLocaleString('it')} per Lv.${level + 1}</span>
-            <div class="xp-bar-track"><div class="xp-bar-fill" style="width:${pct}%"></div></div>
-          </div>`;
+          const hi = XP_THRESHOLDS[level] ?? XP_THRESHOLDS[19];
+          xpPct    = Math.min(1, Math.max(0, combXp / hi)) || 0;
+          xpTitle  = `XP: ${combXp.toLocaleString('it')} / ${hi.toLocaleString('it')} per Lv.${level + 1}`;
         }
       }
 
-      if (levelUpReady) {
-        xpSectionHtml += `<div class="levelup-badge">✨ Pronto per salire!</div>`;
-        if (isOwnCard) {
-          xpSectionHtml += `<button class="btn btn--primary btn--sm" data-id="${c.id}" data-action="levelup">⬆ Sali di livello</button>`;
-        }
+      if (levelUpReady && isOwnCard) {
+        xpSectionHtml += `<button class="btn btn--primary btn--sm" data-id="${c.id}" data-action="levelup">⬆ Sali di livello</button>`;
       }
 
       if (isMaster && mode === 'milestone' && !levelUpGranted[c.id]) {
@@ -370,9 +368,16 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         : null,
     ].filter(Boolean).join(' · ');
 
+    const portraitIcon  = isCreature ? '👹' : isPet ? '🐾' : '⚔';
+    const portraitHtml  = c.type === 'player'
+      ? `<div class="fc-pframe${levelUpReady ? ' lvlup' : ''}" style="--xp:${(levelUpReady ? 1 : xpPct).toFixed(3)};"${xpTitle ? ` title="${xpTitle}"` : ''}>
+           <div class="fc-portrait" style="display:flex;align-items:center;justify-content:center;color:var(--accent);">${portraitIcon}</div>
+         </div>`
+      : `<div class="fc-portrait" style="display:flex;align-items:center;justify-content:center;border:1px solid ${isAlly ? 'rgba(76,165,122,.3)' : 'rgba(168,66,58,.3)'};color:${isAlly ? 'var(--accent)' : '#c25b50'};">${portraitIcon}</div>`;
+
     li.innerHTML = `
       <div class="fc-top">
-        <div class="fc-portrait" style="display:flex;align-items:center;justify-content:center;border:1px solid ${isAlly ? 'rgba(76,165,122,.3)' : 'rgba(168,66,58,.3)'};color:${isAlly ? 'var(--accent)' : '#c25b50'};">${isCreature ? '👹' : isPet ? '🐾' : '⚔'}</div>
+        ${portraitHtml}
         <div class="fc-name">
           <b>${escapeHtml(c.name)}</b>
           <span>${subtitleParts}</span>
@@ -429,7 +434,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         <div class="target-chips" data-id="${c.id}">${targetChips}</div>
         ${isMaster || isActive ? `
         <div class="fc-controls">
-          <input type="number" class="attack-amount input input--sm input--num" data-id="${c.id}" placeholder="Quantità" min="1" max="9999" style="width:72px;flex:none;">
+          <input type="number" class="attack-amount input input--num" data-id="${c.id}" placeholder="0" min="1" max="9999">
           <button class="btn btn--danger btn--sm" data-id="${c.id}" data-action="apply-damage">🗡 Danno</button>
           <button class="btn btn--sm" data-id="${c.id}" data-action="apply-heal" style="color:var(--heal);">✚ Cura</button>
         </div>
@@ -747,21 +752,32 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
     return `<span class="chip" style="--c:${meta?.color ?? 'var(--mut)'};">${cond}</span>`;
   }).join('');
 
-  const { mode = 'xp', xp = {} } = progressionData;
+  const { mode = 'xp', xp = {}, levelUpGranted = {} } = progressionData;
   const combXp = xp[c.id] ?? 0;
   const level  = c.level ?? 1;
-  let xpHtml = '';
-  if (mode === 'xp' && level < 20) {
-    const hi  = XP_THRESHOLDS[level] ?? XP_THRESHOLDS[19];
-    const pct = Math.min(100, Math.max(0, Math.round(combXp / hi * 100))) || 0;
-    xpHtml = `<div class="xp-bar-track" style="height:3px;margin-top:2px;"><div class="xp-bar-fill" style="width:${pct}%"></div></div>`;
+  const levelUpReady = mode === 'xp'
+    ? (level < 20 && combXp >= XP_THRESHOLDS[level])
+    : (levelUpGranted[c.id] === true);
+  let xpPct = 0;
+  let xpText = '';
+  if (mode === 'xp') {
+    if (level >= 20) {
+      xpPct  = 1;
+      xpText = `XP ${combXp.toLocaleString('it')} · liv. max`;
+    } else {
+      const hi = XP_THRESHOLDS[level] ?? XP_THRESHOLDS[19];
+      xpPct  = Math.min(1, Math.max(0, combXp / hi)) || 0;
+      xpText = `XP ${combXp.toLocaleString('it')} / ${hi.toLocaleString('it')}`;
+    }
   }
 
   const successes = isKO ? (deathSaves?.successes ?? 0) : 0;
   const failures  = isKO ? (deathSaves?.failures  ?? 0) : 0;
 
   dock.innerHTML = `
-    <div class="dock-portrait">${c.type === 'pet' ? '🐾' : '⚔'}</div>
+    <div class="fc-pframe dock-pframe${levelUpReady ? ' lvlup' : ''}" style="--xp:${(levelUpReady ? 1 : xpPct).toFixed(3)};"${xpText ? ` title="${xpText}"` : ''}>
+      <div class="dock-portrait">${c.type === 'pet' ? '🐾' : '⚔'}</div>
+    </div>
     <div class="dock-id">
       <b>${escapeHtml(c.name)}</b>
       <span>${level ? `Lv.${level}` : ''}${c.armorClass ? ` · CA ${c.armorClass}` : ''}</span>
@@ -775,7 +791,7 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
         <span style="font-size:12px;font-weight:700;color:var(--bone);font-variant-numeric:tabular-nums;">${c.hpCurrent}<span style="color:var(--mut);font-weight:400">/${c.hpMax}</span></span>
         ${tempHp > 0 ? `<span class="chip chip--iron" style="font-size:9px;padding:1px 5px;">+${tempHp}</span>` : ''}
       </div>
-      ${xpHtml}
+      ${xpText ? `<span class="dock-xp">${xpText}</span>` : ''}
       ${isKO ? `<div class="death-pips" style="margin-top:3px;">
         <span>S</span>
         <div class="pips ok">${[0,1,2].map(i => `<button class="${i < successes ? 'on' : ''}" data-action="death-save" data-type="successes" data-index="${i}" data-dock="1"></button>`).join('')}</div>

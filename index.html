@@ -159,6 +159,19 @@
     .fight-card.is-down { filter: saturate(.3) brightness(.8); }
     .fc-top { display: grid; grid-template-columns: 36px 1fr auto auto; gap: 8px; align-items: center; }
     .fc-portrait { width: 36px; height: 36px; border-radius: 2px; flex: none; font-size: 7px; }
+
+    /* Cornice ritratto = barra XP (solo player) */
+    .fc-pframe {
+      width: 36px; height: 36px; padding: 2px; border-radius: 3px; flex: none;
+      background: conic-gradient(var(--gold) calc(var(--xp, 0) * 1turn), var(--line-strong) 0);
+    }
+    .fc-pframe .fc-portrait { width: 100%; height: 100%; border-radius: 1px; background: var(--bg2); }
+    .fc-pframe.lvlup { animation: fc-lvlup-pulse 1.6s ease-in-out infinite; }
+    @keyframes fc-lvlup-pulse {
+      0%, 100% { box-shadow: 0 0 4px rgba(210,180,106,.35); filter: brightness(.95); }
+      50%      { box-shadow: 0 0 16px rgba(210,180,106,.85); filter: brightness(1.35); }
+    }
+    @media (prefers-reduced-motion: reduce) { .fc-pframe.lvlup { animation: none; box-shadow: 0 0 10px rgba(210,180,106,.6); } }
     .fc-name { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
     .fc-name b { font-family: var(--font-display); font-size: 16px; font-weight: 600; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--bone); }
     .fc-name span { font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
@@ -166,14 +179,18 @@
     .fc-init b { font-family: var(--font-display); font-size: 17px; font-weight: 700; color: var(--mut); display: block; line-height: 1; }
     .fc-init span { font-size: 7.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); display: block; }
     .fc-init-b { font-family: var(--font-display); font-size: 17px; font-weight: 700; color: var(--mut); background: none; border: none; border-bottom: 1px dashed var(--line-strong); cursor: pointer; padding: 0; display: block; width: 100%; text-align: center; line-height: 1; }
-    .fc-hp { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+    .fc-hp { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-variant-numeric: tabular-nums; margin-top: -5px; }
     .fc-hp .hp-text { font-weight: 700; font-size: 13px; color: var(--bone); }
     .fc-conds { display: flex; flex-wrap: wrap; gap: 4px; }
     .fc-conds:empty { display: none; }
     .fc-action-note { font-size: 11px; color: var(--mut); font-style: italic; }
     .fc-controls { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
-    .hp-max-btn { font: inherit; background: none; border: none; border-bottom: 1px dashed var(--line-strong); cursor: pointer; color: inherit; padding: 0; }
+    .fc-controls .attack-amount { width: 64px; flex: none; min-height: 34px; padding: 4px 8px; font-size: 13px; }
+    .hp-max-btn { font: inherit; background: none; border: none; border-radius: 0; border-bottom: 1px dashed var(--line-strong); cursor: pointer; color: inherit; padding: 0; }
     .ac-edit-btn { font: inherit; background: none; border: none; cursor: pointer; color: inherit; padding: 0; }
+    /* Radius uniforme con i bottoni del tema (override del legacy a 4px) */
+    .fight-card .faction-btn { border-radius: var(--r); }
+    .fight-card .faction-btn.good.active, .fight-card .faction-btn.evil.active { border-radius: var(--r); }
 
     /* Target chips */
     .target-chips { display: flex; flex-wrap: wrap; gap: 3px; width: 100%; max-height: 72px; overflow-y: auto; }
@@ -186,7 +203,6 @@
     .xp-label { font-family: var(--font-mono); font-size: 10.5px; color: var(--faint); }
     .xp-bar-track { height: 5px; background: rgba(0,0,0,.45); border-radius: 2px; overflow: hidden; }
     .xp-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; }
-    .levelup-badge { font-size: 11px; color: var(--gold-bright); letter-spacing: .1em; text-transform: uppercase; }
     .btn-levelup { font-size: 10px; }
     .btn-grant-levelup { font-size: 10px; }
 
@@ -449,6 +465,9 @@
     .my-dock:empty { display: none; }
     body.is-master .my-dock { display: none; }
     .dock-portrait { width: 40px; height: 40px; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1px solid var(--line-strong); }
+    .dock-pframe { width: 40px; height: 40px; }
+    .dock-pframe .dock-portrait { width: 100%; height: 100%; border: 0; border-radius: 1px; background: var(--bg2); }
+    .dock-xp { font-family: var(--font-mono); font-size: 10px; color: var(--faint); letter-spacing: .04em; }
     .dock-id { min-width: 0; }
     .dock-id b { font-family: var(--font-display); font-size: 16px; font-weight: 700; display: block; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--bone); }
     .dock-id span { font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
@@ -758,11 +777,13 @@
             </select>
           </div>
           <button id="btn-grid-reset" class="btn btn--ghost btn--sm btn--icon" title="Svuota griglia" style="display:none;">🗑</button>
-          <button id="btn-zoom-in"    class="btn btn--ghost btn--sm btn--icon" title="Ingrandisci">＋</button>
-          <button id="btn-zoom-out"   class="btn btn--ghost btn--sm btn--icon" title="Riduci">－</button>
-          <button id="btn-zoom-reset" class="btn btn--ghost btn--sm btn--icon" title="Reimposta">↺</button>
         </div>
         <div id="grid-container"></div>
+        <div class="grid-zoom">
+          <button id="btn-zoom-in"    class="btn btn--icon" title="Ingrandisci">+</button>
+          <button id="btn-zoom-out"   class="btn btn--icon" title="Riduci">−</button>
+          <button id="btn-zoom-reset" class="btn btn--icon" title="Reimposta">◌</button>
+        </div>
       </main>
 
       <!-- Rail destra con tab -->

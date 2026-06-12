@@ -968,17 +968,12 @@ function _applyGridEditUI() {
   const on       = state.gridEditMode;
   const editCtrl = document.getElementById('grid-edit-controls');
   const editBtn  = document.getElementById('btn-grid-edit');
-  const hint     = document.getElementById('grid-hint');
   if (editCtrl) editCtrl.style.display = on ? 'flex' : 'none';
   if (editBtn) {
     editBtn.textContent = on ? '✓ Fine modifica' : '✏️ Modifica griglia';
     editBtn.classList.toggle('active', on);
   }
-  if (hint) {
-    hint.textContent = on
-      ? '✏️ Modifica: imposta le dimensioni e clicca le caselle vuote per i muri'
-      : '1 casella = 1 m · Seleziona un token, poi tocca la destinazione';
-  }
+  // Il testo di #grid-hint è gestito da GridUI.renderGrid (contestuale a modifica/selezione)
 }
 
 function _rerenderGridFromSnapshot() {

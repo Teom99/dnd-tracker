@@ -3,7 +3,7 @@
 // Distanza Chebyshev (diagonali = 1), misurata bordo-a-bordo tra footprint.
 
 const CELL = 40;        // lato cella nelle coordinate del viewBox
-const PAD  = 8;         // margine interno (coordinate viewBox)
+const PAD  = 14;        // margine interno (coordinate viewBox) — spazio per etichette nome/distanza
 
 const SIZE_FOOTPRINT = { tiny: 1, small: 1, medium: 1, large: 2, huge: 3, gargantuan: 4 };
 export function footprintOf(size) { return SIZE_FOOTPRINT[size] || 1; }
@@ -46,8 +46,8 @@ function _bindWallPaint(container) {
   if (_paintBound) return;
   _paintBound = true;
 
-  container.addEventListener('mousedown', (e) => {
-    if (e.button !== 0) return;
+  container.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
     if (!_ctx || !_ctx.isMaster || !_ctx.editMode) return;
     const cell = _cellFromEvent(e);
     if (!cell) return;
@@ -60,16 +60,16 @@ function _bindWallPaint(container) {
     e.preventDefault();
   });
 
-  container.addEventListener('mousemove', (e) => {
+  container.addEventListener('pointermove', (e) => {
     if (!_painting) return;
     const cell = _cellFromEvent(e);
     if (cell) _paintAt(cell.col, cell.row);
   });
 
   const stop = () => { _painting = false; };
-  container.addEventListener('mouseup', stop);
-  container.addEventListener('mouseleave', stop);
-  window.addEventListener('mouseup', stop);
+  container.addEventListener('pointerup', stop);
+  container.addEventListener('pointercancel', stop);
+  window.addEventListener('pointerup', stop);
 }
 
 // ─── Coordinate / distanza ────────────────────────────────────────────────────
@@ -132,6 +132,11 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   const selPos  = selectedId ? pos[selectedId] : null;
   const selSide = selectedId ? footprintOf(comb[selectedId]?.size) : 1;
 
+  // Raggio di movimento del token selezionato (1 casella = 1 m; velocità dalla scheda, 9 m di default)
+  const selComb    = selectedId ? comb[selectedId] : null;
+  const reachSpeed = selComb?.speed > 0 ? selComb.speed : 9;
+  const showReach  = !!(selPos && selComb && selComb.hpCurrent > 0 && !editMode);
+
   const vbW = (PAD * 2 + cols * CELL).toFixed(0);
   const vbH = (PAD * 2 + rows * CELL).toFixed(0);
   _totalW = PAD * 2 + cols * CELL;
@@ -139,12 +144,16 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
 
   let inner = '';
 
-  // 1) Celle di sfondo + muri
+  // 1) Celle di sfondo + muri + raggio di movimento
   for (let row = 0; row < rows; row++) {
     for (let col = 0; col < cols; col++) {
       const { x, y } = cellXY(col, row);
       const key  = `${col}_${row}`;
-      const cls  = wall[key] ? 'sq sq-wall' : 'sq';
+      let cls = wall[key] ? 'sq sq-wall' : 'sq';
+      if (showReach && !wall[key] && (!occCell[key] || occCell[key] === selectedId)
+          && squareDistance(selPos.col, selPos.row, selSide, col, row, 1) <= reachSpeed) {
+        cls += ' sq-reach';
+      }
       inner += `<rect class="${cls}" x="${x}" y="${y}" width="${CELL}" height="${CELL}" data-c="${col}" data-r="${row}"/>`;
     }
   }
@@ -166,19 +175,41 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     const isDead     = occ.hpCurrent <= 0;
 
     let fill, stroke;
-    if (isMyToken)      { fill = '#0d2d0d'; stroke = isSelected ? '#70d070' : '#4aba4a'; }
-    else if (isPlayer)  { fill = '#142d4a'; stroke = isSelected ? 'var(--gold)' : isActive ? 'var(--gold-light)' : '#4a8abf'; }
-    else if (occ.faction === 'good') { fill = 'rgba(124,88,0,0.4)'; stroke = isSelected ? 'var(--gold)' : isActive ? 'var(--gold-light)' : '#d4af37'; }
-    else                { fill = '#2d1010'; stroke = isSelected ? 'var(--gold)' : isActive ? 'var(--gold-light)' : '#bf4a4a'; }
+    if (isMyToken)      { fill = '#0d2d0d'; stroke = '#4aba4a'; }
+    else if (isPlayer)  { fill = '#142d4a'; stroke = '#4a8abf'; }
+    else if (occ.faction === 'good') { fill = 'rgba(124,88,0,0.4)'; stroke = '#d4af37'; }
+    else                { fill = '#2d1010'; stroke = '#bf4a4a'; }
     if (isDead) { fill = '#666'; stroke = '#999'; }
 
-    const sw       = (isSelected || isActive) ? 3 : 2;
     const inset    = 3;
-    const initials = esc((occ.name || '?').slice(0, 3).toUpperCase());
-    const fsz      = Math.max(8, Math.min(18, n * 11)).toFixed(0);
+    const initials = esc((occ.name || '?').trim().slice(0, 2).toUpperCase());
+    const fsz      = Math.max(11, Math.min(20, 9 + n * 4));
 
-    inner += `<rect x="${x + inset}" y="${y + inset}" width="${w - inset * 2}" height="${w - inset * 2}" rx="4" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" pointer-events="none"/>`;
-    inner += `<text x="${cx}" y="${(cy + n * 3).toFixed(1)}" text-anchor="middle" font-size="${fsz}" class="sq-name" pointer-events="none">${initials}${isDead ? ' 💀' : ''}</text>`;
+    // Token rotondo: alone attivo/selezionato, anello HP, corpo, iniziali
+    const rOuter = w / 2 - inset;
+    const rRing  = rOuter - 1.5;
+    const rBody  = rOuter - 5;
+
+    if (isActive) {
+      inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 1.5}" fill="none" stroke="var(--gold-bright)" stroke-width="1.5" pointer-events="none"/>`;
+    } else if (isSelected) {
+      inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 1.5}" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="4 4" pointer-events="none"/>`;
+    }
+
+    // Anello HP: master vede tutto, i player solo PG/famigli (mai gli HP esatti delle creature)
+    const ringVisible = !isDead && occ.hpMax > 0 && (isMaster || occ.type !== 'creature');
+    if (ringVisible) {
+      const hpPct     = Math.max(0, Math.min(1, occ.hpCurrent / occ.hpMax));
+      const ringColor = hpPct <= 0.25 ? 'var(--blood)' : hpPct <= 0.5 ? 'var(--gold)' : 'var(--heal)';
+      const circ      = 2 * Math.PI * rRing;
+      inner += `<circle cx="${cx}" cy="${cy}" r="${rRing}" fill="none" stroke="rgba(0,0,0,.5)" stroke-width="3" pointer-events="none"/>`;
+      inner += `<circle cx="${cx}" cy="${cy}" r="${rRing}" fill="none" stroke="${ringColor}" stroke-width="3" stroke-linecap="round"
+                        stroke-dasharray="${(circ * hpPct).toFixed(1)} ${circ.toFixed(1)}" transform="rotate(-90 ${cx} ${cy})" pointer-events="none"/>`;
+    }
+
+    inner += `<circle cx="${cx}" cy="${cy}" r="${rBody}" fill="${fill}" stroke="${stroke}" stroke-width="2.5" pointer-events="none"/>`;
+    inner += `<text x="${cx}" y="${(cy + fsz * 0.36).toFixed(1)}" text-anchor="middle" font-size="${fsz}" class="sq-name" pointer-events="none">${isDead ? '💀' : initials}</text>`;
+    inner += `<text x="${cx}" y="${(y + w + 9).toFixed(1)}" text-anchor="middle" class="sq-nm" pointer-events="none">${esc((occ.name || '').trim().slice(0, 12).toUpperCase())}</text>`;
 
     // Distanza dal token selezionato (etichetta sopra il token)
     if (selPos && !isSelected) {
@@ -200,6 +231,22 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   container.innerHTML =
     `<svg class="sq-svg" viewBox="${_panX.toFixed(0)} ${_panY.toFixed(0)} ${zVbW} ${zVbH}" preserveAspectRatio="xMidYMid meet" width="100%" height="100%">${inner}</svg>`;
   container.classList.toggle('grid-edit-active', !!editMode);
+
+  // Hint contestuale nella toolbar
+  const hintEl = document.getElementById('grid-hint');
+  if (hintEl) {
+    if (editMode && isMaster) {
+      hintEl.textContent = '✏️ Modifica: imposta le dimensioni e clicca le caselle vuote per i muri';
+    } else if (showReach) {
+      hintEl.textContent = `${selComb.name} — raggio di movimento ${fmtM(reachSpeed)} · tocca la destinazione`;
+    } else if (selectedId && selComb) {
+      hintEl.textContent = selPos
+        ? `${selComb.name} selezionato`
+        : `${selComb.name} — tocca una casella per posizionarlo`;
+    } else {
+      hintEl.textContent = '1 casella = 1 m · Seleziona un token, poi tocca la destinazione';
+    }
+  }
 
   // Aggiorna il contesto usato dal disegno muri con drag e assicura il binding.
   _ctx = { cols, rows, wall, occCell, isMaster, editMode: !!editMode, onSetWall };
@@ -371,19 +418,20 @@ export function initGridControls(onGridReset) {
   document.getElementById('btn-zoom-out')?.addEventListener('click',   () => _zoomTo(_zoom / 1.3));
   document.getElementById('btn-zoom-reset')?.addEventListener('click', () => { _zoom = 1; _panX = 0; _panY = 0; _reRenderCallback?.(); });
 
-  // Pan con drag (solo quando zoom > 1, non in modalità modifica)
+  // Pan con drag — pointer events, così funziona anche col touch (solo zoom > 1, non in modifica)
   const container = document.getElementById('grid-container');
   if (!container) return;
 
-  container.addEventListener('mousedown', (e) => {
-    if (e.button !== 0) return;
+  container.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0 && e.pointerType === 'mouse') return;
     if (_zoom <= 1) return;
     if (_ctx?.editMode && _ctx?.isMaster) return;
-    _panStart = { x: e.clientX, y: e.clientY, px: _panX, py: _panY, moved: false };
+    if (_panStart) return;   // un solo puntatore alla volta
+    _panStart = { id: e.pointerId, x: e.clientX, y: e.clientY, px: _panX, py: _panY, moved: false };
   });
 
-  container.addEventListener('mousemove', (e) => {
-    if (!_panStart) return;
+  container.addEventListener('pointermove', (e) => {
+    if (!_panStart || e.pointerId !== _panStart.id) return;
     const dx = e.clientX - _panStart.x;
     const dy = e.clientY - _panStart.y;
     if (Math.abs(dx) + Math.abs(dy) > 3) _panStart.moved = true;
@@ -401,7 +449,7 @@ export function initGridControls(onGridReset) {
   });
 
   const _stopPan = () => { setTimeout(() => { _panStart = null; }, 0); };
-  container.addEventListener('mouseup',    _stopPan);
-  container.addEventListener('mouseleave', _stopPan);
-  window.addEventListener('mouseup',       _stopPan);
+  container.addEventListener('pointerup',     _stopPan);
+  container.addEventListener('pointercancel', _stopPan);
+  window.addEventListener('pointerup',        _stopPan);
 }

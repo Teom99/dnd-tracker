@@ -40,6 +40,7 @@ export function setupSheetListener() {
   let prevLevel  = undefined;
   let prevName   = undefined;
   let prevSize   = undefined;
+  let prevSpeed  = undefined;
   state.sheet.listen((snap) => {
     state.sheetData = snap.val() || {};
 
@@ -56,6 +57,13 @@ export function setupSheetListener() {
     if (hpMax !== null && hpMax > 0 && hpMax !== prevHpMax && state.myCombatantId) {
       prevHpMax = hpMax;
       state.combatantManager.setMaxHp(state.myCombatantId, hpMax);
+    }
+
+    // Sincronizza velocità al combattente solo se cambiata (usata per il raggio di movimento)
+    const speed = state.sheetData.speed ?? null;
+    if (speed !== null && speed > 0 && speed !== prevSpeed && state.myCombatantId) {
+      prevSpeed = speed;
+      state.combatantManager.setSpeed(state.myCombatantId, speed);
     }
 
     // Sincronizza taglia al combattente solo se cambiata

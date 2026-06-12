@@ -3137,14 +3137,32 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   cursor: pointer;
 }
 
+.sq-reach {
+  fill: color-mix(in oklab, var(--accent) 9%, transparent);
+}
+
 .sq-hover {
   fill: rgba(255,255,255,0.06);
 }
 
 .sq-name {
-  fill: var(--text);
+  fill: #f3efe6;
   font-family: 'Cinzel', serif;
   font-weight: 700;
+  letter-spacing: .04em;
+  paint-order: stroke;
+  stroke: rgba(0,0,0,.75);
+  stroke-width: 2.5px;
+  user-select: none;
+}
+
+.sq-nm {
+  fill: #c4bcab;
+  font: 600 8.5px var(--font-ui, sans-serif);
+  letter-spacing: .08em;
+  paint-order: stroke;
+  stroke: rgba(0,0,0,.85);
+  stroke-width: 2px;
   user-select: none;
 }
 
@@ -3152,8 +3170,10 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   fill: var(--gold-light);
   font-family: 'Cinzel', serif;
   font-weight: 700;
+  paint-order: stroke;
+  stroke: rgba(0,0,0,.85);
+  stroke-width: 3px;
   user-select: none;
-  text-shadow: 0 0 3px rgba(0,0,0,0.9);
 }
 
 .sq-tooltip-name {

@@ -80,9 +80,10 @@ userSessions/{uid}/{code}/
 - Visibilità HP: master vede solo creature · player vede tutti i PG · hint opzionale su creature
 - HP max editabile inline (card combat) e dalla scheda PG, con sync automatico al combattente
 - CA sincronizzata dalla scheda al combattente in real-time
-- Griglia quadrata: si adatta sempre al contenitore (SVG `viewBox` + `preserveAspectRatio`), niente pan/zoom né bordo perimetrale; dimensioni fisse decise dal master in "Modifica griglia" (`gridConfig`, default 20x20, resize anytime con drop fuori bordi); in modalità modifica il master clicca le caselle vuote per disegnare/rimuovere muri (bloccano il movimento); reset (solo master) svuota token e muri
+- Griglia quadrata: si adatta sempre al contenitore (SVG `viewBox` + `preserveAspectRatio`); zoom +/−/reset con pulsanti flottanti in basso a destra e pan con trascinamento quando zoom > 1 (pointer events, funziona anche touch); dimensioni fisse decise dal master in "Modifica griglia" (`gridConfig`, default 20x20, resize anytime con drop fuori bordi); in modalità modifica il master clicca/trascina sulle caselle vuote per disegnare/rimuovere muri (bloccano il movimento); reset (solo master) svuota token e muri
+- Raggio di movimento: selezionato un token vivo, le caselle raggiungibili (distanza Chebyshev bordo-a-bordo ≤ velocità, 1 casella = 1 m) sono evidenziate (`.sq-reach`); velocità sincronizzata dalla scheda (`speed` → combattente), default 9 m se assente (creature); hint della toolbar contestuale a modifica/selezione (gestito da `GridUI.renderGrid`)
 - Taglia token: Piccola/Media (1×1), Grande (2×2), Enorme (3×3), Mastodontica (4×4); default dalla libreria/scheda, override del master in sessione; distanza Chebyshev bordo-a-bordo (1 casella = 1m)
-- Token giocatore evidenziati in verde; movimento valida bordi, muri e sovrapposizioni sull'intero footprint
+- Token rotondi (cerchio + alone per attivo/selezionato) con anello HP intorno al token: master vede tutti gli anelli, i player solo PG/famigli (mai gli HP esatti delle creature); colore anello a soglie (verde > 50%, oro 25–50%, rosso < 25%); token giocatore evidenziati in verde; movimento valida bordi, muri e sovrapposizioni sull'intero footprint
 - Token morti grigi con teschio
 - Tasto "Fine Turno" sulla card del giocatore attivo
 - Death saves inline nella card quando KO: 3 successi = revive a 1 HP
@@ -99,6 +100,7 @@ userSessions/{uid}/{code}/
 - Refactor struttura progetto: `app.js` ridotto, stato in `src/state.js`, logica in moduli separati
 - Fix inventario: risolta eliminazione oggetti e blocco form; allineamento tasti rimozione a destra
 - Rework "Cenere e Verderame" scheda personaggio: testata con nome/sottotitolo/barra XP, layout 2 colonne a sezioni `details.tome`, pip CSS per competenze/expertise, cstat per statistiche, slot incantesimo a rombi, righe attacchi/incantesimi/inventario a tema (mockup `Rework/04 Scheda.html`)
+- Fight card e player dock: barra XP resa come cornice del ritratto (`.fc-pframe`/`.dock-pframe`, conic-gradient con `--xp`); quando il level-up è pronto la cornice diventa oro pieno e pulsa (`.lvlup`, niente badge testuale); numero XP visibile nel dock (`.dock-xp`) e nel tooltip del ritratto; campo quantità danno/cura compatto (placeholder "0", stessa altezza dei bottoni)
 - Rework pannello nave Damselfly: ponti renderizzati come stanze CSS grid (tutti i deck visibili, niente tab), spostamento equipaggio token→stanza, carte armi con chip equipaggio e select stato, barra integrità scafo (mockup `Rework/06 Damselfly.html`)
 
 ### Bug noti non ancora risolti

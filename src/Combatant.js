@@ -86,6 +86,10 @@ export class Combatant {
     await set(ref(this._db, `sessions/${this._code}/combatants/${id}/level`), parseInt(level) || 1);
   }
 
+  async setSpeed(id, speed) {
+    await set(ref(this._db, `sessions/${this._code}/combatants/${id}/speed`), Math.max(0, parseInt(speed) || 0));
+  }
+
   async setName(id, name) {
     await set(ref(this._db, `sessions/${this._code}/combatants/${id}/name`), name || '');
   }
