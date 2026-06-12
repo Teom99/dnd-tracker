@@ -427,11 +427,13 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
           value="${escapeHtml(c.currentAction || '')}"
           autocomplete="off" style="width:100%;">
         <div class="target-chips" data-id="${c.id}">${targetChips}</div>
+        ${isMaster || isActive ? `
         <div class="fc-controls">
           <input type="number" class="attack-amount input input--sm input--num" data-id="${c.id}" placeholder="Quantità" min="1" max="9999" style="width:72px;flex:none;">
           <button class="btn btn--danger btn--sm" data-id="${c.id}" data-action="apply-damage">🗡 Danno</button>
           <button class="btn btn--sm" data-id="${c.id}" data-action="apply-heal" style="color:var(--heal);">✚ Cura</button>
         </div>
+        ` : ''}
       ` : c.currentAction ? `
         <p class="fc-action-note">⚔ ${escapeHtml(c.currentAction)}</p>
       ` : ''}
@@ -782,7 +784,7 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
       </div>` : (conditions.length ? `<div class="dock-conds">${condChips}</div>` : '')}
     </div>
     <div class="dock-actions">
-      <button class="btn btn--danger btn--sm" data-action="dock-attack">⚔ Attacca</button>
+      ${isActive ? `<button class="btn btn--danger btn--sm" data-action="dock-attack">⚔ Attacca</button>` : ''}
       <button class="btn btn--ghost btn--sm" data-action="dock-conditions">✦ Cond.</button>
       <button class="btn btn--ghost btn--sm" data-action="dock-sheet">📜 Scheda</button>
       ${isActive ? `<button class="btn btn--primary btn--sm" data-action="dock-end-turn">✓ Fine</button>` : ''}
