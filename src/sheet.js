@@ -258,7 +258,7 @@ export function initSheet(uid, charId) {
 }
 
 export function isSheetEmbedded() {
-  return window.matchMedia('(min-width: 1100px)').matches && document.body.classList.contains('has-sheet');
+  return false;
 }
 
 export function openCharacterSheet() {

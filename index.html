@@ -6,665 +6,968 @@
   <title>D&D Combat Tracker</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Grenze+Gotisch:wght@500;700&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="theme.css">
   <script>
-    (function() {
-      const theme = localStorage.getItem('theme');
-      if (theme === 'old') document.documentElement.classList.add('theme-old');
-    })();
+    try {
+      var t = JSON.parse(localStorage.getItem('dnd-rework-tweaks') || '{}');
+      if (t.palette)  document.documentElement.dataset.palette  = t.palette;
+      if (t.ornament) document.documentElement.dataset.ornament = t.ornament;
+      if (t.typeface) document.documentElement.dataset.typeface = t.typeface;
+    } catch(e) {}
+    // legacy theme
+    (function() { const th = localStorage.getItem('theme'); if (th === 'old') document.documentElement.classList.add('theme-old'); })();
   </script>
+  <style>
+    /* ── Reset conflitti style.css ── */
+    body { display: block; align-items: unset; font-family: var(--font-ui); background: var(--bg0); color: var(--bone); min-height: 100vh; }
+    .view { max-width: none; padding: 0; display: block; gap: 0; }
+    #view-home.view { display: block; }
+    #view-combat.view { display: flex; flex-direction: column; }
+
+    /* ── HOME ─────────────────────────────────── */
+    .home-main { width: min(1180px, 100%); margin: 0 auto; padding: 28px 16px 80px; }
+    .home-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 24px; align-items: start; }
+    .home-col  { display: flex; flex-direction: column; gap: 20px; }
+    .form-stack { display: flex; flex-direction: column; gap: 14px; }
+    .form-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .divider-word { margin: 2px 0; }
+    .divider-word span { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: var(--faint); }
+
+    /* auth overlay (shown when logged out) */
+    #auth-panel { display: flex; justify-content: center; padding: 48px 20px; }
+    .login-box  { width: min(400px, 100%); display: flex; flex-direction: column; align-items: center; gap: 0; text-align: center; }
+    .login-box .emblem { margin-bottom: 28px; }
+    .login-panel { width: 100%; margin-top: 32px; display: flex; flex-direction: column; gap: 12px; padding: 26px 24px 22px; }
+    .auth-hint { margin: 0 0 6px; font-size: 13.5px; color: var(--mut); }
+    .google-icon { width: 17px; height: 17px; flex: none; }
+
+    /* sessions row */
+    .sess-row { display: grid; grid-template-columns: auto 1fr auto; gap: 12px; align-items: center; padding: 10px 12px; background: var(--bg1); border: 1px solid var(--line); border-radius: var(--r); transition: border-color .18s, background .18s; }
+    .sess-row:hover { border-color: var(--gold-dim); background: var(--bg2); }
+    .sess-code { font-family: var(--font-display); font-size: 20px; font-weight: 700; letter-spacing: .18em; color: var(--gold-bright); }
+    .sess-meta { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .sess-meta b { font-weight: 500; font-size: 13.5px; color: var(--bone); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sess-meta span { font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
+    .sess-actions { display: flex; gap: 5px; }
+
+    /* char picker (join form) */
+    .char-picker { display: flex; flex-wrap: wrap; gap: 8px; }
+    .char-pick { appearance: none; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; min-height: 38px; padding: 5px 12px; background: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--r); color: var(--bone); font: 500 12.5px var(--font-ui); transition: border-color .15s; }
+    .char-pick:hover { border-color: var(--gold-dim); }
+    .char-pick[aria-pressed="true"] { border-color: var(--gold); color: var(--gold-bright); box-shadow: inset 0 0 0 1px var(--gold-faint); }
+    .char-pick small { color: var(--faint); font-size: 10.5px; }
+
+    /* library grid */
+    .lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+    .lib-card { cursor: pointer; }
+    .lib-card .cg-card__sub { display: flex; justify-content: space-between; gap: 6px; }
+    .lib-actions { display: flex; gap: 5px; }
+    .lib-actions .btn { flex: 1; }
+
+    @media (max-width: 880px) { .home-grid { grid-template-columns: 1fr; } }
+
+    /* ── COMBAT STAGE ─────────────────────────── */
+    body.in-combat { overflow: hidden; }
+    .combat-stage { height: 100vh; height: 100dvh; min-height: 0; }
+    #view-combat.view { height: 100vh; height: 100dvh; overflow: hidden; }
+    .combat-topbar { gap: 10px; }
+    .session-tag { display: flex; align-items: baseline; gap: 8px; flex: none; }
+    .session-tag .code { font-family: var(--font-display); font-size: 19px; font-weight: 700; letter-spacing: .16em; color: var(--gold-bright); }
+    .turn-banner { flex: 1; text-align: center; min-width: 0; font-family: var(--font-display); font-size: 17px; font-weight: 600; letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .turn-banner .rnd { color: var(--mut); font-family: var(--font-ui); font-size: 10.5px; letter-spacing: .2em; text-transform: uppercase; margin-right: 8px; }
+    .turn-banner b { color: var(--gold-bright); }
+
+    /* 3-column shell */
+    .combat-shell {
+      flex: 1; min-height: 0; overflow: hidden;
+      display: grid;
+      grid-template-columns: clamp(196px, 18vw, 256px) minmax(0, 1fr) clamp(284px, 27vw, 352px);
+      gap: 10px;
+      padding: 10px 12px;
+    }
+    .panel { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+    .panel-scroll { overflow-y: auto; min-height: 0; flex: 1; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; }
+
+    /* Rail iniziativa */
+    .rail-init .ds-heading { margin-bottom: 8px; flex-shrink: 0; }
+    .rail-init-foot { display: flex; gap: 5px; margin-top: 8px; flex-shrink: 0; }
+    .rail-init-foot .btn { flex: 1; }
+
+    /* Init list (override grid-initiative old style) */
+    #grid-initiative-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+    #grid-initiative-list-container h3 { display: none; }
+    .grid-initiative-item {
+      position: relative;
+      display: grid; grid-template-columns: 28px 1fr auto;
+      gap: 8px; align-items: center;
+      min-height: 40px; padding: 5px 8px 5px 12px;
+      background: var(--bg1); border: 1px solid var(--line); border-radius: var(--r);
+      cursor: pointer; transition: border-color .18s, background .18s; font-size: 13px; color: var(--bone);
+    }
+    .grid-initiative-item:hover { background: var(--bg2); border-color: var(--line-strong); }
+    .grid-initiative-item.active-turn {
+      border-color: var(--gold-dim);
+      background: linear-gradient(90deg, var(--gold-faint), var(--bg2) 65%);
+    }
+    .grid-initiative-item.active-turn::before { content: ""; position: absolute; left: -1px; top: -1px; bottom: -1px; width: 3px; background: linear-gradient(180deg, var(--gold-bright), var(--gold)); box-shadow: 0 0 10px rgba(210,180,106,.5); }
+    .grid-initiative-item.ko { opacity: .45; text-decoration: line-through; text-decoration-color: var(--blood); }
+    .grid-initiative-item.selected { border-color: var(--accent-dim); }
+    .grid-initiative-init { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--mut); text-align: center; font-variant-numeric: tabular-nums; }
+    .grid-initiative-item.active-turn .grid-initiative-init { color: var(--gold-bright); }
+    .grid-initiative-name { font-family: var(--font-display); font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .grid-initiative-meta { display: flex; align-items: center; gap: 5px; }
+    .grid-initiative-ko { font-size: 12px; }
+    .grid-initiative-dist { font-family: var(--font-mono); font-size: 10px; color: var(--gold); }
+    .init-faction-dot { width: 5px; height: 5px; transform: rotate(45deg); flex: none; }
+    .init-faction-dot.ally  { background: var(--accent); }
+    .init-faction-dot.enemy { background: var(--blood); }
+
+    /* Grid panel */
+    .stage-grid { position: relative; background: var(--bg1); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+    .stage-grid::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 100% at 50% 0%, transparent 60%, rgba(0,0,0,.45)); z-index: 1; }
+    .grid-toolbar { position: absolute; top: 0; left: 0; right: 0; z-index: 3; display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: linear-gradient(180deg, color-mix(in oklab, var(--bg0) 82%, transparent), transparent); flex-wrap: wrap; }
+    .grid-hint { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
+    #grid-token-bar { display: flex; gap: 5px; flex-wrap: wrap; }
+    #grid-container { position: absolute; inset: 44px 0 0 0; cursor: grab; touch-action: none; z-index: 2; }
+    #grid-container:active { cursor: grabbing; }
+    #grid-container svg { width: 100%; height: 100%; display: block; }
+    .grid-zoom { position: absolute; right: 8px; bottom: 8px; z-index: 4; display: flex; flex-direction: column; gap: 4px; }
+    .grid-zoom .btn { min-height: 36px; min-width: 36px; padding: 4px; font-size: 14px; background: color-mix(in oklab, var(--bg1) 88%, transparent); }
+
+    /* Side panel tabs */
+    .side-tabs { display: flex; gap: 4px; margin-bottom: 8px; flex-shrink: 0; }
+    .side-tabs button { flex: 1; appearance: none; cursor: pointer; min-height: 34px; padding: 4px; background: transparent; border: 1px solid var(--line); border-radius: var(--r); color: var(--faint); font: 500 10.5px var(--font-ui); letter-spacing: .14em; text-transform: uppercase; transition: color .15s, border-color .15s; }
+    .side-tabs button:hover { color: var(--mut); border-color: var(--line-strong); }
+    .side-tabs button.is-on { color: var(--gold-bright); border-color: var(--gold-dim); background: var(--gold-faint); }
+    .side-pane { display: none; min-height: 0; flex: 1; flex-direction: column; overflow: hidden; }
+    .side-pane.is-on { display: flex; }
+    .log-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-shrink: 0; }
+
+    /* Fight card */
+    ol.combatant-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+    .fight-card {
+      background: linear-gradient(180deg, var(--bg2), var(--bg1) 70%);
+      border: 1px solid var(--line-strong); border-radius: 3px;
+      padding: 10px 11px; display: flex; flex-direction: column; gap: 7px;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .fight-card.is-active { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold-faint), 0 0 22px rgba(210,180,106,.12); }
+    .fight-card.is-active::before { content: ""; position: absolute; inset: -1px; pointer-events: none; border-radius: 3px; box-shadow: inset 0 0 24px rgba(210,180,106,.07); }
+    .fight-card { position: relative; }
+    .fight-card.is-down { filter: saturate(.3) brightness(.8); }
+    .fc-top { display: grid; grid-template-columns: 36px 1fr auto auto; gap: 8px; align-items: center; }
+    .fc-portrait { width: 36px; height: 36px; border-radius: 2px; flex: none; font-size: 7px; }
+    .fc-name { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+    .fc-name b { font-family: var(--font-display); font-size: 16px; font-weight: 600; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--bone); }
+    .fc-name span { font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
+    .fc-init { text-align: center; flex: none; min-width: 28px; }
+    .fc-init b { font-family: var(--font-display); font-size: 17px; font-weight: 700; color: var(--mut); display: block; line-height: 1; }
+    .fc-init span { font-size: 7.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); display: block; }
+    .fc-init-b { font-family: var(--font-display); font-size: 17px; font-weight: 700; color: var(--mut); background: none; border: none; border-bottom: 1px dashed var(--line-strong); cursor: pointer; padding: 0; display: block; width: 100%; text-align: center; line-height: 1; }
+    .fc-hp { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-variant-numeric: tabular-nums; }
+    .fc-hp .hp-text { font-weight: 700; font-size: 13px; color: var(--bone); }
+    .fc-conds { display: flex; flex-wrap: wrap; gap: 4px; }
+    .fc-conds:empty { display: none; }
+    .fc-action-note { font-size: 11px; color: var(--mut); font-style: italic; }
+    .fc-controls { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+    .hp-max-btn { font: inherit; background: none; border: none; border-bottom: 1px dashed var(--line-strong); cursor: pointer; color: inherit; padding: 0; }
+    .ac-edit-btn { font: inherit; background: none; border: none; cursor: pointer; color: inherit; padding: 0; }
+
+    /* Target chips */
+    .target-chips { display: flex; flex-wrap: wrap; gap: 3px; width: 100%; max-height: 72px; overflow-y: auto; }
+    .target-chip { appearance: none; cursor: pointer; display: inline-flex; align-items: center; padding: 2px 7px; background: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--r); color: var(--faint); font: 500 10px var(--font-ui); letter-spacing: .06em; white-space: nowrap; transition: border-color .12s, color .12s; }
+    .target-chip:hover { border-color: var(--gold-dim); color: var(--bone); }
+    .target-chip.selected { border-color: var(--gold); color: var(--gold-bright); background: var(--gold-faint); }
+
+    /* XP section */
+    .xp-section { display: flex; flex-direction: column; gap: 4px; }
+    .xp-label { font-family: var(--font-mono); font-size: 10.5px; color: var(--faint); }
+    .xp-bar-track { height: 5px; background: rgba(0,0,0,.45); border-radius: 2px; overflow: hidden; }
+    .xp-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; }
+    .levelup-badge { font-size: 11px; color: var(--gold-bright); letter-spacing: .1em; text-transform: uppercase; }
+    .btn-levelup { font-size: 10px; }
+    .btn-grant-levelup { font-size: 10px; }
+
+    /* Death saves (fight card) */
+    .death-pips { display: flex; gap: 8px; align-items: center; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--mut); flex-wrap: wrap; }
+    .death-pips .pips { display: flex; gap: 4px; }
+    .death-pips button { appearance: none; cursor: pointer; width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--line-strong); background: transparent; padding: 0; }
+    .death-pips .ok button.on { background: var(--accent); border-color: var(--accent); }
+    .death-pips .ko button.on { background: var(--blood); border-color: var(--blood); }
+
+    /* Log entries */
+    #event-log { display: flex; flex-direction: column; }
+    .log-entry { display: grid; grid-template-columns: 40px 1fr; gap: 8px; padding: 6px 4px; border-bottom: 1px solid var(--line); font-size: 12.5px; color: var(--mut); }
+    .log-entry time { font-family: var(--font-mono); font-size: 9.5px; color: var(--faint); padding-top: 2px; }
+    .log-entry b { color: var(--bone); font-weight: 500; }
+    .log-entry .amt-dmg  { color: #cf7a6f; font-weight: 700; }
+    .log-entry .amt-heal { color: var(--heal); font-weight: 700; }
+    .log-entry--turn { color: var(--gold-bright); }
+
+    /* Note entries */
+    .note-entry { background: var(--bg1); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; }
+    .note-entry h4 { margin: 0 0 2px; font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--bone); }
+    .note-entry .nd { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
+    .note-entry p { margin: 6px 0 0; font-size: 12.5px; color: var(--mut); }
+
+    /* Scene overlay */
+    #scene-section { position: absolute; top: 50px; right: 10px; z-index: 10; max-width: 320px; border-radius: var(--r); overflow: hidden; }
+
+    /* Sheet overlay */
+    #view-character { display: none; position: absolute; inset: 56px 0 0 0; z-index: 20; background: var(--bg0); overflow-y: auto; flex-direction: column; }
+    body.sheet-only #view-character { display: flex; }
+    body.sheet-only .combat-shell { visibility: hidden; }
+    body.sheet-only .tabbar { display: none !important; }
+    body.sheet-only:not(.in-combat) .combat-topbar { display: none; }
+    .sheet-overlay-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--bg1); position: sticky; top: 0; z-index: 5; flex-shrink: 0; }
+    .sheet-back-btn { display: none; }
+    body.sheet-only .sheet-back-btn { display: inline-flex; }
+
+    /* Ship panel */
+    #ship-panel { position: absolute; inset: 56px 0 0 0; z-index: 15; background: var(--bg0); overflow-y: auto; }
+
+    /* Master controls in topbar */
+    #master-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    #master-controls.hidden { display: none !important; }
+    #xp-award-section { display: flex; align-items: center; gap: 6px; }
+    #xp-award-form summary { cursor: pointer; list-style: none; }
+    #xp-award-form summary::-webkit-details-marker { display: none; }
+
+    /* Mobile tabbar */
+    .tabbar { display: none; grid-auto-flow: column; grid-auto-columns: 1fr; background: color-mix(in oklab, var(--bg1) 94%, transparent); backdrop-filter: blur(10px); border-top: 1px solid var(--line-strong); padding-bottom: env(safe-area-inset-bottom); flex-shrink: 0; }
+    .tabbar button { appearance: none; background: none; border: 0; cursor: pointer; min-height: 50px; padding: 6px 4px 5px; display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--faint); font: 500 9.5px/1 var(--font-ui); letter-spacing: .12em; text-transform: uppercase; }
+    .tabbar button .ico { font-size: 16px; line-height: 1; }
+    .tabbar button.is-on { color: var(--gold-bright); }
+
+    /* Creature/pet add form */
+    #master-add-form, #player-pet-form { background: var(--bg1); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; }
+    #master-add-form h3, #player-pet-form h3 { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--bone); margin: 0 0 10px; letter-spacing: .06em; }
+    #master-add-form form, #player-pet-form form { display: flex; flex-direction: column; gap: 8px; }
+    #master-add-form input, #player-pet-form input { width: 100%; }
+    .master-panel-title { font-family: var(--font-display); font-size: 14px; font-weight: 600; color: var(--bone); }
+    .empty-msg { font-size: 12.5px; color: var(--faint); text-align: center; padding: 16px 8px; font-style: italic; }
+    .input-row { display: flex; gap: 6px; }
+    .input-row input { flex: 1; min-width: 0; }
+
+    /* Monster search */
+    .monster-api-search { position: relative; }
+    .api-suggestions { position: absolute; top: 100%; left: 0; right: 0; z-index: 50; background: var(--bg2); border: 1px solid var(--line-strong); border-radius: var(--r); max-height: 200px; overflow-y: auto; list-style: none; margin: 2px 0 0; padding: 4px; }
+    .api-suggestions li { padding: 7px 10px; cursor: pointer; font-size: 13px; border-radius: 1px; }
+    .api-suggestions li:hover { background: var(--bg3); color: var(--gold-bright); }
+
+    /* Creature library picker */
+    #creature-library-picker .char-picker-list,
+    #join-char-list { display: flex; flex-wrap: wrap; gap: 6px; }
+
+    /* XP award */
+    .xp-award-players { display: flex; flex-direction: column; gap: 5px; max-height: 180px; overflow-y: auto; }
+    .xp-player-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+    .xp-player-meta { color: var(--faint); font-size: 11px; margin-left: auto; }
+
+    /* Utility */
+    .or-divider, .char-picker-label { font-size: 11px; color: var(--faint); letter-spacing: .1em; text-transform: uppercase; margin: 4px 0 2px; }
+    #error-message, #error-message-combat, #error-message-sheet { background: rgba(168,66,58,.18); border: 1px solid var(--blood); border-radius: var(--r); padding: 10px 14px; color: #cf7a6f; font-size: 13px; margin-bottom: 8px; }
+
+    /* Condition modal chips */
+    .condition-option { cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border: 1px solid color-mix(in oklab, var(--c,var(--mut)) 55%, transparent); border-radius: 1px; color: color-mix(in oklab, var(--c,var(--mut)) 80%, var(--bone)); font-size: 11px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; background: color-mix(in oklab, var(--c,var(--mut)) 10%, transparent); min-height: 34px; transition: box-shadow .15s, background .15s; }
+    .condition-option:hover { box-shadow: 0 0 12px color-mix(in oklab, var(--c,var(--mut)) 28%, transparent); }
+    .condition-option.active { background: color-mix(in oklab, var(--c,var(--mut)) 24%, transparent); box-shadow: inset 0 0 0 1px var(--c,var(--mut)); }
+
+    /* Faction switch (compact) */
+    .faction-switch { display: flex; gap: 4px; }
+    .faction-btn { appearance: none; cursor: pointer; padding: 2px 8px; border-radius: 1px; font: 500 10px var(--font-ui); letter-spacing: .08em; text-transform: uppercase; border: 1px solid transparent; background: var(--ink); color: var(--faint); }
+    .faction-btn.evil.active { border-color: var(--blood); color: #cf7a6f; background: rgba(168,66,58,.14); }
+    .faction-btn.good.active { border-color: var(--accent); color: var(--accent); background: rgba(76,165,122,.12); }
+
+    /* Mobile: 1 column */
+    @media (max-width: 860px) {
+      .combat-shell { display: block; padding: 8px 8px 0; height: calc(100dvh - 56px - 54px); overflow: hidden; }
+      .panel { display: none; height: 100%; }
+      .panel.is-mobile-on { display: flex; }
+      #panel-grid { display: block; }
+      #panel-grid.is-mobile-on { display: block; }
+      .tabbar { display: grid; }
+      body.sheet-only .combat-shell { visibility: visible; }
+    }
+    @media (max-width: 860px) and (min-width: 1px) {
+      body.in-combat .combat-shell { height: auto; flex: 1; overflow: hidden; }
+    }
+    @media (max-width: 600px) {
+      .combat-topbar .turn-banner { display: none; }
+    }
+  </style>
 </head>
 <body>
 
   <!-- ═══════════════════════════════════════════════
-       VISTA HOME — crea o entra in una sessione
+       VISTA HOME — Santuario
   ═══════════════════════════════════════════════ -->
-  <div id="view-home" class="view">
-    <header class="home-header">
-      <h1>⚔ Combat Tracker ⚔</h1>
-      <p class="subtitle">Dungeons &amp; Dragons</p>
-    </header>
-
-    <div id="error-message" class="error-banner hidden"></div>
-
-    <!-- Auth panel — visibile solo se non autenticati -->
-    <div id="auth-panel" class="auth-panel hidden">
-      <p class="auth-hint">Accedi con Google per ritrovare la tua scheda personaggio su qualsiasi dispositivo.</p>
-      <button id="btn-google-signin" class="btn-google">
-        <svg class="google-icon" viewBox="0 0 24 24" aria-hidden="true">
-          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
-          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-        </svg>
-        Accedi con Google
-      </button>
-      <button id="btn-anon-signin" class="btn-secondary btn-guest">Continua come ospite</button>
-    </div>
-
-    <!-- User info bar — visibile dopo autenticazione -->
-    <div id="user-info-bar" class="user-info-bar hidden">
-      <span id="user-display-name" class="user-display-name"></span>
-      <div class="user-info-actions">
-        <button id="btn-theme-toggle-home" class="btn-copy" title="Cambia stile">🎨 Stile</button>
-        <button id="btn-upgrade-google" class="btn-upgrade-google hidden">
-          <svg class="google-icon-sm" viewBox="0 0 24 24" aria-hidden="true">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-          </svg>
+  <div id="view-home" class="view fog-stage">
+    <header class="topbar">
+      <div class="emblem emblem--sm" aria-hidden="true"></div>
+      <div class="col" style="gap:0;">
+        <span class="t-display" style="font-size:17px;">Combat Tracker</span>
+        <span class="t-label" style="font-size:9px;">Dungeons &amp; Dragons</span>
+      </div>
+      <div class="spacer"></div>
+      <div id="user-info-bar" class="row hidden">
+        <span id="user-display-name" class="t-mut" style="font-size:13px;"></span>
+        <button id="btn-upgrade-google" class="btn btn--ghost btn--sm hidden">
+          <svg class="google-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" opacity=".75" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" opacity=".55" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="currentColor" opacity=".35" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
           Accedi con Google
         </button>
-        <button id="btn-sign-out" class="btn-sign-out hidden">Esci</button>
-      </div>
-    </div>
-
-    <section id="home-cards" class="home-cards hidden">
-
-      <!-- Personaggio salvato (visibile se l'utente ha una scheda) -->
-      <div id="character-preview-section" class="home-card hidden">
-        <h2>Il tuo personaggio</h2>
-        <div id="character-preview" class="character-preview"></div>
-      </div>
-
-      <!-- Sessioni salvate (visibile se l'utente ha sessioni attive) -->
-      <div id="user-sessions-section" class="home-card hidden">
-        <h2>Le tue sessioni</h2>
-        <div id="user-sessions-list" class="user-sessions-list"></div>
-      </div>
-
-      <!-- Libreria personaggi (visibile dopo autenticazione) -->
-      <div id="character-library-section" class="home-card hidden">
-        <h2>I tuoi personaggi</h2>
-        <div id="character-library-list" class="char-library-list"></div>
-        <div class="char-library-actions">
-          <button id="btn-create-player" class="btn-secondary btn-sm">+ Nuovo PG</button>
-          <button id="btn-create-creature" class="btn-secondary btn-sm">+ Nuova Creatura</button>
-        </div>
-      </div>
-
-      <!-- Card Master -->
-      <div class="home-card">
-        <h2>Sei il Master?</h2>
-        <p>Crea una nuova sessione e condividi il codice con i tuoi giocatori.</p>
-        <div class="input-row" style="align-items:center; gap:0.5rem; margin-bottom:0.5rem;">
-          <label for="select-progression-mode" style="white-space:nowrap; font-size:0.9rem;">Progressione:</label>
-          <select id="select-progression-mode" class="input-inline">
-            <option value="xp">XP</option>
-            <option value="milestone">Milestone</option>
-          </select>
-        </div>
-        <button id="btn-create-session" class="btn-primary">⚔ Crea Sessione</button>
-      </div>
-
-      <div class="divider">oppure</div>
-
-      <!-- Card Giocatore -->
-      <div class="home-card">
-        <h2>Sei un Giocatore?</h2>
-        <form id="form-join" novalidate>
-          <input
-            type="text"
-            id="input-session-code"
-            placeholder="Codice sessione (es. DRAG42)"
-            maxlength="6"
-            autocomplete="off"
-            spellcheck="false"
-            autocapitalize="characters"
-          >
-          <div id="join-char-picker" class="char-picker hidden">
-            <p class="char-picker-label">Scegli dalla libreria:</p>
-            <div id="join-char-list" class="char-picker-list"></div>
-            <p class="or-divider">oppure inserisci nuovo:</p>
-          </div>
-          <input
-            type="text"
-            id="input-pg-name"
-            placeholder="Nome del tuo personaggio"
-            maxlength="30"
-          >
-          <input
-            type="number"
-            id="input-pg-initiative"
-            placeholder="Iniziativa (opz.)"
-            min="-10"
-            max="30"
-          >
-          <button type="submit" class="btn-primary">Entra nella Sessione</button>
-        </form>
-      </div>
-
-    </section>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════
-       VISTA COMBAT — tracker real-time
-  ═══════════════════════════════════════════════ -->
-  <div id="view-combat" class="view hidden">
-
-    <header class="combat-header">
-      <div class="session-info">
-        <span class="session-label">Sessione:</span>
-        <span id="session-code-display" class="session-code"></span>
-        <button id="btn-copy-code" class="btn-copy" title="Copia codice">📋 Copia</button>
-        <button id="btn-theme-toggle-combat" class="btn-copy" title="Cambia stile">🎨 Stile</button>
-      </div>
-      <div class="combat-header-right">
-        <span id="round-display" class="round-display">Round 1</span>
-        <button id="btn-upload-scene" class="btn-secondary btn-sm" title="Carica immagine scena">🖼 Upload image</button>
-        <button id="btn-toggle-ship" class="btn-secondary btn-sm" title="Apri pannello nave">🚢 Damselfly</button>
-        <button id="btn-exit-session" class="btn-exit-session" title="Esci dalla sessione">← Esci</button>
+        <button id="btn-sign-out" class="btn btn--ghost btn--sm hidden">Esci</button>
+        <button id="btn-theme-toggle-home" class="btn btn--ghost btn--sm">🎨</button>
       </div>
     </header>
 
-    <div id="error-message-combat" class="error-banner hidden"></div>
+    <div id="error-message" class="hidden"></div>
 
-    <!-- Controlli turno (visibili solo al master) -->
-    <div id="master-controls" class="master-controls hidden">
-      <button id="btn-next-turn" class="btn-primary btn-next">Turno Successivo ▶</button>
-      <button id="btn-reset" class="btn-danger">↺ Reset Incontro</button>
-      <select id="select-progression-mode-live" class="btn-secondary btn-sm" title="Modalità progressione">
-        <option value="xp">XP</option>
-        <option value="milestone">Milestone</option>
-      </select>
-      <div id="xp-award-section" class="hidden">
-        <details id="xp-award-form">
-          <summary class="btn-secondary btn-sm">✨ Assegna XP</summary>
-          <div id="xp-award-players" class="xp-award-players"></div>
-          <div class="input-row" style="padding:4px 0 6px; gap:0.4rem;">
-            <input type="number" id="input-xp-amount" min="0" placeholder="XP" class="input-inline" style="width:90px">
-            <button id="btn-award-xp" class="btn-primary btn-sm">Assegna</button>
-          </div>
-        </details>
+    <!-- Auth panel (visibile quando non autenticati) -->
+    <div id="auth-panel" class="hidden">
+      <div class="login-box anim-in">
+        <div class="emblem" aria-hidden="true"></div>
+        <h1 class="t-display t-hero">Combat Tracker</h1>
+        <p class="t-label" style="margin:10px 0 0;font-size:10px;letter-spacing:.34em;">Dungeons &amp; Dragons</p>
+        <section class="ds-panel login-panel">
+          <i class="orn-c tl"></i><i class="orn-c tr"></i><i class="orn-c bl"></i><i class="orn-c br"></i>
+          <p class="auth-hint">Accedi con Google per ritrovare le tue schede su qualsiasi dispositivo.</p>
+          <button id="btn-google-signin" class="btn btn--primary btn--block">
+            <svg class="google-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" opacity=".75" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="currentColor" opacity=".55" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="currentColor" opacity=".35" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+            Accedi con Google
+          </button>
+          <button id="btn-anon-signin" class="btn btn--block">Continua come ospite</button>
+          <div class="ds-sep" style="margin:6px 0;"><i></i></div>
+          <p class="t-mono" style="margin:0;">l'account ospite può essere promosso a Google in seguito</p>
+        </section>
+        <p class="t-mono" style="margin-top:28px; text-align:center;">« La fiamma attende chi osa accenderla »</p>
       </div>
     </div>
 
-    <!-- Pannello nave (visibile al posto della lista combattenti) -->
-    <div id="ship-panel" class="hidden"></div>
+    <!-- Contenuto home (visibile dopo autenticazione) -->
+    <section id="home-cards" class="home-main hidden">
 
-    <!-- Due colonne: Creature | Giocatori -->
-    <div class="combat-cols">
-
-      <div class="combat-col" id="col-creatures">
-        <h2 class="col-title">Creature</h2>
-        <section id="master-add-form" class="master-panel hidden">
-          <h3 class="master-panel-title">Aggiungi Creatura</h3>
-          <form id="form-add-creature" novalidate>
-            <div id="creature-library-picker" class="char-picker hidden">
-              <p class="char-picker-label">Dalla libreria:</p>
-              <div id="creature-library-list" class="char-picker-list"></div>
-              <p class="or-divider">oppure inserisci manualmente:</p>
-            </div>
-            <div class="monster-api-search" id="monster-api-search">
-              <input type="text" id="input-monster-search"
-                     placeholder="🔍 Cerca mostro D&D 5e (opzionale)..."
-                     autocomplete="off">
-              <ul id="monster-suggestions" class="api-suggestions hidden"></ul>
-            </div>
-            <input
-              type="text"
-              id="input-creature-name"
-              placeholder="Nome creatura"
-              maxlength="50"
-            >
-            <div class="input-row">
-              <input
-                type="number"
-                id="input-creature-hp"
-                placeholder="HP massimi"
-                min="1"
-                max="9999"
-              >
-              <input
-                type="number"
-                id="input-creature-initiative"
-                placeholder="Iniziativa"
-                min="-10"
-                max="30"
-              >
-              <input
-                type="number"
-                id="input-creature-ac"
-                placeholder="CA"
-                min="0"
-                max="30"
-              >
-            </div>
-            <select id="input-creature-size" class="input-select">
-              <option value="small">Piccola (1×1)</option>
-              <option value="medium" selected>Media (1×1)</option>
-              <option value="large">Grande (2×2)</option>
-              <option value="huge">Enorme (3×3)</option>
-              <option value="gargantuan">Mastodontica (4×4)</option>
-            </select>
-            <input type="hidden" id="input-creature-api-index" value="">
-            <button type="submit" class="btn-secondary">+ Aggiungi</button>
-          </form>
-        </section>
-        <ol id="creature-list" class="combatant-list"></ol>
-        <p id="empty-creatures-msg" class="empty-msg hidden">Nessuna creatura.</p>
+      <!-- legacy: personaggio preview (nascosto) -->
+      <div id="character-preview-section" class="hidden">
+        <div id="character-preview"></div>
       </div>
 
-      <div class="combat-col" id="col-players">
-        <h2 class="col-title">Giocatori</h2>
+      <div class="home-grid">
 
-        <section id="player-pet-form" class="master-panel hidden">
-          <h3 class="master-panel-title">Aggiungi Compagno</h3>
-          <form id="form-add-pet" novalidate>
-            <input type="text" id="input-pet-name" placeholder="Nome compagno (es. Fido, Gufo)" maxlength="50">
-            <div class="input-row">
-              <input type="number" id="input-pet-hp" placeholder="HP massimi" min="1" max="9999">
-              <input type="number" id="input-pet-initiative" placeholder="Iniziativa" min="-10" max="30">
-              <input type="number" id="input-pet-ac" placeholder="CA (opz.)" min="0" max="30">
+        <!-- ── COLONNA SESSIONI ─────────────────────── -->
+        <div class="home-col">
+
+          <section id="user-sessions-section" class="ds-panel hidden" data-screen-label="Le tue sessioni">
+            <i class="orn-c tl"></i><i class="orn-c tr"></i><i class="orn-c bl"></i><i class="orn-c br"></i>
+            <div class="ds-heading"><span>Le tue sessioni</span></div>
+            <div id="user-sessions-list" class="col" style="gap:8px;"></div>
+          </section>
+
+          <section class="ds-panel">
+            <i class="orn-c tl"></i><i class="orn-c tr"></i><i class="orn-c bl"></i><i class="orn-c br"></i>
+            <div class="ds-heading"><span>Sei il Master?</span></div>
+            <div class="form-stack">
+              <p class="t-mut" style="margin:0; font-size:13px;">Crea una nuova sessione e condividi il codice.</p>
+              <div class="field">
+                <label for="select-progression-mode">Progressione</label>
+                <select id="select-progression-mode" class="select">
+                  <option value="xp">Punti esperienza (XP)</option>
+                  <option value="milestone">Milestone</option>
+                </select>
+              </div>
+              <button id="btn-create-session" class="btn btn--primary btn--block">Accendi una nuova sessione</button>
             </div>
-            <button type="submit" class="btn-secondary">+ Aggiungi</button>
-          </form>
-        </section>
+          </section>
 
-        <ol id="player-list" class="combatant-list"></ol>
-        <p id="empty-players-msg" class="empty-msg hidden">
-          In attesa dei giocatori...<br>
-          <small>Entra usando il codice sessione.</small>
-        </p>
+          <div class="ds-sep divider-word"><span>oppure</span><i></i></div>
+
+          <section class="ds-panel">
+            <i class="orn-c tl"></i><i class="orn-c tr"></i><i class="orn-c bl"></i><i class="orn-c br"></i>
+            <div class="ds-heading"><span>Sei un Giocatore?</span></div>
+            <form id="form-join" class="form-stack" novalidate>
+              <div class="field">
+                <label for="input-session-code">Codice sessione</label>
+                <input type="text" id="input-session-code" class="input input--code" placeholder="······"
+                       maxlength="6" autocomplete="off" spellcheck="false" autocapitalize="characters">
+              </div>
+              <div id="join-char-picker" class="hidden">
+                <p class="char-picker-label">Scegli dalla libreria</p>
+                <div id="join-char-list" class="char-picker"></div>
+                <p class="or-divider">oppure inserisci nuovo:</p>
+              </div>
+              <div class="form-row-2">
+                <div class="field">
+                  <label for="input-pg-name">Nome personaggio</label>
+                  <input type="text" id="input-pg-name" class="input" placeholder="Nome" maxlength="30">
+                </div>
+                <div class="field">
+                  <label for="input-pg-initiative">Iniziativa <span style="text-transform:none;letter-spacing:0;">(opz.)</span></label>
+                  <input type="number" id="input-pg-initiative" class="input input--num" placeholder="—" min="-10" max="30">
+                </div>
+              </div>
+              <button type="submit" class="btn btn--block">Varca la soglia</button>
+            </form>
+          </section>
+
+        </div>
+
+        <!-- ── COLONNA LIBRERIA ─────────────────────── -->
+        <div class="home-col">
+
+          <section id="character-library-section" class="ds-panel hidden">
+            <i class="orn-c tl"></i><i class="orn-c tr"></i><i class="orn-c bl"></i><i class="orn-c br"></i>
+            <div class="ds-heading"><span>I tuoi personaggi</span></div>
+            <div id="character-library-list" class="lib-grid"></div>
+            <div class="ds-sep"><i></i></div>
+            <div class="row">
+              <button id="btn-create-player" class="btn btn--primary grow">+ Nuovo personaggio</button>
+              <button id="btn-create-creature" class="btn grow">+ Nuova creatura</button>
+            </div>
+          </section>
+
+          <p class="t-mono" style="text-align:center; margin:0;">le schede sono sincronizzate in tempo reale su tutti i dispositivi</p>
+
+        </div>
+
       </div>
+    </section>
+  </div>
 
-      <!-- Col 3: Scheda personaggio (visibile solo ai player) -->
-      <div class="combat-col" id="col-sheet">
-        <div id="view-character">
-          <div class="col-sheet-header">
-            <h2 class="col-title">Scheda Personaggio</h2>
-            <button id="btn-back-to-combat" class="btn-back sheet-back-btn">← Indietro</button>
-          </div>
-          <div id="error-message-sheet" class="error-banner hidden"></div>
-          <div class="sheet-body">
 
-            <details class="sheet-section">
-              <summary>📖 Informazioni Base</summary>
-              <div class="sheet-section-body">
-                <div class="field-row">
-                  <label>Nome personaggio</label>
-                  <input type="text" data-path="characterName" maxlength="40" placeholder="—">
-                </div>
-                <div class="field-grid-2">
-                  <div class="field-row"><label>Razza</label><input type="text" data-path="race" maxlength="30" placeholder="—"></div>
-                  <div class="field-row"><label>Classe</label><select data-path="class" id="class-select" class="input-select"><option value="">— Scegli —</option></select></div>
-                  <div class="field-row"><label>Sottoclasse</label><input type="text" data-path="subclass" maxlength="30" placeholder="—"></div>
-                  <div class="field-row field-row-levelup"><label>Livello</label><input type="number" data-path="level" data-number min="1" max="20" placeholder="1"><button id="btn-levelup" class="btn-levelup hidden">⬆ Sali</button></div>
-                  <div class="field-row"><label>Background</label><input type="text" data-path="background" maxlength="30" placeholder="—"></div>
-                  <div class="field-row"><label>Allineamento</label><input type="text" data-path="alignment" maxlength="20" placeholder="—"></div>
-                </div>
-                <div class="field-row"><label>Punti Esperienza</label><input type="number" data-path="xp" data-number min="0" placeholder="0"></div>
+  <!-- ═══════════════════════════════════════════════
+       VISTA COMBAT — Campo di battaglia
+  ═══════════════════════════════════════════════ -->
+  <div id="view-combat" class="view hidden fog-stage combat-stage">
+
+    <!-- ── TOPBAR ── -->
+    <header class="topbar combat-topbar">
+      <div class="emblem emblem--sm" aria-hidden="true"></div>
+      <div class="session-tag">
+        <span class="t-label">Sessione</span>
+        <span class="code" id="session-code-display"></span>
+        <button id="btn-copy-code" class="btn btn--ghost btn--sm btn--icon" title="Copia codice">⧉</button>
+      </div>
+      <div class="turn-banner" id="turn-banner">
+        <span id="round-display" class="rnd">Round 1</span>
+      </div>
+      <button id="btn-upload-scene" class="btn btn--ghost btn--sm" title="Carica immagine scena">🖼</button>
+      <button id="btn-toggle-ship" class="btn btn--ghost btn--sm" title="Pannello nave">⚓</button>
+      <button id="btn-theme-toggle-combat" class="btn btn--ghost btn--sm">🎨</button>
+      <!-- Controlli master (visibili solo al master) -->
+      <div id="master-controls" class="hidden">
+        <button id="btn-next-turn" class="btn btn--primary btn--sm">Turno ▸</button>
+        <button id="btn-reset" class="btn btn--danger btn--sm">↺</button>
+        <select id="select-progression-mode-live" class="select" style="min-height:34px;font-size:11px;padding:4px 28px 4px 8px;">
+          <option value="xp">XP</option>
+          <option value="milestone">Milestone</option>
+        </select>
+        <div id="xp-award-section" class="hidden">
+          <details id="xp-award-form">
+            <summary class="btn btn--sm">✦ XP</summary>
+            <div style="position:absolute;right:0;top:100%;z-index:50;min-width:260px;" class="ds-panel" style="padding:14px;">
+              <div id="xp-award-players" class="xp-award-players"></div>
+              <div class="row" style="padding:6px 0 0; gap:6px;">
+                <input type="number" id="input-xp-amount" min="0" placeholder="XP" class="input input--num" style="width:80px;min-height:34px;">
+                <button id="btn-award-xp" class="btn btn--primary btn--sm grow">Assegna</button>
               </div>
-            </details>
-
-            <details class="sheet-section">
-              <summary>💪 Caratteristiche</summary>
-              <div class="sheet-section-body">
-                <div class="ability-grid">
-                  <div class="ability-block"><div class="ability-label">FOR</div><input type="number" class="ability-input" data-path="abilities/str" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-str">+0</div></div>
-                  <div class="ability-block"><div class="ability-label">DES</div><input type="number" class="ability-input" data-path="abilities/dex" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-dex">+0</div></div>
-                  <div class="ability-block"><div class="ability-label">COS</div><input type="number" class="ability-input" data-path="abilities/con" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-con">+0</div></div>
-                  <div class="ability-block"><div class="ability-label">INT</div><input type="number" class="ability-input" data-path="abilities/int" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-int">+0</div></div>
-                  <div class="ability-block"><div class="ability-label">SAG</div><input type="number" class="ability-input" data-path="abilities/wis" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-wis">+0</div></div>
-                  <div class="ability-block"><div class="ability-label">CAR</div><input type="number" class="ability-input" data-path="abilities/cha" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-cha">+0</div></div>
-                </div>
-                <div class="field-row field-row-inline"><label>Bonus Competenza</label><input type="number" data-path="proficiencyBonus" data-number min="2" max="6" placeholder="2" class="input-small"></div>
-              </div>
-            </details>
-
-            <details class="sheet-section" id="section-class-features">
-              <summary>⭐ Capacità di Classe</summary>
-              <div class="sheet-section-body">
-                <div id="class-features-list"></div>
-              </div>
-            </details>
-
-            <details class="sheet-section">
-              <summary>🛡 Statistiche Combattimento</summary>
-              <div class="sheet-section-body">
-                <div class="field-grid-3">
-                  <div class="field-row field-row-center"><label>Classe Armatura</label><input type="number" data-path="armorClass" data-number min="0" max="30" placeholder="10" class="input-big"></div>
-                  <div class="field-row field-row-center"><label>Velocità (m)</label><input type="number" data-path="speed" data-number min="0" placeholder="9" class="input-big"></div>
-                  <div class="field-row field-row-center"><label>Mod. Iniziativa</label><input type="number" data-path="initiativeMod" data-number min="-10" max="20" placeholder="0" class="input-big"></div>
-                </div>
-                <div class="field-row field-row-center"><label>Taglia</label><select data-path="size" class="input-select"><option value="small">Piccola (1×1)</option><option value="medium">Media (1×1)</option><option value="large">Grande (2×2)</option><option value="huge">Enorme (3×3)</option><option value="gargantuan">Mastodontica (4×4)</option></select></div>
-                <div class="field-grid-2">
-                  <div class="field-row field-row-center"><label>HP Massimi</label><input type="number" data-path="hpMax" data-number min="1" placeholder="0" class="input-big"></div>
-                  <div class="field-row field-row-center"><label>HP Temporanei</label><input type="number" data-path="tempHp" data-number min="0" placeholder="0" class="input-big"></div>
-                </div>
-                <div class="field-grid-2">
-                  <div class="field-row field-row-center"><label>Dadi Vita usati</label><input type="number" data-path="hitDiceUsed" data-number min="0" placeholder="0" class="input-big"></div>
-                </div>
-                <div class="field-row field-row-inline">
-                  <label>Tipo Dado Vita</label>
-                  <select data-path="hitDiceType" class="input-select">
-                    <option value="d6">d6</option><option value="d8">d8</option><option value="d10">d10</option><option value="d12">d12</option>
-                  </select>
-                </div>
-                <div class="death-saves-section">
-                  <div class="death-saves-label">Tiri Salvezza Morte</div>
-                  <div class="death-saves-row">
-                    <span class="death-save-type success">Successi</span>
-                    <div class="death-save-pips" id="death-successes">
-                      <button class="death-pip" data-type="successes" data-index="0">○</button>
-                      <button class="death-pip" data-type="successes" data-index="1">○</button>
-                      <button class="death-pip" data-type="successes" data-index="2">○</button>
-                    </div>
-                  </div>
-                  <div class="death-saves-row">
-                    <span class="death-save-type failure">Fallimenti</span>
-                    <div class="death-save-pips" id="death-failures">
-                      <button class="death-pip" data-type="failures" data-index="0">○</button>
-                      <button class="death-pip" data-type="failures" data-index="1">○</button>
-                      <button class="death-pip" data-type="failures" data-index="2">○</button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </details>
-
-            <details class="sheet-section">
-              <summary>🎯 Tiri Salvezza</summary>
-              <div class="sheet-section-body">
-                <div class="save-list">
-                  <div class="save-row"><button class="save-check" data-ability="str">○</button><span class="save-name">Forza</span><span class="save-value" id="save-str">+0</span></div>
-                  <div class="save-row"><button class="save-check" data-ability="dex">○</button><span class="save-name">Destrezza</span><span class="save-value" id="save-dex">+0</span></div>
-                  <div class="save-row"><button class="save-check" data-ability="con">○</button><span class="save-name">Costituzione</span><span class="save-value" id="save-con">+0</span></div>
-                  <div class="save-row"><button class="save-check" data-ability="int">○</button><span class="save-name">Intelligenza</span><span class="save-value" id="save-int">+0</span></div>
-                  <div class="save-row"><button class="save-check" data-ability="wis">○</button><span class="save-name">Saggezza</span><span class="save-value" id="save-wis">+0</span></div>
-                  <div class="save-row"><button class="save-check" data-ability="cha">○</button><span class="save-name">Carisma</span><span class="save-value" id="save-cha">+0</span></div>
-                </div>
-              </div>
-            </details>
-
-            <details class="sheet-section">
-              <summary>🎯 Abilità</summary>
-              <div class="sheet-section-body">
-                <p class="hint-text">Tocca ○ per competenza, ◑ per expertise, ● per rimuovere</p>
-                <div class="skill-list">
-                  <div class="skill-row"><button class="skill-prof" data-skill="acrobatics">○</button><span class="skill-name">Acrobazia</span><span class="skill-ability">DES</span><span class="skill-total" id="skill-acrobatics">+0</span></div>
-                  <div class="skill-row"><button class="skill-prof" data-skill="animalHandling">○</button><span class="skill-name">Addestrare Animali</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-animalHandling">+0</span></div>
-                  <div class="skill-row"><button class="skill-prof" data-skill="arcana">○</button><span class="skill-name">Arcano</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-arcana">+0</span></div>
-                  <div class="skill-row"><button class="skill-prof" data-skill="athletics">○</button><span class="skill-name">Atletica</span><span class="skill-ability">FOR</span><span class="skill-total" id="skill-athletics">+0</span></div>
-                  <div class="skill-row"><button class="skill-prof" data-skill="deception">○</button><span class="skill-name">Inganno</span><span class="skill-ability">CAR</span><span class="skill-total" id="skill-deception">+0</span></div>
-                  <div class="skill-row"><button class="skill-prof" data-skill="history">○</button><span class="skill-name">Storia</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-history">+0</span></div>
-                  <div class="skill-row"><button class="skill-prof" data-skill="insight">○</button><span class="skill-name">Intuizione</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-insight">+0</span></div>
-                  <div class="skill-row"><button class="skill-prof" data-skill="intimidation">○</button><span class="skill-name">Intimidire</span><span class="skill-ability">CAR</span><span class="skill-total" id="skill-intimidation">+0</span></div>
-                  <div class="skill-row"><button class="skill-prof" data-skill="investigation">○</button><span class="skill-name">Investigare</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-investigation">+0</span></div>
-                  <div class="skill-row"><button class="skill-prof" data-skill="medicine">○</button><span class="skill-name">Medicina</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-medicine">+0</span></div>
-                  <div class="skill-row"><button class="skill-prof" data-skill="nature">○</button><span class="skill-name">Natura</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-nature">+0</span></div>
-                  <div class="skill-row"><button class="skill-prof" data-skill="perception">○</button><span class="skill-name">Percezione</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-perception">+0</span></div>
-                  <div class="skill-row"><button class="skill-prof" data-skill="performance">○</button><span class="skill-name">Intrattenere</span><span class="skill-ability">CAR</span><span class="skill-total" id="skill-performance">+0</span></div>
-                  <div class="skill-row"><button class="skill-prof" data-skill="persuasion">○</button><span class="skill-name">Persuasione</span><span class="skill-ability">CAR</span><span class="skill-total" id="skill-persuasion">+0</span></div>
-                  <div class="skill-row"><button class="skill-prof" data-skill="religion">○</button><span class="skill-name">Religione</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-religion">+0</span></div>
-                  <div class="skill-row"><button class="skill-prof" data-skill="sleightOfHand">○</button><span class="skill-name">Rapidità di Mano</span><span class="skill-ability">DES</span><span class="skill-total" id="skill-sleightOfHand">+0</span></div>
-                  <div class="skill-row"><button class="skill-prof" data-skill="stealth">○</button><span class="skill-name">Furtività</span><span class="skill-ability">DES</span><span class="skill-total" id="skill-stealth">+0</span></div>
-                  <div class="skill-row"><button class="skill-prof" data-skill="survival">○</button><span class="skill-name">Sopravvivenza</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-survival">+0</span></div>
-                </div>
-                <div class="passive-perception-row">
-                  <span class="passive-label">Percezione Passiva</span>
-                  <span id="passive-perception" class="passive-value">10</span>
-                </div>
-              </div>
-            </details>
-
-            <details class="sheet-section">
-              <summary>⚔ Attacchi</summary>
-              <div class="sheet-section-body">
-                <div id="attacks-list" class="attacks-list"></div>
-                <form id="form-add-attack" class="add-form" novalidate>
-                  <h4>Aggiungi Attacco</h4>
-                  <input type="text" id="attack-name" placeholder="Nome (es. Spada lunga)" maxlength="30">
-                  <div class="field-grid-2">
-                    <input type="text" id="attack-formula" placeholder="Danno (es. 1d8)" maxlength="20">
-                    <input type="text" id="attack-type" placeholder="Tipo (es. taglio)" maxlength="20">
-                  </div>
-                  <div class="field-grid-2">
-                    <select id="attack-ability" class="input-select">
-                      <option value="str">FOR</option><option value="dex">DES</option><option value="con">COS</option>
-                      <option value="int">INT</option><option value="wis">SAG</option><option value="cha">CAR</option>
-                      <option value="manual">Manuale</option>
-                    </select>
-                    <label class="checkbox-label"><input type="checkbox" id="attack-proficient"> Competenza</label>
-                  </div>
-                  <div class="field-grid-2">
-                    <input type="text" id="attack-bonus-override" placeholder="Bonus attacco (sovrascrivi)" maxlength="10">
-                    <input type="text" id="attack-dmg-override" placeholder="Mod. danni (sovrascrivi)" maxlength="10">
-                  </div>
-                  <button type="submit" class="btn-secondary">+ Aggiungi Attacco</button>
-                </form>
-              </div>
-            </details>
-
-            <details class="sheet-section">
-              <summary>✨ Magia</summary>
-              <div class="sheet-section-body">
-                <div class="field-grid-3 magic-stats">
-                  <div class="field-row field-row-center"><label>Caratteristica</label><select data-path="spellcastingAbility" class="input-select"><option value="">—</option><option value="int">INT</option><option value="wis">SAG</option><option value="cha">CAR</option></select></div>
-                  <div class="field-row field-row-center"><label>CD Tiro Salvezza</label><span id="spell-save-dc" class="computed-big">—</span></div>
-                  <div class="field-row field-row-center"><label>Bonus Attacco</label><span id="spell-attack-bonus" class="computed-big">—</span></div>
-                  <div class="field-row field-row-center"><label title="Modificatore extra applicato sia alla CD che al bonus attacco degli incantesimi">Mod. Extra</label><input type="number" data-path="spellBonusModifier" data-number class="input-sm" min="-20" max="20" placeholder="0"></div>
-                </div>
-                <h4 class="subsection-title">Slot Incantesimo</h4>
-                <div id="spell-slots-list" class="spell-slots-list"></div>
-                <h4 class="subsection-title">Trucchetti</h4>
-                <div id="cantrips-list" class="cantrip-list"></div>
-                <form id="form-add-cantrip" class="add-form-inline" novalidate>
-                  <input type="text" id="cantrip-name" placeholder="Nome trucchetto" maxlength="60">
-                  <button type="submit" class="btn-secondary btn-sm">+ Aggiungi</button>
-                </form>
-                <div id="spells-by-level"></div>
-              </div>
-            </details>
-
-            <details class="sheet-section">
-              <summary>🎒 Inventario</summary>
-              <div class="sheet-section-body">
-                <div class="currency-grid">
-                  <div class="currency-block"><label>MP</label><input type="number" data-path="currency/pp" data-number min="0" placeholder="0"></div>
-                  <div class="currency-block"><label>MO</label><input type="number" data-path="currency/gp" data-number min="0" placeholder="0"></div>
-                  <div class="currency-block"><label>ME</label><input type="number" data-path="currency/ep" data-number min="0" placeholder="0"></div>
-                  <div class="currency-block"><label>MA</label><input type="number" data-path="currency/sp" data-number min="0" placeholder="0"></div>
-                  <div class="currency-block"><label>MR</label><input type="number" data-path="currency/cp" data-number min="0" placeholder="0"></div>
-                </div>
-                <div id="inventory-list" class="inventory-list"></div>
-                <form id="form-add-item" class="add-form" novalidate>
-                  <div class="field-grid-2">
-                    <input type="text" id="item-name" placeholder="Nome oggetto" maxlength="40">
-                    <input type="number" id="item-qty" placeholder="Qtà" min="1" value="1" class="input-small">
-                  </div>
-                  <input type="text" id="item-notes" placeholder="Note (opz.)" maxlength="200">
-                  <button type="submit" class="btn-secondary">+ Aggiungi Oggetto</button>
-                </form>
-              </div>
-            </details>
-
-            <details class="sheet-section">
-              <summary>🌟 Caratteristiche &amp; Capacità</summary>
-              <div class="sheet-section-body">
-                <textarea data-path="features" placeholder="Capacità di classe, tratti razziali, imprese..." rows="6"></textarea>
-              </div>
-            </details>
-
-            <details class="sheet-section">
-              <summary>💬 Personalità</summary>
-              <div class="sheet-section-body">
-                <div class="field-row"><label>Tratti caratteriali</label><textarea data-path="personalityTraits" placeholder="—" rows="2"></textarea></div>
-                <div class="field-row"><label>Ideali</label><textarea data-path="ideals" placeholder="—" rows="2"></textarea></div>
-                <div class="field-row"><label>Legami</label><textarea data-path="bonds" placeholder="—" rows="2"></textarea></div>
-                <div class="field-row"><label>Difetti</label><textarea data-path="flaws" placeholder="—" rows="2"></textarea></div>
-              </div>
-            </details>
-
-            <details class="sheet-section">
-              <summary>🔤 Lingue &amp; Competenze</summary>
-              <div class="sheet-section-body">
-                <div class="field-row"><label>Lingue conosciute</label><textarea data-path="languages" placeholder="—" rows="2"></textarea></div>
-                <div class="field-row"><label>Altre competenze e strumenti</label><textarea data-path="otherProficiencies" placeholder="—" rows="2"></textarea></div>
-              </div>
-            </details>
-
-            <details class="sheet-section">
-              <summary>📝 Note</summary>
-              <div class="sheet-section-body">
-                <textarea data-path="notes" placeholder="Note libere..." rows="6"></textarea>
-              </div>
-            </details>
-
-          </div><!-- /.sheet-body -->
-        </div><!-- /#view-character -->
-      </div><!-- /#col-sheet -->
-
-    </div><!-- /.combat-cols -->
-
-    <!-- Griglia di battaglia e Log eventi -->
-    <div class="battle-area">
-
-      <!-- Pannello Scena (immagine condivisa dal master) -->
-      <section id="scene-section" class="scene-section hidden">
-        <div class="scene-header">
-          <span class="scene-title">Scena</span>
-          <div class="scene-header-actions">
-            <button id="btn-change-scene" class="btn-copy scene-btn hidden">Cambia</button>
-            <button id="btn-clear-scene" class="btn-copy scene-btn scene-btn-remove hidden">✕</button>
-          </div>
+            </div>
+          </details>
         </div>
-        <a id="scene-image-link" href="#" target="_blank" rel="noopener">
-          <img id="scene-image" class="scene-image" src="" alt="">
-        </a>
-      </section>
+      </div>
+      <button id="btn-exit-session" class="btn btn--ghost btn--sm">← Esci</button>
+    </header>
 
-      <!-- Griglia di battaglia -->
-      <section id="grid-section" class="grid-section">
-        <div class="grid-header">
-          <span class="grid-title">Griglia di Battaglia</span>
-          <div class="grid-zoom-controls">
-            <button id="btn-grid-edit" class="grid-zoom-btn" title="Modifica dimensioni e muri" style="display:none">✏️ Modifica griglia</button>
-            <button id="btn-grid-reset" class="grid-zoom-btn" title="Svuota la griglia (token e muri)" style="display:none">🗑</button>
-          </div>
-          <div id="grid-master-controls" class="grid-master-controls" style="display:none">
-            <span id="grid-edit-controls" class="grid-edit-controls" style="display:none">
-              <label>Dimensioni:</label>
-              <input type="number" id="input-grid-cols" min="1" max="60" class="grid-dim-input" title="Larghezza (caselle)">
-              <span>×</span>
-              <input type="number" id="input-grid-rows" min="1" max="60" class="grid-dim-input" title="Altezza (caselle)">
-            </span>
-            <label class="grid-size-label">Token sel.:</label>
-            <select id="select-token-size" class="grid-dim-select" disabled title="Dimensione del token selezionato">
-              <option value="small">Piccola (1×1)</option>
-              <option value="medium">Media (1×1)</option>
-              <option value="large">Grande (2×2)</option>
-              <option value="huge">Enorme (3×3)</option>
-              <option value="gargantuan">Mastodontica (4×4)</option>
-            </select>
-          </div>
-          <span id="grid-hint" class="grid-hint">1 casella = 1 m · Seleziona un token, poi tocca la destinazione</span>
-        </div>
-        <div id="grid-token-bar" class="grid-token-bar"></div>
-        <div class="grid-layout">
-          <div id="grid-initiative-list-container" class="grid-initiative-list-container">
-            <h3 class="grid-initiative-list-title">Iniziativa</h3>
+    <div id="error-message-combat" class="error-banner hidden" style="margin:0 12px;"></div>
+
+    <!-- ── 3-COLONNE SHELL ── -->
+    <div class="combat-shell shell-wrap">
+
+      <!-- Rail iniziativa (sinistra) -->
+      <aside class="panel rail-init" id="panel-init">
+        <div class="ds-heading" style="margin-bottom:8px;"><span>Iniziativa</span></div>
+        <div class="panel-scroll">
+          <div id="grid-initiative-list-container">
             <ol id="grid-initiative-list" class="grid-initiative-list"></ol>
           </div>
-          <div id="grid-container" class="grid-container"></div>
         </div>
-      </section>
+        <!-- Piè di pagina master -->
+        <div id="master-controls-rail" class="rail-init-foot hidden"></div>
+      </aside>
 
-      <!-- Log eventi -->
-      <section id="event-log-section" class="event-log-section">
-        <div class="event-log-header">
-          <span class="event-log-title">📜 Log Eventi</span>
-          <button id="btn-clear-log" class="btn-clear-log" title="Cancella log">🗑</button>
+      <!-- Griglia (centro) -->
+      <main class="panel stage-grid is-mobile-on" id="panel-grid">
+        <div class="grid-toolbar">
+          <div id="grid-token-bar" class="grid-token-bar"></div>
+          <span class="grid-hint grow" id="grid-hint">1 casella = 1 m · Seleziona un token, poi tocca la destinazione</span>
+          <button id="btn-grid-edit" class="btn btn--ghost btn--sm" title="Modifica dimensioni e muri" style="display:none;">✏️ Modifica</button>
+          <span id="grid-edit-controls" style="display:none; align-items:center; gap:4px; font-size:11px; color:var(--faint);">
+            <input type="number" id="input-grid-cols" min="1" max="60" class="input input--sm input--num" title="Larghezza (caselle)" style="width:46px;">
+            <span>×</span>
+            <input type="number" id="input-grid-rows" min="1" max="60" class="input input--sm input--num" title="Altezza (caselle)" style="width:46px;">
+          </span>
+          <div id="grid-master-controls" style="display:none; align-items:center; gap:5px;">
+            <span style="font-size:9.5px; color:var(--faint);">Token:</span>
+            <select id="select-token-size" class="select" disabled style="min-height:26px; font-size:9.5px; padding:2px 18px 2px 5px;">
+              <option value="small">Piccola</option>
+              <option value="medium">Media</option>
+              <option value="large">Grande</option>
+              <option value="huge">Enorme</option>
+              <option value="gargantuan">Mastodontica</option>
+            </select>
+          </div>
+          <button id="btn-grid-reset" class="btn btn--ghost btn--sm btn--icon" title="Svuota griglia" style="display:none;">🗑</button>
+          <button id="btn-zoom-in"    class="btn btn--ghost btn--sm btn--icon" title="Ingrandisci">＋</button>
+          <button id="btn-zoom-out"   class="btn btn--ghost btn--sm btn--icon" title="Riduci">－</button>
+          <button id="btn-zoom-reset" class="btn btn--ghost btn--sm btn--icon" title="Reimposta">↺</button>
         </div>
-        <div id="event-log" class="event-log"></div>
-      </section>
+        <div id="grid-container"></div>
+      </main>
+
+      <!-- Rail destra con tab -->
+      <aside class="panel rail-right" id="panel-side">
+        <div class="side-tabs" role="tablist">
+          <button data-pane="cards" class="is-on">Carte</button>
+          <button data-pane="log">Diario</button>
+          <button data-pane="notes">Cronache</button>
+        </div>
+
+        <!-- Tab: Carte combattenti -->
+        <div class="side-pane is-on" data-pane="cards" style="overflow:hidden;">
+          <div class="panel-scroll" id="cards-scroll">
+
+            <!-- Form aggiungi creatura (solo master) -->
+            <section id="master-add-form" class="hidden">
+              <h3 class="master-panel-title">Aggiungi Creatura</h3>
+              <form id="form-add-creature" novalidate>
+                <div id="creature-library-picker" class="hidden">
+                  <p class="char-picker-label">Dalla libreria:</p>
+                  <div id="creature-library-list" class="char-picker"></div>
+                  <p class="or-divider">oppure inserisci manualmente:</p>
+                </div>
+                <div class="monster-api-search" id="monster-api-search" style="position:relative;">
+                  <input type="text" id="input-monster-search" class="input" placeholder="🔍 Cerca mostro D&D 5e…" autocomplete="off">
+                  <ul id="monster-suggestions" class="api-suggestions hidden"></ul>
+                </div>
+                <input type="text" id="input-creature-name" class="input" placeholder="Nome creatura" maxlength="50">
+                <div class="input-row">
+                  <input type="number" id="input-creature-hp"         class="input" placeholder="HP" min="1" max="9999">
+                  <input type="number" id="input-creature-initiative"  class="input" placeholder="Init" min="-10" max="30">
+                  <input type="number" id="input-creature-ac"          class="input" placeholder="CA" min="0" max="30">
+                </div>
+                <select id="input-creature-size" class="select" style="width:100%; min-height:34px;">
+                  <option value="small">Piccola (1×1)</option>
+                  <option value="medium" selected>Media (1×1)</option>
+                  <option value="large">Grande (2×2)</option>
+                  <option value="huge">Enorme (3×3)</option>
+                  <option value="gargantuan">Mastodontica (4×4)</option>
+                </select>
+                <input type="hidden" id="input-creature-api-index" value="">
+                <button type="submit" class="btn btn--sm">+ Aggiungi</button>
+              </form>
+            </section>
+
+            <!-- Form aggiungi compagno (solo non-master) -->
+            <section id="player-pet-form" class="hidden">
+              <h3 class="master-panel-title">Aggiungi Compagno</h3>
+              <form id="form-add-pet" novalidate>
+                <input type="text" id="input-pet-name" class="input" placeholder="Nome compagno" maxlength="50">
+                <div class="input-row">
+                  <input type="number" id="input-pet-hp"         class="input" placeholder="HP" min="1" max="9999">
+                  <input type="number" id="input-pet-initiative"  class="input" placeholder="Init" min="-10" max="30">
+                  <input type="number" id="input-pet-ac"          class="input" placeholder="CA (opz.)" min="0" max="30">
+                </div>
+                <button type="submit" class="btn btn--sm">+ Aggiungi</button>
+              </form>
+            </section>
+
+            <!-- Lista creature -->
+            <ol id="creature-list" class="combatant-list"></ol>
+            <p id="empty-creatures-msg" class="empty-msg hidden">Nessuna creatura.</p>
+
+            <!-- Lista giocatori -->
+            <ol id="player-list" class="combatant-list"></ol>
+            <p id="empty-players-msg" class="empty-msg hidden">
+              In attesa dei giocatori…<br><small style="font-size:11px;">Usa il codice sessione per entrare.</small>
+            </p>
+
+          </div>
+        </div>
+
+        <!-- Tab: Diario eventi -->
+        <div class="side-pane" data-pane="log" style="overflow:hidden;">
+          <div class="log-head">
+            <span class="t-label">Log eventi</span>
+            <button id="btn-clear-log" class="btn btn--ghost btn--sm">svuota</button>
+          </div>
+          <div class="panel-scroll">
+            <div id="event-log"></div>
+          </div>
+        </div>
+
+        <!-- Tab: Cronache campagna -->
+        <div class="side-pane" data-pane="notes" style="overflow:hidden;">
+          <div class="log-head">
+            <span class="t-label">Cronache</span>
+            <button id="btn-add-session-note" class="btn btn--ghost btn--sm">+ nota</button>
+          </div>
+          <div class="panel-scroll">
+            <div id="session-notes-list"></div>
+          </div>
+        </div>
+
+      </aside>
     </div>
 
-    <!-- Cronache della campagna -->
-    <section id="session-notes-section" class="session-notes-section">
-      <div class="session-notes-header">
-        <span class="session-notes-title">📖 Cronache</span>
-        <button id="btn-add-session-note" class="btn-secondary btn-sm">+ Nuova Nota</button>
+    <!-- Pannello nave (overlay full) -->
+    <div id="ship-panel" class="hidden"></div>
+
+    <!-- Scena immagine (overlay floating) -->
+    <section id="scene-section" class="scene-section hidden" style="position:absolute;top:60px;right:12px;z-index:10;max-width:300px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg1);overflow:hidden;">
+      <div class="scene-header" style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg2);">
+        <span class="t-label" style="font-size:10px;">Scena</span>
+        <div class="scene-header-actions" style="display:flex;gap:4px;">
+          <button id="btn-change-scene" class="btn btn--ghost btn--sm hidden" style="font-size:10px;min-height:24px;padding:2px 6px;">Cambia</button>
+          <button id="btn-clear-scene"  class="btn btn--ghost btn--sm hidden" style="font-size:10px;min-height:24px;padding:2px 6px;">✕</button>
+        </div>
       </div>
-      <div id="session-notes-list" class="session-notes-list"></div>
+      <a id="scene-image-link" href="#" target="_blank" rel="noopener">
+        <img id="scene-image" class="scene-image" src="" alt="" style="width:100%;display:block;max-height:200px;object-fit:cover;">
+      </a>
     </section>
 
+    <!-- Mobile tabbar -->
+    <nav class="tabbar" id="tabbar" aria-label="Sezioni">
+      <button data-tab="grid"  class="is-on"><span class="ico">⬡</span>Battaglia</button>
+      <button data-tab="init"><span class="ico">♜</span>Ordine</button>
+      <button data-tab="cards"><span class="ico">▤</span>Carte</button>
+      <button data-tab="log"><span class="ico">✎</span>Diario</button>
+    </nav>
 
-  </div>
+    <!-- ── SCHEDA PERSONAGGIO (overlay) ── -->
+    <div id="view-character">
+      <div class="sheet-overlay-header">
+        <button id="btn-back-to-combat" class="btn btn--ghost btn--sm sheet-back-btn">← Indietro</button>
+        <span class="t-label" style="font-size:10px;">Scheda Personaggio</span>
+      </div>
+      <div id="error-message-sheet" class="hidden" style="margin:8px 16px;"></div>
+      <div class="sheet-body" style="padding:16px; flex: 1;">
+
+        <details class="sheet-section">
+          <summary>📖 Informazioni Base</summary>
+          <div class="sheet-section-body">
+            <div class="field-row"><label>Nome personaggio</label><input type="text" data-path="characterName" maxlength="40" placeholder="—"></div>
+            <div class="field-grid-2">
+              <div class="field-row"><label>Razza</label><input type="text" data-path="race" maxlength="30" placeholder="—"></div>
+              <div class="field-row"><label>Classe</label><select data-path="class" id="class-select" class="input-select"><option value="">— Scegli —</option></select></div>
+              <div class="field-row"><label>Sottoclasse</label><input type="text" data-path="subclass" maxlength="30" placeholder="—"></div>
+              <div class="field-row field-row-levelup"><label>Livello</label><input type="number" data-path="level" data-number min="1" max="20" placeholder="1"><button id="btn-levelup" class="btn-levelup hidden">⬆ Sali</button></div>
+              <div class="field-row"><label>Background</label><input type="text" data-path="background" maxlength="30" placeholder="—"></div>
+              <div class="field-row"><label>Allineamento</label><input type="text" data-path="alignment" maxlength="20" placeholder="—"></div>
+            </div>
+            <div class="field-row"><label>Punti Esperienza</label><input type="number" data-path="xp" data-number min="0" placeholder="0"></div>
+          </div>
+        </details>
+
+        <details class="sheet-section">
+          <summary>💪 Caratteristiche</summary>
+          <div class="sheet-section-body">
+            <div class="ability-grid">
+              <div class="ability-block"><div class="ability-label">FOR</div><input type="number" class="ability-input" data-path="abilities/str" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-str">+0</div></div>
+              <div class="ability-block"><div class="ability-label">DES</div><input type="number" class="ability-input" data-path="abilities/dex" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-dex">+0</div></div>
+              <div class="ability-block"><div class="ability-label">COS</div><input type="number" class="ability-input" data-path="abilities/con" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-con">+0</div></div>
+              <div class="ability-block"><div class="ability-label">INT</div><input type="number" class="ability-input" data-path="abilities/int" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-int">+0</div></div>
+              <div class="ability-block"><div class="ability-label">SAG</div><input type="number" class="ability-input" data-path="abilities/wis" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-wis">+0</div></div>
+              <div class="ability-block"><div class="ability-label">CAR</div><input type="number" class="ability-input" data-path="abilities/cha" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-cha">+0</div></div>
+            </div>
+            <div class="field-row field-row-inline"><label>Bonus Competenza</label><input type="number" data-path="proficiencyBonus" data-number min="2" max="6" placeholder="2" class="input-small"></div>
+          </div>
+        </details>
+
+        <details class="sheet-section" id="section-class-features">
+          <summary>⭐ Capacità di Classe</summary>
+          <div class="sheet-section-body"><div id="class-features-list"></div></div>
+        </details>
+
+        <details class="sheet-section">
+          <summary>🛡 Statistiche Combattimento</summary>
+          <div class="sheet-section-body">
+            <div class="field-grid-3">
+              <div class="field-row field-row-center"><label>Classe Armatura</label><input type="number" data-path="armorClass" data-number min="0" max="30" placeholder="10" class="input-big"></div>
+              <div class="field-row field-row-center"><label>Velocità (m)</label><input type="number" data-path="speed" data-number min="0" placeholder="9" class="input-big"></div>
+              <div class="field-row field-row-center"><label>Mod. Iniziativa</label><input type="number" data-path="initiativeMod" data-number min="-10" max="20" placeholder="0" class="input-big"></div>
+            </div>
+            <div class="field-grid-2">
+              <div class="field-row field-row-center"><label>HP Massimi</label><input type="number" data-path="hpMax" data-number min="1" placeholder="0" class="input-big"></div>
+              <div class="field-row field-row-center"><label>HP Temporanei</label><input type="number" data-path="tempHp" data-number min="0" placeholder="0" class="input-big"></div>
+            </div>
+            <div class="field-grid-2">
+              <div class="field-row field-row-center"><label>Dadi Vita usati</label><input type="number" data-path="hitDiceUsed" data-number min="0" placeholder="0" class="input-big"></div>
+            </div>
+            <div class="field-row field-row-inline"><label>Tipo Dado Vita</label><select data-path="hitDiceType" class="input-select"><option value="d6">d6</option><option value="d8">d8</option><option value="d10">d10</option><option value="d12">d12</option></select></div>
+            <div class="death-saves-section">
+              <div class="death-saves-label">Tiri Salvezza Morte</div>
+              <div class="death-saves-row"><span class="death-save-type success">Successi</span><div class="death-save-pips" id="death-successes"><button class="death-pip" data-type="successes" data-index="0">○</button><button class="death-pip" data-type="successes" data-index="1">○</button><button class="death-pip" data-type="successes" data-index="2">○</button></div></div>
+              <div class="death-saves-row"><span class="death-save-type failure">Fallimenti</span><div class="death-save-pips" id="death-failures"><button class="death-pip" data-type="failures" data-index="0">○</button><button class="death-pip" data-type="failures" data-index="1">○</button><button class="death-pip" data-type="failures" data-index="2">○</button></div></div>
+            </div>
+          </div>
+        </details>
+
+        <details class="sheet-section">
+          <summary>🎯 Tiri Salvezza</summary>
+          <div class="sheet-section-body">
+            <div class="save-list">
+              <div class="save-row"><button class="save-check" data-ability="str">○</button><span class="save-name">Forza</span><span class="save-value" id="save-str">+0</span></div>
+              <div class="save-row"><button class="save-check" data-ability="dex">○</button><span class="save-name">Destrezza</span><span class="save-value" id="save-dex">+0</span></div>
+              <div class="save-row"><button class="save-check" data-ability="con">○</button><span class="save-name">Costituzione</span><span class="save-value" id="save-con">+0</span></div>
+              <div class="save-row"><button class="save-check" data-ability="int">○</button><span class="save-name">Intelligenza</span><span class="save-value" id="save-int">+0</span></div>
+              <div class="save-row"><button class="save-check" data-ability="wis">○</button><span class="save-name">Saggezza</span><span class="save-value" id="save-wis">+0</span></div>
+              <div class="save-row"><button class="save-check" data-ability="cha">○</button><span class="save-name">Carisma</span><span class="save-value" id="save-cha">+0</span></div>
+            </div>
+          </div>
+        </details>
+
+        <details class="sheet-section">
+          <summary>🎯 Abilità</summary>
+          <div class="sheet-section-body">
+            <p class="hint-text">Tocca ○ per competenza, ◑ per expertise, ● per rimuovere</p>
+            <div class="skill-list">
+              <div class="skill-row"><button class="skill-prof" data-skill="acrobatics">○</button><span class="skill-name">Acrobazia</span><span class="skill-ability">DES</span><span class="skill-total" id="skill-acrobatics">+0</span></div>
+              <div class="skill-row"><button class="skill-prof" data-skill="animalHandling">○</button><span class="skill-name">Addestrare Animali</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-animalHandling">+0</span></div>
+              <div class="skill-row"><button class="skill-prof" data-skill="arcana">○</button><span class="skill-name">Arcano</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-arcana">+0</span></div>
+              <div class="skill-row"><button class="skill-prof" data-skill="athletics">○</button><span class="skill-name">Atletica</span><span class="skill-ability">FOR</span><span class="skill-total" id="skill-athletics">+0</span></div>
+              <div class="skill-row"><button class="skill-prof" data-skill="deception">○</button><span class="skill-name">Inganno</span><span class="skill-ability">CAR</span><span class="skill-total" id="skill-deception">+0</span></div>
+              <div class="skill-row"><button class="skill-prof" data-skill="history">○</button><span class="skill-name">Storia</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-history">+0</span></div>
+              <div class="skill-row"><button class="skill-prof" data-skill="insight">○</button><span class="skill-name">Intuizione</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-insight">+0</span></div>
+              <div class="skill-row"><button class="skill-prof" data-skill="intimidation">○</button><span class="skill-name">Intimidire</span><span class="skill-ability">CAR</span><span class="skill-total" id="skill-intimidation">+0</span></div>
+              <div class="skill-row"><button class="skill-prof" data-skill="investigation">○</button><span class="skill-name">Investigare</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-investigation">+0</span></div>
+              <div class="skill-row"><button class="skill-prof" data-skill="medicine">○</button><span class="skill-name">Medicina</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-medicine">+0</span></div>
+              <div class="skill-row"><button class="skill-prof" data-skill="nature">○</button><span class="skill-name">Natura</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-nature">+0</span></div>
+              <div class="skill-row"><button class="skill-prof" data-skill="perception">○</button><span class="skill-name">Percezione</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-perception">+0</span></div>
+              <div class="skill-row"><button class="skill-prof" data-skill="performance">○</button><span class="skill-name">Intrattenere</span><span class="skill-ability">CAR</span><span class="skill-total" id="skill-performance">+0</span></div>
+              <div class="skill-row"><button class="skill-prof" data-skill="persuasion">○</button><span class="skill-name">Persuasione</span><span class="skill-ability">CAR</span><span class="skill-total" id="skill-persuasion">+0</span></div>
+              <div class="skill-row"><button class="skill-prof" data-skill="religion">○</button><span class="skill-name">Religione</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-religion">+0</span></div>
+              <div class="skill-row"><button class="skill-prof" data-skill="sleightOfHand">○</button><span class="skill-name">Rapidità di Mano</span><span class="skill-ability">DES</span><span class="skill-total" id="skill-sleightOfHand">+0</span></div>
+              <div class="skill-row"><button class="skill-prof" data-skill="stealth">○</button><span class="skill-name">Furtività</span><span class="skill-ability">DES</span><span class="skill-total" id="skill-stealth">+0</span></div>
+              <div class="skill-row"><button class="skill-prof" data-skill="survival">○</button><span class="skill-name">Sopravvivenza</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-survival">+0</span></div>
+            </div>
+            <div class="passive-perception-row"><span class="passive-label">Percezione Passiva</span><span id="passive-perception" class="passive-value">10</span></div>
+          </div>
+        </details>
+
+        <details class="sheet-section">
+          <summary>⚔ Attacchi</summary>
+          <div class="sheet-section-body">
+            <div id="attacks-list" class="attacks-list"></div>
+            <form id="form-add-attack" class="add-form" novalidate>
+              <h4>Aggiungi Attacco</h4>
+              <input type="text" id="attack-name" placeholder="Nome (es. Spada lunga)" maxlength="30">
+              <div class="field-grid-2">
+                <input type="text" id="attack-formula" placeholder="Danno (es. 1d8)" maxlength="20">
+                <input type="text" id="attack-type" placeholder="Tipo (es. taglio)" maxlength="20">
+              </div>
+              <div class="field-grid-2">
+                <select id="attack-ability" class="input-select"><option value="str">FOR</option><option value="dex">DES</option><option value="con">COS</option><option value="int">INT</option><option value="wis">SAG</option><option value="cha">CAR</option><option value="manual">Manuale</option></select>
+                <label class="checkbox-label"><input type="checkbox" id="attack-proficient"> Competenza</label>
+              </div>
+              <div class="field-grid-2">
+                <input type="text" id="attack-bonus-override" placeholder="Bonus attacco (sovrascrivi)" maxlength="10">
+                <input type="text" id="attack-dmg-override" placeholder="Mod. danni (sovrascrivi)" maxlength="10">
+              </div>
+              <button type="submit" class="btn-secondary">+ Aggiungi Attacco</button>
+            </form>
+          </div>
+        </details>
+
+        <details class="sheet-section">
+          <summary>✨ Magia</summary>
+          <div class="sheet-section-body">
+            <div class="field-grid-3 magic-stats">
+              <div class="field-row field-row-center"><label>Caratteristica</label><select data-path="spellcastingAbility" class="input-select"><option value="">—</option><option value="int">INT</option><option value="wis">SAG</option><option value="cha">CAR</option></select></div>
+              <div class="field-row field-row-center"><label>CD Tiro Salvezza</label><span id="spell-save-dc" class="computed-big">—</span></div>
+              <div class="field-row field-row-center"><label>Bonus Attacco</label><span id="spell-attack-bonus" class="computed-big">—</span></div>
+              <div class="field-row field-row-center"><label title="Modificatore extra applicato sia alla CD che al bonus attacco degli incantesimi">Mod. Extra</label><input type="number" data-path="spellBonusModifier" data-number class="input-sm" min="-20" max="20" placeholder="0"></div>
+            </div>
+            <h4 class="subsection-title">Slot Incantesimo</h4>
+            <div id="spell-slots-list" class="spell-slots-list"></div>
+            <h4 class="subsection-title">Trucchetti</h4>
+            <div id="cantrips-list" class="cantrip-list"></div>
+            <form id="form-add-cantrip" class="add-form-inline" novalidate>
+              <input type="text" id="cantrip-name" placeholder="Nome trucchetto" maxlength="60">
+              <button type="submit" class="btn-secondary btn-sm">+ Aggiungi</button>
+            </form>
+            <div id="spells-by-level"></div>
+          </div>
+        </details>
+
+        <details class="sheet-section">
+          <summary>🎒 Inventario</summary>
+          <div class="sheet-section-body">
+            <div class="currency-grid">
+              <div class="currency-block"><label>MP</label><input type="number" data-path="currency/pp" data-number min="0" placeholder="0"></div>
+              <div class="currency-block"><label>MO</label><input type="number" data-path="currency/gp" data-number min="0" placeholder="0"></div>
+              <div class="currency-block"><label>ME</label><input type="number" data-path="currency/ep" data-number min="0" placeholder="0"></div>
+              <div class="currency-block"><label>MA</label><input type="number" data-path="currency/sp" data-number min="0" placeholder="0"></div>
+              <div class="currency-block"><label>MR</label><input type="number" data-path="currency/cp" data-number min="0" placeholder="0"></div>
+            </div>
+            <div id="inventory-list" class="inventory-list"></div>
+            <form id="form-add-item" class="add-form" novalidate>
+              <div class="field-grid-2">
+                <input type="text" id="item-name" placeholder="Nome oggetto" maxlength="40">
+                <input type="number" id="item-qty" placeholder="Qtà" min="1" value="1" class="input-small">
+              </div>
+              <input type="text" id="item-notes" placeholder="Note (opz.)" maxlength="200">
+              <button type="submit" class="btn-secondary">+ Aggiungi Oggetto</button>
+            </form>
+          </div>
+        </details>
+
+        <details class="sheet-section">
+          <summary>🌟 Caratteristiche &amp; Capacità</summary>
+          <div class="sheet-section-body"><textarea data-path="features" placeholder="Capacità di classe, tratti razziali, imprese..." rows="6"></textarea></div>
+        </details>
+
+        <details class="sheet-section">
+          <summary>💬 Personalità</summary>
+          <div class="sheet-section-body">
+            <div class="field-row"><label>Tratti caratteriali</label><textarea data-path="personalityTraits" placeholder="—" rows="2"></textarea></div>
+            <div class="field-row"><label>Ideali</label><textarea data-path="ideals" placeholder="—" rows="2"></textarea></div>
+            <div class="field-row"><label>Legami</label><textarea data-path="bonds" placeholder="—" rows="2"></textarea></div>
+            <div class="field-row"><label>Difetti</label><textarea data-path="flaws" placeholder="—" rows="2"></textarea></div>
+          </div>
+        </details>
+
+        <details class="sheet-section">
+          <summary>🔤 Lingue &amp; Competenze</summary>
+          <div class="sheet-section-body">
+            <div class="field-row"><label>Lingue conosciute</label><textarea data-path="languages" placeholder="—" rows="2"></textarea></div>
+            <div class="field-row"><label>Altre competenze e strumenti</label><textarea data-path="otherProficiencies" placeholder="—" rows="2"></textarea></div>
+          </div>
+        </details>
+
+        <details class="sheet-section">
+          <summary>📝 Note</summary>
+          <div class="sheet-section-body"><textarea data-path="notes" placeholder="Note libere..." rows="6"></textarea></div>
+        </details>
+
+      </div><!-- /.sheet-body -->
+    </div><!-- /#view-character -->
+
+  </div><!-- /#view-combat -->
+
 
   <!-- ═══════════════════════════════════════════════
-       MODAL — selezione condizioni
+       MODAL — Condizioni
   ═══════════════════════════════════════════════ -->
-  <div id="condition-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Seleziona condizioni">
-    <div class="modal-content">
-      <h3>Condizioni</h3>
-      <p class="modal-hint">Tocca per attivare/disattivare</p>
-      <div id="condition-list" class="condition-grid"></div>
-      <p id="condition-api-desc" class="condition-api-desc"></p>
-      <button id="btn-close-modal" class="btn-secondary">Chiudi</button>
+  <div id="condition-modal" class="veil hidden" role="dialog" aria-modal="true" aria-label="Condizioni">
+    <div class="modal-frame">
+      <div class="ds-heading"><span id="condition-modal-title">Condizioni</span></div>
+      <p class="t-mut" style="margin:0 0 14px; font-size:12.5px;">Tocca per attivare o rimuovere.</p>
+      <div class="row wrap" id="condition-list" style="gap:6px;"></div>
+      <p id="condition-api-desc" class="condition-api-desc" style="margin:12px 0 0;font-size:12px;color:var(--faint);font-style:italic;"></p>
+      <div class="ds-sep"><i></i></div>
+      <button id="btn-close-modal" class="btn btn--block">Chiudi</button>
     </div>
   </div>
 
   <!-- ═══════════════════════════════════════════════
-       MODAL — archivio cronache (home)
+       MODAL — Stat block mostro
   ═══════════════════════════════════════════════ -->
-  <!-- ═══════════════════════════════════════════════
-       MODAL — stat block mostro D&D 5e
-  ═══════════════════════════════════════════════ -->
-  <div id="monster-stat-block-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Stat block mostro">
-    <div class="modal-content monster-sb-content">
-      <h3 id="monster-sb-name" class="monster-sb-name"></h3>
+  <div id="monster-stat-block-modal" class="veil hidden" role="dialog" aria-modal="true" aria-label="Stat block mostro">
+    <div class="modal-frame" style="max-width:640px;">
+      <div class="ds-heading"><span id="monster-sb-name"></span></div>
       <div id="monster-sb-body" class="monster-sb-body"></div>
-      <div class="modal-footer">
-        <button id="btn-monster-add" class="btn-primary">➕ Aggiungi all'Incontro</button>
-        <button id="btn-monster-sb-close" class="btn-secondary">Chiudi</button>
+      <div class="ds-sep"><i></i></div>
+      <div class="row" style="gap:8px;">
+        <button id="btn-monster-add"     class="btn btn--primary grow">➕ Aggiungi all'Incontro</button>
+        <button id="btn-monster-sb-close" class="btn grow">Chiudi</button>
       </div>
     </div>
   </div>
 
-  <div id="notes-archive-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Cronache sessioni">
-    <div class="modal-content notes-archive-content">
-      <h3 id="notes-archive-title">📖 Cronache</h3>
-      <div id="notes-archive-list" class="notes-archive-list"></div>
-      <button id="btn-notes-archive-close" class="btn-secondary">Chiudi</button>
+  <!-- ═══════════════════════════════════════════════
+       MODAL — Cronache sessioni (archivio)
+  ═══════════════════════════════════════════════ -->
+  <div id="notes-archive-modal" class="veil hidden" role="dialog" aria-modal="true" aria-label="Cronache sessioni">
+    <div class="modal-frame">
+      <div class="ds-heading"><span id="notes-archive-title">📖 Cronache</span></div>
+      <div id="notes-archive-list" class="notes-archive-list" style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;"></div>
+      <button id="btn-notes-archive-close" class="btn btn--block">Chiudi</button>
     </div>
   </div>
 
   <!-- ═══════════════════════════════════════════════
        MODAL — Level Up / Creazione guidata
   ═══════════════════════════════════════════════ -->
-  <div id="levelup-modal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-content levelup-modal-content">
-      <h3 id="levelup-modal-title"></h3>
+  <div id="levelup-modal" class="veil hidden" role="dialog" aria-modal="true">
+    <div class="modal-frame">
+      <div class="ds-heading"><span id="levelup-modal-title"></span></div>
       <div id="levelup-modal-body" class="levelup-modal-body"></div>
-      <div class="modal-footer">
-        <button id="btn-levelup-confirm" class="btn-primary"></button>
-        <button id="btn-levelup-cancel" class="btn-secondary">Annulla</button>
+      <div class="ds-sep"><i></i></div>
+      <div class="row" style="gap:8px;">
+        <button id="btn-levelup-confirm" class="btn btn--primary grow"></button>
+        <button id="btn-levelup-cancel"  class="btn grow">Annulla</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       MODAL — Carica immagine scena
+  ═══════════════════════════════════════════════ -->
+  <div id="scene-upload-modal" class="veil hidden" role="dialog" aria-modal="true" aria-label="Carica immagine scena">
+    <div class="modal-frame">
+      <div class="ds-heading"><span>Carica Immagine Scena</span></div>
+      <div id="scene-drop-zone" class="scene-drop-zone" style="border:2px dashed var(--line-strong);border-radius:var(--r);padding:32px;text-align:center;cursor:pointer;transition:border-color .18s;">
+        <div class="scene-drop-icon" style="font-size:48px;margin-bottom:12px;">🖼</div>
+        <p id="scene-drop-text" class="scene-drop-text" style="margin:0 0 12px;color:var(--mut);">Trascina un'immagine qui</p>
+        <p class="scene-drop-or" style="color:var(--faint);margin:0 0 12px;">— oppure —</p>
+        <button id="btn-scene-pick-file" class="btn btn--sm">Scegli file</button>
+        <p class="scene-paste-hint" style="margin:12px 0 0;font-size:11px;color:var(--faint);">Incolla con <kbd class="kbd">Cmd+V</kbd> / <kbd class="kbd">Ctrl+V</kbd></p>
+      </div>
+      <div class="ds-sep"><i></i></div>
+      <button id="btn-scene-cancel" class="btn btn--block">Annulla</button>
     </div>
   </div>
 
   <input type="file" id="input-scene-image" accept="image/*" style="display:none">
 
-  <!-- ═══════════════════════════════════════════════
-       MODAL — carica immagine scena
-  ═══════════════════════════════════════════════ -->
-  <div id="scene-upload-modal" class="modal hidden" role="dialog" aria-modal="true" aria-label="Carica immagine scena">
-    <div class="modal-content scene-upload-content">
-      <h3>Carica Immagine Scena</h3>
-      <div id="scene-drop-zone" class="scene-drop-zone">
-        <div class="scene-drop-icon">🖼</div>
-        <p id="scene-drop-text" class="scene-drop-text">Trascina un'immagine qui</p>
-        <p class="scene-drop-or">— oppure —</p>
-        <button id="btn-scene-pick-file" class="btn-secondary btn-sm">Scegli file</button>
-        <p class="scene-paste-hint">Incolla con <kbd>Cmd+V</kbd> / <kbd>Ctrl+V</kbd></p>
-      </div>
-      <button id="btn-scene-cancel" class="btn-secondary">Annulla</button>
-    </div>
-  </div>
-
   <script type="module" src="app.js"></script>
+
+  <!-- Tab switching per combat + mobile tabbar -->
+  <script>
+    // Side panel tabs
+    document.addEventListener('click', function(e) {
+      const tabBtn = e.target.closest('.side-tabs button[data-pane]');
+      if (tabBtn) {
+        const pane = tabBtn.dataset.pane;
+        const tabs = tabBtn.closest('.side-tabs');
+        const rail = tabs?.closest('.rail-right') || tabs?.closest('.panel');
+        tabs.querySelectorAll('button').forEach(b => b.classList.toggle('is-on', b.dataset.pane === pane));
+        rail?.querySelectorAll('.side-pane').forEach(p => p.classList.toggle('is-on', p.dataset.pane === pane));
+      }
+    });
+    // Mobile tabbar
+    document.addEventListener('click', function(e) {
+      const tabBtn = e.target.closest('#tabbar button[data-tab]');
+      if (!tabBtn) return;
+      const tab = tabBtn.dataset.tab;
+      document.querySelectorAll('#tabbar button').forEach(b => b.classList.toggle('is-on', b.dataset.tab === tab));
+      // map tab to panel
+      const grid  = document.getElementById('panel-grid');
+      const init  = document.getElementById('panel-init');
+      const side  = document.getElementById('panel-side');
+      if (grid) grid.classList.toggle('is-mobile-on', tab === 'grid');
+      if (init) init.classList.toggle('is-mobile-on', tab === 'init');
+      if (side) {
+        side.classList.toggle('is-mobile-on', tab === 'cards' || tab === 'log');
+        if (tab === 'cards' || tab === 'log') {
+          const pane = tab === 'log' ? 'log' : 'cards';
+          side.querySelectorAll('.side-pane').forEach(p => p.classList.toggle('is-on', p.dataset.pane === pane));
+          side.querySelectorAll('.side-tabs button').forEach(b => b.classList.toggle('is-on', b.dataset.pane === pane));
+        }
+      }
+    });
+  </script>
 </body>
 </html>

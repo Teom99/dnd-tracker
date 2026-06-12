@@ -194,19 +194,12 @@ export function renderLogs(logsObj) {
     // Animate only if it's the newest AND it's different from the last time we rendered
     const isNew = index === 0 && logId !== lastLogId;
     
-    entry.className = `event-entry event-${log.type || 'info'} ${isNew ? 'animate-new' : ''}`;
-    
-    const d = new Date(log.timestamp);
-    const timestamp = d.toLocaleTimeString('it-IT', {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-    
-    entry.innerHTML = `
-      <div class="event-timestamp">${timestamp}</div>
-      <div>${escapeHtml(log.message)}</div>
-    `;
+    entry.className = `log-entry${log.type === 'turn' ? ' log-entry--turn' : ''}${isNew ? ' anim-in' : ''}`;
+
+    const d  = new Date(log.timestamp);
+    const ts = d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+
+    entry.innerHTML = `<time>${ts}</time><div>${escapeHtml(log.message)}</div>`;
     logContainer.appendChild(entry);
   });
 
@@ -218,9 +211,19 @@ export function renderSessionCode(code) {
   if (el) el.textContent = code;
 }
 
-export function renderRound(round) {
+export function renderRound(round, currentCombatantName = null) {
   const el = document.getElementById('round-display');
   if (el) el.textContent = `Round ${round}`;
+  const banner = document.getElementById('turn-banner');
+  if (banner) {
+    let nameEl = banner.querySelector('b');
+    if (currentCombatantName) {
+      if (!nameEl) { nameEl = document.createElement('b'); banner.appendChild(nameEl); }
+      nameEl.textContent = currentCombatantName;
+    } else if (nameEl) {
+      nameEl.remove();
+    }
+  }
 }
 
 export function renderMasterPanel(isMaster) {
@@ -316,7 +319,10 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     ].join('');
 
     const li = document.createElement('li');
-    li.className = ['combatant-card', isActive ? 'active-turn' : '', isKO ? 'knocked-out' : '']
+    const isAlly = !isCreature || c.faction === 'good';
+    const hpPct  = c.hpMax > 0 ? Math.min(1, Math.max(0, c.hpCurrent / c.hpMax)) : 0;
+
+    li.className = ['fight-card', isActive ? 'is-active' : '', isKO ? 'is-down' : '']
       .filter(Boolean).join(' ');
     li.dataset.combatantId = c.id;
 
@@ -346,176 +352,111 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       if (levelUpReady) {
         xpSectionHtml += `<div class="levelup-badge">✨ Pronto per salire!</div>`;
         if (isOwnCard) {
-          xpSectionHtml += `<button class="btn-levelup btn-primary btn-sm" data-id="${c.id}" data-action="levelup">⬆ Sali di livello</button>`;
+          xpSectionHtml += `<button class="btn btn--primary btn--sm" data-id="${c.id}" data-action="levelup">⬆ Sali di livello</button>`;
         }
       }
 
       if (isMaster && mode === 'milestone' && !levelUpGranted[c.id]) {
-        xpSectionHtml += `<button class="btn-secondary btn-sm btn-grant-levelup" data-id="${c.id}" data-action="grant-levelup">🎖 Concedi Level-up</button>`;
+        xpSectionHtml += `<button class="btn btn--sm" data-id="${c.id}" data-action="grant-levelup">🎖 Concedi Level-up</button>`;
       }
     }
 
+    const subtitleParts = [
+      isCreature ? 'Creatura' : isPet ? 'Famiglio' : 'PG',
+      (c.type === 'player' && c.level) ? `Lv.${c.level}` : null,
+      (acVisible && ac !== null) ? (canEditAc
+        ? `<button class="ac-edit-btn" data-id="${c.id}" data-action="edit-ac" title="Modifica CA">CA ${ac}</button>`
+        : `CA ${ac}`)
+        : null,
+    ].filter(Boolean).join(' · ');
+
     li.innerHTML = `
-      <div class="card-header">
-        <span class="turn-number">${turnNumber}</span>
-        <div class="card-name-block">
-          <span class="combatant-name">${escapeHtml(c.name)}${isKO ? ' 💀' : ''}</span>
-          <span class="type-badge ${c.type} ${isCreature ? (c.faction || 'evil') : ''}">${c.type === 'player' ? 'PG' : isPet ? '🐾' : 'CR'}</span>
-          ${c.type === 'player' && c.level ? `<span class="level-badge">Lv.${c.level}</span>` : ''}
-          ${ac !== null && acVisible ? (canEditAc
-            ? `<button class="ac-badge ac-edit-btn" data-id="${c.id}" data-action="edit-ac" title="Modifica CA">CA ${ac}</button>`
-            : `<span class="ac-badge">CA ${ac}</span>`) : ''}
+      <div class="fc-top">
+        <div class="fc-portrait" style="display:flex;align-items:center;justify-content:center;border:1px solid ${isAlly ? 'rgba(76,165,122,.3)' : 'rgba(168,66,58,.3)'};color:${isAlly ? 'var(--accent)' : '#c25b50'};">${isCreature ? '👹' : isPet ? '🐾' : '⚔'}</div>
+        <div class="fc-name">
+          <b>${escapeHtml(c.name)}</b>
+          <span>${subtitleParts}</span>
         </div>
-        <div class="initiative-block">
-          ${isMaster && isCreature ? `
-            <div class="faction-switch">
-              <button class="faction-btn evil ${(c.faction || 'evil') === 'evil' ? 'active' : ''}" data-id="${c.id}" data-action="set-faction" data-faction="evil" title="Fazione Cattiva">Avversario</button>
-              <button class="faction-btn good ${c.faction === 'good' ? 'active' : ''}" data-id="${c.id}" data-action="set-faction" data-faction="good" title="Fazione Buona">Alleato</button>
-            </div>
-          ` : ''}
+        <div class="fc-init">
           ${canEdit
-            ? `<button class="initiative-value editable" data-id="${c.id}" data-action="edit-initiative" title="Modifica iniziativa">${c.initiative}</button>`
-            : `<span class="initiative-value">${c.initiative}</span>`
-          }
+            ? `<button class="fc-init-b" data-id="${c.id}" data-action="edit-initiative">${c.initiative}</button>`
+            : `<b>${c.initiative}</b>`}
+          <span>init</span>
         </div>
-        ${canEdit ? `<button class="btn-remove" data-id="${c.id}" data-action="remove" aria-label="Rimuovi">×</button>` : ''}
+        ${canEdit
+          ? `<button class="btn btn--ghost btn--sm btn--icon" data-id="${c.id}" data-action="remove" aria-label="Rimuovi">✕</button>`
+          : `<span></span>`}
       </div>
 
       ${showFullHp ? `
-        <div class="hp-section">
-          <div class="hp-header">
-            <span class="hp-label">HP</span>
-            <span class="hp-numbers ${hpClass}">
-              ${c.hpCurrent} /
-              ${canEditMaxHp
-                ? `<button class="hp-max-btn" data-id="${c.id}" data-action="edit-hp-max" title="Modifica HP massimi">${c.hpMax}</button>`
-                : c.hpMax
-              }
-            </span>
-            ${canEdit
-              ? `<button class="btn-temp-hp${tempHp > 0 ? ' active' : ''}" data-id="${c.id}" data-action="edit-temp-hp" data-temp-hp="${tempHp}" title="HP Temporanei">${tempHp > 0 ? `THP: ${tempHp}` : '+ HP Temp.'}</button>`
-              : tempHp > 0 ? `<span class="temp-hp-label">THP: ${tempHp}</span>` : ''
-            }
-          </div>
-          <div class="hp-bar-container">
-            <div class="hp-bar" style="width:${hpPercent}%;background:${hpBarColor(hpPercent)}"></div>
-          </div>
-          ${tempHp > 0 ? `
-            <div class="temp-hp-bar-container">
-              <div class="temp-hp-bar" style="width:${tempHpPercent}%"></div>
-            </div>
-          ` : ''}
-          ${isMaster && isCreature ? `
-            <button
-              class="btn-health-hint ${c.showHealthHint ? 'hint-active' : ''}"
-              data-id="${c.id}"
-              data-action="toggle-health-hint"
-              title="${c.showHealthHint ? 'I giocatori vedono lo stato di salute' : 'I giocatori non vedono lo stato di salute'}"
-            >
-              ${c.showHealthHint ? '👁 Stato salute visibile ai giocatori' : '👁 Stato di salute nascosto ai giocatori'}
-            </button>
-          ` : ''}
-          ${isMaster && isCreature && ac !== null ? `
-            <button
-              class="btn-health-hint ${c.showAC ? '' : 'hint-active'}"
-              data-id="${c.id}"
-              data-action="toggle-show-ac"
-              title="${c.showAC ? 'CA visibile ai giocatori' : 'CA nascosta ai giocatori'}"
-            >
-              ${c.showAC ? '🛡 CA visibile ai giocatori' : '🛡 CA nascosta ai giocatori'}
-            </button>
-          ` : ''}
+        <div class="hpbar ${isAlly ? 'hpbar--ally' : ''}${tempHp > 0 ? ' hpbar--temp' : ''}">
+          <i class="trail" style="transform:scaleX(${hpPct.toFixed(4)});"></i>
+          <i class="fill"  style="transform:scaleX(${hpPct.toFixed(4)});"></i>
         </div>
+        <div class="fc-hp">
+          <span class="hp-text ${hpClass}">${c.hpCurrent} / ${canEditMaxHp
+            ? `<button class="hp-max-btn" data-id="${c.id}" data-action="edit-hp-max" title="Modifica HP max">${c.hpMax}</button>`
+            : c.hpMax}</span>
+          ${tempHp > 0 ? `<span class="chip chip--iron" style="font-size:9px;padding:1px 6px;">THP ${tempHp}</span>` : ''}
+          ${canEdit ? `<button class="btn btn--ghost btn--sm" data-id="${c.id}" data-action="edit-temp-hp" data-temp-hp="${tempHp}" style="margin-left:auto;font-size:9px;padding:2px 6px;">+THP</button>` : ''}
+        </div>
+        ${isMaster && isCreature ? `
+          <div class="fc-controls" style="gap:5px;margin-top:1px;">
+            <button class="btn btn--ghost btn--sm ${c.showHealthHint ? 'hint-active' : ''}" data-id="${c.id}" data-action="toggle-health-hint" style="font-size:9px;">${c.showHealthHint ? '👁 HP vis.' : '👁 HP nasco.'}</button>
+            ${ac !== null ? `<button class="btn btn--ghost btn--sm ${c.showAC ? '' : 'hint-active'}" data-id="${c.id}" data-action="toggle-show-ac" style="font-size:9px;">${c.showAC ? '🛡 CA vis.' : '🛡 CA nasco.'}</button>` : ''}
+          </div>
+        ` : ''}
       ` : showHint ? `
-        <div class="health-hint hint-${healthHintKey(hpPercent)}">
-          ${healthHintText(hpPercent)}
+        <p class="fc-action-note">${healthHintText(hpPercent)}</p>
+      ` : ''}
+
+      ${conditions.length > 0 ? `
+        <div class="fc-conds">
+          ${conditions.map(cond => {
+            const meta = CONDITIONS.find(x => x.name === cond);
+            return `<span class="chip" style="--c:${meta?.color ?? 'var(--mut)'};">${cond}</span>`;
+          }).join('')}
         </div>
       ` : ''}
 
       ${xpSectionHtml}
 
       ${canEdit ? `
-        <div class="action-panel">
-          <div class="action-input-row">
-            <span class="action-icon-label">⚔</span>
-            <input
-              type="text"
-              class="action-input"
-              data-id="${c.id}"
-              placeholder="Arma o incantesimo (es. Ascia da guerra)"
-              value="${escapeHtml(c.currentAction || '')}"
-              autocomplete="off"
-            >
-          </div>
-          <div class="attack-row">
-            <div class="target-chips" data-id="${c.id}">
-              ${targetChips}
-            </div>
-            <div class="attack-controls">
-              <input
-                type="number"
-                class="attack-amount"
-                data-id="${c.id}"
-                placeholder="Inserisci quantità..."
-                min="1"
-                max="9999"
-              >
-              <div class="attack-buttons">
-                <button class="btn-apply-damage" data-id="${c.id}" data-action="apply-damage">
-                  🗡 Infliggi Danno
-                </button>
-                <button class="btn-apply-heal" data-id="${c.id}" data-action="apply-heal">
-                  ✚ Applica Cura
-                </button>
-              </div>
-            </div>
-          </div>
+        <input type="text" class="action-input input input--sm" data-id="${c.id}"
+          placeholder="Arma o incantesimo (es. Ascia da guerra)"
+          value="${escapeHtml(c.currentAction || '')}"
+          autocomplete="off" style="width:100%;">
+        <div class="target-chips" data-id="${c.id}">${targetChips}</div>
+        <div class="fc-controls">
+          <input type="number" class="attack-amount input input--sm input--num" data-id="${c.id}" placeholder="Quantità" min="1" max="9999" style="width:72px;flex:none;">
+          <button class="btn btn--danger btn--sm" data-id="${c.id}" data-action="apply-damage">🗡 Danno</button>
+          <button class="btn btn--sm" data-id="${c.id}" data-action="apply-heal" style="color:var(--heal);">✚ Cura</button>
         </div>
       ` : c.currentAction ? `
-        <div class="action-display">⚔ ${escapeHtml(c.currentAction)}</div>
-      ` : ''}
-
-      ${conditions.length > 0 ? `
-        <div class="active-conditions">
-          ${conditions.map(cond => {
-            const meta = CONDITIONS.find(x => x.name === cond);
-            return `<span class="condition-badge" style="background:${meta?.color ?? '#666'}">${cond}</span>`;
-          }).join('')}
-        </div>
-      ` : ''}
-
-      ${canEdit ? `
-        <button class="btn-conditions" data-id="${c.id}" data-action="open-conditions">
-          ${conditions.length > 0 ? '✎ Modifica condizioni' : '+ Condizioni'}
-        </button>
-      ` : ''}
-
-      ${isMaster && isCreature && c.monsterApiIndex ? `
-        <button class="btn-stat-block" data-id="${c.id}" data-api-index="${c.monsterApiIndex}" data-action="view-stat-block">
-          📖 Visualizza Dati
-        </button>
-      ` : ''}
-
-      ${isOwnCard ? `
-        <button class="btn-sheet" data-id="${c.id}" data-action="open-sheet">📜 Scheda Personaggio</button>
+        <p class="fc-action-note">⚔ ${escapeHtml(c.currentAction)}</p>
       ` : ''}
 
       ${isOwnCard && isKO ? `
-        <div class="death-saves-inline">
-          <div class="ds-row">
-            <span class="ds-label">Successi</span>
-            ${[0,1,2].map(i => `<button class="ds-pip${i < successes ? ' filled' : ''}" data-action="death-save" data-type="successes" data-index="${i}">${i < successes ? '●' : '○'}</button>`).join('')}
-          </div>
-          <div class="ds-row">
-            <span class="ds-label">Fallimenti</span>
-            ${[0,1,2].map(i => `<button class="ds-pip${i < failures ? ' filled' : ''}" data-action="death-save" data-type="failures" data-index="${i}">${i < failures ? '●' : '○'}</button>`).join('')}
-          </div>
+        <div class="death-pips">
+          <span>Successi</span>
+          <div class="pips ok">${[0,1,2].map(i => `<button class="${i < successes ? 'on' : ''}" data-action="death-save" data-type="successes" data-index="${i}"></button>`).join('')}</div>
+          <span>Fallimenti</span>
+          <div class="pips ko">${[0,1,2].map(i => `<button class="${i < failures ? 'on' : ''}" data-action="death-save" data-type="failures" data-index="${i}"></button>`).join('')}</div>
         </div>
       ` : ''}
 
-      ${isActive && (isOwnCard || isOwnPet) ? `
-        <button class="btn-end-turn" data-id="${c.id}" data-action="end-turn">✓ Fine Turno</button>
-      ` : ''}
+      <div class="fc-controls">
+        ${canEdit ? `<button class="btn btn--ghost btn--sm" data-id="${c.id}" data-action="open-conditions" style="font-size:9.5px;">${conditions.length > 0 ? '✎ Condizioni' : '+ Condizioni'}</button>` : ''}
+        ${isMaster && isCreature ? `
+          <div class="faction-switch">
+            <button class="faction-btn evil ${(c.faction || 'evil') === 'evil' ? 'active' : ''}" data-id="${c.id}" data-action="set-faction" data-faction="evil">Avv.</button>
+            <button class="faction-btn good ${c.faction === 'good' ? 'active' : ''}" data-id="${c.id}" data-action="set-faction" data-faction="good">Alleato</button>
+          </div>
+        ` : ''}
+        ${isMaster && isCreature && c.monsterApiIndex ? `<button class="btn btn--ghost btn--sm" data-id="${c.id}" data-api-index="${c.monsterApiIndex}" data-action="view-stat-block" style="font-size:9.5px;">📖 Dati</button>` : ''}
+        ${isOwnCard ? `<button class="btn btn--ghost btn--sm" data-id="${c.id}" data-action="open-sheet" style="font-size:9.5px;">📜 Scheda</button>` : ''}
+        ${isActive && (isOwnCard || isOwnPet) ? `<button class="btn btn--primary btn--sm" data-id="${c.id}" data-action="end-turn" style="margin-left:auto;">✓ Fine Turno</button>` : ''}
+      </div>
     `;
 
     // ── Ripristina quantità (il bersaglio persiste in _selectedTargets) ────────
@@ -598,7 +539,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     if (action === 'death-save') {
       const type   = btn.dataset.type;
       const index  = parseInt(btn.dataset.index);
-      const filled = btn.classList.contains('filled');
+      const filled = btn.classList.contains('on');
       callbacks.onDeathSave?.(type, filled ? index : index + 1);
       return;
     }
@@ -743,7 +684,7 @@ export function renderConditionModal(combatantId, activeConditions, onToggle) {
     <button
       class="condition-option ${activeConditions.includes(cond.name) ? 'active' : ''}"
       data-condition="${cond.name}"
-      style="--cond-color:${cond.color}"
+      style="--c:${cond.color}"
     >${cond.name}</button>
   `).join('');
 

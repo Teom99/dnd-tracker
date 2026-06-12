@@ -313,10 +313,15 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
       ? `<span class="grid-initiative-ko">💀</span>`
       : '<span class="grid-initiative-ko"></span>';
 
+    const factionDot = c.type === 'creature'
+      ? `<i class="init-faction-dot ${c.faction === 'good' ? 'ally' : 'enemy'}"></i>`
+      : '';
+
     html += `
       <li class="${cls}" style="cursor:pointer" data-id="${c.id}">
+        <span class="grid-initiative-init">${c.initiative}</span>
         <span class="grid-initiative-name">${esc(c.name)}</span>
-        <div class="grid-initiative-meta">${koIcon}${distText}</div>
+        <div class="grid-initiative-meta">${koIcon}${factionDot}${distText}</div>
       </li>`;
   }
 

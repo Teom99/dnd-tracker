@@ -558,7 +558,7 @@ document.getElementById('btn-clear-log').addEventListener('click', () => {
 
 document.getElementById('btn-toggle-ship').addEventListener('click', () => {
   state.shipPanelOpen = !state.shipPanelOpen;
-  document.querySelector('.combat-cols').classList.toggle('hidden', state.shipPanelOpen);
+  document.querySelector('.combat-shell').classList.toggle('hidden', state.shipPanelOpen);
   document.getElementById('ship-panel').classList.toggle('hidden', !state.shipPanelOpen);
   if (state.shipPanelOpen) _renderShipPanel();
 });
@@ -1004,7 +1004,8 @@ function _startListening() {
     const sorted   = state.tracker.sortedCombatants(data.combatants);
     const creatures = sorted.filter(c => c.type === 'creature');
     const players   = sorted.filter(c => c.type === 'player' || c.type === 'pet');
-    UI.renderRound(data.round ?? 1);
+    const currentCombatant = sorted.find(c => c.id === data.currentTurnId);
+    UI.renderRound(data.round ?? 1, currentCombatant?.name ?? null);
     const callbacks = makeCallbacks();
     const progressionData = {
       mode:           data.progressionMode ?? 'xp',
