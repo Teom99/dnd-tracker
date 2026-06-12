@@ -1,6 +1,7 @@
 // Griglia quadrata. 1 cella = 1 m. Dimensioni guidate da gridConfig.
 // Zoom via viewBox: _zoom scala il viewBox, _panX/_panY traslano l'origine.
-// Distanza Chebyshev (diagonali = 1), misurata bordo-a-bordo tra footprint.
+// Distanza a diagonali alternate (variante DMG 5-10-5: la 1ª diagonale costa 1,
+// la 2ª costa 2, ...), misurata bordo-a-bordo tra footprint.
 
 const CELL = 40;        // lato cella nelle coordinate del viewBox
 const PAD  = 14;        // margine interno (coordinate viewBox) — spazio per etichette nome/distanza
@@ -83,11 +84,12 @@ function axisDist(a1, a2, b1, b2) {
   return Math.max(0, Math.max(a1, b1) - Math.min(a2, b2));
 }
 
-// Distanza Chebyshev bordo-a-bordo tra due footprint quadrati.
+// Distanza bordo-a-bordo tra due footprint quadrati, con diagonali alternate
+// (variante DMG: ogni seconda diagonale costa doppio) → max + floor(min/2).
 export function squareDistance(c1, r1, n1, c2, r2, n2) {
   const dc = axisDist(c1, c1 + n1 - 1, c2, c2 + n2 - 1);
   const dr = axisDist(r1, r1 + n1 - 1, r2, r2 + n2 - 1);
-  return Math.max(dc, dr);
+  return Math.max(dc, dr) + Math.floor(Math.min(dc, dr) / 2);
 }
 
 function fmtM(d) {
@@ -137,6 +139,13 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   const reachSpeed = selComb?.speed > 0 ? selComb.speed : 9;
   const showReach  = !!(selPos && selComb && selComb.hpCurrent > 0 && !editMode);
 
+  // I token grandi si ancorano (circa) al centro: la cella cliccata non è il top-left ma il centro del footprint
+  const selOff  = Math.floor((selSide - 1) / 2);
+  const selRing = !selComb ? '#8a8a8a'
+    : (selComb.type === 'player' || selectedId === myCombatantId) ? '#4aba4a'
+    : selComb.faction === 'good' ? '#4aa8d8'
+    : '#bf4a4a';
+
   const vbW = (PAD * 2 + cols * CELL).toFixed(0);
   const vbH = (PAD * 2 + rows * CELL).toFixed(0);
   _totalW = PAD * 2 + cols * CELL;
@@ -174,41 +183,39 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     const isPlayer   = occ.type === 'player';
     const isDead     = occ.hpCurrent <= 0;
 
-    let fill, stroke;
-    if (isMyToken)      { fill = '#0d2d0d'; stroke = '#4aba4a'; }
-    else if (isPlayer)  { fill = '#142d4a'; stroke = '#4a8abf'; }
-    else if (occ.faction === 'good') { fill = 'rgba(124,88,0,0.4)'; stroke = '#d4af37'; }
-    else                { fill = '#2d1010'; stroke = '#bf4a4a'; }
-    if (isDead) { fill = '#666'; stroke = '#999'; }
+    // Colore del bordo per tipo di token; sfondo opaco in tinta scura
+    let fill, ring;
+    if (isPlayer || isMyToken)       { fill = '#0d2d0d'; ring = '#4aba4a'; }   // giocatori: verde
+    else if (occ.faction === 'good') { fill = '#10293c'; ring = '#4aa8d8'; }   // creature alleate: azzurro
+    else                             { fill = '#2d1010'; ring = '#bf4a4a'; }   // nemici: rosso
+    if (isDead) { fill = '#2e2e2e'; ring = '#8a8a8a'; }
 
-    const inset    = 3;
-    const initials = esc((occ.name || '?').trim().slice(0, 2).toUpperCase());
-    const fsz      = Math.max(11, Math.min(20, 9 + n * 4));
+    const inset  = 3;
+    const letter = esc((occ.name || '?').trim().charAt(0).toUpperCase());
+    const fsz    = Math.max(13, Math.min(24, 11 + n * 4));
 
-    // Token rotondo: alone attivo/selezionato, anello HP, corpo, iniziali
+    // Token rotondo: alone attivo/selezionato + un unico bordo che è anche la barra HP
     const rOuter = w / 2 - inset;
-    const rRing  = rOuter - 1.5;
-    const rBody  = rOuter - 5;
+    const ringW  = 3.5;
+    const rRing  = rOuter - ringW / 2;
+    const rBody  = rRing - ringW / 2;
 
     if (isActive) {
-      inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 1.5}" fill="none" stroke="var(--gold-bright)" stroke-width="1.5" pointer-events="none"/>`;
+      inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 2}" fill="none" stroke="var(--gold-bright)" stroke-width="1.5" pointer-events="none"/>`;
     } else if (isSelected) {
-      inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 1.5}" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="4 4" pointer-events="none"/>`;
+      inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 2}" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="4 4" pointer-events="none"/>`;
     }
 
-    // Anello HP: master vede tutto, i player solo PG/famigli (mai gli HP esatti delle creature)
-    const ringVisible = !isDead && occ.hpMax > 0 && (isMaster || occ.type !== 'creature');
-    if (ringVisible) {
-      const hpPct     = Math.max(0, Math.min(1, occ.hpCurrent / occ.hpMax));
-      const ringColor = hpPct <= 0.25 ? 'var(--blood)' : hpPct <= 0.5 ? 'var(--gold)' : 'var(--heal)';
-      const circ      = 2 * Math.PI * rRing;
-      inner += `<circle cx="${cx}" cy="${cy}" r="${rRing}" fill="none" stroke="rgba(0,0,0,.5)" stroke-width="3" pointer-events="none"/>`;
-      inner += `<circle cx="${cx}" cy="${cy}" r="${rRing}" fill="none" stroke="${ringColor}" stroke-width="3" stroke-linecap="round"
-                        stroke-dasharray="${(circ * hpPct).toFixed(1)} ${circ.toFixed(1)}" transform="rotate(-90 ${cx} ${cy})" pointer-events="none"/>`;
-    }
+    // HP esatti: master vede tutto, i player solo PG/famigli — per le creature il bordo resta pieno
+    const hpVisible = occ.hpMax > 0 && (isMaster || occ.type !== 'creature');
+    const hpPct     = (isDead || !hpVisible) ? 1 : Math.max(0, Math.min(1, occ.hpCurrent / occ.hpMax));
+    const circ      = 2 * Math.PI * rRing;
 
-    inner += `<circle cx="${cx}" cy="${cy}" r="${rBody}" fill="${fill}" stroke="${stroke}" stroke-width="2.5" pointer-events="none"/>`;
-    inner += `<text x="${cx}" y="${(cy + fsz * 0.36).toFixed(1)}" text-anchor="middle" font-size="${fsz}" class="sq-name" pointer-events="none">${isDead ? '💀' : initials}</text>`;
+    inner += `<circle cx="${cx}" cy="${cy}" r="${rBody}" fill="${fill}" pointer-events="none"/>`;
+    inner += `<circle cx="${cx}" cy="${cy}" r="${rRing}" fill="none" stroke="${ring}" stroke-opacity=".25" stroke-width="${ringW}" pointer-events="none"/>`;
+    inner += `<circle cx="${cx}" cy="${cy}" r="${rRing}" fill="none" stroke="${ring}" stroke-width="${ringW}"${hpPct < 1 ? ' stroke-linecap="round"' : ''}
+                      stroke-dasharray="${(circ * hpPct).toFixed(1)} ${circ.toFixed(1)}" transform="rotate(-90 ${cx} ${cy})" pointer-events="none"/>`;
+    inner += `<text x="${cx}" y="${(cy + fsz * 0.36).toFixed(1)}" text-anchor="middle" font-size="${fsz}" class="sq-name" pointer-events="none">${isDead ? '💀' : letter}</text>`;
     inner += `<text x="${cx}" y="${(y + w + 9).toFixed(1)}" text-anchor="middle" class="sq-nm" pointer-events="none">${esc((occ.name || '').trim().slice(0, 12).toUpperCase())}</text>`;
 
     // Distanza dal token selezionato (etichetta sopra il token)
@@ -268,12 +275,37 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     return true;
   }
 
+  // Preview di spostamento: ghost del footprint sotto il cursore, grigio se la destinazione non è valida
+  let ghost = null;
+  const removeGhost = () => { ghost?.remove(); ghost = null; };
+  function updateGhost(c, r) {
+    const canMoveSel = selectedId && !((editMode && isMaster)) && (isMaster || myOwnedIds.has(selectedId));
+    if (!canMoveSel || occCell[`${c}_${r}`]) { removeGhost(); return; }   // sopra un token il click seleziona, niente preview
+    const ac = c - selOff;
+    const ar = r - selOff;
+    const ok = canPlace(ac, ar, selSide, selectedId);
+    const { x: gx, y: gy } = cellXY(ac, ar);
+    const gw    = selSide * CELL;
+    const color = ok ? selRing : '#8a8a8a';
+    if (!ghost) {
+      ghost = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      ghost.setAttribute('pointer-events', 'none');
+      svg.appendChild(ghost);
+    }
+    ghost.innerHTML =
+      `<rect x="${gx + 1.5}" y="${gy + 1.5}" width="${gw - 3}" height="${gw - 3}" fill="${color}" fill-opacity=".1"
+             stroke="${color}" stroke-opacity=".6" stroke-width="1.5" stroke-dasharray="5 4"/>` +
+      `<circle cx="${gx + gw / 2}" cy="${gy + gw / 2}" r="${gw / 2 - 4.75}" fill="none"
+               stroke="${color}" stroke-opacity=".55" stroke-width="3.5"/>`;
+  }
+
   // Tooltip nome al passaggio del mouse
   let nameTooltip = null;
   svg.addEventListener('mousemove', (e) => {
     const hit = e.target.closest('.sq-hit');
-    if (!hit) { nameTooltip?.remove(); nameTooltip = null; return; }
+    if (!hit) { nameTooltip?.remove(); nameTooltip = null; removeGhost(); return; }
     const c = parseInt(hit.dataset.c), r = parseInt(hit.dataset.r);
+    updateGhost(c, r);
     const occId = occCell[`${c}_${r}`];
     const occ   = occId ? comb[occId] : null;
     if (occ) {
@@ -302,6 +334,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   svg.addEventListener('mouseleave', () => {
     svg.querySelectorAll('.sq.sq-hover').forEach(h => h.classList.remove('sq-hover'));
     nameTooltip?.remove(); nameTooltip = null;
+    removeGhost();
   });
 
   svg.addEventListener('click', (e) => {
@@ -322,9 +355,11 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     }
 
     if (selectedId) {
-      // Sposta il token selezionato (la cella cliccata diventa l'angolo top-left)
+      // Sposta il token selezionato (la cella cliccata è circa il centro del footprint, come la preview)
       if (isMaster || myOwnedIds.has(selectedId)) {
-        if (canPlace(col, row, selSide, selectedId)) onMove(selectedId, col, row);
+        const ac = col - selOff;
+        const ar = row - selOff;
+        if (canPlace(ac, ar, selSide, selectedId)) onMove(selectedId, ac, ar);
       }
       onSelect(null);
       return;
@@ -337,7 +372,8 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
         : [...myOwnedIds].find(id => id !== myCombatantId && pos[id] == null);
       if (placeId) {
         const side = footprintOf(comb[placeId]?.size);
-        if (canPlace(col, row, side, placeId)) onMove(placeId, col, row);
+        const off  = Math.floor((side - 1) / 2);
+        if (canPlace(col - off, row - off, side, placeId)) onMove(placeId, col - off, row - off);
       }
     }
   });

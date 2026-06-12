@@ -3121,7 +3121,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 
 .sq {
   fill: var(--bg-deep);
-  stroke: var(--border-warm);
+  stroke: rgba(217, 211, 195, .06);
   stroke-width: 1;
   transition: fill 0.1s;
 }
