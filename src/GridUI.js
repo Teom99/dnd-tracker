@@ -13,6 +13,8 @@ let _zoom     = 1;
 let _panX     = 0;
 let _panY     = 0;
 let _panStart = null;   // { x, y, px, py, moved } durante un drag
+let _totalW   = 0;      // dimensioni totali viewBox in coordinate SVG
+let _totalH   = 0;
 
 // ─── Disegno muri con drag (tieni premuto LMB in modalità modifica) ──────────
 // Le listener stanno sul container (persiste tra i re-render); leggono _ctx,
@@ -132,6 +134,8 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
 
   const vbW = (PAD * 2 + cols * CELL).toFixed(0);
   const vbH = (PAD * 2 + rows * CELL).toFixed(0);
+  _totalW = PAD * 2 + cols * CELL;
+  _totalH = PAD * 2 + rows * CELL;
 
   let inner = '';
 
@@ -351,19 +355,15 @@ export function initGridControls(onGridReset) {
   document.getElementById('btn-grid-reset')?.addEventListener('click', () => onGridReset?.());
 
   function _zoomTo(z) {
-    const prev = _zoom;
-    _zoom = Math.min(4, Math.max(0.5, z));
-    // Mantieni il centro visibile stabile durante lo zoom
-    const svg = document.querySelector('.sq-svg');
-    const vb  = svg?.viewBox?.baseVal;
-    if (vb) {
-      const cx = vb.x + vb.width  / 2;
-      const cy = vb.y + vb.height / 2;
-      const fullW = vb.width  * prev;
-      const fullH = vb.height * prev;
-      _panX = Math.max(0, cx - fullW / _zoom / 2);
-      _panY = Math.max(0, cy - fullH / _zoom / 2);
-    }
+    if (!_totalW || !_totalH) return;
+    // Centro del viewport corrente in coordinate SVG
+    const cx = _panX + (_totalW / _zoom) / 2;
+    const cy = _panY + (_totalH / _zoom) / 2;
+    _zoom = Math.min(4, Math.max(1, z));
+    const maxPanX = _totalW - _totalW / _zoom;
+    const maxPanY = _totalH - _totalH / _zoom;
+    _panX = Math.min(maxPanX, Math.max(0, cx - (_totalW / _zoom) / 2));
+    _panY = Math.min(maxPanY, Math.max(0, cy - (_totalH / _zoom) / 2));
     _reRenderCallback?.();
   }
 
@@ -392,8 +392,10 @@ export function initGridControls(onGridReset) {
       const rect = container.getBoundingClientRect();
       const scaleX = parseFloat(svg?.viewBox.baseVal.width  ?? 1) / (rect.width  || 1);
       const scaleY = parseFloat(svg?.viewBox.baseVal.height ?? 1) / (rect.height || 1);
-      _panX = Math.max(0, _panStart.px - dx * scaleX);
-      _panY = Math.max(0, _panStart.py - dy * scaleY);
+      const maxPanX = _totalW - _totalW / _zoom;
+      const maxPanY = _totalH - _totalH / _zoom;
+      _panX = Math.min(maxPanX, Math.max(0, _panStart.px - dx * scaleX));
+      _panY = Math.min(maxPanY, Math.max(0, _panStart.py - dy * scaleY));
       _reRenderCallback?.();
     }
   });
