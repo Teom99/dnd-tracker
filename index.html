@@ -225,8 +225,217 @@
     .sheet-back-btn { display: none; }
     body.sheet-only .sheet-back-btn { display: inline-flex; }
 
-    /* Ship panel */
+    /* ── Scheda personaggio (tomo) ── */
+    .sheet-main { width: min(1120px, 100%); margin: 0 auto; padding: 22px 16px 90px; }
+    #view-character .sheet-head { display: grid; grid-template-columns: 88px minmax(0,1fr) auto; gap: 18px; align-items: center; padding: 18px; }
+    #view-character .sheet-head .portrait { width: 88px; height: 88px; border-radius: 2px; }
+    .sheet-id { min-width: 0; }
+    .sheet-name-input { width: 100%; background: none; border: 0; padding: 0; color: var(--bone); font-family: var(--font-display); font-size: 30px; font-weight: 700; line-height: 1.1; }
+    .sheet-name-input:focus { outline: none; color: var(--gold-bright); }
+    .sheet-id .sub { font-size: 12px; letter-spacing: .18em; text-transform: uppercase; color: var(--mut); margin-top: 2px; }
+    .xp-line { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+    .xp-line .hpbar { flex: 1; max-width: 340px; height: 5px; }
+    .xp-line .hpbar .fill { background: linear-gradient(180deg, var(--gold-bright), var(--gold)); box-shadow: none; }
+    .sheet-head-actions { display: flex; flex-direction: column; gap: 8px; }
+    .sheet-grid { display: grid; grid-template-columns: 5fr 7fr; gap: 18px; margin-top: 18px; align-items: start; }
+    .sheet-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+    @media (max-width: 880px) {
+      .sheet-grid { grid-template-columns: 1fr; }
+      #view-character .sheet-head { grid-template-columns: 64px 1fr; }
+      #view-character .sheet-head .portrait { width: 64px; height: 64px; }
+      .sheet-head-actions { grid-column: 1 / -1; flex-direction: row; }
+      .sheet-head-actions .btn { flex: 1; }
+    }
+
+    /* sezioni a soffietto */
+    details.tome { background: linear-gradient(180deg, var(--bg2), var(--bg1) 70%); border: 1px solid var(--line); border-radius: var(--r); }
+    details.tome > summary {
+      list-style: none; cursor: pointer; user-select: none;
+      display: flex; align-items: center; gap: 12px;
+      padding: 13px 16px;
+      font-family: var(--font-display); font-size: 17px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--bone);
+    }
+    details.tome > summary::-webkit-details-marker { display: none; }
+    details.tome > summary::before { content: ""; width: 5px; height: 5px; transform: rotate(45deg); background: var(--gold-dim); flex: none; transition: transform .2s; }
+    details.tome[open] > summary::before { background: var(--gold-bright); transform: rotate(45deg) scale(1.25); }
+    details.tome > summary .sumnote { margin-left: auto; font: 500 11px var(--font-ui); letter-spacing: .12em; color: var(--faint); }
+    .tome-body { padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px; }
+    .id-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 560px) { .id-grid { grid-template-columns: 1fr; } }
+
+    /* caratteristiche */
+    #view-character .ability-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+    @media (max-width: 560px) { #view-character .ability-grid { grid-template-columns: repeat(3, 1fr); } }
+    #view-character .ab { position: relative; text-align: center; padding: 10px 4px 8px; background: var(--ink); border: 1px solid var(--line); border-radius: var(--r); }
+    #view-character .ab label { font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--faint); display: block; }
+    #view-character .ab input { width: 100%; background: none; border: 0; color: var(--bone); text-align: center; font-family: var(--font-display); font-size: 24px; font-weight: 700; padding: 0; }
+    #view-character .ab input:focus { outline: none; color: var(--gold-bright); }
+    #view-character .ab .mod { font-size: 13px; font-weight: 700; color: var(--gold-bright); }
+    .prof-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 0 4px; }
+    .prof-row .input, .prof-row .select { width: auto; max-width: 110px; text-align: center; }
+
+    /* statistiche combat + magia */
+    #view-character .combat-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    #view-character .magic-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    @media (max-width: 560px) { #view-character .magic-stats { grid-template-columns: repeat(2, 1fr); } }
+    #view-character .cstat { text-align: center; padding: 12px 4px 10px; background: var(--ink); border: 1px solid var(--line); border-radius: var(--r); }
+    #view-character .cstat b { font-family: var(--font-display); font-size: 26px; font-weight: 700; display: block; line-height: 1.05; color: var(--bone); }
+    #view-character .cstat input { width: 100%; background: none; border: 0; text-align: center; font-family: var(--font-display); font-size: 26px; font-weight: 700; line-height: 1.05; color: var(--bone); padding: 0; }
+    #view-character .cstat input:focus { outline: none; color: var(--gold-bright); }
+    #view-character .cstat label { font-size: 9.5px; letter-spacing: .16em; text-transform: uppercase; color: var(--faint); display: block; }
+    #view-character .cstat.hp input { color: var(--heal); }
+    #view-character .cstat-select { width: 100%; background: none; border: 0; color: var(--bone); font-family: var(--font-display); font-size: 20px; font-weight: 700; text-align: center; appearance: none; padding: 3px 0; cursor: pointer; }
+    #view-character .cstat-select:focus { outline: none; color: var(--gold-bright); }
+    #view-character .cstat-select option { background: var(--bg1); color: var(--bone); font: 400 14px var(--font-ui); }
+
+    /* tiri salvezza + abilità */
+    #view-character .save-list, #view-character .skill-list { display: flex; flex-direction: column; gap: 0; }
+    #view-character .save-row { display: grid; grid-template-columns: 30px minmax(0,1fr) auto; gap: 8px; align-items: center; min-height: 38px; padding: 1px 4px; border-bottom: 1px solid var(--line); }
+    #view-character .skill-row { display: grid; grid-template-columns: 30px minmax(0,1fr) 38px auto; gap: 8px; align-items: center; min-height: 38px; padding: 1px 4px; border-bottom: 1px solid var(--line); }
+    #view-character .save-row:last-child, #view-character .skill-row:last-child { border-bottom: 0; }
+    #view-character .pip {
+      appearance: none; cursor: pointer; width: 22px; height: 22px; padding: 0; flex: none;
+      border: 1px solid var(--line-strong); border-radius: 50%; background: transparent;
+      font-size: 0; color: transparent; transition: background .15s, border-color .15s;
+    }
+    #view-character .pip[data-level="1"] { background: var(--gold-dim); border-color: var(--gold); }
+    #view-character .pip[data-level="2"] { background: var(--gold); border-color: var(--gold-bright); }
+    .sk-name { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--bone); }
+    .sk-ab { font-size: 10px; letter-spacing: .12em; color: var(--faint); text-transform: uppercase; }
+    .sk-val { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 14px; color: var(--bone); text-align: right; min-width: 34px; }
+    .passive-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 4px 2px; }
+    .passive-row b { font-family: var(--font-display); font-size: 22px; color: var(--gold-bright); }
+
+    /* TS morte nella scheda */
+    #view-character .death-saves-row { display: flex; align-items: center; gap: 12px; justify-content: center; padding: 4px 0; }
+    #view-character .death-pip { width: 16px; height: 16px; min-width: 0; border-radius: 50%; border: 1px solid var(--line-strong); background: transparent; padding: 0; font-size: 0; color: transparent; cursor: pointer; }
+    #view-character .death-pips .ok .death-pip.filled { background: var(--accent); border-color: var(--accent); }
+    #view-character .death-pips .ko .death-pip.filled { background: var(--blood); border-color: var(--blood); }
+
+    /* attacchi */
+    #view-character .attacks-list { display: flex; flex-direction: column; gap: 8px; }
+    #view-character .atk-row { display: grid; grid-template-columns: minmax(0,1fr) auto auto auto; gap: 10px; align-items: center; padding: 9px 10px; background: var(--ink); border: 1px solid var(--line); border-radius: var(--r); }
+    #view-character .atk-row b { font-family: var(--font-display); font-size: 16px; color: var(--bone); }
+    #view-character .atk-row .t-mono { font-size: 11px; }
+    .atk-pill { font-size: 12px; font-weight: 700; color: var(--gold-bright); border: 1px solid var(--gold-dim); border-radius: 1px; padding: 3px 8px; white-space: nowrap; }
+
+    /* slot incantesimo */
+    #view-character .spell-slots-list { display: flex; flex-direction: column; gap: 0; }
+    #view-character .slot-row { display: grid; grid-template-columns: 64px minmax(0,1fr) auto auto; gap: 10px; align-items: center; min-height: 42px; padding: 6px 4px; border-bottom: 1px solid var(--line); background: none; border-radius: 0; }
+    #view-character .slot-row:last-child { border-bottom: 0; }
+    #view-character .slot-row.is-zero { opacity: .55; }
+    .slot-lv { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--mut); }
+    #view-character .slot-pips { display: flex; gap: 5px; flex-wrap: wrap; flex: unset; }
+    .slot-pip { width: 14px; height: 14px; transform: rotate(45deg); border: 1px solid var(--accent-dim); }
+    .slot-pip.used { background: transparent; border-color: var(--line-strong); }
+    .slot-pip.free { background: var(--accent-faint); border-color: var(--accent); box-shadow: 0 0 8px var(--accent-faint); }
+    .slot-ctrl { display: flex; gap: 4px; align-items: center; }
+    .slot-ctrl .btn { min-height: 30px; min-width: 30px; padding: 2px; }
+    #view-character .slot-max-input { width: 46px; min-height: 30px; text-align: center; background: var(--ink); border: 1px solid var(--line); border-radius: var(--r); color: var(--bone); padding: 2px; font: inherit; }
+
+    /* trucchetti + incantesimi */
+    #view-character .spell-row { display: flex; align-items: center; gap: 10px; min-height: 36px; padding: 2px 4px; border-bottom: 1px solid var(--line); }
+    #view-character .spell-row:last-child { border-bottom: 0; }
+    #view-character .spell-row .prep { appearance: none; width: 11px; height: 11px; padding: 0; transform: rotate(45deg); border: 1px solid var(--gold-dim); background: transparent; flex: none; cursor: pointer; }
+    #view-character .spell-row .prep.on { background: var(--gold); box-shadow: 0 0 8px rgba(210,180,106,.4); }
+    #view-character .spell-row .nm { flex: 1; min-width: 0; font-size: 14.5px; color: var(--bone); }
+    #view-character .spell-row .lv { font-size: 10px; letter-spacing: .12em; color: var(--faint); text-transform: uppercase; }
+    .spell-level-block { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
+
+    /* inventario */
+    #view-character .currency-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+    #view-character .cur { text-align: center; padding: 8px 2px; background: var(--ink); border: 1px solid var(--line); border-radius: var(--r); }
+    #view-character .cur input { width: 100%; display: block; background: none; border: 0; text-align: center; font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--bone); padding: 0; }
+    #view-character .cur input:focus { outline: none; color: var(--gold-bright); }
+    #view-character .cur label { font-size: 9px; letter-spacing: .18em; color: var(--faint); text-transform: uppercase; }
+    #view-character .cur.gold input { color: var(--gold-bright); }
+    #view-character .inventory-list { display: flex; flex-direction: column; gap: 0; }
+    .inv-row { display: grid; grid-template-columns: minmax(0,1fr) 44px auto; gap: 10px; align-items: center; min-height: 38px; padding: 2px 4px; border-bottom: 1px solid var(--line); }
+    .inv-row:last-child { border-bottom: 0; }
+    .inv-row .qty { text-align: center; font-variant-numeric: tabular-nums; color: var(--mut); cursor: pointer; }
+    .inv-row small { display: block; color: var(--faint); font-size: 11.5px; }
+    .inv-row .inv-actions { display: flex; gap: 4px; }
+    .inv-row.editing { grid-template-columns: minmax(0,1fr) 64px auto; align-items: start; padding: 8px 4px; }
+    .inv-row .edit-fields { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+
+    /* form di aggiunta + varie */
+    #view-character textarea.input { resize: vertical; min-height: 64px; line-height: 1.5; }
+    #view-character .add-form { display: flex; flex-direction: column; gap: 8px; padding: 10px; background: var(--bg1); border: 1px dashed var(--line-strong); border-radius: var(--r); }
+    #view-character .add-form h4 { margin: 0; font: 600 11px var(--font-ui); letter-spacing: .14em; text-transform: uppercase; color: var(--mut); }
+    #view-character .add-form-inline { display: flex; gap: 6px; margin-top: 4px; }
+    #view-character .add-form-inline .input { flex: 1; min-width: 0; }
+    .form-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    #view-character .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--mut); }
+    #view-character .empty-hint { margin: 0; font-size: 12.5px; color: var(--faint); font-style: italic; }
+
+    /* capacità di classe */
+    #view-character .class-stats-row { display: flex; flex-wrap: wrap; gap: 6px; }
+    #view-character .class-stat-chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; background: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--r); font-size: 12px; color: var(--mut); }
+    #view-character .class-stat-chip strong { color: var(--gold-bright); }
+    #view-character .btn-chip-remove { appearance: none; background: none; border: 0; color: var(--faint); cursor: pointer; padding: 0 2px; font-size: 12px; }
+    #view-character .class-feature-card { background: var(--ink); border: 1px solid var(--line); border-radius: var(--r); margin-top: 6px; }
+    #view-character .class-feature-summary { display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer; list-style: none; }
+    #view-character .class-feature-summary::-webkit-details-marker { display: none; }
+    #view-character .class-feature-name { flex: 1; min-width: 0; font-family: var(--font-display); font-size: 15px; color: var(--bone); }
+    #view-character .class-feature-level-badge { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+    #view-character .class-feature-body { display: flex; flex-direction: column; gap: 8px; padding: 0 10px 10px; }
+
+    /* ── Pannello nave (Damselfly) ── */
     #ship-panel { position: absolute; inset: 56px 0 0 0; z-index: 15; background: var(--bg0); overflow-y: auto; }
+    .ship-main { width: min(1100px, 100%); margin: 0 auto; padding: 24px 16px 90px; display: flex; flex-direction: column; gap: 18px; }
+    .ship-head { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 18px; align-items: center; padding: 18px; }
+    .ship-head h2 { margin: 0; }
+    .ship-head .sub { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--mut); }
+    .ship-hp { display: flex; flex-direction: column; gap: 6px; min-width: 260px; }
+    .ship-hp .row { gap: 10px; }
+    .ship-hp-ctrl { display: flex; gap: 5px; justify-content: flex-end; }
+    .ship-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(280px, 5fr); gap: 18px; align-items: start; }
+    @media (max-width: 880px) { .ship-grid { grid-template-columns: 1fr; } .ship-head { grid-template-columns: 1fr; } }
+
+    /* ponti */
+    .deck { display: flex; flex-direction: column; gap: 8px; }
+    .deck + .deck { margin-top: 16px; }
+    .deck-map { position: relative; display: grid; gap: 3px; }
+    .room {
+      position: relative; cursor: pointer;
+      border: 1px solid var(--line-strong); border-radius: 2px;
+      background:
+        repeating-linear-gradient(90deg, rgba(0,0,0,.14) 0 2px, transparent 2px 14px),
+        linear-gradient(180deg, color-mix(in oklab, var(--room, #4a4438) 26%, var(--bg1)), color-mix(in oklab, var(--room, #4a4438) 14%, var(--bg0)));
+      min-height: 52px;
+      padding: 7px 9px;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .room:hover { border-color: var(--gold-dim); }
+    .room.droppable { border-color: var(--gold); box-shadow: inset 0 0 18px rgba(210,180,106,.08); }
+    .room .rl { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--mut); }
+    .room .crew { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+    .crew-tok {
+      width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+      display: grid; place-items: center;
+      background: var(--bg3); border: 2px solid var(--accent);
+      font-family: var(--font-display); font-size: 11px; font-weight: 700; color: var(--bone);
+      transition: box-shadow .15s, border-color .15s;
+    }
+    .crew-tok.is-enemy { border-color: var(--blood); }
+    .crew-tok.is-locked { cursor: default; opacity: .75; }
+    .crew-tok.sel { border-color: var(--gold-bright); box-shadow: 0 0 12px rgba(210,180,106,.5); }
+    .ship-reserve { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 46px; padding: 10px; border: 1px dashed var(--line-strong); border-radius: var(--r); }
+
+    /* armi */
+    .ship-weapons { display: flex; flex-direction: column; gap: 12px; }
+    .weapon-card { display: flex; flex-direction: column; gap: 10px; padding: 14px; }
+    .weapon-card .wh { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .weapon-card .wh b { font-family: var(--font-display); font-size: 18px; font-weight: 600; }
+    .w-state { min-height: 36px; width: auto; padding: 6px 30px 6px 10px; font-size: 12.5px; }
+    .weapon-card[data-state="ready"]     { border-color: var(--accent-dim); }
+    .weapon-card[data-state="loading"]   { border-color: var(--gold-dim); }
+    .weapon-card[data-state="fired"]     { border-color: var(--line-strong); }
+    .weapon-card[data-state="destroyed"] { border-color: rgba(168,66,58,.5); filter: saturate(.5); }
+    .w-crew { display: flex; flex-wrap: wrap; gap: 6px; }
+    .w-chip[disabled] { cursor: default; opacity: .6; }
+    .ship-note { margin: 0 0 14px; font-size: 12.5px; color: var(--faint); }
+    .ship-note:last-child { margin-bottom: 0; }
 
     /* Master controls in topbar */
     #master-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
@@ -686,205 +895,230 @@
         <span class="t-label" style="font-size:10px;">Scheda Personaggio</span>
       </div>
       <div id="error-message-sheet" class="hidden" style="margin:8px 16px;"></div>
-      <div class="sheet-body" style="padding:16px; flex: 1;">
+      <div class="sheet-body" style="flex: 1;">
+      <div class="sheet-main">
 
-        <details class="sheet-section">
-          <summary>📖 Informazioni Base</summary>
-          <div class="sheet-section-body">
-            <div class="field-row"><label>Nome personaggio</label><input type="text" data-path="characterName" maxlength="40" placeholder="—"></div>
-            <div class="field-grid-2">
-              <div class="field-row"><label>Razza</label><input type="text" data-path="race" maxlength="30" placeholder="—"></div>
-              <div class="field-row"><label>Classe</label><select data-path="class" id="class-select" class="input-select"><option value="">— Scegli —</option></select></div>
-              <div class="field-row"><label>Sottoclasse</label><input type="text" data-path="subclass" maxlength="30" placeholder="—"></div>
-              <div class="field-row field-row-levelup"><label>Livello</label><input type="number" data-path="level" data-number min="1" max="20" placeholder="1"><button id="btn-levelup" class="btn-levelup hidden">⬆ Sali</button></div>
-              <div class="field-row"><label>Background</label><input type="text" data-path="background" maxlength="30" placeholder="—"></div>
-              <div class="field-row"><label>Allineamento</label><input type="text" data-path="alignment" maxlength="20" placeholder="—"></div>
-            </div>
-            <div class="field-row"><label>Punti Esperienza</label><input type="number" data-path="xp" data-number min="0" placeholder="0"></div>
-          </div>
-        </details>
-
-        <details class="sheet-section">
-          <summary>💪 Caratteristiche</summary>
-          <div class="sheet-section-body">
-            <div class="ability-grid">
-              <div class="ability-block"><div class="ability-label">FOR</div><input type="number" class="ability-input" data-path="abilities/str" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-str">+0</div></div>
-              <div class="ability-block"><div class="ability-label">DES</div><input type="number" class="ability-input" data-path="abilities/dex" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-dex">+0</div></div>
-              <div class="ability-block"><div class="ability-label">COS</div><input type="number" class="ability-input" data-path="abilities/con" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-con">+0</div></div>
-              <div class="ability-block"><div class="ability-label">INT</div><input type="number" class="ability-input" data-path="abilities/int" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-int">+0</div></div>
-              <div class="ability-block"><div class="ability-label">SAG</div><input type="number" class="ability-input" data-path="abilities/wis" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-wis">+0</div></div>
-              <div class="ability-block"><div class="ability-label">CAR</div><input type="number" class="ability-input" data-path="abilities/cha" data-number min="1" max="30" placeholder="10"><div class="ability-mod" id="mod-cha">+0</div></div>
-            </div>
-            <div class="field-row field-row-inline"><label>Bonus Competenza</label><input type="number" data-path="proficiencyBonus" data-number min="2" max="6" placeholder="2" class="input-small"></div>
-          </div>
-        </details>
-
-        <details class="sheet-section" id="section-class-features">
-          <summary>⭐ Capacità di Classe</summary>
-          <div class="sheet-section-body"><div id="class-features-list"></div></div>
-        </details>
-
-        <details class="sheet-section">
-          <summary>🛡 Statistiche Combattimento</summary>
-          <div class="sheet-section-body">
-            <div class="field-grid-3">
-              <div class="field-row field-row-center"><label>Classe Armatura</label><input type="number" data-path="armorClass" data-number min="0" max="30" placeholder="10" class="input-big"></div>
-              <div class="field-row field-row-center"><label>Velocità (m)</label><input type="number" data-path="speed" data-number min="0" placeholder="9" class="input-big"></div>
-              <div class="field-row field-row-center"><label>Mod. Iniziativa</label><input type="number" data-path="initiativeMod" data-number min="-10" max="20" placeholder="0" class="input-big"></div>
-            </div>
-            <div class="field-grid-2">
-              <div class="field-row field-row-center"><label>HP Massimi</label><input type="number" data-path="hpMax" data-number min="1" placeholder="0" class="input-big"></div>
-              <div class="field-row field-row-center"><label>HP Temporanei</label><input type="number" data-path="tempHp" data-number min="0" placeholder="0" class="input-big"></div>
-            </div>
-            <div class="field-grid-2">
-              <div class="field-row field-row-center"><label>Dadi Vita usati</label><input type="number" data-path="hitDiceUsed" data-number min="0" placeholder="0" class="input-big"></div>
-            </div>
-            <div class="field-row field-row-inline"><label>Tipo Dado Vita</label><select data-path="hitDiceType" class="input-select"><option value="d6">d6</option><option value="d8">d8</option><option value="d10">d10</option><option value="d12">d12</option></select></div>
-            <div class="death-saves-section">
-              <div class="death-saves-label">Tiri Salvezza Morte</div>
-              <div class="death-saves-row"><span class="death-save-type success">Successi</span><div class="death-save-pips" id="death-successes"><button class="death-pip" data-type="successes" data-index="0">○</button><button class="death-pip" data-type="successes" data-index="1">○</button><button class="death-pip" data-type="successes" data-index="2">○</button></div></div>
-              <div class="death-saves-row"><span class="death-save-type failure">Fallimenti</span><div class="death-save-pips" id="death-failures"><button class="death-pip" data-type="failures" data-index="0">○</button><button class="death-pip" data-type="failures" data-index="1">○</button><button class="death-pip" data-type="failures" data-index="2">○</button></div></div>
+        <!-- ── testata ── -->
+        <section class="ds-panel sheet-head">
+          <i class="orn-c tl"></i><i class="orn-c tr"></i><i class="orn-c bl"></i><i class="orn-c br"></i>
+          <div class="portrait"><span>ritratto<br>1:1</span></div>
+          <div class="sheet-id">
+            <input class="sheet-name-input" type="text" data-path="characterName" maxlength="40" placeholder="Senza nome" aria-label="Nome personaggio">
+            <div class="sub" id="sheet-sub">—</div>
+            <div class="xp-line">
+              <span class="t-label" id="sheet-level-label">Liv —</span>
+              <div class="hpbar"><i class="fill" id="sheet-xp-fill" style="transform:scaleX(0);"></i></div>
+              <span class="t-mono" id="sheet-xp-text"></span>
             </div>
           </div>
-        </details>
-
-        <details class="sheet-section">
-          <summary>🎯 Tiri Salvezza</summary>
-          <div class="sheet-section-body">
-            <div class="save-list">
-              <div class="save-row"><button class="save-check" data-ability="str">○</button><span class="save-name">Forza</span><span class="save-value" id="save-str">+0</span></div>
-              <div class="save-row"><button class="save-check" data-ability="dex">○</button><span class="save-name">Destrezza</span><span class="save-value" id="save-dex">+0</span></div>
-              <div class="save-row"><button class="save-check" data-ability="con">○</button><span class="save-name">Costituzione</span><span class="save-value" id="save-con">+0</span></div>
-              <div class="save-row"><button class="save-check" data-ability="int">○</button><span class="save-name">Intelligenza</span><span class="save-value" id="save-int">+0</span></div>
-              <div class="save-row"><button class="save-check" data-ability="wis">○</button><span class="save-name">Saggezza</span><span class="save-value" id="save-wis">+0</span></div>
-              <div class="save-row"><button class="save-check" data-ability="cha">○</button><span class="save-name">Carisma</span><span class="save-value" id="save-cha">+0</span></div>
-            </div>
+          <div class="sheet-head-actions">
+            <button id="btn-levelup" class="btn btn--primary btn--sm hidden">⬨ Sali di livello</button>
           </div>
-        </details>
+        </section>
 
-        <details class="sheet-section">
-          <summary>🎯 Abilità</summary>
-          <div class="sheet-section-body">
-            <p class="hint-text">Tocca ○ per competenza, ◑ per expertise, ● per rimuovere</p>
-            <div class="skill-list">
-              <div class="skill-row"><button class="skill-prof" data-skill="acrobatics">○</button><span class="skill-name">Acrobazia</span><span class="skill-ability">DES</span><span class="skill-total" id="skill-acrobatics">+0</span></div>
-              <div class="skill-row"><button class="skill-prof" data-skill="animalHandling">○</button><span class="skill-name">Addestrare Animali</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-animalHandling">+0</span></div>
-              <div class="skill-row"><button class="skill-prof" data-skill="arcana">○</button><span class="skill-name">Arcano</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-arcana">+0</span></div>
-              <div class="skill-row"><button class="skill-prof" data-skill="athletics">○</button><span class="skill-name">Atletica</span><span class="skill-ability">FOR</span><span class="skill-total" id="skill-athletics">+0</span></div>
-              <div class="skill-row"><button class="skill-prof" data-skill="deception">○</button><span class="skill-name">Inganno</span><span class="skill-ability">CAR</span><span class="skill-total" id="skill-deception">+0</span></div>
-              <div class="skill-row"><button class="skill-prof" data-skill="history">○</button><span class="skill-name">Storia</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-history">+0</span></div>
-              <div class="skill-row"><button class="skill-prof" data-skill="insight">○</button><span class="skill-name">Intuizione</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-insight">+0</span></div>
-              <div class="skill-row"><button class="skill-prof" data-skill="intimidation">○</button><span class="skill-name">Intimidire</span><span class="skill-ability">CAR</span><span class="skill-total" id="skill-intimidation">+0</span></div>
-              <div class="skill-row"><button class="skill-prof" data-skill="investigation">○</button><span class="skill-name">Investigare</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-investigation">+0</span></div>
-              <div class="skill-row"><button class="skill-prof" data-skill="medicine">○</button><span class="skill-name">Medicina</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-medicine">+0</span></div>
-              <div class="skill-row"><button class="skill-prof" data-skill="nature">○</button><span class="skill-name">Natura</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-nature">+0</span></div>
-              <div class="skill-row"><button class="skill-prof" data-skill="perception">○</button><span class="skill-name">Percezione</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-perception">+0</span></div>
-              <div class="skill-row"><button class="skill-prof" data-skill="performance">○</button><span class="skill-name">Intrattenere</span><span class="skill-ability">CAR</span><span class="skill-total" id="skill-performance">+0</span></div>
-              <div class="skill-row"><button class="skill-prof" data-skill="persuasion">○</button><span class="skill-name">Persuasione</span><span class="skill-ability">CAR</span><span class="skill-total" id="skill-persuasion">+0</span></div>
-              <div class="skill-row"><button class="skill-prof" data-skill="religion">○</button><span class="skill-name">Religione</span><span class="skill-ability">INT</span><span class="skill-total" id="skill-religion">+0</span></div>
-              <div class="skill-row"><button class="skill-prof" data-skill="sleightOfHand">○</button><span class="skill-name">Rapidità di Mano</span><span class="skill-ability">DES</span><span class="skill-total" id="skill-sleightOfHand">+0</span></div>
-              <div class="skill-row"><button class="skill-prof" data-skill="stealth">○</button><span class="skill-name">Furtività</span><span class="skill-ability">DES</span><span class="skill-total" id="skill-stealth">+0</span></div>
-              <div class="skill-row"><button class="skill-prof" data-skill="survival">○</button><span class="skill-name">Sopravvivenza</span><span class="skill-ability">SAG</span><span class="skill-total" id="skill-survival">+0</span></div>
-            </div>
-            <div class="passive-perception-row"><span class="passive-label">Percezione Passiva</span><span id="passive-perception" class="passive-value">10</span></div>
-          </div>
-        </details>
+        <div class="sheet-grid">
 
-        <details class="sheet-section">
-          <summary>⚔ Attacchi</summary>
-          <div class="sheet-section-body">
-            <div id="attacks-list" class="attacks-list"></div>
-            <form id="form-add-attack" class="add-form" novalidate>
-              <h4>Aggiungi Attacco</h4>
-              <input type="text" id="attack-name" placeholder="Nome (es. Spada lunga)" maxlength="30">
-              <div class="field-grid-2">
-                <input type="text" id="attack-formula" placeholder="Danno (es. 1d8)" maxlength="20">
-                <input type="text" id="attack-type" placeholder="Tipo (es. taglio)" maxlength="20">
+          <!-- ══ COLONNA SINISTRA ══ -->
+          <div class="sheet-col">
+
+            <details class="tome" open>
+              <summary>Identità</summary>
+              <div class="tome-body">
+                <div class="id-grid">
+                  <div class="field"><label>Razza</label><input class="input" type="text" data-path="race" maxlength="30" placeholder="—"></div>
+                  <div class="field"><label>Classe</label><select data-path="class" id="class-select" class="select"><option value="">— Scegli —</option></select></div>
+                  <div class="field"><label>Sottoclasse</label><input class="input" type="text" data-path="subclass" maxlength="30" placeholder="—"></div>
+                  <div class="field"><label>Livello</label><input class="input" type="number" data-path="level" data-number min="1" max="20" placeholder="1"></div>
+                  <div class="field"><label>Background</label><input class="input" type="text" data-path="background" maxlength="30" placeholder="—"></div>
+                  <div class="field"><label>Allineamento</label><input class="input" type="text" data-path="alignment" maxlength="20" placeholder="—"></div>
+                </div>
+                <div class="field"><label>Punti esperienza</label><input class="input" type="number" data-path="xp" data-number min="0" placeholder="0"></div>
               </div>
-              <div class="field-grid-2">
-                <select id="attack-ability" class="input-select"><option value="str">FOR</option><option value="dex">DES</option><option value="con">COS</option><option value="int">INT</option><option value="wis">SAG</option><option value="cha">CAR</option><option value="manual">Manuale</option></select>
-                <label class="checkbox-label"><input type="checkbox" id="attack-proficient"> Competenza</label>
+            </details>
+
+            <details class="tome" open>
+              <summary>Caratteristiche</summary>
+              <div class="tome-body">
+                <div class="ability-grid">
+                  <div class="ab"><label>For</label><input type="number" data-path="abilities/str" data-number min="1" max="30" placeholder="10"><div class="mod" id="mod-str">+0</div></div>
+                  <div class="ab"><label>Des</label><input type="number" data-path="abilities/dex" data-number min="1" max="30" placeholder="10"><div class="mod" id="mod-dex">+0</div></div>
+                  <div class="ab"><label>Cos</label><input type="number" data-path="abilities/con" data-number min="1" max="30" placeholder="10"><div class="mod" id="mod-con">+0</div></div>
+                  <div class="ab"><label>Int</label><input type="number" data-path="abilities/int" data-number min="1" max="30" placeholder="10"><div class="mod" id="mod-int">+0</div></div>
+                  <div class="ab"><label>Sag</label><input type="number" data-path="abilities/wis" data-number min="1" max="30" placeholder="10"><div class="mod" id="mod-wis">+0</div></div>
+                  <div class="ab"><label>Car</label><input type="number" data-path="abilities/cha" data-number min="1" max="30" placeholder="10"><div class="mod" id="mod-cha">+0</div></div>
+                </div>
+                <div class="prof-row"><span class="t-label">Bonus competenza</span><input class="input" type="number" data-path="proficiencyBonus" data-number min="2" max="6" placeholder="2"></div>
               </div>
-              <div class="field-grid-2">
-                <input type="text" id="attack-bonus-override" placeholder="Bonus attacco (sovrascrivi)" maxlength="10">
-                <input type="text" id="attack-dmg-override" placeholder="Mod. danni (sovrascrivi)" maxlength="10">
+            </details>
+
+            <details class="tome" open>
+              <summary>Tiri salvezza</summary>
+              <div class="tome-body">
+                <div class="save-list">
+                  <div class="save-row"><button class="pip save-check" data-ability="str" aria-label="competenza Forza"></button><span class="sk-name">Forza</span><span class="sk-val" id="save-str">+0</span></div>
+                  <div class="save-row"><button class="pip save-check" data-ability="dex" aria-label="competenza Destrezza"></button><span class="sk-name">Destrezza</span><span class="sk-val" id="save-dex">+0</span></div>
+                  <div class="save-row"><button class="pip save-check" data-ability="con" aria-label="competenza Costituzione"></button><span class="sk-name">Costituzione</span><span class="sk-val" id="save-con">+0</span></div>
+                  <div class="save-row"><button class="pip save-check" data-ability="int" aria-label="competenza Intelligenza"></button><span class="sk-name">Intelligenza</span><span class="sk-val" id="save-int">+0</span></div>
+                  <div class="save-row"><button class="pip save-check" data-ability="wis" aria-label="competenza Saggezza"></button><span class="sk-name">Saggezza</span><span class="sk-val" id="save-wis">+0</span></div>
+                  <div class="save-row"><button class="pip save-check" data-ability="cha" aria-label="competenza Carisma"></button><span class="sk-name">Carisma</span><span class="sk-val" id="save-cha">+0</span></div>
+                </div>
               </div>
-              <button type="submit" class="btn-secondary">+ Aggiungi Attacco</button>
-            </form>
-          </div>
-        </details>
+            </details>
 
-        <details class="sheet-section">
-          <summary>✨ Magia</summary>
-          <div class="sheet-section-body">
-            <div class="field-grid-3 magic-stats">
-              <div class="field-row field-row-center"><label>Caratteristica</label><select data-path="spellcastingAbility" class="input-select"><option value="">—</option><option value="int">INT</option><option value="wis">SAG</option><option value="cha">CAR</option></select></div>
-              <div class="field-row field-row-center"><label>CD Tiro Salvezza</label><span id="spell-save-dc" class="computed-big">—</span></div>
-              <div class="field-row field-row-center"><label>Bonus Attacco</label><span id="spell-attack-bonus" class="computed-big">—</span></div>
-              <div class="field-row field-row-center"><label title="Modificatore extra applicato sia alla CD che al bonus attacco degli incantesimi">Mod. Extra</label><input type="number" data-path="spellBonusModifier" data-number class="input-sm" min="-20" max="20" placeholder="0"></div>
-            </div>
-            <h4 class="subsection-title">Slot Incantesimo</h4>
-            <div id="spell-slots-list" class="spell-slots-list"></div>
-            <h4 class="subsection-title">Trucchetti</h4>
-            <div id="cantrips-list" class="cantrip-list"></div>
-            <form id="form-add-cantrip" class="add-form-inline" novalidate>
-              <input type="text" id="cantrip-name" placeholder="Nome trucchetto" maxlength="60">
-              <button type="submit" class="btn-secondary btn-sm">+ Aggiungi</button>
-            </form>
-            <div id="spells-by-level"></div>
-          </div>
-        </details>
-
-        <details class="sheet-section">
-          <summary>🎒 Inventario</summary>
-          <div class="sheet-section-body">
-            <div class="currency-grid">
-              <div class="currency-block"><label>MP</label><input type="number" data-path="currency/pp" data-number min="0" placeholder="0"></div>
-              <div class="currency-block"><label>MO</label><input type="number" data-path="currency/gp" data-number min="0" placeholder="0"></div>
-              <div class="currency-block"><label>ME</label><input type="number" data-path="currency/ep" data-number min="0" placeholder="0"></div>
-              <div class="currency-block"><label>MA</label><input type="number" data-path="currency/sp" data-number min="0" placeholder="0"></div>
-              <div class="currency-block"><label>MR</label><input type="number" data-path="currency/cp" data-number min="0" placeholder="0"></div>
-            </div>
-            <div id="inventory-list" class="inventory-list"></div>
-            <form id="form-add-item" class="add-form" novalidate>
-              <div class="field-grid-2">
-                <input type="text" id="item-name" placeholder="Nome oggetto" maxlength="40">
-                <input type="number" id="item-qty" placeholder="Qtà" min="1" value="1" class="input-small">
+            <details class="tome">
+              <summary>Abilità <span class="sumnote">○ comp · ◑ expertise</span></summary>
+              <div class="tome-body">
+                <div class="skill-list">
+                  <div class="skill-row"><button class="pip skill-prof" data-skill="acrobatics"></button><span class="sk-name">Acrobazia</span><span class="sk-ab">des</span><span class="sk-val" id="skill-acrobatics">+0</span></div>
+                  <div class="skill-row"><button class="pip skill-prof" data-skill="animalHandling"></button><span class="sk-name">Addestrare Animali</span><span class="sk-ab">sag</span><span class="sk-val" id="skill-animalHandling">+0</span></div>
+                  <div class="skill-row"><button class="pip skill-prof" data-skill="arcana"></button><span class="sk-name">Arcano</span><span class="sk-ab">int</span><span class="sk-val" id="skill-arcana">+0</span></div>
+                  <div class="skill-row"><button class="pip skill-prof" data-skill="athletics"></button><span class="sk-name">Atletica</span><span class="sk-ab">for</span><span class="sk-val" id="skill-athletics">+0</span></div>
+                  <div class="skill-row"><button class="pip skill-prof" data-skill="deception"></button><span class="sk-name">Inganno</span><span class="sk-ab">car</span><span class="sk-val" id="skill-deception">+0</span></div>
+                  <div class="skill-row"><button class="pip skill-prof" data-skill="history"></button><span class="sk-name">Storia</span><span class="sk-ab">int</span><span class="sk-val" id="skill-history">+0</span></div>
+                  <div class="skill-row"><button class="pip skill-prof" data-skill="insight"></button><span class="sk-name">Intuizione</span><span class="sk-ab">sag</span><span class="sk-val" id="skill-insight">+0</span></div>
+                  <div class="skill-row"><button class="pip skill-prof" data-skill="intimidation"></button><span class="sk-name">Intimidire</span><span class="sk-ab">car</span><span class="sk-val" id="skill-intimidation">+0</span></div>
+                  <div class="skill-row"><button class="pip skill-prof" data-skill="investigation"></button><span class="sk-name">Investigare</span><span class="sk-ab">int</span><span class="sk-val" id="skill-investigation">+0</span></div>
+                  <div class="skill-row"><button class="pip skill-prof" data-skill="medicine"></button><span class="sk-name">Medicina</span><span class="sk-ab">sag</span><span class="sk-val" id="skill-medicine">+0</span></div>
+                  <div class="skill-row"><button class="pip skill-prof" data-skill="nature"></button><span class="sk-name">Natura</span><span class="sk-ab">int</span><span class="sk-val" id="skill-nature">+0</span></div>
+                  <div class="skill-row"><button class="pip skill-prof" data-skill="perception"></button><span class="sk-name">Percezione</span><span class="sk-ab">sag</span><span class="sk-val" id="skill-perception">+0</span></div>
+                  <div class="skill-row"><button class="pip skill-prof" data-skill="performance"></button><span class="sk-name">Intrattenere</span><span class="sk-ab">car</span><span class="sk-val" id="skill-performance">+0</span></div>
+                  <div class="skill-row"><button class="pip skill-prof" data-skill="persuasion"></button><span class="sk-name">Persuasione</span><span class="sk-ab">car</span><span class="sk-val" id="skill-persuasion">+0</span></div>
+                  <div class="skill-row"><button class="pip skill-prof" data-skill="religion"></button><span class="sk-name">Religione</span><span class="sk-ab">int</span><span class="sk-val" id="skill-religion">+0</span></div>
+                  <div class="skill-row"><button class="pip skill-prof" data-skill="sleightOfHand"></button><span class="sk-name">Rapidità di Mano</span><span class="sk-ab">des</span><span class="sk-val" id="skill-sleightOfHand">+0</span></div>
+                  <div class="skill-row"><button class="pip skill-prof" data-skill="stealth"></button><span class="sk-name">Furtività</span><span class="sk-ab">des</span><span class="sk-val" id="skill-stealth">+0</span></div>
+                  <div class="skill-row"><button class="pip skill-prof" data-skill="survival"></button><span class="sk-name">Sopravvivenza</span><span class="sk-ab">sag</span><span class="sk-val" id="skill-survival">+0</span></div>
+                </div>
+                <div class="passive-row"><span class="t-label">Percezione passiva</span><b id="passive-perception">10</b></div>
               </div>
-              <input type="text" id="item-notes" placeholder="Note (opz.)" maxlength="200">
-              <button type="submit" class="btn-secondary">+ Aggiungi Oggetto</button>
-            </form>
+            </details>
+
+            <details class="tome">
+              <summary>Personalità &amp; legami</summary>
+              <div class="tome-body">
+                <div class="field"><label>Tratti</label><textarea class="input" data-path="personalityTraits" rows="2" placeholder="—"></textarea></div>
+                <div class="field"><label>Ideali</label><textarea class="input" data-path="ideals" rows="2" placeholder="—"></textarea></div>
+                <div class="field"><label>Legami</label><textarea class="input" data-path="bonds" rows="2" placeholder="—"></textarea></div>
+                <div class="field"><label>Difetti</label><textarea class="input" data-path="flaws" rows="2" placeholder="—"></textarea></div>
+              </div>
+            </details>
+
           </div>
-        </details>
 
-        <details class="sheet-section">
-          <summary>🌟 Caratteristiche &amp; Capacità</summary>
-          <div class="sheet-section-body"><textarea data-path="features" placeholder="Capacità di classe, tratti razziali, imprese..." rows="6"></textarea></div>
-        </details>
+          <!-- ══ COLONNA DESTRA ══ -->
+          <div class="sheet-col">
 
-        <details class="sheet-section">
-          <summary>💬 Personalità</summary>
-          <div class="sheet-section-body">
-            <div class="field-row"><label>Tratti caratteriali</label><textarea data-path="personalityTraits" placeholder="—" rows="2"></textarea></div>
-            <div class="field-row"><label>Ideali</label><textarea data-path="ideals" placeholder="—" rows="2"></textarea></div>
-            <div class="field-row"><label>Legami</label><textarea data-path="bonds" placeholder="—" rows="2"></textarea></div>
-            <div class="field-row"><label>Difetti</label><textarea data-path="flaws" placeholder="—" rows="2"></textarea></div>
+            <details class="tome" open>
+              <summary>Combattimento</summary>
+              <div class="tome-body">
+                <div class="combat-stats">
+                  <div class="cstat"><input type="number" data-path="armorClass" data-number min="0" max="30" placeholder="10"><label>Classe armatura</label></div>
+                  <div class="cstat hp"><input type="number" data-path="hpMax" data-number min="1" placeholder="0"><label>Punti ferita max</label></div>
+                  <div class="cstat"><input type="number" data-path="speed" data-number min="0" placeholder="9"><label>Velocità (m)</label></div>
+                  <div class="cstat"><input type="number" data-path="initiativeMod" data-number min="-10" max="20" placeholder="0"><label>Mod. iniziativa</label></div>
+                  <div class="cstat"><input type="number" data-path="tempHp" data-number min="0" placeholder="0"><label>HP temporanei</label></div>
+                  <div class="cstat"><input type="number" data-path="hitDiceUsed" data-number min="0" placeholder="0"><label>Dadi vita usati</label></div>
+                </div>
+                <div class="prof-row"><span class="t-label">Tipo dado vita</span><select data-path="hitDiceType" class="select"><option value="d6">d6</option><option value="d8">d8</option><option value="d10">d10</option><option value="d12">d12</option></select></div>
+                <div class="death-saves-row">
+                  <span class="t-label">TS morte</span>
+                  <span class="death-pips">
+                    <span class="pips ok" id="death-successes"><button class="death-pip" data-type="successes" data-index="0"></button><button class="death-pip" data-type="successes" data-index="1"></button><button class="death-pip" data-type="successes" data-index="2"></button></span>
+                    <span class="pips ko" id="death-failures"><button class="death-pip" data-type="failures" data-index="0"></button><button class="death-pip" data-type="failures" data-index="1"></button><button class="death-pip" data-type="failures" data-index="2"></button></span>
+                  </span>
+                </div>
+              </div>
+            </details>
+
+            <details class="tome" open>
+              <summary>Attacchi</summary>
+              <div class="tome-body">
+                <div id="attacks-list" class="attacks-list"></div>
+                <form id="form-add-attack" class="add-form" novalidate>
+                  <h4>Aggiungi attacco</h4>
+                  <input class="input" type="text" id="attack-name" placeholder="Nome (es. Spada lunga)" maxlength="30">
+                  <div class="form-2">
+                    <input class="input" type="text" id="attack-formula" placeholder="Danno (es. 1d8)" maxlength="20">
+                    <input class="input" type="text" id="attack-type" placeholder="Tipo (es. taglio)" maxlength="20">
+                  </div>
+                  <div class="form-2">
+                    <select id="attack-ability" class="select"><option value="str">FOR</option><option value="dex">DES</option><option value="con">COS</option><option value="int">INT</option><option value="wis">SAG</option><option value="cha">CAR</option><option value="manual">Manuale</option></select>
+                    <label class="checkbox-label"><input type="checkbox" id="attack-proficient"> Competenza</label>
+                  </div>
+                  <div class="form-2">
+                    <input class="input" type="text" id="attack-bonus-override" placeholder="Bonus attacco (sovrascrivi)" maxlength="10">
+                    <input class="input" type="text" id="attack-dmg-override" placeholder="Mod. danni (sovrascrivi)" maxlength="10">
+                  </div>
+                  <button type="submit" class="btn btn--sm">+ Aggiungi attacco</button>
+                </form>
+              </div>
+            </details>
+
+            <details class="tome" open>
+              <summary>Magia</summary>
+              <div class="tome-body">
+                <div class="magic-stats">
+                  <div class="cstat"><select data-path="spellcastingAbility" class="cstat-select"><option value="">—</option><option value="int">INT</option><option value="wis">SAG</option><option value="cha">CAR</option></select><label>Caratteristica</label></div>
+                  <div class="cstat"><b id="spell-save-dc">—</b><label>CD incantesimi</label></div>
+                  <div class="cstat"><b id="spell-attack-bonus">—</b><label>Bonus attacco</label></div>
+                  <div class="cstat"><input type="number" data-path="spellBonusModifier" data-number min="-20" max="20" placeholder="0" title="Modificatore extra applicato sia alla CD che al bonus attacco degli incantesimi"><label>Mod. extra</label></div>
+                </div>
+                <div>
+                  <span class="t-label">Slot incantesimo</span>
+                  <div id="spell-slots-list" class="spell-slots-list"></div>
+                </div>
+                <div>
+                  <span class="t-label">Trucchetti</span>
+                  <div id="cantrips-list" class="cantrip-list"></div>
+                  <form id="form-add-cantrip" class="add-form-inline" novalidate>
+                    <input class="input" type="text" id="cantrip-name" placeholder="Nome trucchetto" maxlength="60">
+                    <button type="submit" class="btn btn--sm">+ Aggiungi</button>
+                  </form>
+                </div>
+                <div id="spells-by-level"></div>
+              </div>
+            </details>
+
+            <details class="tome">
+              <summary>Inventario</summary>
+              <div class="tome-body">
+                <div class="currency-grid">
+                  <div class="cur"><input type="number" data-path="currency/pp" data-number min="0" placeholder="0"><label>MP</label></div>
+                  <div class="cur gold"><input type="number" data-path="currency/gp" data-number min="0" placeholder="0"><label>MO</label></div>
+                  <div class="cur"><input type="number" data-path="currency/ep" data-number min="0" placeholder="0"><label>ME</label></div>
+                  <div class="cur"><input type="number" data-path="currency/sp" data-number min="0" placeholder="0"><label>MA</label></div>
+                  <div class="cur"><input type="number" data-path="currency/cp" data-number min="0" placeholder="0"><label>MR</label></div>
+                </div>
+                <div id="inventory-list" class="inventory-list"></div>
+                <form id="form-add-item" class="add-form" novalidate>
+                  <h4>Aggiungi oggetto</h4>
+                  <div class="form-2">
+                    <input class="input" type="text" id="item-name" placeholder="Nome oggetto" maxlength="40">
+                    <input class="input" type="number" id="item-qty" placeholder="Qtà" min="1" value="1">
+                  </div>
+                  <input class="input" type="text" id="item-notes" placeholder="Note (opz.)" maxlength="200">
+                  <button type="submit" class="btn btn--sm">+ Aggiungi oggetto</button>
+                </form>
+              </div>
+            </details>
+
+            <details class="tome" id="section-class-features">
+              <summary>Capacità di classe</summary>
+              <div class="tome-body"><div id="class-features-list"></div></div>
+            </details>
+
+            <details class="tome">
+              <summary>Capacità &amp; note</summary>
+              <div class="tome-body">
+                <div class="field"><label>Capacità di classe e tratti</label><textarea class="input" data-path="features" rows="4" placeholder="Capacità di classe, tratti razziali, imprese..."></textarea></div>
+                <div class="field"><label>Lingue</label><textarea class="input" data-path="languages" rows="2" placeholder="—"></textarea></div>
+                <div class="field"><label>Altre competenze e strumenti</label><textarea class="input" data-path="otherProficiencies" rows="2" placeholder="—"></textarea></div>
+                <div class="field"><label>Note libere</label><textarea class="input" data-path="notes" rows="4" placeholder="Note libere..."></textarea></div>
+              </div>
+            </details>
+
           </div>
-        </details>
-
-        <details class="sheet-section">
-          <summary>🔤 Lingue &amp; Competenze</summary>
-          <div class="sheet-section-body">
-            <div class="field-row"><label>Lingue conosciute</label><textarea data-path="languages" placeholder="—" rows="2"></textarea></div>
-            <div class="field-row"><label>Altre competenze e strumenti</label><textarea data-path="otherProficiencies" placeholder="—" rows="2"></textarea></div>
-          </div>
-        </details>
-
-        <details class="sheet-section">
-          <summary>📝 Note</summary>
-          <div class="sheet-section-body"><textarea data-path="notes" placeholder="Note libere..." rows="6"></textarea></div>
-        </details>
-
+        </div>
+      </div>
       </div><!-- /.sheet-body -->
     </div><!-- /#view-character -->
 

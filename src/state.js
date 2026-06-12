@@ -20,7 +20,6 @@ export const state = {
   gridEditMode:           false,
   ship:                   null,
   shipData:               null,
-  localDeck:              'main',
   shipPanelOpen:          false,
   _selectedShipToken:     null,
 };

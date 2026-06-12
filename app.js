@@ -840,7 +840,6 @@ function _renderShipPanel() {
     combatants,
     state.myUid,
     state.session.isMaster,
-    state.localDeck,
     state._selectedShipToken
   );
 }
@@ -869,12 +868,6 @@ function _bindShipEvents() {
       _renderShipPanel();
       return;
     }
-    if (action === 'switch-deck') {
-      state.localDeck = target.dataset.deck;
-      state._selectedShipToken = null;
-      _renderShipPanel();
-      return;
-    }
     if (action === 'select-token') {
       const cId = target.closest('[data-combatant]')?.dataset.combatant;
       if (!cId) return;
@@ -886,10 +879,10 @@ function _bindShipEvents() {
       return;
     }
     if (action === 'place-token') {
-      if (!state._selectedShipToken) return;
+      if (!state._selectedShipToken || !target.dataset.deck) return;
       await state.ship.setTokenPosition(
         state._selectedShipToken,
-        state.localDeck,
+        target.dataset.deck,
         parseInt(target.dataset.col),
         parseInt(target.dataset.row)
       );
@@ -913,7 +906,6 @@ function _enterCombatView(code, isMaster) {
   state.sheetReturnView    = 'view-combat';
   state.ship               = new Ship(db, code);
   state.shipData           = null;
-  state.localDeck          = 'main';
   state.shipPanelOpen      = false;
   state._selectedShipToken = null;
   document.body.classList.add('in-combat');

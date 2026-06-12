@@ -10,6 +10,10 @@ const SKILL_ABILITY = {
 
 const ABILITIES = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 const SPELL_LEVELS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
+const ABILITY_LABELS = { str: 'FOR', dex: 'DES', con: 'COS', int: 'INT', wis: 'SAG', cha: 'CAR' };
+const XP_THRESHOLDS = [0,300,900,2700,6500,14000,23000,34000,48000,64000,
+                       85000,100000,120000,140000,165000,195000,225000,265000,305000,355000];
 
 function abilityScore(data, ab) { return data?.abilities?.[ab] ?? 10; }
 function mod(score)              { return Math.floor((score - 10) / 2); }
@@ -116,6 +120,31 @@ export function updateComputedValues(data) {
   const abEl     = document.getElementById('spell-attack-bonus');
   if (dcEl) dcEl.textContent = castMod !== null ? String(8 + profBonus(d) + castMod + extraMod) : '—';
   if (abEl) abEl.textContent = castMod !== null ? signed(profBonus(d) + castMod + extraMod)     : '—';
+
+  // Testata scheda: sottotitolo + barra XP
+  const subEl = document.getElementById('sheet-sub');
+  if (subEl) {
+    const cls  = [d.class, d.level ? `Lv.${d.level}` : null].filter(Boolean).join(' ');
+    const bits = [d.race, cls, d.subclass, d.background, d.alignment]
+      .map(v => String(v ?? '').trim()).filter(Boolean);
+    subEl.textContent = bits.length ? bits.join(' · ') : '—';
+  }
+  const lvlEl  = document.getElementById('sheet-level-label');
+  const fillEl = document.getElementById('sheet-xp-fill');
+  const xpEl   = document.getElementById('sheet-xp-text');
+  if (lvlEl) lvlEl.textContent = `Liv ${d.level ?? 1}`;
+  if (fillEl && xpEl) {
+    const level = d.level ?? 1;
+    const xp    = d.xp ?? 0;
+    if (level >= 20) {
+      fillEl.style.transform = 'scaleX(1)';
+      xpEl.textContent = `${xp.toLocaleString('it')} xp · liv. max`;
+    } else {
+      const hi = XP_THRESHOLDS[level] ?? XP_THRESHOLDS[19];
+      fillEl.style.transform = `scaleX(${Math.min(1, Math.max(0, xp / hi))})`;
+      xpEl.textContent = `${xp.toLocaleString('it')} / ${hi.toLocaleString('it')} xp`;
+    }
+  }
 }
 
 // ─── Death saves ────────────────────────────────────────────────────────────
@@ -126,7 +155,6 @@ export function renderDeathSaves(deathSaves) {
   ['successes', 'failures'].forEach(type => {
     const count = type === 'successes' ? successes : failures;
     document.querySelectorAll(`.death-pip[data-type="${type}"]`).forEach((btn, i) => {
-      btn.textContent = i < count ? '●' : '○';
       btn.classList.toggle('filled', i < count);
     });
   });
@@ -138,7 +166,7 @@ export function renderSaveChecks(savingThrows) {
   document.querySelectorAll('.save-check').forEach(btn => {
     const ab      = btn.dataset.ability;
     const active  = !!(savingThrows?.[ab]);
-    btn.textContent = active ? '●' : '○';
+    btn.dataset.level = active ? '1' : '0';
     btn.classList.toggle('active', active);
   });
 }
@@ -146,10 +174,8 @@ export function renderSaveChecks(savingThrows) {
 // ─── Skill proficiency icons ────────────────────────────────────────────────
 
 export function renderSkillProfs(skills) {
-  const ICONS = ['○', '◑', '●'];
   document.querySelectorAll('.skill-prof').forEach(btn => {
     const level = skills?.[btn.dataset.skill] ?? 0;
-    btn.textContent = ICONS[level] ?? '○';
     btn.dataset.level = level;
     btn.classList.toggle('active',     level >= 1);
     btn.classList.toggle('expertise',  level === 2);
@@ -170,14 +196,17 @@ export function renderAttacks(attacks, data, onRemove) {
     const atkBonus = attackBonusCalc(atk, data);
     const dmgBonus = damageBonusCalc(atk, data);
     const dmgStr   = dmgBonus ? `${escapeHtml(atk.damageFormula || '')}${dmgBonus}` : escapeHtml(atk.damageFormula || '—');
+    const meta = [
+      atk.damageType,
+      atk.ability === 'manual' ? 'manuale' : ABILITY_LABELS[atk.ability],
+      atk.proficient ? 'competenza' : null,
+    ].filter(Boolean).map(escapeHtml).join(' · ');
     return `
-      <div class="attack-entry" data-id="${id}">
-        <div class="attack-row-main">
-          <span class="attack-entry-name">${escapeHtml(atk.name)}</span>
-          <span class="attack-stat">${atkBonus}</span>
-          <span class="attack-damage">${dmgStr} ${escapeHtml(atk.damageType || '')}</span>
-          <button class="btn-remove-sm" data-action="remove-attack" data-id="${id}" aria-label="Rimuovi">×</button>
-        </div>
+      <div class="atk-row" data-id="${id}">
+        <div><b>${escapeHtml(atk.name)}</b>${meta ? `<br><span class="t-mono">${meta}</span>` : ''}</div>
+        <span class="atk-pill">${atkBonus} colpire</span>
+        <span class="atk-pill">${dmgStr}</span>
+        <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-attack" data-id="${id}" aria-label="Rimuovi">✕</button>
       </div>`;
   }).join('');
 
@@ -196,16 +225,17 @@ export function renderSpellSlots(slots, onSetUsed, onSetMax) {
     const s    = slots?.[lvl] || {};
     const max  = s.max  ?? 0;
     const used = s.used ?? 0;
+    const free = Math.max(0, max - used);
+    const pips = Array.from({ length: max }, (_, i) =>
+      `<i class="slot-pip ${i < free ? 'free' : 'used'}"></i>`).join('');
     return `
-      <div class="slot-row" data-level="${lvl}">
-        <span class="slot-level">${lvl}°</span>
-        <div class="slot-counter">
-          <button class="btn-slot-adj" data-level="${lvl}" data-delta="-1" ${used <= 0 ? 'disabled' : ''}>−</button>
-          <span class="slot-count slot-used-val${max > 0 && used >= max ? ' used' : ''}">${used}</span>
-          <button class="btn-slot-adj" data-level="${lvl}" data-delta="1"  ${used >= max ? 'disabled' : ''}>+</button>
-          <span class="slot-sep">usati</span>
-        </div>
-        <span class="slot-slash">/</span>
+      <div class="slot-row${max === 0 ? ' is-zero' : ''}" data-level="${lvl}" data-used="${used}">
+        <span class="slot-lv">Slot ${ROMAN[lvl - 1]}</span>
+        <span class="slot-pips">${pips}</span>
+        <span class="slot-ctrl">
+          <button class="btn btn--icon btn-slot-adj" data-level="${lvl}" data-delta="1"  ${used >= max ? 'disabled' : ''} title="Usa slot">−</button>
+          <button class="btn btn--icon btn-slot-adj" data-level="${lvl}" data-delta="-1" ${used <= 0 ? 'disabled' : ''} title="Recupera slot">+</button>
+        </span>
         <input type="number" class="slot-max-input" data-level="${lvl}" min="0" max="9" value="${max}" title="Slot massimi">
       </div>`;
   }).join('');
@@ -213,11 +243,11 @@ export function renderSpellSlots(slots, onSetUsed, onSetMax) {
   container.onclick = (e) => {
     const btn = e.target.closest('.btn-slot-adj');
     if (!btn || btn.disabled) return;
-    const lvl  = btn.dataset.level;
+    const lvl   = btn.dataset.level;
     const delta = parseInt(btn.dataset.delta);
-    const row  = container.querySelector(`.slot-row[data-level="${lvl}"]`);
-    const used = parseInt(row.querySelector('.slot-used-val').textContent);
-    const max  = parseInt(row.querySelector('.slot-max-input').value) || 0;
+    const row   = container.querySelector(`.slot-row[data-level="${lvl}"]`);
+    const used  = parseInt(row.dataset.used) || 0;
+    const max   = parseInt(row.querySelector('.slot-max-input').value) || 0;
     onSetUsed(lvl, Math.max(0, Math.min(max, used + delta)));
   };
 
@@ -241,9 +271,10 @@ export function renderCantrips(cantrips, onRemove) {
     return;
   }
   container.innerHTML = entries.map(([id, name]) => `
-    <div class="cantrip-entry">
-      <span>${escapeHtml(name)}</span>
-      <button class="btn-remove-sm" data-action="remove-cantrip" data-id="${id}" aria-label="Rimuovi">×</button>
+    <div class="spell-row">
+      <span class="nm">${escapeHtml(name)}</span>
+      <span class="lv">truc</span>
+      <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-cantrip" data-id="${id}" aria-label="Rimuovi">✕</button>
     </div>`).join('');
 
   container.onclick = (e) => {
@@ -263,20 +294,18 @@ export function renderSpellsByLevel(spells, onRemove, onTogglePrepared, onAddSpe
     const spellItems = entries.length === 0
       ? '<p class="empty-hint">Nessun incantesimo.</p>'
       : entries.map(([id, sp]) => `
-          <div class="spell-entry">
-            <button class="spell-prepared ${sp.prepared ? 'prepared' : ''}" data-action="toggle-prepared" data-level="${lvl}" data-id="${id}" title="${sp.prepared ? 'Preparato' : 'Non preparato'}">
-              ${sp.prepared ? '★' : '☆'}
-            </button>
-            <span class="spell-name">${escapeHtml(sp.name)}</span>
-            <button class="btn-remove-sm" data-action="remove-spell" data-level="${lvl}" data-id="${id}" aria-label="Rimuovi">×</button>
+          <div class="spell-row">
+            <button class="prep ${sp.prepared ? 'on' : ''}" data-action="toggle-prepared" data-level="${lvl}" data-id="${id}" aria-pressed="${!!sp.prepared}" title="${sp.prepared ? 'Preparato' : 'Non preparato'}"></button>
+            <span class="nm">${escapeHtml(sp.name)}</span>
+            <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-spell" data-level="${lvl}" data-id="${id}" aria-label="Rimuovi">✕</button>
           </div>`).join('');
     return `
       <div class="spell-level-block">
-        <div class="spell-level-header">${lvl}° livello</div>
+        <span class="t-label">Livello ${ROMAN[lvl - 1]}</span>
         <div class="spell-level-entries" id="spell-level-${lvl}">${spellItems}</div>
         <form class="add-form-inline" data-spell-level="${lvl}" novalidate>
-          <input type="text" placeholder="Nome incantesimo" maxlength="60">
-          <button type="submit" class="btn-secondary btn-sm">+ Aggiungi</button>
+          <input class="input" type="text" placeholder="Nome incantesimo" maxlength="60">
+          <button type="submit" class="btn btn--sm">+ Aggiungi</button>
         </form>
       </div>`;
   }).join('');
@@ -312,30 +341,30 @@ export function renderInventory(inventory, editingId, callbacks = {}) {
   container.innerHTML = entries.map(([id, item]) => {
     if (id === editingId) {
       return `
-        <div class="inventory-entry editing" data-id="${id}">
-          <input type="number" class="edit-qty" value="${item.quantity ?? 1}" min="1">
-          <div class="item-main-content">
-            <input type="text" class="edit-name" value="${escapeHtml(item.name)}" placeholder="Nome">
-            <input type="text" class="edit-notes" value="${escapeHtml(item.notes || '')}" placeholder="Note (opz.)">
+        <div class="inv-row inventory-entry editing" data-id="${id}">
+          <div class="edit-fields">
+            <input class="input edit-name" type="text" value="${escapeHtml(item.name)}" placeholder="Nome">
+            <input class="input edit-notes" type="text" value="${escapeHtml(item.notes || '')}" placeholder="Note (opz.)">
           </div>
-          <div class="item-actions">
-            <button class="btn-save-sm" data-action="save-item" data-id="${id}" title="Salva">✔</button>
-            <button class="btn-cancel-sm" data-action="cancel-item" data-id="${id}" title="Annulla">✖</button>
-          </div>
+          <input class="input edit-qty" type="number" value="${item.quantity ?? 1}" min="1">
+          <span class="inv-actions">
+            <button class="btn btn--sm btn--icon" data-action="save-item" data-id="${id}" title="Salva">✔</button>
+            <button class="btn btn--ghost btn--sm btn--icon" data-action="cancel-item" data-id="${id}" title="Annulla">✕</button>
+          </span>
         </div>`;
     }
 
     return `
-      <div class="inventory-entry" data-id="${id}">
-        <span class="item-qty clickable" data-action="edit-qty" data-id="${id}">${item.quantity ?? 1}×</span>
-        <div class="item-main-content">
+      <div class="inv-row inventory-entry" data-id="${id}">
+        <div>
           <span class="item-name">${escapeHtml(item.name)}</span>
-          ${item.notes ? `<span class="item-notes">${escapeHtml(item.notes)}</span>` : ''}
+          ${item.notes ? `<small>${escapeHtml(item.notes)}</small>` : ''}
         </div>
-        <div class="item-actions">
-          <button class="btn-edit-sm" data-action="edit-item" data-id="${id}" aria-label="Modifica">✎</button>
-          <button class="btn-remove-sm" data-action="remove-item" data-id="${id}" aria-label="Rimuovi">×</button>
-        </div>
+        <span class="qty" data-action="edit-qty" data-id="${id}" title="Modifica quantità">${item.quantity ?? 1}</span>
+        <span class="inv-actions">
+          <button class="btn btn--ghost btn--sm btn--icon" data-action="edit-item" data-id="${id}" aria-label="Modifica">✎</button>
+          <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-item" data-id="${id}" aria-label="Rimuovi">✕</button>
+        </span>
       </div>`;
   }).join('');
 
@@ -409,20 +438,20 @@ export function renderClassFeatures(classFeatures, classStats, onRemoveFeature, 
         <span class="class-feature-name">${escapeHtml(f.name)}</span>
         ${f.level ? `<span class="class-feature-level-badge">Lv.${f.level}</span>` : ''}
         <div class="class-feature-actions">
-          <button class="btn-remove-sm" data-action="remove-feature" data-id="${id}" aria-label="Rimuovi">×</button>
+          <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-feature" data-id="${id}" aria-label="Rimuovi">✕</button>
         </div>
       </summary>
       <div class="class-feature-body">
-        <input type="text" class="cf-name-input" data-id="${id}" value="${escapeHtml(f.name)}" placeholder="Nome">
-        <textarea class="cf-desc-input" data-id="${id}" rows="4" placeholder="Descrizione">${escapeHtml(f.description ?? '')}</textarea>
-        <button class="btn-secondary btn-sm cf-save-btn" data-id="${id}">Salva</button>
+        <input class="input cf-name-input" type="text" data-id="${id}" value="${escapeHtml(f.name)}" placeholder="Nome">
+        <textarea class="input cf-desc-input" data-id="${id}" rows="4" placeholder="Descrizione">${escapeHtml(f.description ?? '')}</textarea>
+        <button class="btn btn--sm cf-save-btn" data-id="${id}">Salva</button>
       </div>
     </details>`).join('');
 
   html += `
-    <form id="form-add-class-feature" class="add-form-inline lu-add-feature-form" novalidate>
-      <input type="text" id="cf-new-name" placeholder="Nome capacità" maxlength="60">
-      <button type="submit" class="btn-secondary btn-sm">+ Aggiungi</button>
+    <form id="form-add-class-feature" class="add-form-inline" novalidate>
+      <input class="input" type="text" id="cf-new-name" placeholder="Nome capacità" maxlength="60">
+      <button type="submit" class="btn btn--sm">+ Aggiungi</button>
     </form>`;
 
   container.innerHTML = html;

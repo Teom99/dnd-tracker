@@ -26,6 +26,8 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | `src/CharacterLibrary.js` | CRUD libreria personaggi/creature per utente (`characters/{uid}/{charId}/`) |
 | `src/CharacterSheet.js` | Scheda PG: lettura/scrittura su `characters/{uid}/{charId}/` |
 | `src/UI.js` | Render lista combattenti, modal condizioni, death saves inline, render log (`renderLogs`) |
+| `src/Ship.js` | CRUD nave (`sessions/{code}/ship`): hp, armi, equipaggio, posizioni token |
+| `src/ShipUI.js` | Render pannello nave Damselfly: ponti/stanze CSS grid, token equipaggio, carte armi |
 | `src/SheetUI.js` | Render scheda personaggio (abilità, slot, incantesimi, inventario) |
 | `src/GridUI.js` | Griglia quadrata SVG (dimensioni da `gridConfig`, 1 casella = 1m), muri, token multi-cella per taglia |
 
@@ -96,6 +98,8 @@ userSessions/{uid}/{code}/
 - Campo `spellBonusModifier` per modificatore extra su CD e bonus attacco magia
 - Refactor struttura progetto: `app.js` ridotto, stato in `src/state.js`, logica in moduli separati
 - Fix inventario: risolta eliminazione oggetti e blocco form; allineamento tasti rimozione a destra
+- Rework "Cenere e Verderame" scheda personaggio: testata con nome/sottotitolo/barra XP, layout 2 colonne a sezioni `details.tome`, pip CSS per competenze/expertise, cstat per statistiche, slot incantesimo a rombi, righe attacchi/incantesimi/inventario a tema (mockup `Rework/04 Scheda.html`)
+- Rework pannello nave Damselfly: ponti renderizzati come stanze CSS grid (tutti i deck visibili, niente tab), spostamento equipaggio token→stanza, carte armi con chip equipaggio e select stato, barra integrità scafo (mockup `Rework/06 Damselfly.html`)
 
 ### Bug noti non ancora risolti
 Nessuno al momento.
