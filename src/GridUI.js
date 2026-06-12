@@ -1,5 +1,5 @@
 // Griglia quadrata. 1 cella = 1 m. Dimensioni guidate da gridConfig.
-// La griglia si adatta sempre al contenitore (viewBox), non è zoomabile né trascinabile.
+// Zoom via viewBox: _zoom scala il viewBox, _panX/_panY traslano l'origine.
 // Distanza Chebyshev (diagonali = 1), misurata bordo-a-bordo tra footprint.
 
 const CELL = 40;        // lato cella nelle coordinate del viewBox
@@ -7,6 +7,12 @@ const PAD  = 8;         // margine interno (coordinate viewBox)
 
 const SIZE_FOOTPRINT = { tiny: 1, small: 1, medium: 1, large: 2, huge: 3, gargantuan: 4 };
 export function footprintOf(size) { return SIZE_FOOTPRINT[size] || 1; }
+
+// ─── Stato zoom e pan ─────────────────────────────────────────────────────────
+let _zoom     = 1;
+let _panX     = 0;
+let _panY     = 0;
+let _panStart = null;   // { x, y, px, py, moved } durante un drag
 
 // ─── Disegno muri con drag (tieni premuto LMB in modalità modifica) ──────────
 // Le listener stanno sul container (persiste tra i re-render); leggono _ctx,
@@ -185,8 +191,10 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     }
   }
 
+  const zVbW = (parseFloat(vbW) / _zoom).toFixed(0);
+  const zVbH = (parseFloat(vbH) / _zoom).toFixed(0);
   container.innerHTML =
-    `<svg class="sq-svg" viewBox="0 0 ${vbW} ${vbH}" preserveAspectRatio="xMidYMid meet" width="100%" height="100%">${inner}</svg>`;
+    `<svg class="sq-svg" viewBox="${_panX.toFixed(0)} ${_panY.toFixed(0)} ${zVbW} ${zVbH}" preserveAspectRatio="xMidYMid meet" width="100%" height="100%">${inner}</svg>`;
   container.classList.toggle('grid-edit-active', !!editMode);
 
   // Aggiorna il contesto usato dal disegno muri con drag e assicura il binding.
@@ -246,6 +254,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   });
 
   svg.addEventListener('click', (e) => {
+    if (_panStart?.moved) return;
     const el = e.target.closest('[data-c]');
     if (!el) return;
     const col = parseInt(el.dataset.c);
@@ -333,11 +342,64 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
   };
 }
 
-// ─── Controlli griglia (solo reset; nessun pan/zoom) ─────────────────────────
+// ─── Controlli griglia: reset, zoom, pan ─────────────────────────────────────
 
 let _gridControlsBound = false;
 export function initGridControls(onGridReset) {
   if (_gridControlsBound) return;
   _gridControlsBound = true;
   document.getElementById('btn-grid-reset')?.addEventListener('click', () => onGridReset?.());
+
+  function _zoomTo(z) {
+    const prev = _zoom;
+    _zoom = Math.min(4, Math.max(0.5, z));
+    // Mantieni il centro visibile stabile durante lo zoom
+    const svg = document.querySelector('.sq-svg');
+    const vb  = svg?.viewBox?.baseVal;
+    if (vb) {
+      const cx = vb.x + vb.width  / 2;
+      const cy = vb.y + vb.height / 2;
+      const fullW = vb.width  * prev;
+      const fullH = vb.height * prev;
+      _panX = Math.max(0, cx - fullW / _zoom / 2);
+      _panY = Math.max(0, cy - fullH / _zoom / 2);
+    }
+    _reRenderCallback?.();
+  }
+
+  document.getElementById('btn-zoom-in')?.addEventListener('click',    () => _zoomTo(_zoom * 1.3));
+  document.getElementById('btn-zoom-out')?.addEventListener('click',   () => _zoomTo(_zoom / 1.3));
+  document.getElementById('btn-zoom-reset')?.addEventListener('click', () => { _zoom = 1; _panX = 0; _panY = 0; _reRenderCallback?.(); });
+
+  // Pan con drag (solo quando zoom > 1, non in modalità modifica)
+  const container = document.getElementById('grid-container');
+  if (!container) return;
+
+  container.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    if (_zoom <= 1) return;
+    if (_ctx?.editMode && _ctx?.isMaster) return;
+    _panStart = { x: e.clientX, y: e.clientY, px: _panX, py: _panY, moved: false };
+  });
+
+  container.addEventListener('mousemove', (e) => {
+    if (!_panStart) return;
+    const dx = e.clientX - _panStart.x;
+    const dy = e.clientY - _panStart.y;
+    if (Math.abs(dx) + Math.abs(dy) > 3) _panStart.moved = true;
+    if (_panStart.moved) {
+      const svg  = container.querySelector('svg');
+      const rect = container.getBoundingClientRect();
+      const scaleX = parseFloat(svg?.viewBox.baseVal.width  ?? 1) / (rect.width  || 1);
+      const scaleY = parseFloat(svg?.viewBox.baseVal.height ?? 1) / (rect.height || 1);
+      _panX = Math.max(0, _panStart.px - dx * scaleX);
+      _panY = Math.max(0, _panStart.py - dy * scaleY);
+      _reRenderCallback?.();
+    }
+  });
+
+  const _stopPan = () => { setTimeout(() => { _panStart = null; }, 0); };
+  container.addEventListener('mouseup',    _stopPan);
+  container.addEventListener('mouseleave', _stopPan);
+  window.addEventListener('mouseup',       _stopPan);
 }

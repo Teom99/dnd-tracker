@@ -352,6 +352,32 @@ document.getElementById('monster-stat-block-modal').addEventListener('click', (e
     document.getElementById('monster-stat-block-modal').classList.add('hidden');
 });
 
+// Dock giocatore — azioni rapide (condizioni, scheda, fine turno, death saves)
+document.getElementById('my-dock')?.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const cb = makeCallbacks();
+  const myId = state.myCombatantId;
+  if (!myId) return;
+  if (action === 'dock-conditions') { cb.onOpenConditions?.(myId); return; }
+  if (action === 'dock-sheet')      { cb.onOpenSheet?.(); return; }
+  if (action === 'dock-end-turn')   { cb.onEndTurn?.(); return; }
+  if (action === 'dock-attack') {
+    // Scorri alla propria card nella lista player e clicca il bottone Danno
+    const card = document.querySelector(`[data-combatant-id="${myId}"]`);
+    card?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    return;
+  }
+  if (action === 'death-save') {
+    const type  = btn.dataset.type;
+    const index = parseInt(btn.dataset.index);
+    const on    = btn.classList.contains('on');
+    cb.onDeathSave?.(type, on ? index : index + 1);
+    return;
+  }
+});
+
 // Bottone "📖 Visualizza Dati" nelle card creature (master-only, riapre il stat block)
 document.getElementById('creature-list').addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-action="view-stat-block"]');
@@ -891,9 +917,11 @@ function _enterCombatView(code, isMaster) {
   state.shipPanelOpen      = false;
   state._selectedShipToken = null;
   document.body.classList.add('in-combat');
+  document.body.classList.toggle('is-master', isMaster);
   _startListening();
   _bindShipEvents();
   GridUI.initGridControls(() => state.session.resetGrid());
+  GridUI.setReRenderCallback(() => _rerenderGridFromSnapshot());
   const _btnGridReset = document.getElementById('btn-grid-reset');
   if (_btnGridReset) _btnGridReset.style.display = isMaster ? '' : 'none';
   _initGridMasterControls(isMaster);
@@ -1014,6 +1042,14 @@ function _startListening() {
     };
     UI.renderCombatantList(creatures, data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, null,                               progressionData, 'creature-list', 'empty-creatures-msg', sorted);
     UI.renderCombatantList(players,   data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, state.sheetData?.deathSaves ?? null, progressionData, 'player-list',   'empty-players-msg', sorted);
+
+    if (state.myCombatantId && !state.session.isMaster) {
+      const myRaw = data.combatants?.[state.myCombatantId];
+      const myC   = myRaw ? { ...myRaw, id: state.myCombatantId } : null;
+      UI.renderPlayerDock(myC, state.myCombatantId === data.currentTurnId, progressionData, state.sheetData?.deathSaves ?? null);
+    } else {
+      UI.renderPlayerDock(null, false);
+    }
 
     renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null, sorted, data.gridConfig || null, data.walls || {});
 

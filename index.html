@@ -235,6 +235,34 @@
     #xp-award-form summary { cursor: pointer; list-style: none; }
     #xp-award-form summary::-webkit-details-marker { display: none; }
 
+    /* ── Player dock ── */
+    .my-dock { display: grid; grid-template-columns: 40px minmax(120px,200px) minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 8px 14px; border-top: 1px solid var(--line-strong); background: linear-gradient(180deg, var(--bg1), var(--bg0)); flex-shrink: 0; }
+    .my-dock:empty { display: none; }
+    body.is-master .my-dock { display: none; }
+    .dock-portrait { width: 40px; height: 40px; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1px solid var(--line-strong); }
+    .dock-id { min-width: 0; }
+    .dock-id b { font-family: var(--font-display); font-size: 16px; font-weight: 700; display: block; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--bone); }
+    .dock-id span { font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
+    .dock-vitals { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .dock-conds { display: flex; flex-wrap: wrap; gap: 3px; }
+    .dock-actions { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
+
+    /* ── Theme panel ── */
+    #theme-panel { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: flex-start; justify-content: flex-end; pointer-events: none; }
+    #theme-panel[hidden] { display: none; }
+    #theme-panel.is-open { pointer-events: auto; }
+    .tp-backdrop { position: absolute; inset: 0; }
+    .tp-card { position: relative; margin: 52px 12px 0 0; padding: 16px; min-width: 240px; max-width: 280px; }
+    .tp-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .tp-section { margin-bottom: 14px; }
+    .tp-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--gold); margin-bottom: 8px; }
+    .tp-row { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tp-swatch { display: flex; gap: 3px; padding: 6px; border: 2px solid transparent; border-radius: 6px; cursor: pointer; background: var(--bg1); transition: border-color .15s; }
+    .tp-swatch span { display: block; width: 20px; height: 20px; border-radius: 3px; }
+    .tp-swatch.is-active, .tp-swatch:hover { border-color: var(--accent); }
+    .tp-chip { padding: 5px 12px; border: 1.5px solid var(--line); border-radius: 20px; font-size: 13px; cursor: pointer; background: var(--bg1); color: var(--bone); font-family: var(--font-ui); transition: border-color .15s, background .15s; }
+    .tp-chip.is-active, .tp-chip:hover { border-color: var(--accent); background: var(--bg2); }
+
     /* Mobile tabbar */
     .tabbar { display: none; grid-auto-flow: column; grid-auto-columns: 1fr; background: color-mix(in oklab, var(--bg1) 94%, transparent); backdrop-filter: blur(10px); border-top: 1px solid var(--line-strong); padding-bottom: env(safe-area-inset-bottom); flex-shrink: 0; }
     .tabbar button { appearance: none; background: none; border: 0; cursor: pointer; min-height: 50px; padding: 6px 4px 5px; display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--faint); font: 500 9.5px/1 var(--font-ui); letter-spacing: .12em; text-transform: uppercase; }
@@ -296,6 +324,9 @@
     }
     @media (max-width: 600px) {
       .combat-topbar .turn-banner { display: none; }
+      .my-dock { grid-template-columns: 36px minmax(0,1fr); row-gap: 6px; padding: 8px 10px; }
+      .my-dock .dock-vitals, .my-dock .dock-actions { grid-column: 1 / -1; }
+      .my-dock .dock-actions .btn { flex: 1; }
     }
   </style>
 </head>
@@ -619,6 +650,9 @@
 
       </aside>
     </div>
+
+    <!-- Dock personaggio (solo player, non master) -->
+    <footer id="my-dock" class="my-dock"></footer>
 
     <!-- Pannello nave (overlay full) -->
     <div id="ship-panel" class="hidden"></div>
@@ -968,6 +1002,87 @@
         }
       }
     });
+  </script>
+
+  <!-- ── Pannello impostazioni tema ── -->
+  <div id="theme-panel" hidden>
+    <div class="tp-backdrop"></div>
+    <div class="tp-card ds-panel">
+      <div class="tp-header">
+        <span class="ds-heading">Aspetto</span>
+        <button id="btn-theme-close" class="btn btn--ghost btn--sm btn--icon" aria-label="Chiudi">✕</button>
+      </div>
+      <section class="tp-section">
+        <p class="tp-label">Palette</p>
+        <div class="tp-row" id="tp-palette">
+          <button class="tp-swatch" data-val="" title="Cenere &amp; Verderame"><span style="background:#5b9e8f"></span><span style="background:#c9a84c"></span></button>
+          <button class="tp-swatch" data-val="brace" title="Ambra"><span style="background:#c1763d"></span><span style="background:#d4a050"></span></button>
+          <button class="tp-swatch" data-val="arcano" title="Arcano"><span style="background:#8d76c9"></span><span style="background:#c9a84c"></span></button>
+          <button class="tp-swatch" data-val="vespro" title="Vespro"><span style="background:#c84ca6"></span><span style="background:#f0c060"></span></button>
+        </div>
+      </section>
+      <section class="tp-section">
+        <p class="tp-label">Decorazioni</p>
+        <div class="tp-row" id="tp-ornament">
+          <button class="tp-chip" data-val="">Standard</button>
+          <button class="tp-chip" data-val="essenziale">Essenziale</button>
+          <button class="tp-chip" data-val="ricco">Ricco</button>
+        </div>
+      </section>
+      <section class="tp-section">
+        <p class="tp-label">Font titoli</p>
+        <div class="tp-row" id="tp-typeface">
+          <button class="tp-chip" data-val="" style="font-family:'Cormorant Garamond',serif">Cormorant</button>
+          <button class="tp-chip" data-val="gotico" style="font-family:'Grenze Gotisch',serif">Grenze Gotisch</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+  (function() {
+    const panel = document.getElementById('theme-panel');
+    if (!panel) return;
+
+    function applyTweak(key, val) {
+      if (val) document.documentElement.dataset[key] = val;
+      else delete document.documentElement.dataset[key];
+      try {
+        const t = JSON.parse(localStorage.getItem('dnd-rework-tweaks') || '{}');
+        if (val) t[key] = val; else delete t[key];
+        localStorage.setItem('dnd-rework-tweaks', JSON.stringify(t));
+      } catch(e) {}
+      refreshActive();
+    }
+
+    function refreshActive() {
+      const p = document.documentElement.dataset.palette  || '';
+      const o = document.documentElement.dataset.ornament || '';
+      const f = document.documentElement.dataset.typeface || '';
+      panel.querySelectorAll('#tp-palette .tp-swatch').forEach(b => b.classList.toggle('is-active', b.dataset.val === p));
+      panel.querySelectorAll('#tp-ornament .tp-chip').forEach(b  => b.classList.toggle('is-active', b.dataset.val === o));
+      panel.querySelectorAll('#tp-typeface .tp-chip').forEach(b  => b.classList.toggle('is-active', b.dataset.val === f));
+    }
+
+    function openPanel()   { panel.removeAttribute('hidden'); panel.classList.add('is-open'); refreshActive(); }
+    function closePanel()  { panel.setAttribute('hidden', ''); panel.classList.remove('is-open'); }
+    function togglePanel() { panel.hasAttribute('hidden') ? openPanel() : closePanel(); }
+
+    document.getElementById('btn-theme-toggle-home')?.addEventListener('click', togglePanel);
+    document.getElementById('btn-theme-toggle-combat')?.addEventListener('click', togglePanel);
+    document.getElementById('btn-theme-close')?.addEventListener('click', closePanel);
+    panel.querySelector('.tp-backdrop')?.addEventListener('click', closePanel);
+
+    panel.querySelector('#tp-palette')?.addEventListener('click', e => {
+      const b = e.target.closest('.tp-swatch'); if (b) applyTweak('palette', b.dataset.val);
+    });
+    panel.querySelector('#tp-ornament')?.addEventListener('click', e => {
+      const b = e.target.closest('.tp-chip'); if (b) applyTweak('ornament', b.dataset.val);
+    });
+    panel.querySelector('#tp-typeface')?.addEventListener('click', e => {
+      const b = e.target.closest('.tp-chip'); if (b) applyTweak('typeface', b.dataset.val);
+    });
+  })();
   </script>
 </body>
 </html>

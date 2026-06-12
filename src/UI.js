@@ -729,3 +729,62 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+export function renderPlayerDock(combatant, isActive, progressionData = {}, deathSaves = null) {
+  const dock = document.getElementById('my-dock');
+  if (!dock) return;
+  if (!combatant) { dock.innerHTML = ''; return; }
+
+  const c      = combatant;
+  const isKO   = c.hpCurrent === 0;
+  const hpPct  = c.hpMax > 0 ? Math.min(1, Math.max(0, c.hpCurrent / c.hpMax)) : 0;
+  const tempHp = c.tempHp ?? 0;
+  const conditions = c.conditions ? Object.keys(c.conditions) : [];
+  const condChips  = conditions.map(cond => {
+    const meta = CONDITIONS.find(x => x.name === cond);
+    return `<span class="chip" style="--c:${meta?.color ?? 'var(--mut)'};">${cond}</span>`;
+  }).join('');
+
+  const { mode = 'xp', xp = {} } = progressionData;
+  const combXp = xp[c.id] ?? 0;
+  const level  = c.level ?? 1;
+  let xpHtml = '';
+  if (mode === 'xp' && level < 20) {
+    const hi  = XP_THRESHOLDS[level] ?? XP_THRESHOLDS[19];
+    const pct = Math.min(100, Math.max(0, Math.round(combXp / hi * 100))) || 0;
+    xpHtml = `<div class="xp-bar-track" style="height:3px;margin-top:2px;"><div class="xp-bar-fill" style="width:${pct}%"></div></div>`;
+  }
+
+  const successes = isKO ? (deathSaves?.successes ?? 0) : 0;
+  const failures  = isKO ? (deathSaves?.failures  ?? 0) : 0;
+
+  dock.innerHTML = `
+    <div class="dock-portrait">${c.type === 'pet' ? '🐾' : '⚔'}</div>
+    <div class="dock-id">
+      <b>${escapeHtml(c.name)}</b>
+      <span>${level ? `Lv.${level}` : ''}${c.armorClass ? ` · CA ${c.armorClass}` : ''}</span>
+    </div>
+    <div class="dock-vitals">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div class="hpbar hpbar--ally" style="flex:1;height:8px;">
+          <i class="trail" style="transform:scaleX(${hpPct.toFixed(4)});"></i>
+          <i class="fill"  style="transform:scaleX(${hpPct.toFixed(4)});"></i>
+        </div>
+        <span style="font-size:12px;font-weight:700;color:var(--bone);font-variant-numeric:tabular-nums;">${c.hpCurrent}<span style="color:var(--mut);font-weight:400">/${c.hpMax}</span></span>
+        ${tempHp > 0 ? `<span class="chip chip--iron" style="font-size:9px;padding:1px 5px;">+${tempHp}</span>` : ''}
+      </div>
+      ${xpHtml}
+      ${isKO ? `<div class="death-pips" style="margin-top:3px;">
+        <span>S</span>
+        <div class="pips ok">${[0,1,2].map(i => `<button class="${i < successes ? 'on' : ''}" data-action="death-save" data-type="successes" data-index="${i}" data-dock="1"></button>`).join('')}</div>
+        <span>F</span>
+        <div class="pips ko">${[0,1,2].map(i => `<button class="${i < failures ? 'on' : ''}" data-action="death-save" data-type="failures" data-index="${i}" data-dock="1"></button>`).join('')}</div>
+      </div>` : (conditions.length ? `<div class="dock-conds">${condChips}</div>` : '')}
+    </div>
+    <div class="dock-actions">
+      <button class="btn btn--danger btn--sm" data-action="dock-attack">⚔ Attacca</button>
+      <button class="btn btn--ghost btn--sm" data-action="dock-conditions">✦ Cond.</button>
+      <button class="btn btn--ghost btn--sm" data-action="dock-sheet">📜 Scheda</button>
+      ${isActive ? `<button class="btn btn--primary btn--sm" data-action="dock-end-turn">✓ Fine</button>` : ''}
+    </div>`;
+}
