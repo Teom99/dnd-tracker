@@ -456,9 +456,6 @@
     /* Master controls in topbar */
     #master-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
     #master-controls.hidden { display: none !important; }
-    #xp-award-section { display: flex; align-items: center; gap: 6px; }
-    #xp-award-form summary { cursor: pointer; list-style: none; }
-    #xp-award-form summary::-webkit-details-marker { display: none; }
 
     /* ── Player dock ── */
     .my-dock { display: grid; grid-template-columns: 40px minmax(120px,200px) minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 8px 14px; border-top: 1px solid var(--line-strong); background: linear-gradient(180deg, var(--bg1), var(--bg0)); flex-shrink: 0; }
@@ -518,9 +515,13 @@
     #join-char-list { display: flex; flex-wrap: wrap; gap: 6px; }
 
     /* XP award */
-    .xp-award-players { display: flex; flex-direction: column; gap: 5px; max-height: 180px; overflow-y: auto; }
-    .xp-player-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
-    .xp-player-meta { color: var(--faint); font-size: 11px; margin-left: auto; }
+    .xp-award-targets { max-height: 260px; overflow-y: auto; }
+    .xp-target { display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer; background: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--r); transition: border-color .12s; }
+    .xp-target:hover { border-color: var(--gold-dim); }
+    .xp-target.sel { border-color: var(--gold); }
+    .xp-target .box { width: 14px; height: 14px; border: 1px solid var(--line-strong); border-radius: 3px; flex: none; transition: background .12s, border-color .12s; }
+    .xp-target.sel .box { background: var(--gold); border-color: var(--gold-bright); }
+    .xp-target .grow { font-size: 13.5px; color: var(--bone); }
 
     /* Utility */
     .or-divider, .char-picker-label { font-size: 11px; color: var(--faint); letter-spacing: .1em; text-transform: uppercase; margin: 4px 0 2px; }
@@ -722,18 +723,7 @@
           <option value="xp">XP</option>
           <option value="milestone">Milestone</option>
         </select>
-        <div id="xp-award-section" class="hidden">
-          <details id="xp-award-form">
-            <summary class="btn btn--sm">✦ XP</summary>
-            <div style="position:absolute;right:0;top:100%;z-index:50;min-width:260px;" class="ds-panel" style="padding:14px;">
-              <div id="xp-award-players" class="xp-award-players"></div>
-              <div class="row" style="padding:6px 0 0; gap:6px;">
-                <input type="number" id="input-xp-amount" min="0" placeholder="XP" class="input input--num" style="width:80px;min-height:34px;">
-                <button id="btn-award-xp" class="btn btn--primary btn--sm grow">Assegna</button>
-              </div>
-            </div>
-          </details>
-        </div>
+        <button id="xp-award-section" class="btn btn--sm hidden" title="Assegna esperienza">✦ XP</button>
       </div>
       <button id="btn-exit-session" class="btn btn--ghost btn--sm">← Esci</button>
     </header>
@@ -1220,6 +1210,43 @@
   </div>
 
   <input type="file" id="input-scene-image" accept="image/*" style="display:none">
+
+  <!-- ═══════════════════════════════════════════════
+       MODAL — Azione dock (attacca / cura)
+  ═══════════════════════════════════════════════ -->
+  <div id="dock-action-modal" class="veil hidden" role="dialog" aria-modal="true" aria-label="Azione">
+    <div class="modal-frame">
+      <div class="ds-heading"><span id="dock-action-title">Attacca</span></div>
+      <input type="text" id="dock-action-text" class="input input--sm"
+             placeholder="Arma o incantesimo (es. Ascia da guerra)" autocomplete="off"
+             style="width:100%;margin-bottom:10px;">
+      <span class="t-label">Bersagli</span>
+      <div class="target-chips" id="dock-action-targets" style="max-height:140px;margin:6px 0 12px;"></div>
+      <input type="number" id="dock-action-amount" class="input input--num"
+             min="1" max="9999" placeholder="Quantità" style="width:100%;">
+      <div class="ds-sep"><i></i></div>
+      <div class="row" style="gap:8px;">
+        <button id="btn-dock-action-confirm" class="btn btn--primary grow">Conferma</button>
+        <button id="btn-dock-action-cancel"  class="btn grow">Annulla</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       MODAL — Assegna XP (master)
+  ═══════════════════════════════════════════════ -->
+  <div id="xp-award-modal" class="veil hidden" role="dialog" aria-modal="true" aria-label="Assegna XP">
+    <div class="modal-frame">
+      <div class="ds-heading"><span>Assegna Esperienza</span></div>
+      <div id="xp-award-targets" class="xp-award-targets" style="display:flex;flex-direction:column;gap:8px;"></div>
+      <div class="ds-sep"><i></i></div>
+      <div class="row" style="gap:8px;">
+        <input type="number" id="input-xp-amount" min="0" placeholder="XP da assegnare" class="input input--num grow">
+        <button id="btn-award-xp" class="btn btn--primary">Assegna</button>
+      </div>
+      <p id="xp-award-note" class="t-mono" style="margin:10px 0 0;font-size:11px;color:var(--faint);"></p>
+    </div>
+  </div>
 
   <script type="module" src="app.js"></script>
 

@@ -363,10 +363,10 @@ document.getElementById('my-dock')?.addEventListener('click', (e) => {
   if (action === 'dock-conditions') { cb.onOpenConditions?.(myId); return; }
   if (action === 'dock-sheet')      { cb.onOpenSheet?.(); return; }
   if (action === 'dock-end-turn')   { cb.onEndTurn?.(); return; }
-  if (action === 'dock-attack') {
-    // Scorri alla propria card nella lista player e clicca il bottone Danno
-    const card = document.querySelector(`[data-combatant-id="${myId}"]`);
-    card?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (action === 'dock-attack' || action === 'dock-heal') {
+    const combatants = Object.entries(state.snapshot?.combatants ?? {})
+      .map(([id, c]) => ({ id, ...c }));
+    UI.openDockActionModal(action === 'dock-attack' ? 'damage' : 'heal', myId, combatants, cb);
     return;
   }
   if (action === 'death-save') {
@@ -784,12 +784,58 @@ document.getElementById('select-progression-mode-live').addEventListener('change
   if (state.session) state.session.setProgressionMode(e.target.value);
 });
 
+function _renderXpAwardNote() {
+  const amount = parseInt(document.getElementById('input-xp-amount')?.value) || 0;
+  const count  = document.querySelectorAll('#xp-award-targets .xp-target.sel').length;
+  const note   = document.getElementById('xp-award-note');
+  if (!note) return;
+  if (!amount || !count) { note.textContent = ''; return; }
+  note.textContent = `${amount.toLocaleString('it')} xp a ciascuno · ${count} selezionat${count === 1 ? 'o' : 'i'} · modalità: XP`;
+}
+
+function _openXpAwardModal() {
+  const snap = state.snapshot;
+  if (!snap) return;
+  const players = Object.entries(snap.combatants ?? {})
+    .map(([id, c]) => ({ id, ...c }))
+    .filter(c => c.type === 'player');
+  const targetsEl = document.getElementById('xp-award-targets');
+  targetsEl.innerHTML = players.map(c => {
+    const xp  = snap.xp?.[c.id] ?? 0;
+    const lvl = c.level ?? 1;
+    return `<div class="xp-target sel" data-id="${c.id}">
+      <span class="box"></span>
+      <span class="grow">${esc(c.name)} <span class="t-mono" style="color:var(--faint);font-size:11px;">Lv.${lvl}</span></span>
+      <span class="t-mono">${xp.toLocaleString('it')} xp</span>
+    </div>`;
+  }).join('');
+  document.getElementById('input-xp-amount').value = '';
+  _renderXpAwardNote();
+  document.getElementById('xp-award-modal').classList.remove('hidden');
+}
+
+document.getElementById('xp-award-section').addEventListener('click', _openXpAwardModal);
+
+document.getElementById('xp-award-targets').addEventListener('click', (e) => {
+  const row = e.target.closest('.xp-target');
+  if (!row) return;
+  row.classList.toggle('sel');
+  _renderXpAwardNote();
+});
+
+document.getElementById('input-xp-amount').addEventListener('input', _renderXpAwardNote);
+
+document.getElementById('xp-award-modal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('xp-award-modal'))
+    document.getElementById('xp-award-modal').classList.add('hidden');
+});
+
 document.getElementById('btn-award-xp').addEventListener('click', async () => {
   const amount = parseInt(document.getElementById('input-xp-amount')?.value) || 0;
   if (!amount || !state.session) return;
-  const checked = [...document.querySelectorAll('.xp-player-check:checked')];
-  for (const cb of checked) await state.session.addXp(cb.dataset.id, amount);
-  document.getElementById('input-xp-amount').value = '';
+  const selected = [...document.querySelectorAll('#xp-award-targets .xp-target.sel')];
+  for (const row of selected) await state.session.addXp(row.dataset.id, amount);
+  document.getElementById('xp-award-modal').classList.add('hidden');
 });
 
 // ─── SCHEDA: Torna indietro ───────────────────────────────────────────────────
@@ -1054,19 +1100,7 @@ function _startListening() {
     // Progressione: aggiorna controlli master
     const selLive = document.getElementById('select-progression-mode-live');
     if (selLive) selLive.value = data.progressionMode ?? 'xp';
-    document.getElementById('xp-award-section')?.classList.toggle('hidden', (data.progressionMode ?? 'xp') !== 'xp');
-    const onlyPlayers = sorted.filter(c => c.type === 'player');
-    const xpPlayersEl = document.getElementById('xp-award-players');
-    if (xpPlayersEl && isMaster) {
-      xpPlayersEl.innerHTML = onlyPlayers.map(c => {
-        const xp  = data.xp?.[c.id] ?? 0;
-        const lvl = c.level ?? 1;
-        return `<label class="xp-player-row">
-          <input type="checkbox" class="xp-player-check" data-id="${c.id}" checked>
-          ${esc(c.name)} <span class="xp-player-meta">Lv.${lvl} — ${xp.toLocaleString('it')} XP</span>
-        </label>`;
-      }).join('');
-    }
+    document.getElementById('xp-award-section')?.classList.toggle('hidden', !isMaster || (data.progressionMode ?? 'xp') !== 'xp');
 
     state.shipData = data.ship ?? null;
     if (state.shipPanelOpen) _renderShipPanel();

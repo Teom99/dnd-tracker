@@ -801,8 +801,68 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
     </div>
     <div class="dock-actions">
       ${isActive ? `<button class="btn btn--danger btn--sm" data-action="dock-attack">⚔ Attacca</button>` : ''}
+      ${isActive ? `<button class="btn btn--sm" data-action="dock-heal" style="color:var(--heal);">✚ Cura</button>` : ''}
       <button class="btn btn--ghost btn--sm" data-action="dock-conditions">✦ Cond.</button>
       <button class="btn btn--ghost btn--sm" data-action="dock-sheet">📜 Scheda</button>
       ${isActive ? `<button class="btn btn--primary btn--sm" data-action="dock-end-turn">✓ Fine</button>` : ''}
     </div>`;
+}
+
+// ─── Modale azione dock (attacca / cura) ─────────────────────────────────────
+let _dockActionMode = 'damage';
+let _dockActionMyId = null;
+let _dockActionCb   = null;
+const _dockActionSel = new Set();
+
+export function openDockActionModal(mode, myId, combatants, callbacks) {
+  const modal = document.getElementById('dock-action-modal');
+  if (!modal) return;
+
+  _dockActionMode = mode;
+  _dockActionMyId = myId;
+  _dockActionCb   = callbacks;
+  _dockActionSel.clear();
+
+  const isDmg      = mode === 'damage';
+  const confirmBtn = document.getElementById('btn-dock-action-confirm');
+  document.getElementById('dock-action-title').textContent = isDmg ? '⚔ Attacca' : '✚ Cura';
+  confirmBtn.textContent = isDmg ? '⚔ Conferma' : '✚ Conferma';
+  confirmBtn.className   = 'btn grow ' + (isDmg ? 'btn--danger' : 'btn--primary');
+
+  const me    = combatants.find(c => c.id === myId);
+  const valid = combatants.filter(x => x.hpCurrent > 0 || x.type === 'player' || x.type === 'pet');
+  const chip  = (id, label) => `<button class="target-chip" data-target-id="${id}">${label}</button>`;
+  const chips = [chip(myId, '👤 Sé stesso')];
+  valid.filter(x => x.id !== myId).forEach(x => {
+    const prefix = x.type === 'player' ? '👤' : x.type === 'pet' ? '🐾' : '👹';
+    chips.push(chip(x.id, `${prefix} ${escapeHtml(x.name)}`));
+  });
+  document.getElementById('dock-action-targets').innerHTML = chips.join('');
+  document.getElementById('dock-action-text').value   = me?.currentAction || '';
+  document.getElementById('dock-action-amount').value = '';
+
+  if (!modal._bound) {
+    modal._bound = true;
+    document.getElementById('dock-action-targets').addEventListener('click', (e) => {
+      const c = e.target.closest('.target-chip');
+      if (!c) return;
+      const tid = c.dataset.targetId;
+      if (_dockActionSel.has(tid)) _dockActionSel.delete(tid); else _dockActionSel.add(tid);
+      c.classList.toggle('selected');
+    });
+    document.getElementById('btn-dock-action-cancel').addEventListener('click', () => modal.classList.add('hidden'));
+    modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
+    confirmBtn.addEventListener('click', () => {
+      const amt        = parseInt(document.getElementById('dock-action-amount').value);
+      const actionText = document.getElementById('dock-action-text').value.trim() || null;
+      if (_dockActionSel.size === 0) { _flashError(confirmBtn, 'Scegli un bersaglio'); return; }
+      if (!amt || amt <= 0)          { _flashError(confirmBtn, 'Inserisci una quantità'); return; }
+      const delta = _dockActionMode === 'damage' ? -amt : amt;
+      _dockActionSel.forEach(tid => _dockActionCb?.onApplyToTarget(_dockActionMyId, tid, delta, actionText));
+      modal.classList.add('hidden');
+    });
+  }
+
+  modal.classList.remove('hidden');
+  setTimeout(() => document.getElementById('dock-action-amount')?.focus(), 50);
 }
