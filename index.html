@@ -552,9 +552,10 @@
       .combat-shell { display: block; padding: 8px 8px 0; height: calc(100dvh - 56px - 54px); overflow: hidden; }
       .panel { display: none; height: 100%; }
       .panel.is-mobile-on { display: flex; }
-      #panel-grid { display: block; }
+      /* La griglia usa block (figli in posizione assoluta) ma SOLO quando è il pannello attivo */
       #panel-grid.is-mobile-on { display: block; }
-      .tabbar { display: grid; }
+      /* Tabbar in flusso (non fixed) così riserva spazio e non copre il dock */
+      .tabbar { display: grid; position: static; }
       body.sheet-only .combat-shell { visibility: visible; }
 
       /* Topbar compatta + menu overflow ⋯ */
