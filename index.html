@@ -157,6 +157,8 @@
     .fight-card.is-active::before { content: ""; position: absolute; inset: -1px; pointer-events: none; border-radius: 3px; box-shadow: inset 0 0 24px rgba(210,180,106,.07); }
     .fight-card { position: relative; }
     .fight-card.is-down { filter: saturate(.3) brightness(.8); }
+    .fight-card.dock-selected { border-color: var(--gold-bright); box-shadow: 0 0 0 1px var(--gold); }
+    body.is-master .fight-card { cursor: pointer; }
     .fc-top { display: grid; grid-template-columns: 36px 1fr auto auto; gap: 8px; align-items: center; }
     .fc-portrait { width: 36px; height: 36px; border-radius: 2px; flex: none; font-size: 7px; }
 
@@ -460,7 +462,7 @@
     /* ── Player dock ── */
     .my-dock { display: grid; grid-template-columns: 40px minmax(120px,200px) minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 8px 14px; border-top: 1px solid var(--line-strong); background: linear-gradient(180deg, var(--bg1), var(--bg0)); flex-shrink: 0; }
     .my-dock:empty { display: none; }
-    body.is-master .my-dock { display: none; }
+    .dock-hint { grid-column: 1 / -1; text-align: center; font-size: 12px; color: var(--faint); font-style: italic; }
     .dock-portrait { width: 40px; height: 40px; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1px solid var(--line-strong); }
     .dock-pframe { width: 40px; height: 40px; }
     .dock-pframe .dock-portrait { width: 100%; height: 100%; border: 0; border-radius: 1px; background: var(--bg2); }
@@ -788,35 +790,9 @@
         <div class="side-pane is-on" data-pane="cards" style="overflow:hidden;">
           <div class="panel-scroll" id="cards-scroll">
 
-            <!-- Form aggiungi creatura (solo master) -->
+            <!-- Apri modale aggiungi creatura (solo master) -->
             <section id="master-add-form" class="hidden">
-              <h3 class="master-panel-title">Aggiungi Creatura</h3>
-              <form id="form-add-creature" novalidate>
-                <div id="creature-library-picker" class="hidden">
-                  <p class="char-picker-label">Dalla libreria:</p>
-                  <div id="creature-library-list" class="char-picker"></div>
-                  <p class="or-divider">oppure inserisci manualmente:</p>
-                </div>
-                <div class="monster-api-search" id="monster-api-search" style="position:relative;">
-                  <input type="text" id="input-monster-search" class="input" placeholder="🔍 Cerca mostro D&D 5e…" autocomplete="off">
-                  <ul id="monster-suggestions" class="api-suggestions hidden"></ul>
-                </div>
-                <input type="text" id="input-creature-name" class="input" placeholder="Nome creatura" maxlength="50">
-                <div class="input-row">
-                  <input type="number" id="input-creature-hp"         class="input" placeholder="HP" min="1" max="9999">
-                  <input type="number" id="input-creature-initiative"  class="input" placeholder="Init" min="-10" max="30">
-                  <input type="number" id="input-creature-ac"          class="input" placeholder="CA" min="0" max="30">
-                </div>
-                <select id="input-creature-size" class="select" style="width:100%; min-height:34px;">
-                  <option value="small">Piccola (1×1)</option>
-                  <option value="medium" selected>Media (1×1)</option>
-                  <option value="large">Grande (2×2)</option>
-                  <option value="huge">Enorme (3×3)</option>
-                  <option value="gargantuan">Mastodontica (4×4)</option>
-                </select>
-                <input type="hidden" id="input-creature-api-index" value="">
-                <button type="submit" class="btn btn--sm">+ Aggiungi</button>
-              </form>
+              <button type="button" id="btn-open-add-creature" class="btn btn--sm btn--block">➕ Aggiungi Creatura</button>
             </section>
 
             <!-- Form aggiungi compagno (solo non-master) -->
@@ -1245,6 +1221,45 @@
         <button id="btn-award-xp" class="btn btn--primary">Assegna</button>
       </div>
       <p id="xp-award-note" class="t-mono" style="margin:10px 0 0;font-size:11px;color:var(--faint);"></p>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════
+       MODAL — Aggiungi creatura (master)
+  ═══════════════════════════════════════════════ -->
+  <div id="add-creature-modal" class="veil hidden" role="dialog" aria-modal="true" aria-label="Aggiungi creatura">
+    <div class="modal-frame">
+      <div class="ds-heading"><span>Aggiungi Creatura</span></div>
+      <form id="form-add-creature" novalidate>
+        <div id="creature-library-picker" class="hidden">
+          <p class="char-picker-label">Dalla libreria:</p>
+          <div id="creature-library-list" class="char-picker"></div>
+          <p class="or-divider">oppure inserisci manualmente:</p>
+        </div>
+        <div class="monster-api-search" id="monster-api-search" style="position:relative;">
+          <input type="text" id="input-monster-search" class="input" placeholder="🔍 Cerca mostro D&D 5e…" autocomplete="off">
+          <ul id="monster-suggestions" class="api-suggestions hidden"></ul>
+        </div>
+        <input type="text" id="input-creature-name" class="input" placeholder="Nome creatura" maxlength="50">
+        <div class="input-row">
+          <input type="number" id="input-creature-hp"         class="input" placeholder="HP" min="1" max="9999">
+          <input type="number" id="input-creature-initiative"  class="input" placeholder="Init" min="-10" max="30">
+          <input type="number" id="input-creature-ac"          class="input" placeholder="CA" min="0" max="30">
+        </div>
+        <select id="input-creature-size" class="select" style="width:100%; min-height:34px;">
+          <option value="small">Piccola (1×1)</option>
+          <option value="medium" selected>Media (1×1)</option>
+          <option value="large">Grande (2×2)</option>
+          <option value="huge">Enorme (3×3)</option>
+          <option value="gargantuan">Mastodontica (4×4)</option>
+        </select>
+        <input type="hidden" id="input-creature-api-index" value="">
+        <div class="ds-sep"><i></i></div>
+        <div class="row" style="gap:8px;">
+          <button type="submit" class="btn btn--primary grow">+ Aggiungi</button>
+          <button type="button" id="btn-add-creature-cancel" class="btn grow">Annulla</button>
+        </div>
+      </form>
     </div>
   </div>
 

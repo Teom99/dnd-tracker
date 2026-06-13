@@ -27,15 +27,25 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
     }
   };
 
+  const selectToken = (id) => {
+    state.selectedGridTokenId = id;
+    reRender();
+  };
+
+  // Tabella iniziativa: per il master seleziona il soggetto del dock (nessun
+  // movimento sulla griglia); per il player resta la selezione/movimento griglia.
+  const isMaster = state.session.isMaster;
   GridUI.renderInitiativeList(
     document.getElementById('grid-initiative-list'),
     sortedCombatants,
     gridPos,
     state.myCombatantId,
-    state.selectedGridTokenId,
+    isMaster ? state.selectedDockId : state.selectedGridTokenId,
     currentTurnId,
-    state.session.isMaster,
-    (id) => { state.selectedGridTokenId = id; reRender(); },
+    isMaster,
+    isMaster
+      ? (id) => document.dispatchEvent(new CustomEvent('dnd:dock-select', { detail: { id } }))
+      : selectToken,
     comb
   );
 
@@ -51,7 +61,7 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
     gridConfig,
     walls,
     state.gridEditMode,
-    (id) => { state.selectedGridTokenId = id; reRender(); },
+    selectToken,
     (id, col, row) => state.session.setGridPosition(id, col, row),
     (cellKey, value) => state.session.setWall(cellKey, value)
   );

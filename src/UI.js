@@ -237,10 +237,12 @@ let _rendering = false;
 const _lastActiveTurn  = {};
 const _selectedTargets = new Map(); // combatantId (owner) → Set<targetId>
 
-export function renderCombatantList(combatants, currentTurnId, myUid, masterUid, callbacks, acMap = {}, myDeathSaves = null, progressionData = {}, listId = 'combatant-list', emptyMsgId = 'empty-list-msg', allCombatants = null) {
+export function renderCombatantList(combatants, currentTurnId, myUid, masterUid, callbacks, acMap = {}, myDeathSaves = null, progressionData = {}, listId = 'combatant-list', emptyMsgId = 'empty-list-msg', allCombatants = null, selectedDockId = null) {
   const list     = document.getElementById(listId);
   const emptyMsg = document.getElementById(emptyMsgId);
   if (!list) return;
+
+  const listIsMaster = myUid === masterUid;
 
   // allCombatants: full sorted list used for target options and global turn numbering
   const fullList = allCombatants ?? combatants;
@@ -322,7 +324,8 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const isAlly = !isCreature || c.faction === 'good';
     const hpPct  = c.hpMax > 0 ? Math.min(1, Math.max(0, c.hpCurrent / c.hpMax)) : 0;
 
-    li.className = ['fight-card', isActive ? 'is-active' : '', isKO ? 'is-down' : '']
+    li.className = ['fight-card', isActive ? 'is-active' : '', isKO ? 'is-down' : '',
+      (listIsMaster && c.id === selectedDockId) ? 'dock-selected' : '']
       .filter(Boolean).join(' ');
     li.dataset.combatantId = c.id;
 
@@ -426,13 +429,13 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
 
       ${xpSectionHtml}
 
-      ${canEdit ? `
+      ${canEdit && !isMaster ? `
         <input type="text" class="action-input input input--sm" data-id="${c.id}"
           placeholder="Arma o incantesimo (es. Ascia da guerra)"
           value="${escapeHtml(c.currentAction || '')}"
           autocomplete="off" style="width:100%;">
         <div class="target-chips" data-id="${c.id}">${targetChips}</div>
-        ${isMaster || isActive ? `
+        ${isActive ? `
         <div class="fc-controls">
           <input type="number" class="attack-amount input input--num" data-id="${c.id}" placeholder="0" min="1" max="9999">
           <button class="btn btn--danger btn--sm" data-id="${c.id}" data-action="apply-damage">🗡 Danno</button>
@@ -505,7 +508,17 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
 
   list.onclick = (e) => {
     const btn = e.target.closest('[data-action]');
-    if (!btn) return;
+    if (!btn) {
+      // Click sul corpo della carta (master): seleziona il soggetto del dock
+      if (listIsMaster && !e.target.closest('input, select, button')) {
+        const card = e.target.closest('.fight-card');
+        if (card?.dataset.combatantId) {
+          const cid = card.dataset.combatantId;
+          document.dispatchEvent(new CustomEvent('dnd:dock-select', { detail: { id: cid === selectedDockId ? null : cid } }));
+        }
+      }
+      return;
+    }
     const id     = btn.dataset.id;
     const action = btn.dataset.action;
 
@@ -805,6 +818,52 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
       <button class="btn btn--ghost btn--sm" data-action="dock-conditions">✦ Cond.</button>
       <button class="btn btn--ghost btn--sm" data-action="dock-sheet">📜 Scheda</button>
       ${isActive ? `<button class="btn btn--primary btn--sm" data-action="dock-end-turn">✓ Fine</button>` : ''}
+    </div>`;
+}
+
+export function renderMasterDock(combatant) {
+  const dock = document.getElementById('my-dock');
+  if (!dock) return;
+  if (!combatant) {
+    dock.innerHTML = `<span class="dock-hint">Seleziona un token sulla griglia per agire.</span>`;
+    return;
+  }
+
+  const c     = combatant;
+  const isKO  = c.hpCurrent === 0;
+  const hpPct = c.hpMax > 0 ? Math.min(1, Math.max(0, c.hpCurrent / c.hpMax)) : 0;
+  const tempHp = c.tempHp ?? 0;
+  const conditions = c.conditions ? Object.keys(c.conditions) : [];
+  const condChips  = conditions.map(cond => {
+    const meta = CONDITIONS.find(x => x.name === cond);
+    return `<span class="chip" style="--c:${meta?.color ?? 'var(--mut)'};">${cond}</span>`;
+  }).join('');
+
+  const icon = c.type === 'pet' ? '🐾' : c.type === 'creature' ? '👹' : '⚔';
+  const kind = c.type === 'creature' ? 'Creatura' : c.type === 'pet' ? 'Famiglio' : 'PG';
+  const subtitle = [kind, c.armorClass ? `CA ${c.armorClass}` : null].filter(Boolean).join(' · ');
+
+  dock.innerHTML = `
+    <div class="dock-portrait${isKO ? ' is-down' : ''}">${isKO ? '💀' : icon}</div>
+    <div class="dock-id">
+      <b>${escapeHtml(c.name)}</b>
+      <span>${subtitle}</span>
+    </div>
+    <div class="dock-vitals">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div class="hpbar hpbar--ally" style="flex:1;height:8px;">
+          <i class="trail" style="transform:scaleX(${hpPct.toFixed(4)});"></i>
+          <i class="fill"  style="transform:scaleX(${hpPct.toFixed(4)});"></i>
+        </div>
+        <span style="font-size:12px;font-weight:700;color:var(--bone);font-variant-numeric:tabular-nums;">${c.hpCurrent}<span style="color:var(--mut);font-weight:400">/${c.hpMax}</span></span>
+        ${tempHp > 0 ? `<span class="chip chip--iron" style="font-size:9px;padding:1px 5px;">+${tempHp}</span>` : ''}
+      </div>
+      ${conditions.length ? `<div class="dock-conds">${condChips}</div>` : ''}
+    </div>
+    <div class="dock-actions">
+      <button class="btn btn--danger btn--sm" data-action="dock-attack">⚔ Attacca</button>
+      <button class="btn btn--sm" data-action="dock-heal" style="color:var(--heal);">✚ Cura</button>
+      <button class="btn btn--ghost btn--sm" data-action="dock-conditions">✦ Cond.</button>
     </div>`;
 }
 

@@ -196,6 +196,20 @@ document.getElementById('form-join').addEventListener('submit', async (e) => {
 
 // ─── COMBAT: Aggiungi creatura (solo master) ──────────────────────────────────
 
+document.getElementById('btn-open-add-creature').addEventListener('click', () => {
+  document.getElementById('add-creature-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('input-monster-search')?.focus(), 50);
+});
+
+function _closeAddCreatureModal() {
+  document.getElementById('add-creature-modal').classList.add('hidden');
+}
+
+document.getElementById('btn-add-creature-cancel').addEventListener('click', _closeAddCreatureModal);
+document.getElementById('add-creature-modal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('add-creature-modal')) _closeAddCreatureModal();
+});
+
 document.getElementById('form-add-creature').addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -214,7 +228,7 @@ document.getElementById('form-add-creature').addEventListener('submit', async (e
   state.selectedCreatureCharId = null;
   document.querySelectorAll('#creature-library-list .char-pick-btn').forEach(b => b.classList.remove('selected'));
   e.target.reset();
-  document.getElementById('input-creature-name').focus();
+  _closeAddCreatureModal();
 });
 
 // ─── COMBAT: Aggiungi compagno (player only) ──────────────────────────────────
@@ -358,15 +372,16 @@ document.getElementById('my-dock')?.addEventListener('click', (e) => {
   if (!btn) return;
   const action = btn.dataset.action;
   const cb = makeCallbacks();
-  const myId = state.myCombatantId;
-  if (!myId) return;
-  if (action === 'dock-conditions') { cb.onOpenConditions?.(myId); return; }
+  // Per il master il soggetto del dock è la creatura/PG selezionato da carte o iniziativa; per il player è il proprio combattente
+  const subjectId = state.session?.isMaster ? state.selectedDockId : state.myCombatantId;
+  if (!subjectId) return;
+  if (action === 'dock-conditions') { cb.onOpenConditions?.(subjectId); return; }
   if (action === 'dock-sheet')      { cb.onOpenSheet?.(); return; }
   if (action === 'dock-end-turn')   { cb.onEndTurn?.(); return; }
   if (action === 'dock-attack' || action === 'dock-heal') {
     const combatants = Object.entries(state.snapshot?.combatants ?? {})
       .map(([id, c]) => ({ id, ...c }));
-    UI.openDockActionModal(action === 'dock-attack' ? 'damage' : 'heal', myId, combatants, cb);
+    UI.openDockActionModal(action === 'dock-attack' ? 'damage' : 'heal', subjectId, combatants, cb);
     return;
   }
   if (action === 'death-save') {
@@ -377,6 +392,24 @@ document.getElementById('my-dock')?.addEventListener('click', (e) => {
     return;
   }
 });
+
+// Dock master: mostra il combattente selezionato (da carte o tabella iniziativa)
+function _refreshMasterDock() {
+  if (!state.session?.isMaster) return;
+  const id  = state.selectedDockId;
+  const raw = id ? state.snapshot?.combatants?.[id] : null;
+  UI.renderMasterDock(raw ? { ...raw, id } : null);
+}
+
+// Imposta il soggetto del dock (indipendente dalla selezione/movimento griglia)
+function _setDockSubject(id) {
+  state.selectedDockId = id;
+  _refreshMasterDock();
+  _renderCombatLists();        // aggiorna l'evidenziazione delle carte
+  _rerenderGridFromSnapshot(); // aggiorna l'evidenziazione della tabella iniziativa
+}
+
+document.addEventListener('dnd:dock-select', (e) => _setDockSubject(e.detail?.id ?? null));
 
 // Bottone "📖 Visualizza Dati" nelle card creature (master-only, riapre il stat block)
 document.getElementById('creature-list').addEventListener('click', async (e) => {
@@ -1029,6 +1062,22 @@ function _rerenderGridFromSnapshot() {
   renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null, sorted, data.gridConfig || null, data.walls || {});
 }
 
+function _renderCombatLists() {
+  const data = state.snapshot;
+  if (!data) return;
+  const sorted    = state.tracker.sortedCombatants(data.combatants);
+  const creatures = sorted.filter(c => c.type === 'creature');
+  const players   = sorted.filter(c => c.type === 'player' || c.type === 'pet');
+  const callbacks = makeCallbacks();
+  const progressionData = {
+    mode:           data.progressionMode ?? 'xp',
+    xp:             data.xp ?? {},
+    levelUpGranted: data.levelUpGranted ?? {},
+  };
+  UI.renderCombatantList(creatures, data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, null,                               progressionData, 'creature-list', 'empty-creatures-msg', sorted, state.selectedDockId);
+  UI.renderCombatantList(players,   data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, state.sheetData?.deathSaves ?? null, progressionData, 'player-list',   'empty-players-msg', sorted, state.selectedDockId);
+}
+
 function _startListening() {
   state.session.listenNoteLocks(locks => {
     _noteLocks = locks;
@@ -1073,10 +1122,11 @@ function _startListening() {
       xp:             data.xp ?? {},
       levelUpGranted: data.levelUpGranted ?? {},
     };
-    UI.renderCombatantList(creatures, data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, null,                               progressionData, 'creature-list', 'empty-creatures-msg', sorted);
-    UI.renderCombatantList(players,   data.currentTurnId ?? null, state.myUid, state.session.masterUid, callbacks, state.acMap, state.sheetData?.deathSaves ?? null, progressionData, 'player-list',   'empty-players-msg', sorted);
+    _renderCombatLists();
 
-    if (state.myCombatantId && !state.session.isMaster) {
+    if (state.session.isMaster) {
+      _refreshMasterDock();
+    } else if (state.myCombatantId) {
       const myRaw = data.combatants?.[state.myCombatantId];
       const myC   = myRaw ? { ...myRaw, id: state.myCombatantId } : null;
       UI.renderPlayerDock(myC, state.myCombatantId === data.currentTurnId, progressionData, state.sheetData?.deathSaves ?? null);
