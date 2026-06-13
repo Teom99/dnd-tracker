@@ -461,7 +461,7 @@
     #master-controls.hidden { display: none !important; }
 
     /* ── Player dock ── */
-    .my-dock { display: grid; grid-template-columns: 40px minmax(120px,200px) minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 8px 14px; border-top: 1px solid var(--line-strong); background: linear-gradient(180deg, var(--bg1), var(--bg0)); flex-shrink: 0; }
+    .my-dock { display: grid; grid-template-columns: 40px minmax(120px,200px) minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 8px 14px; border-top: 1px solid var(--line-strong); background: linear-gradient(180deg, var(--bg1), var(--bg0)); flex-shrink: 0; height: 72px; overflow: hidden; }
     .my-dock:empty { display: none; }
     .dock-hint { grid-column: 1 / -1; text-align: center; font-size: 12px; color: var(--faint); font-style: italic; }
     .dock-portrait { width: 40px; height: 40px; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1px solid var(--line-strong); }
@@ -472,7 +472,7 @@
     .dock-id b { font-family: var(--font-display); font-size: 16px; font-weight: 700; display: block; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--bone); }
     .dock-id span { font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
     .dock-vitals { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-    .dock-conds { display: flex; flex-wrap: wrap; gap: 3px; }
+    .dock-conds { display: flex; flex-wrap: nowrap; overflow: hidden; gap: 3px; }
     .dock-actions { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
 
     /* ── Theme panel ── */
@@ -556,7 +556,7 @@
     }
     @media (max-width: 600px) {
       .combat-topbar .turn-banner { display: none; }
-      .my-dock { grid-template-columns: 36px minmax(0,1fr); row-gap: 6px; padding: 8px 10px; }
+      .my-dock { grid-template-columns: 36px minmax(0,1fr); row-gap: 6px; padding: 8px 10px; height: auto; overflow: visible; }
       .my-dock .dock-vitals, .my-dock .dock-actions { grid-column: 1 / -1; }
       .my-dock .dock-actions .btn { flex: 1; }
     }
