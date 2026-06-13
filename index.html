@@ -459,6 +459,12 @@
     /* Master controls in topbar */
     #master-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
     #master-controls.hidden { display: none !important; }
+    /* Su desktop il wrapper è trasparente al layout (i controlli restano inline in topbar) */
+    .topbar-more { display: contents; }
+    .topbar-more-toggle { display: none; }
+    .more-lbl { display: none; }
+    .master-only { display: none; }
+    body.is-master .master-only { display: inline-flex; }
 
     /* ── Player dock ── */
     .my-dock { display: grid; grid-template-columns: 40px minmax(120px,200px) minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 8px 14px; border-top: 1px solid var(--line-strong); background: linear-gradient(180deg, var(--bg1), var(--bg0)); flex-shrink: 0; height: 72px; overflow: hidden; }
@@ -550,6 +556,35 @@
       #panel-grid.is-mobile-on { display: block; }
       .tabbar { display: grid; }
       body.sheet-only .combat-shell { visibility: visible; }
+
+      /* Topbar compatta + menu overflow ⋯ */
+      .combat-topbar { gap: 8px; padding: 8px 10px; }
+      .topbar-emblem { display: none; }
+      .session-tag .t-label { display: none; }
+      .topbar-more-toggle { display: inline-flex; }
+      .topbar-more {
+        position: absolute; top: calc(100% + 4px); right: 8px;
+        display: none; flex-direction: column; align-items: stretch; gap: 6px;
+        min-width: 200px; padding: 8px;
+        background: var(--bg1); border: 1px solid var(--line-strong); border-radius: var(--r);
+        box-shadow: 0 10px 28px rgba(0,0,0,.45); z-index: 60;
+      }
+      .topbar-more.is-open { display: flex; }
+      .topbar-more #master-controls { display: contents; }
+      .topbar-more .btn, .topbar-more .select { width: 100%; justify-content: flex-start; min-height: 40px; }
+      .topbar-more .more-lbl { display: inline; }
+
+      /* Navigazione unica: la tabbar in basso. Niente doppia barra di tab nel pannello destro */
+      .side-tabs { display: none; }
+
+      /* Toolbar griglia: niente testo hint lungo che copre la griglia */
+      .grid-hint { display: none; }
+
+      /* Target touch più comodi */
+      .my-dock .btn { min-height: 40px; }
+      .combat-topbar .btn { min-height: 38px; }
+      .grid-token-chip { min-height: 34px; }
+      .fc-controls .btn { min-height: 36px; }
     }
     @media (max-width: 860px) and (min-width: 1px) {
       body.in-combat .combat-shell { height: auto; flex: 1; overflow: hidden; }
@@ -706,7 +741,7 @@
 
     <!-- ── TOPBAR ── -->
     <header class="topbar combat-topbar">
-      <div class="emblem emblem--sm" aria-hidden="true"></div>
+      <div class="emblem emblem--sm topbar-emblem" aria-hidden="true"></div>
       <div class="session-tag">
         <span class="t-label">Sessione</span>
         <span class="code" id="session-code-display"></span>
@@ -715,19 +750,27 @@
       <div class="turn-banner" id="turn-banner">
         <span id="round-display" class="rnd">Round 1</span>
       </div>
-      <button id="btn-upload-scene" class="btn btn--ghost btn--sm" title="Carica immagine scena">🖼</button>
-      <button id="btn-toggle-ship" class="btn btn--ghost btn--sm" title="Pannello nave">⚓</button>
-      <button id="btn-theme-toggle-combat" class="btn btn--ghost btn--sm">🎨</button>
-      <!-- Controlli master (visibili solo al master) -->
-      <div id="master-controls" class="hidden">
-        <button id="btn-next-turn" class="btn btn--primary btn--sm">Turno ▸</button>
-        <button id="btn-reset" class="btn btn--danger btn--sm">↺</button>
-        <select id="select-progression-mode-live" class="select" style="min-height:34px;font-size:11px;padding:4px 28px 4px 8px;">
-          <option value="xp">XP</option>
-          <option value="milestone">Milestone</option>
-        </select>
-        <button id="xp-award-section" class="btn btn--sm hidden" title="Assegna esperienza">✦ XP</button>
+
+      <!-- Azione primaria del master: avanza turno (sempre inline) -->
+      <button id="btn-next-turn" class="btn btn--primary btn--sm master-only">Turno ▸</button>
+
+      <!-- Azioni secondarie: inline su desktop, in un menu ⋯ su mobile -->
+      <div id="topbar-more" class="topbar-more">
+        <button id="btn-upload-scene" class="btn btn--ghost btn--sm" title="Carica immagine scena">🖼 <span class="more-lbl">Scena</span></button>
+        <button id="btn-toggle-ship" class="btn btn--ghost btn--sm" title="Pannello nave">⚓ <span class="more-lbl">Nave</span></button>
+        <button id="btn-theme-toggle-combat" class="btn btn--ghost btn--sm">🎨 <span class="more-lbl">Tema</span></button>
+        <!-- Controlli master (visibili solo al master) -->
+        <div id="master-controls" class="hidden">
+          <button id="btn-reset" class="btn btn--danger btn--sm">↺ <span class="more-lbl">Reset</span></button>
+          <select id="select-progression-mode-live" class="select" style="min-height:34px;font-size:11px;padding:4px 28px 4px 8px;">
+            <option value="xp">XP</option>
+            <option value="milestone">Milestone</option>
+          </select>
+          <button id="xp-award-section" class="btn btn--sm hidden" title="Assegna esperienza">✦ XP</button>
+        </div>
       </div>
+
+      <button id="btn-topbar-more" class="btn btn--ghost btn--sm topbar-more-toggle" title="Altre azioni" aria-label="Altre azioni" aria-expanded="false">⋯</button>
       <button id="btn-exit-session" class="btn btn--ghost btn--sm">← Esci</button>
     </header>
 
@@ -874,6 +917,7 @@
       <button data-tab="init"><span class="ico">♜</span>Ordine</button>
       <button data-tab="cards"><span class="ico">▤</span>Carte</button>
       <button data-tab="log"><span class="ico">✎</span>Diario</button>
+      <button data-tab="notes"><span class="ico">📖</span>Cronache</button>
     </nav>
 
     <!-- ── SCHEDA PERSONAGGIO (overlay) ── -->
@@ -1292,14 +1336,33 @@
       if (grid) grid.classList.toggle('is-mobile-on', tab === 'grid');
       if (init) init.classList.toggle('is-mobile-on', tab === 'init');
       if (side) {
-        side.classList.toggle('is-mobile-on', tab === 'cards' || tab === 'log');
-        if (tab === 'cards' || tab === 'log') {
-          const pane = tab === 'log' ? 'log' : 'cards';
+        const showSide = (tab === 'cards' || tab === 'log' || tab === 'notes');
+        side.classList.toggle('is-mobile-on', showSide);
+        if (showSide) {
+          const pane = tab === 'log' ? 'log' : tab === 'notes' ? 'notes' : 'cards';
           side.querySelectorAll('.side-pane').forEach(p => p.classList.toggle('is-on', p.dataset.pane === pane));
           side.querySelectorAll('.side-tabs button').forEach(b => b.classList.toggle('is-on', b.dataset.pane === pane));
         }
       }
     });
+
+    // Topbar: menu overflow ⋯ (solo mobile)
+    (function () {
+      const toggle = document.getElementById('btn-topbar-more');
+      const menu   = document.getElementById('topbar-more');
+      if (!toggle || !menu) return;
+      const close = () => { menu.classList.remove('is-open'); toggle.setAttribute('aria-expanded', 'false'); };
+      toggle.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const open = menu.classList.toggle('is-open');
+        toggle.setAttribute('aria-expanded', String(open));
+      });
+      // Chiudi cliccando un'azione del menu o fuori dal menu
+      menu.addEventListener('click', function (e) { if (e.target.closest('button')) close(); });
+      document.addEventListener('click', function (e) {
+        if (!menu.contains(e.target) && e.target !== toggle) close();
+      });
+    })();
   </script>
 
   <!-- ── Pannello impostazioni tema ── -->
