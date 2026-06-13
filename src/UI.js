@@ -410,8 +410,8 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         </div>
         ${isMaster && isCreature ? `
           <div class="fc-controls" style="gap:5px;margin-top:1px;">
-            <button class="btn btn--ghost btn--sm ${c.showHealthHint ? 'hint-active' : ''}" data-id="${c.id}" data-action="toggle-health-hint" style="font-size:9px;">${c.showHealthHint ? '👁 HP vis.' : '👁 HP nasco.'}</button>
-            ${ac !== null ? `<button class="btn btn--ghost btn--sm ${c.showAC ? '' : 'hint-active'}" data-id="${c.id}" data-action="toggle-show-ac" style="font-size:9px;">${c.showAC ? '🛡 CA vis.' : '🛡 CA nasco.'}</button>` : ''}
+            <button class="btn btn--ghost btn--sm ${c.showHealthHint ? 'hint-active' : ''}" data-id="${c.id}" data-action="toggle-health-hint" style="font-size:9px;">👁 Mostra HP</button>
+            ${ac !== null ? `<button class="btn btn--ghost btn--sm ${c.showAC === true ? 'hint-active' : ''}" data-id="${c.id}" data-action="toggle-show-ac" style="font-size:9px;">🛡 Mostra CA</button>` : ''}
           </div>
         ` : ''}
       ` : showHint ? `
