@@ -89,12 +89,13 @@ body {
   font: 400 15px/1.55 var(--font-ui);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 img { max-width: 100%; display: block; }
 ::selection { background: var(--gold-dim); color: #0a0d0c; }
 
 /* ── 3. NEBBIA E GRANA ─────────────────────────────────────── */
-.fog-stage { position: relative; isolation: isolate; min-height: 100vh; }
+.fog-stage { position: relative; isolation: isolate; min-height: 100vh; min-height: 100dvh; }
 .fog-stage::before {            /* grana pellicola */
   content: ""; position: fixed; inset: 0; z-index: -1; opacity: .035;
   pointer-events: none;
