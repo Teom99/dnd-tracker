@@ -151,6 +151,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   _totalW = PAD * 2 + cols * CELL;
   _totalH = PAD * 2 + rows * CELL;
 
+  let defs  = '';
   let inner = '';
 
   // 1) Celle di sfondo + muri + raggio di movimento
@@ -215,7 +216,17 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     inner += `<circle cx="${cx}" cy="${cy}" r="${rRing}" fill="none" stroke="${ring}" stroke-opacity=".25" stroke-width="${ringW}" pointer-events="none"/>`;
     inner += `<circle cx="${cx}" cy="${cy}" r="${rRing}" fill="none" stroke="${ring}" stroke-width="${ringW}"${hpPct < 1 ? ' stroke-linecap="round"' : ''}
                       stroke-dasharray="${(circ * hpPct).toFixed(1)} ${circ.toFixed(1)}" transform="rotate(-90 ${cx} ${cy})" pointer-events="none"/>`;
-    inner += `<text x="${cx}" y="${(cy + fsz * 0.36).toFixed(1)}" text-anchor="middle" font-size="${fsz}" class="sq-name" pointer-events="none">${isDead ? '💀' : letter}</text>`;
+
+    // Avatar: <image> SVG con clipPath circolare; fallback lettera/teschio se assente o morto
+    const rawThumb = occ.avatarThumb;
+    const avatarSrc = typeof rawThumb === 'string' && rawThumb.startsWith('data:image/') ? rawThumb : null;
+    if (avatarSrc && !isDead) {
+      const clipId = `tc_${id.replace(/[^a-zA-Z0-9]/g, '_')}`;
+      defs += `<clipPath id="${clipId}"><circle cx="${cx}" cy="${cy}" r="${rBody.toFixed(1)}"/></clipPath>`;
+      inner += `<image href="${avatarSrc}" x="${(cx - rBody).toFixed(1)}" y="${(cy - rBody).toFixed(1)}" width="${(rBody * 2).toFixed(1)}" height="${(rBody * 2).toFixed(1)}" clip-path="url(#${clipId})" preserveAspectRatio="xMidYMid slice" pointer-events="none"/>`;
+    } else {
+      inner += `<text x="${cx}" y="${(cy + fsz * 0.36).toFixed(1)}" text-anchor="middle" font-size="${fsz}" class="sq-name" pointer-events="none">${isDead ? '💀' : letter}</text>`;
+    }
     inner += `<text x="${cx}" y="${(y + w + 9).toFixed(1)}" text-anchor="middle" class="sq-nm" pointer-events="none">${esc((occ.name || '').trim().slice(0, 12).toUpperCase())}</text>`;
 
     // Distanza dal token selezionato (etichetta sopra il token)
@@ -236,7 +247,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   const zVbW = (parseFloat(vbW) / _zoom).toFixed(0);
   const zVbH = (parseFloat(vbH) / _zoom).toFixed(0);
   container.innerHTML =
-    `<svg class="sq-svg" viewBox="${_panX.toFixed(0)} ${_panY.toFixed(0)} ${zVbW} ${zVbH}" preserveAspectRatio="xMidYMid meet" width="100%" height="100%">${inner}</svg>`;
+    `<svg class="sq-svg" viewBox="${_panX.toFixed(0)} ${_panY.toFixed(0)} ${zVbW} ${zVbH}" preserveAspectRatio="xMidYMid meet" width="100%" height="100%">${defs ? `<defs>${defs}</defs>` : ''}${inner}</svg>`;
   container.classList.toggle('grid-edit-active', !!editMode);
 
   // Hint contestuale nella toolbar
