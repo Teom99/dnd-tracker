@@ -1,6 +1,7 @@
 import {
   ref, set, get, push, remove, onValue, runTransaction
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { resizeToBase64 } from './imageUtils.js';
 
 export class CharacterSheet {
   constructor(db, uid, charId) {
@@ -139,5 +140,15 @@ export class CharacterSheet {
 
   async removeClassStat(id) {
     await remove(this._ref(`classStats/${id}`));
+  }
+
+  async uploadAvatar(file) {
+    const [thumb, full] = await Promise.all([
+      resizeToBase64(file, 72),
+      resizeToBase64(file, 128),
+    ]);
+    await this.setField('avatarThumb', thumb);
+    await this.setField('avatarFull',  full);
+    return { thumb, full };
   }
 }

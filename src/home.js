@@ -63,8 +63,15 @@ export async function loadCharacterLibrary() {
   if (entries.length === 0) {
     list.innerHTML = '<p class="empty-hint">Nessun personaggio. Creane uno!</p>';
   } else {
-    list.innerHTML = entries.map(([id, c]) => `
+    list.innerHTML = entries.map(([id, c]) => {
+      const rawThumb = c.avatarThumb;
+      const avatarSrc = typeof rawThumb === 'string' && rawThumb.startsWith('data:image/') ? rawThumb : null;
+      const avatarHtml = avatarSrc
+        ? `<img src="${esc(avatarSrc)}" class="lib-avatar" alt="">`
+        : `<span class="lib-avatar lib-avatar--icon">${c.type === 'player' ? '⚔' : '👹'}</span>`;
+      return `
       <div class="char-lib-entry">
+        ${avatarHtml}
         <div class="char-lib-info">
           <span class="char-lib-name">${esc(c.name)}</span>
           <span class="char-lib-badge ${c.type === 'player' ? 'badge-player' : 'badge-creature'}">${c.type === 'player' ? 'PG' : 'Creatura'}</span>
@@ -73,8 +80,8 @@ export async function loadCharacterLibrary() {
           <button class="btn-secondary btn-sm" data-action="open-sheet" data-id="${id}">📜 Apri</button>
           <button class="btn-remove-sm" data-action="delete-char" data-id="${id}" aria-label="Elimina">×</button>
         </div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
   }
 
   section.classList.remove('hidden');

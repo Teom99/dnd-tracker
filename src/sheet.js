@@ -34,13 +34,14 @@ export async function onDeathSave(type, count) {
 
 export function setupSheetListener() {
   if (!state.sheet) return;
-  let populated  = false;
-  let prevAc     = undefined;
-  let prevHpMax  = undefined;
-  let prevLevel  = undefined;
-  let prevName   = undefined;
-  let prevSize   = undefined;
-  let prevSpeed  = undefined;
+  let populated       = false;
+  let prevAc          = undefined;
+  let prevHpMax       = undefined;
+  let prevLevel       = undefined;
+  let prevName        = undefined;
+  let prevSize        = undefined;
+  let prevSpeed       = undefined;
+  let prevAvatarThumb = undefined;
   state.sheet.listen((snap) => {
     state.sheetData = snap.val() || {};
 
@@ -85,6 +86,13 @@ export function setupSheetListener() {
     if (charName !== null && charName !== prevName && state.myCombatantId) {
       prevName = charName;
       state.combatantManager.setName(state.myCombatantId, charName);
+    }
+
+    // Sincronizza avatarThumb al combattente
+    const avatarThumb = state.sheetData.avatarThumb ?? null;
+    if (avatarThumb !== prevAvatarThumb && state.myCombatantId) {
+      prevAvatarThumb = avatarThumb;
+      state.combatantManager.setAvatarThumb(state.myCombatantId, avatarThumb);
     }
 
     // Re-render lista combattenti subito per aggiornare death saves senza aspettare il prossimo snapshot sessione
@@ -250,6 +258,24 @@ function _makeCallbacks() {
     onDeathSave:        async (type, count)               => onDeathSave(type, count),
     onLevelUp:          ()                                => _openLevelUpModal(),
     onGrantLevelUp:     (id)                              => state.session.grantLevelUp(id),
+    onUploadAvatar: async (combatantId, charId, ownerUid) => {
+      const input = document.getElementById('avatar-file-input');
+      if (!input) return;
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        input.value = '';
+        try {
+          const isOwn = charId === state.myCurrentCharId && ownerUid === state.myUid;
+          const sheet = (isOwn && state.sheet) ? state.sheet : new CharacterSheet(state.db, ownerUid, charId);
+          const { thumb } = await sheet.uploadAvatar(file);
+          await state.combatantManager.setAvatarThumb(combatantId, thumb);
+        } catch (err) {
+          UI.showError('Errore upload avatar: ' + err.message);
+        }
+      };
+      input.click();
+    },
   };
 }
 
@@ -310,6 +336,27 @@ export async function openLibrarySheet(charId) {
 
 export function bindSheetEvents() {
   const view = document.getElementById('view-character');
+
+  // Upload avatar dal ritratto nella scheda
+  const portraitEl = view.querySelector('.portrait');
+  if (portraitEl && !portraitEl._sheetBound) {
+    portraitEl._sheetBound = true;
+    portraitEl.addEventListener('click', () => {
+      const input = document.getElementById('avatar-file-input');
+      if (!input || !state.sheet) return;
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        input.value = '';
+        try {
+          await state.sheet.uploadAvatar(file);
+        } catch (err) {
+          UI.showError('Errore upload avatar: ' + err.message);
+        }
+      };
+      input.click();
+    });
+  }
 
   view.querySelectorAll('[data-path]').forEach(el => {
     if (el._sheetBound) return;

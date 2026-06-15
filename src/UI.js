@@ -386,12 +386,19 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         : null,
     ].filter(Boolean).join(' · ');
 
-    const portraitIcon  = isCreature ? '👹' : isPet ? '🐾' : '⚔';
+    const portraitIcon     = isCreature ? '👹' : isPet ? '🐾' : '⚔';
+    const canUploadAvatar  = canEdit && c.charId;
+    const rawThumb         = c.avatarThumb;
+    const avatarSrc        = typeof rawThumb === 'string' && rawThumb.startsWith('data:image/') ? rawThumb : null;
+    const portraitContent  = avatarSrc ? `<img src="${escapeHtml(avatarSrc)}" class="fc-avatar" alt="">` : portraitIcon;
+    const uploadAttrs      = canUploadAvatar ? ` data-action="upload-avatar" data-id="${c.id}" data-char-id="${c.charId}" data-owner-uid="${c.ownerUid}"` : '';
+    const uploadClass      = canUploadAvatar ? ' fc-portrait--upload' : '';
+
     const portraitHtml  = c.type === 'player'
       ? `<div class="fc-pframe${levelUpReady ? ' lvlup' : ''}" style="--xp:${(levelUpReady ? 1 : xpPct).toFixed(3)};"${xpTitle ? ` title="${xpTitle}"` : ''}>
-           <div class="fc-portrait" style="display:flex;align-items:center;justify-content:center;color:var(--accent);">${portraitIcon}</div>
+           <div class="fc-portrait${uploadClass}" style="display:flex;align-items:center;justify-content:center;color:var(--accent);"${uploadAttrs}>${portraitContent}</div>
          </div>`
-      : `<div class="fc-portrait" style="display:flex;align-items:center;justify-content:center;border:1px solid ${isAlly ? 'rgba(76,165,122,.3)' : 'rgba(168,66,58,.3)'};color:${isAlly ? 'var(--accent)' : '#c25b50'};">${portraitIcon}</div>`;
+      : `<div class="fc-portrait${uploadClass}" style="display:flex;align-items:center;justify-content:center;border:1px solid ${isAlly ? 'rgba(76,165,122,.3)' : 'rgba(168,66,58,.3)'};color:${isAlly ? 'var(--accent)' : '#c25b50'};"${uploadAttrs}>${portraitContent}</div>`;
 
     li.innerHTML = `
       <div class="fc-top">
@@ -537,6 +544,12 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const id     = btn.dataset.id;
     const action = btn.dataset.action;
 
+    if (action === 'upload-avatar') {
+      const charId   = btn.dataset.charId;
+      const ownerUid = btn.dataset.ownerUid;
+      if (charId && ownerUid) callbacks.onUploadAvatar?.(id, charId, ownerUid);
+      return;
+    }
     if (action === 'toggle-target') {
       const ownerId  = btn.closest('.target-chips')?.dataset.id;
       const targetId = btn.dataset.targetId;
@@ -802,9 +815,15 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
   const successes = isKO ? (deathSaves?.successes ?? 0) : 0;
   const failures  = isKO ? (deathSaves?.failures  ?? 0) : 0;
 
+  const dockRawThumb = c.avatarThumb;
+  const dockAvatar   = typeof dockRawThumb === 'string' && dockRawThumb.startsWith('data:image/') ? dockRawThumb : null;
+  const dockPortrait = dockAvatar
+    ? `<img src="${escapeHtml(dockAvatar)}" class="fc-avatar" alt="">`
+    : (c.type === 'pet' ? '🐾' : '⚔');
+
   dock.innerHTML = `
     <div class="fc-pframe dock-pframe${levelUpReady ? ' lvlup' : ''}" style="--xp:${(levelUpReady ? 1 : xpPct).toFixed(3)};"${xpText ? ` title="${xpText}"` : ''}>
-      <div class="dock-portrait">${c.type === 'pet' ? '🐾' : '⚔'}</div>
+      <div class="dock-portrait">${dockPortrait}</div>
     </div>
     <div class="dock-id">
       <b>${escapeHtml(c.name)}</b>
@@ -858,9 +877,14 @@ export function renderMasterDock(combatant) {
   const icon = c.type === 'pet' ? '🐾' : c.type === 'creature' ? '👹' : '⚔';
   const kind = c.type === 'creature' ? 'Creatura' : c.type === 'pet' ? 'Famiglio' : 'PG';
   const subtitle = [kind, c.armorClass ? `CA ${c.armorClass}` : null].filter(Boolean).join(' · ');
+  const masterRawThumb = c.avatarThumb;
+  const masterAvatar   = typeof masterRawThumb === 'string' && masterRawThumb.startsWith('data:image/') ? masterRawThumb : null;
+  const masterPortrait = masterAvatar
+    ? `<img src="${escapeHtml(masterAvatar)}" class="fc-avatar" alt="">`
+    : icon;
 
   dock.innerHTML = `
-    <div class="dock-portrait${isKO ? ' is-down' : ''}">${isKO ? '💀' : icon}</div>
+    <div class="dock-portrait${isKO ? ' is-down' : ''}">${isKO ? '💀' : masterPortrait}</div>
     <div class="dock-id">
       <b>${escapeHtml(c.name)}</b>
       <span>${subtitle}</span>

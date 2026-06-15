@@ -98,6 +98,10 @@ export class Combatant {
     await set(ref(this._db, `sessions/${this._code}/combatants/${id}/faction`), faction || 'evil');
   }
 
+  async setAvatarThumb(id, thumb) {
+    await set(ref(this._db, `sessions/${this._code}/combatants/${id}/avatarThumb`), thumb || null);
+  }
+
   async setAction(id, text) {
     await set(ref(this._db, `sessions/${this._code}/combatants/${id}/currentAction`), text || null);
   }

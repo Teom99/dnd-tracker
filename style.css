@@ -2294,6 +2294,16 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   flex-wrap: wrap;
 }
 
+.lib-avatar {
+  width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+  object-fit: cover; display: block;
+}
+.lib-avatar--icon {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-card-alt); border: 1px solid var(--border-warm);
+  font-size: 14px;
+}
+
 /* ═══════════════════════════════════════════
    CHARACTER PICKER (join form + creature form)
 ═══════════════════════════════════════════ */

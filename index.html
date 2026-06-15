@@ -174,7 +174,10 @@
     body.is-master .fight-card { cursor: pointer; }
     .fight-card .btn.hint-active { color: var(--gold-bright); border-color: var(--gold); border-style: solid; background: var(--gold-faint); }
     .fc-top { display: grid; grid-template-columns: 36px 1fr auto auto; gap: 8px; align-items: center; }
-    .fc-portrait { width: 36px; height: 36px; border-radius: 2px; flex: none; font-size: 7px; }
+    .fc-portrait { width: 36px; height: 36px; border-radius: 2px; flex: none; font-size: 7px; overflow: hidden; position: relative; }
+    .fc-avatar { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+    .fc-portrait--upload { cursor: pointer; }
+    .fc-portrait--upload:hover::after { content: '📷'; position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.6); font-size: 10px; border-radius: 50%; }
 
     /* Cornice ritratto = barra XP (solo player) */
     .fc-pframe {
@@ -262,7 +265,18 @@
     /* ── Scheda personaggio (tomo) ── */
     .sheet-main { width: min(1120px, 100%); margin: 0 auto; padding: 22px 16px 90px; }
     #view-character .sheet-head { display: grid; grid-template-columns: 88px minmax(0,1fr) auto; gap: 18px; align-items: center; padding: 18px; }
-    #view-character .sheet-head .portrait { width: 88px; height: 88px; border-radius: 2px; }
+    #view-character .sheet-head .portrait {
+      width: 88px; height: 88px; border-radius: 50%; overflow: hidden; position: relative;
+      cursor: pointer; background: var(--ink); border: 1px solid var(--line-strong);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; color: var(--mut); text-align: center; line-height: 1.4;
+    }
+    #view-character .sheet-head .portrait::after {
+      content: '📷'; position: absolute; inset: 0; display: grid; place-items: center;
+      background: rgba(0,0,0,.55); font-size: 22px; opacity: 0; transition: opacity .18s;
+    }
+    #view-character .sheet-head .portrait:hover::after { opacity: 1; }
+    #view-character .sheet-head .portrait .portrait-img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
     .sheet-id { min-width: 0; }
     .sheet-name-input { width: 100%; background: none; border: 0; padding: 0; color: var(--bone); font-family: var(--font-display); font-size: 30px; font-weight: 700; line-height: 1.1; }
     .sheet-name-input:focus { outline: none; color: var(--gold-bright); }
@@ -276,7 +290,7 @@
     @media (max-width: 880px) {
       .sheet-grid { grid-template-columns: 1fr; }
       #view-character .sheet-head { grid-template-columns: 64px 1fr; }
-      #view-character .sheet-head .portrait { width: 64px; height: 64px; }
+      #view-character .sheet-head .portrait { width: 64px; height: 64px; border-radius: 50%; }
       .sheet-head-actions { grid-column: 1 / -1; flex-direction: row; }
       .sheet-head-actions .btn { flex: 1; }
     }
@@ -485,9 +499,9 @@
     .my-dock { display: grid; grid-template-columns: 40px minmax(120px,200px) minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 8px 14px; border-top: 1px solid var(--line-strong); background: linear-gradient(180deg, var(--bg1), var(--bg0)); flex-shrink: 0; height: 72px; overflow: hidden; }
     .my-dock:empty { display: none; }
     .dock-hint { grid-column: 1 / -1; text-align: center; font-size: 12px; color: var(--faint); font-style: italic; }
-    .dock-portrait { width: 40px; height: 40px; border-radius: 2px; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1px solid var(--line-strong); }
+    .dock-portrait { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1px solid var(--line-strong); overflow: hidden; }
     .dock-pframe { width: 40px; height: 40px; }
-    .dock-pframe .dock-portrait { width: 100%; height: 100%; border: 0; border-radius: 1px; background: var(--bg2); }
+    .dock-pframe .dock-portrait { width: 100%; height: 100%; border: 0; border-radius: 50%; background: var(--bg2); }
     .dock-xp { font-family: var(--font-mono); font-size: 10px; color: var(--faint); letter-spacing: .04em; }
     .dock-id { min-width: 0; }
     .dock-id b { font-family: var(--font-display); font-size: 16px; font-weight: 700; display: block; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--bone); }
@@ -1462,5 +1476,7 @@
     });
   })();
   </script>
+
+  <input type="file" id="avatar-file-input" accept="image/*" style="display:none">
 </body>
 </html>

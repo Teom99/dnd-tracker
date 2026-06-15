@@ -79,6 +79,18 @@ export function populateSheet(data) {
     }
   });
 
+  // Aggiorna il ritratto solo se l'avatar è cambiato
+  const portraitEl = document.querySelector('#view-character .portrait');
+  if (portraitEl) {
+    const src = typeof d.avatarFull === 'string' && d.avatarFull.startsWith('data:image/') ? d.avatarFull : null;
+    if (portraitEl.dataset.avatarSrc !== (src || '')) {
+      portraitEl.dataset.avatarSrc = src || '';
+      portraitEl.innerHTML = src
+        ? `<img src="${src}" class="portrait-img" alt="Ritratto">`
+        : '<span>ritratto<br>1:1</span>';
+    }
+  }
+
   updateComputedValues(data);
   renderDeathSaves(d.deathSaves);
   renderSaveChecks(d.savingThrows);
