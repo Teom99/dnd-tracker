@@ -722,6 +722,36 @@ document.getElementById('btn-clear-scene').addEventListener('click', async () =>
   if (state.session) await state.session.clearSceneImage();
 });
 
+document.getElementById('btn-hide-scene').addEventListener('click', () => UI.hideSceneLocally());
+
+// Drag sul pannello scena
+(function () {
+  const panel  = document.getElementById('scene-section');
+  const header = panel?.querySelector('.scene-header');
+  if (!panel || !header) return;
+  let dragging = false;
+  let ox = 0, oy = 0, pl = 0, pt = 0;
+  header.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const parent = panel.offsetParent?.getBoundingClientRect() ?? { left: 0, top: 0 };
+    const rect   = panel.getBoundingClientRect();
+    // Passa da right-anchored a left-anchored
+    panel.style.right = 'auto';
+    panel.style.left  = (rect.left - parent.left) + 'px';
+    panel.style.top   = (rect.top  - parent.top)  + 'px';
+    ox = e.clientX; oy = e.clientY;
+    pl = parseFloat(panel.style.left); pt = parseFloat(panel.style.top);
+    dragging = true;
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    panel.style.left = (pl + e.clientX - ox) + 'px';
+    panel.style.top  = (pt + e.clientY - oy) + 'px';
+  });
+  window.addEventListener('mouseup', () => { dragging = false; });
+})();
+
 // ─── CRONACHE: Note di sessione collaborative ─────────────────────────────────
 
 document.getElementById('btn-add-session-note').addEventListener('click', async () => {

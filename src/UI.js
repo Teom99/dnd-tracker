@@ -1,6 +1,10 @@
 const XP_THRESHOLDS = [0,300,900,2700,6500,14000,23000,34000,48000,64000,
                         85000,100000,120000,140000,165000,195000,225000,265000,305000,355000];
 
+// Scene panel: hide localmente senza cancellare la scena Firebase
+let _sceneHidden  = false;
+let _prevSceneUrl = null;
+
 export const CONDITIONS = [
   { name: 'Avvelenato',   color: 'var(--gold)' },
   { name: 'Stordito',     color: '#d97706' },
@@ -73,7 +77,13 @@ export function renderScenePanel(sceneImageUrl, sceneImageName, isMaster) {
   const changeBtn = document.getElementById('btn-change-scene');
   if (!section) return;
 
-  if (!sceneImageUrl) {
+  // Nuova scena → resetta la visibilità locale
+  if (sceneImageUrl !== _prevSceneUrl) {
+    _sceneHidden  = false;
+    _prevSceneUrl = sceneImageUrl;
+  }
+
+  if (!sceneImageUrl || _sceneHidden) {
     section.classList.add('hidden');
     return;
   }
@@ -85,6 +95,11 @@ export function renderScenePanel(sceneImageUrl, sceneImageName, isMaster) {
 
   clearBtn.classList.toggle('hidden', !isMaster);
   changeBtn.classList.remove('hidden');
+}
+
+export function hideSceneLocally() {
+  _sceneHidden = true;
+  document.getElementById('scene-section')?.classList.add('hidden');
 }
 
 export function renderSessionNotes(notesObj, canEdit, expandedIds, noteLocks = {}, myUid = null) {
@@ -804,6 +819,7 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
         <span style="font-size:12px;font-weight:700;color:var(--bone);font-variant-numeric:tabular-nums;">${c.hpCurrent}<span style="color:var(--mut);font-weight:400">/${c.hpMax}</span></span>
         ${tempHp > 0 ? `<span class="chip chip--iron" style="font-size:9px;padding:1px 5px;">+${tempHp}</span>` : ''}
       </div>
+      ${mode === 'xp' && level < 20 ? `<div class="xp-bar-track" style="margin-top:2px;"><div class="xp-bar-fill" style="width:${Math.round(xpPct * 100)}%"></div></div>` : ''}
       ${xpText ? `<span class="dock-xp">${xpText}</span>` : ''}
       ${isKO ? `<div class="death-pips" style="margin-top:3px;">
         <span>S</span>
