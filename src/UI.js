@@ -437,7 +437,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
           </div>
         ` : ''}
       ` : showHint ? `
-        <p class="fc-action-note">${healthHintText(hpPercent)}</p>
+        <p class="fc-action-note hint-${healthHintKey(hpPercent)}">${healthHintText(hpPercent)}</p>
       ` : ''}
 
       ${conditions.length > 0 ? `

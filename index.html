@@ -203,6 +203,11 @@
     .fc-conds { display: flex; flex-wrap: wrap; gap: 4px; }
     .fc-conds:empty { display: none; }
     .fc-action-note { font-size: 11px; color: var(--mut); font-style: italic; }
+    .fc-action-note.hint-full     { color: var(--accent); }
+    .fc-action-note.hint-good     { color: #7aca7a; }
+    .fc-action-note.hint-hurt     { color: var(--gold); }
+    .fc-action-note.hint-bad      { color: var(--hp-low); }
+    .fc-action-note.hint-critical { color: var(--red-bright); }
     .fc-controls { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
     .fc-controls .attack-amount { width: 64px; flex: none; min-height: 34px; padding: 4px 8px; font-size: 13px; }
     .hp-max-btn { font: inherit; background: none; border: none; border-radius: 0; border-bottom: 1px dashed var(--line-strong); cursor: pointer; color: inherit; padding: 0; }
