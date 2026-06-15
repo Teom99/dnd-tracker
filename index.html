@@ -248,7 +248,10 @@
     .note-entry p { margin: 6px 0 0; font-size: 12.5px; color: var(--mut); }
 
     /* Scene overlay */
-    #scene-section { position: absolute; top: 50px; right: 10px; z-index: 10; width: 300px; max-width: calc(100vw - 20px); border-radius: var(--r); overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,.5); }
+    #scene-section { position: absolute; top: 50px; right: 10px; z-index: 10; width: 300px; max-width: calc(100vw - 20px); border-radius: var(--r); overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,.5); transition: width .2s ease; }
+    #scene-section.scene-expanded { width: clamp(400px, 55vw, 900px); }
+    #scene-section .scene-image { max-height: 200px; object-fit: cover; }
+    #scene-section.scene-expanded .scene-image { max-height: 75vh; object-fit: contain; background: #000; }
     .scene-header { cursor: grab; user-select: none; }
     .scene-header:active { cursor: grabbing; }
 
@@ -934,11 +937,12 @@
         <div class="scene-header-actions" style="display:flex;gap:4px;">
           <button id="btn-change-scene" class="btn btn--ghost btn--sm hidden" style="font-size:10px;min-height:24px;padding:2px 6px;">Cambia</button>
           <button id="btn-clear-scene"  class="btn btn--ghost btn--sm hidden" style="font-size:10px;min-height:24px;padding:2px 6px;" title="Elimina scena">✕</button>
+          <button id="btn-expand-scene" class="btn btn--ghost btn--sm"        style="font-size:10px;min-height:24px;padding:2px 6px;" title="Ingrandisci">⤢</button>
           <button id="btn-hide-scene"   class="btn btn--ghost btn--sm"        style="font-size:10px;min-height:24px;padding:2px 6px;" title="Nascondi">−</button>
         </div>
       </div>
       <a id="scene-image-link" href="#" target="_blank" rel="noopener">
-        <img id="scene-image" class="scene-image" src="" alt="" style="width:100%;display:block;max-height:200px;object-fit:cover;">
+        <img id="scene-image" class="scene-image" src="" alt="" style="width:100%;display:block;">
       </a>
     </section>
 

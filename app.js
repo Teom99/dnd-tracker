@@ -724,6 +724,14 @@ document.getElementById('btn-clear-scene').addEventListener('click', async () =>
 
 document.getElementById('btn-hide-scene').addEventListener('click', () => UI.hideSceneLocally());
 
+document.getElementById('btn-expand-scene').addEventListener('click', () => {
+  const panel = document.getElementById('scene-section');
+  const btn   = document.getElementById('btn-expand-scene');
+  const expanded = panel.classList.toggle('scene-expanded');
+  btn.textContent = expanded ? '⤡' : '⤢';
+  btn.title       = expanded ? 'Riduci' : 'Ingrandisci';
+});
+
 // Drag sul pannello scena
 (function () {
   const panel  = document.getElementById('scene-section');
