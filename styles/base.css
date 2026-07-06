@@ -1,3 +1,260 @@
+/* ── base.css — variables, reset, typography, buttons, inputs, theme ── */
+
+/* ═══════════════════════════════════════════
+   Variabili e reset
+═══════════════════════════════════════════ */
+:root {
+  --bg-deep:       #06060e;
+  --bg-card:       #0d0d24;
+  --bg-card-alt:   #121236;
+  --border-warm:   #2c1f60;
+  --gold:          #8b48f0;
+  --gold-light:    #b472ff;
+  --gold-dim:      #6030b8;
+  --gold-glow:     rgba(139, 72, 240, 0.38);
+  --text:          #e4dafc;
+  --text-muted:    #8878b8;
+  --red:           #8b2020;
+  --red-bright:    #cc3333;
+  --green:         #4a7c59;
+  --radius:        10px;
+  --radius-sm:     6px;
+  --shadow:        0 4px 24px rgba(0,0,0,0.8);
+
+  /* Theme specific components */
+  --btn-primary-bg: linear-gradient(160deg, #7030d8 0%, #4e18a8 50%, #3c1290 100%);
+  --btn-primary-color: #ede0ff;
+  --btn-primary-border: rgba(139, 72, 240, 0.65);
+  --btn-primary-radius: 10px;
+  --btn-primary-shadow: 0 2px 14px rgba(80, 20, 190, 0.55), inset 0 1px 0 rgba(255,255,255,0.14);
+  --btn-primary-hover-shadow: 0 5px 28px rgba(139, 72, 240, 0.6), inset 0 1px 0 rgba(255,255,255,0.2);
+
+  --active-turn-bg: #0b0820;
+  --input-bg: #07071a;
+  --hp-low: #e0923a;
+  --hp-bar-bg: #09091e;
+  --hp-bar-border: #1e1a42;
+  --bg-hover:    #181840;
+  --danger:      var(--red-bright);
+  --purple-main: var(--gold);
+}
+
+.theme-old {
+  --bg-deep:       #07070f;
+  --bg-card:       #0e0d1e;
+  --bg-card-alt:   #131228;
+  --border-warm:   #3c2410;
+  --gold:          #c9a84c;
+  --gold-light:    #e8cc78;
+  --gold-dim:      #9e7e2e;
+  --gold-glow:     rgba(201, 168, 76, 0.32);
+  --text:          #ead6b4;
+  --text-muted:    #9e8c72;
+  --red:           #8b2020;
+  --red-bright:    #cc3333;
+  --green:         #4a7c59;
+  --radius:        10px;
+  --radius-sm:     6px;
+  --shadow:        0 4px 24px rgba(0,0,0,0.8);
+
+  --btn-primary-bg: linear-gradient(160deg, #7a3c0c 0%, #522808 50%, #3c1a06 100%);
+  --btn-primary-color: #e8cc78;
+  --btn-primary-border: rgba(201, 168, 76, 0.55);
+  --btn-primary-radius: 10px;
+  --btn-primary-shadow: 0 2px 14px rgba(90, 45, 10, 0.6), inset 0 1px 0 rgba(255,255,255,0.12);
+  --btn-primary-hover-shadow: 0 5px 28px rgba(201, 168, 76, 0.38), inset 0 1px 0 rgba(255,255,255,0.18);
+
+  --active-turn-bg: #120d04;
+  --input-bg: #070712;
+  --hp-low: var(--gold);
+  --hp-bar-bg: #0b0b1a;
+  --hp-bar-border: #1c1830;
+  --bg-hover:    #1a1628;
+  --danger:      var(--red-bright);
+  --purple-main: #7c3aed;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { font-size: 16px; }
+
+body {
+  font-family: 'EB Garamond', 'Crimson Text', Georgia, serif;
+  background: var(--bg-deep);
+  color: var(--text);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font-size: 17px;
+}
+
+/* ═══════════════════════════════════════════
+   Layout helper
+═══════════════════════════════════════════ */
+.view {
+  width: 100%;
+  max-width: 520px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+#view-combat {
+  max-width: none;
+}
+
+.hidden { display: none !important; }
+
+/* ═══════════════════════════════════════════
+   Tipografia
+═══════════════════════════════════════════ */
+h1 {
+  font-family: 'Cinzel', serif;
+  font-size: 1.9rem;
+  color: var(--gold);
+  text-align: center;
+  letter-spacing: 0.07em;
+  text-shadow: 0 0 22px var(--gold-glow), 0 0 50px var(--gold-glow), 0 2px 6px rgba(0,0,0,0.9);
+  line-height: 1.2;
+}
+
+h2 {
+  font-family: 'Cinzel', serif;
+  font-size: 1.1rem;
+  color: var(--gold-light);
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.03em;
+}
+
+h3 {
+  font-family: 'Cinzel', serif;
+  font-size: 1rem;
+  color: var(--gold-light);
+  text-align: center;
+  margin-bottom: 0.25rem;
+}
+
+p { line-height: 1.5; }
+
+/* ═══════════════════════════════════════════
+   Bottoni
+═══════════════════════════════════════════ */
+button, input, select {
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.btn-primary {
+  display: block;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-color);
+  border: 1px solid var(--btn-primary-border);
+  border-radius: var(--btn-primary-radius);
+  cursor: pointer;
+  font-family: 'Cinzel', serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  min-height: 50px;
+  box-shadow: var(--btn-primary-shadow);
+  transition: box-shadow 0.2s, transform 0.12s, filter 0.2s;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+}
+
+.btn-primary:hover  { filter: brightness(1.12); box-shadow: var(--btn-primary-hover-shadow); transform: translateY(-2px); }
+.btn-primary:active { filter: brightness(0.88); transform: translateY(0); }
+
+.btn-secondary {
+  padding: 0.6rem 1rem;
+  background: var(--bg-card-alt);
+  color: var(--text);
+  border: 1px solid var(--border-warm);
+  border-radius: 10px;
+  cursor: pointer;
+  min-height: 44px;
+  transition: border-color 0.18s, box-shadow 0.18s, color 0.18s, background 0.18s;
+}
+
+.btn-secondary:hover { border-color: var(--gold); color: var(--gold-light); background: rgba(255,255,255,0.03); box-shadow: 0 0 12px var(--gold-glow); }
+
+.btn-danger {
+  padding: 0.6rem 1rem;
+  background: #3d1010;
+  color: #e07070;
+  border: 1px solid #6b2020;
+  border-radius: 8px;
+  cursor: pointer;
+  min-height: 44px;
+  font-family: 'Cinzel', serif;
+  font-size: 0.85rem;
+  transition: filter 0.15s, box-shadow 0.15s;
+}
+
+.btn-danger:hover { filter: brightness(1.25); box-shadow: 0 0 8px rgba(139,32,32,0.5); }
+
+.btn-next {
+  flex: 1;
+  font-size: 1rem;
+}
+
+/* ═══════════════════════════════════════════
+   Input
+═══════════════════════════════════════════ */
+input[type="text"],
+input[type="number"] {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  background: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius);
+  outline: none;
+  min-height: 48px;
+  transition: border-color 0.18s, box-shadow 0.18s;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px var(--gold-glow), 0 2px 8px rgba(0,0,0,0.3);
+}
+
+input::placeholder { color: var(--text-muted); }
+
+.input-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.input-row input { flex: 1; }
+
+/* ═══════════════════════════════════════════
+   Errori
+═══════════════════════════════════════════ */
+.error-banner {
+  background: #3d1010;
+  border: 1px solid #6b2020;
+  color: #e07070;
+  padding: 0.65rem 0.9rem;
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+/* ═══════════════════════════════════════════
+   Responsive — schermi più larghi
+═══════════════════════════════════════════ */
+@media (min-width: 600px) {
+  h1 { font-size: 2rem; }
+
+  .master-controls {
+    padding: 0;
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    CENERE E VERDERAME — sistema di design per D&D Combat Tracker
    Souls-like: quasi-nero, nebbia, oro antico consumato, verderame.
