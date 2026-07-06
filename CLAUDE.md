@@ -12,24 +12,33 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | File | Ruolo |
 |---|---|
 | `index.html` | Struttura viste: `#view-home`, `#view-combat`, `#view-character` + modal condizioni |
-| `style.css` | Tema fantasy dark (Cinzel/Crimson Text, sfondo `#0f0f1a`, oro `#c9a84c`) |
+| `styles/base.css` | Variabili CSS, reset, tipografia, bottoni, input — tema fantasy dark |
+| `styles/home.css` | Home view, auth panel, libreria personaggi, picker join/creature |
+| `styles/combat.css` | Vista combat, card combattente, dock giocatore, modal condizioni, log |
+| `styles/character.css` | Scheda personaggio, stat block, slot magia, inventario, level-up |
+| `styles/grid.css` | Griglia SVG, token, muri, movimento, pannello scena |
+| `styles/ship.css` | Pannello nave, ponti, armi, token equipaggio |
 | `config.js` | `FIREBASE_CONFIG` — da non committare con dati reali |
 | `app.js` | Entry point: event listeners top-level, `_enterCombatView`, `_startListening`, `_rejoinSession` |
-| `src/state.js` | Singleton `state` con tutto lo stato globale (`db`, `auth`, `session`, `myUid`, `myCombatantId`, `snapshot`, ecc.) |
-| `src/core.js` | `initCombatManagers`, `exitToHome`, `esc`, `openConditionModal`, `removeCombatant`, `closeConditionModal` |
-| `src/home.js` | Auth UI, libreria personaggi, picker join/creature, sessioni utente salvate |
-| `src/sheet.js` | Sheet listener, `makeCallbacks`, `initSheet`, `openCharacterSheet`, `openLibrarySheet`, `bindSheetEvents` |
-| `src/grid.js` | `renderGrid`, `renderTokenBar` |
-| `src/Session.js` | Create/join/restore sessione, auth, `nextTurnAtomic` (runTransaction), log eventi (`addLogEvent`, `addActionLog`, `clearLogs`) |
-| `src/Combatant.js` | CRUD combattenti: add/updateHp/setMaxHp/toggleCondition/remove |
-| `src/CombatTracker.js` | `nextTurn(combatants)`, `sortedCombatants()`, `reset()` |
-| `src/CharacterLibrary.js` | CRUD libreria personaggi/creature per utente (`characters/{uid}/{charId}/`) |
-| `src/CharacterSheet.js` | Scheda PG: lettura/scrittura su `characters/{uid}/{charId}/` |
-| `src/UI.js` | Render lista combattenti, modal condizioni, death saves inline, render log (`renderLogs`) |
-| `src/Ship.js` | CRUD nave (`sessions/{code}/ship`): hp, armi, equipaggio, posizioni token |
-| `src/ShipUI.js` | Render pannello nave Damselfly: ponti/stanze CSS grid, token equipaggio, carte armi |
-| `src/SheetUI.js` | Render scheda personaggio (abilità, slot, incantesimi, inventario) |
-| `src/GridUI.js` | Griglia quadrata SVG (dimensioni da `gridConfig`, 1 casella = 1m), muri, token multi-cella per taglia |
+| `src/utils/state.js` | Singleton `state` con tutto lo stato globale (`db`, `auth`, `session`, `myUid`, `myCombatantId`, `snapshot`, ecc.) |
+| `src/data/Session.js` | Create/join/restore sessione, auth, `nextTurnAtomic` (runTransaction), log eventi (`addLogEvent`, `addActionLog`, `clearLogs`) |
+| `src/data/Combatant.js` | CRUD combattenti: add/updateHp/setMaxHp/toggleCondition/remove |
+| `src/data/CharacterLibrary.js` | CRUD libreria personaggi/creature per utente (`characters/{uid}/{charId}/`) |
+| `src/data/CharacterSheet.js` | Scheda PG: lettura/scrittura su `characters/{uid}/{charId}/` |
+| `src/data/Ship.js` | CRUD nave (`sessions/{code}/ship`): hp, armi, equipaggio, posizioni token |
+| `src/ui/UI.js` | Render lista combattenti, modal condizioni, death saves inline, render log (`renderLogs`) |
+| `src/ui/GridUI.js` | Griglia quadrata SVG (dimensioni da `gridConfig`, 1 casella = 1m), muri, token multi-cella per taglia |
+| `src/ui/SheetUI.js` | Render scheda personaggio (abilità, slot, incantesimi, inventario) |
+| `src/ui/ShipUI.js` | Render pannello nave Damselfly: ponti/stanze CSS grid, token equipaggio, carte armi |
+| `src/ui/LevelUpUI.js` | Render pannello level-up: feature di classe, modal conferma |
+| `src/logic/CombatTracker.js` | `nextTurn(combatants)`, `sortedCombatants()`, `reset()` |
+| `src/logic/LevelUp.js` | Logica XP/milestone, calcolo livello, feature di classe disponibili |
+| `src/logic/grid.js` | `renderGrid`, `renderTokenBar` — orchestrazione render griglia |
+| `src/utils/DndApi.js` | Fetch mostri/incantesimi/condizioni da api.open5e.com |
+| `src/utils/imageUtils.js` | `resizeToBase64` — ridimensionamento avatar prima dell'upload |
+| `src/views/home.js` | Auth UI, libreria personaggi, picker join/creature, sessioni utente salvate |
+| `src/views/sheet.js` | Sheet listener, `makeCallbacks`, `initSheet`, `openCharacterSheet`, `openLibrarySheet`, `bindSheetEvents` |
+| `src/views/core.js` | `initCombatManagers`, `exitToHome`, `esc`, `openConditionModal`, `removeCombatant`, `closeConditionModal` |
 
 ---
 
@@ -111,18 +120,172 @@ Nessuno al momento.
 ## Pattern ricorrenti da rispettare
 
 **Aggiungere un'azione a una card combattente:**
-1. Aggiungere `data-action="nome"` al bottone in `src/UI.js` -> `renderCombatantList` (template HTML)
+1. Aggiungere `data-action="nome"` al bottone in `src/ui/UI.js` -> `renderCombatantList` (template HTML)
 2. Aggiungere handler in `list.onclick` delegation nello stesso file
-3. Aggiungere callback `onNome` in `makeCallbacks()` dentro `src/sheet.js`
+3. Aggiungere callback `onNome` in `makeCallbacks()` dentro `src/views/sheet.js`
 4. Implementare la logica nel callback (usa `state.*` per accedere a db, session, ecc.)
 
 **Aggiungere un campo alla scheda personaggio:**
 1. Aggiungere `<input data-path="fieldName" data-number>` in `index.html` dentro `#view-character`
 2. `SheetUI.populateSheet` lo popola automaticamente tramite `data-path`
-3. `CharacterSheet.setField` lo scrive su Firebase tramite l'event listener in `bindSheetEvents` (`src/sheet.js`)
-4. Se serve sync al combattente: aggiungere logica in `setupSheetListener` in `src/sheet.js`
+3. `CharacterSheet.setField` lo scrive su Firebase tramite l'event listener in `bindSheetEvents` (`src/views/sheet.js`)
+4. Se serve sync al combattente: aggiungere logica in `setupSheetListener` in `src/views/sheet.js`
 
 **Scritture concorrenti critiche:** usare `runTransaction` (vedi `Combatant.updateHp`, `Session.nextTurnAtomic`, `CharacterSheet.setSpellSlotsUsed`)
+
+---
+
+## Documentazione per feature
+
+### Auth
+
+**Cosa fa:** Login Google tramite popup; fallback a account anonimo se l'utente rifiuta o non è connesso. L'account anonimo può essere promosso a Google via `linkWithPopup` su richiesta.
+
+**File:** `app.js` (init + `onAuthStateChanged`), `src/views/home.js` (`updateHomeAuthUI`)
+
+**Firebase paths:** Firebase Authentication service (non Realtime Database)
+
+**Invarianti:**
+- `state.myUid` è sempre valorizzato dopo auth (uid anonimo o Google)
+- `state.isAnon` = true quando l'utente è anonimo
+- Il bottone "Accedi con Google" appare solo se `isAnon === true`
+
+---
+
+### Sessioni
+
+**Cosa fa:** Il master crea una sessione con codice casuale a 4 cifre. I giocatori si uniscono inserendo il codice. Al reload la sessione viene rijoinnata automaticamente leggendo `userSessions/{uid}`.
+
+**File:** `src/data/Session.js`, `app.js` (`_enterCombatView`, `_startListening`, `_rejoinSession`), `src/views/home.js` (`saveUserSession`, `loadUserSessions`)
+
+**Firebase paths:**
+- `sessions/{code}/` — nodo sessione completo (letto in streaming via `onValue`)
+- `userSessions/{uid}/{code}/` — metadati join (combatantId, role, charId, lastSeen)
+
+**Invarianti:**
+- `nextTurnAtomic` usa `runTransaction` — nessuna race condition tra client
+- Il listener `session.listen()` in `_startListening()` riceve l'intero nodo ad ogni aggiornamento e ri-renderizza tutto; non fare operazioni costose qui
+- Scrivere log solo nelle azioni utente, mai nel listener, per evitare duplicati multi-client
+
+---
+
+### Libreria personaggi
+
+**Cosa fa:** CRUD per profili PG e creature per utente. Visibile nella home e richiamabile nei form "unisciti" e "aggiungi creatura" come picker.
+
+**File:** `src/data/CharacterLibrary.js`, `src/data/CharacterSheet.js`, `src/views/home.js` (`loadCharacterLibrary`, `populateJoinPicker`, `populateCreaturePicker`)
+
+**Firebase paths:**
+- `characters/{uid}/{charId}/` — profilo completo (name, type, hpMax, armorClass, abilities, size, avatar, …)
+
+**Invarianti:**
+- Le security rules limitano lettura/scrittura a `$uid === auth.uid`
+- `charId` è un push-key Firebase; usarlo come riferimento in `combatants/{id}/charId`
+
+---
+
+### Combat tracker
+
+**Cosa fa:** Ordina i combattenti per iniziativa, gestisce il turno corrente, permette danni/cure (atomici), toggle condizioni, azioni dichiarate, death saves.
+
+**File:** `src/logic/CombatTracker.js` (ordinamento, nextTurn), `src/data/Combatant.js` (CRUD Firebase), `src/ui/UI.js` (render lista), `src/views/core.js` (orchestrazione)
+
+**Firebase paths:**
+- `sessions/{code}/combatants/{id}/` — hpCurrent, hpMax, initiative, conditions, currentAction, size, ownerUid, charId
+- `sessions/{code}/round`, `sessions/{code}/currentTurnId`
+
+**Invarianti:**
+- `updateHp` è atomico: legge `hpMax` e aggiorna `hpCurrent` in un solo `runTransaction`
+- Player KO restano nel turno per death saves; creature KO vengono saltate
+- Visibilità HP: master vede tutto · player vede tutti i PG · creature mostrano solo hint opzionale
+- Death saves inline: 3 successi = revive a 1 HP (scritto via `Combatant.updateHp`)
+
+---
+
+### Scheda personaggio
+
+**Cosa fa:** Stat block D&D 5e completo — abilità, skill, tiri salvezza, attacchi, slot magia, incantesimi, inventario, death saves. Sincronizza AC, HP max e velocità al combattente in sessione in real-time.
+
+**File:** `src/data/CharacterSheet.js` (lettura/scrittura Firebase), `src/ui/SheetUI.js` (render), `src/views/sheet.js` (listener eventi, callbacks, sync al combattente)
+
+**Firebase paths:**
+- `characters/{uid}/{charId}/` — tutti i campi della scheda
+- `sessions/{code}/combatants/{id}/armorClass`, `hpMax`, `speed` — sincronizzati da `setupSheetListener`
+
+**Invarianti:**
+- `setupSheetListener` usa `prevAc`/`prevHpMax` per evitare scritture Firebase inutili a ogni snapshot
+- `setSpellSlotsUsed` usa `runTransaction` per slot incantesimo (scritture concorrenti)
+- `state.sheetReturnView` controlla dove torna il tasto "indietro" (combat o home)
+- `_sheetBound` flag su elementi DOM per evitare listener duplicati su re-render
+- I `data-path` input in `index.html` sono popolati automaticamente da `SheetUI.populateSheet` e scritti su Firebase da `bindSheetEvents`
+
+---
+
+### Griglia di battaglia
+
+**Cosa fa:** Griglia quadrata SVG adattiva (viewBox + preserveAspectRatio). Zoom +/−/reset con pulsanti flottanti. Pan con drag quando zoom > 1. Il master disegna/rimuove muri cliccando. Selezione token mostra raggio di movimento. Token multi-cella per taglia. Ghost preview al passaggio mouse.
+
+**File:** `src/logic/grid.js` (orchestrazione render), `src/ui/GridUI.js` (SVG, token, muri, movimento)
+
+**Firebase paths:**
+- `sessions/{code}/gridConfig/` — cols, rows (default 20×20)
+- `sessions/{code}/grid/{combatantId}/` — col, row (angolo top-left del footprint)
+- `sessions/{code}/walls/{col_row}` — true se muro presente
+
+**Invarianti:**
+- 1 casella = 1 metro; diagonali alternate 5-10-5 (variante DMG: `max + floor(min/2)`)
+- Footprint token: Tiny/Small/Medium=1×1, Large=2×2, Huge=3×3, Gargantuan=4×4
+- La casella cliccata è ~il centro del footprint per token grandi (offset `floor((n-1)/2)`)
+- Movimento valida bordi, muri e sovrapposizioni sull'intero footprint prima di scrivere
+- Reset (solo master) svuota `grid/` e `walls/` — token e muri cancellati
+
+---
+
+### Pannello nave (Damselfly)
+
+**Cosa fa:** Gestione della nave Damselfly — integrità scafo, armi con stato e equipaggio assegnato, token equipaggio spostabili tra le stanze dei ponti.
+
+**File:** `src/data/Ship.js` (CRUD Firebase), `src/ui/ShipUI.js` (render ponti, armi, token)
+
+**Firebase paths:**
+- `sessions/{code}/ship/` — hp, weapons/{id}/state, crew/{id}/room, positions/
+
+**Invarianti:**
+- I ponti sono renderizzati tutti insieme (niente tab), come CSS grid
+- Il pannello nave è visibile solo al master e ai giocatori con ruolo "equipaggio"
+
+---
+
+### Sistema level-up
+
+**Cosa fa:** Traccia XP milestone, rileva quando il level-up è disponibile, mostra il pannello di scelta feature di classe. La cornice XP del ritratto diventa oro pieno e pulsa quando il level-up è pronto.
+
+**File:** `src/logic/LevelUp.js` (calcolo livello, feature disponibili), `src/ui/LevelUpUI.js` (render pannello, modal)
+
+**Firebase paths:**
+- `characters/{uid}/{charId}/xp` — XP correnti
+- `characters/{uid}/{charId}/level` — livello corrente
+- `characters/{uid}/{charId}/classFeatures/` — feature scelte
+
+**Invarianti:**
+- Il sistema usa milestone XP (soglie fisse per livello), non XP liberi
+- `LevelUpUI` viene iniettato nel DOM solo quando `LevelUp.isReady()` restituisce true
+
+---
+
+### Log eventi
+
+**Cosa fa:** Log condiviso e real-time di tutti gli eventi di combattimento (danni, cure, cambio turno, reset). Log azioni con formato "A ha colpito B infliggendogli N danni". Cancellazione condivisa.
+
+**File:** `src/data/Session.js` (`addLogEvent`, `addActionLog`, `clearLogs`), `src/ui/UI.js` (`renderLogs`)
+
+**Firebase paths:**
+- `sessions/{code}/logs/{logId}/` — message, type, actor, target, amount, createdByUid, timestamp, clientTimestamp
+
+**Invarianti:**
+- Scrivere log solo nelle azioni utente (mai nel listener Firebase) per evitare duplicati multi-client
+- Nel listener fare solo `UI.renderLogs(snapshot)`, mai `addLogEvent`
+- `clientTimestamp` è usato per ordinamento locale quando il server timestamp non è ancora disponibile
 
 ---
 
