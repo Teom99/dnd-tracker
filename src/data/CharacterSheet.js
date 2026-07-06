@@ -1,7 +1,7 @@
 import {
   ref, set, get, push, remove, onValue, runTransaction
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { resizeToBase64 } from './imageUtils.js';
+import { resizeToBase64 } from '../utils/imageUtils.js';
 
 export class CharacterSheet {
   constructor(db, uid, charId) {

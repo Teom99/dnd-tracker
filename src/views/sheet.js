@@ -1,10 +1,10 @@
-import * as SheetUI      from './SheetUI.js';
-import * as UI           from './UI.js';
-import { CharacterSheet } from './CharacterSheet.js';
-import { state }          from './state.js';
+import * as SheetUI      from '../ui/SheetUI.js';
+import * as UI           from '../ui/UI.js';
+import { CharacterSheet } from '../data/CharacterSheet.js';
+import { state }          from '../utils/state.js';
 import { openConditionModal, removeCombatant } from './core.js';
-import { LevelUp }   from './LevelUp.js';
-import { LevelUpUI } from './LevelUpUI.js';
+import { LevelUp }   from '../logic/LevelUp.js';
+import { LevelUpUI } from '../ui/LevelUpUI.js';
 
 let editingInventoryId = null;
 const inventoryCallbacks = {

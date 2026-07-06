@@ -1,5 +1,5 @@
-import * as GridUI from './GridUI.js';
-import { state }   from './state.js';
+import * as GridUI from '../ui/GridUI.js';
+import { state }   from '../utils/state.js';
 
 export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants, gridConfig, walls) {
   const container = document.getElementById('grid-container');

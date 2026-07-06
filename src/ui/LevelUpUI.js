@@ -1,4 +1,4 @@
-import { LevelUp } from './LevelUp.js';
+import { LevelUp } from '../logic/LevelUp.js';
 
 function esc(str) {
   return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');

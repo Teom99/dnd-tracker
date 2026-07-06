@@ -1,7 +1,7 @@
 import { ref, set, get, remove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { CharacterLibrary }      from './CharacterLibrary.js';
-import * as UI                   from './UI.js';
-import { state }                 from './state.js';
+import { CharacterLibrary }      from '../data/CharacterLibrary.js';
+import * as UI                   from '../ui/UI.js';
+import { state }                 from '../utils/state.js';
 import { esc }                   from './core.js';
 import { openLibrarySheet }      from './sheet.js';
 

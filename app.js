@@ -3,21 +3,21 @@ import { getDatabase, ref, get, remove } from 'https://www.gstatic.com/firebasej
 import { getAuth }            from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 import { FIREBASE_CONFIG, DISCORD_WEBHOOK_URL } from './config.js';
-import { getMonsterList, getMonster, getSpellList, getConditionDescriptions } from './src/DndApi.js';
-import { Session }           from './src/Session.js';
-import { CharacterLibrary }  from './src/CharacterLibrary.js';
-import * as UI               from './src/UI.js';
-import * as GridUI           from './src/GridUI.js';
-import { state }             from './src/state.js';
-import { initCombatManagers, exitToHome, esc, closeConditionModal } from './src/core.js';
-import { CharacterSheet } from './src/CharacterSheet.js';
-import { renderGrid }        from './src/grid.js';
-import { initSheet, setupSheetListener, makeCallbacks } from './src/sheet.js';
-import { LevelUp }   from './src/LevelUp.js';
-import { LevelUpUI } from './src/LevelUpUI.js';
-import { Ship }    from './src/Ship.js';
-import * as ShipUI from './src/ShipUI.js';
-import { updateHomeAuthUI, loadCharacterLibrary, populateJoinPicker, populateCreaturePicker, saveUserSession, loadUserSessions } from './src/home.js';
+import { getMonsterList, getMonster, getSpellList, getConditionDescriptions } from './src/utils/DndApi.js';
+import { Session }           from './src/data/Session.js';
+import { CharacterLibrary }  from './src/data/CharacterLibrary.js';
+import * as UI               from './src/ui/UI.js';
+import * as GridUI           from './src/ui/GridUI.js';
+import { state }             from './src/utils/state.js';
+import { initCombatManagers, exitToHome, esc, closeConditionModal } from './src/views/core.js';
+import { CharacterSheet } from './src/data/CharacterSheet.js';
+import { renderGrid }        from './src/logic/grid.js';
+import { initSheet, setupSheetListener, makeCallbacks } from './src/views/sheet.js';
+import { LevelUp }   from './src/logic/LevelUp.js';
+import { LevelUpUI } from './src/ui/LevelUpUI.js';
+import { Ship }    from './src/data/Ship.js';
+import * as ShipUI from './src/ui/ShipUI.js';
+import { updateHomeAuthUI, loadCharacterLibrary, populateJoinPicker, populateCreaturePicker, saveUserSession, loadUserSessions } from './src/views/home.js';
 
 // --- Theme Management ---
 function initTheme() {

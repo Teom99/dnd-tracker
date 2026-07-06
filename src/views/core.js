@@ -1,7 +1,7 @@
-import { Combatant }    from './Combatant.js';
-import { CombatTracker } from './CombatTracker.js';
-import * as UI           from './UI.js';
-import { state }         from './state.js';
+import { Combatant }    from '../data/Combatant.js';
+import { CombatTracker } from '../logic/CombatTracker.js';
+import * as UI           from '../ui/UI.js';
+import { state }         from '../utils/state.js';
 
 export function initCombatManagers(code) {
   state.combatantManager = new Combatant(state.db, code);
