@@ -1,3 +1,5 @@
+import { captureFocusState, restoreFocusState } from '../utils/domPreserve.js';
+
 // ─── Calculation helpers ───────────────────────────────────────────────────
 
 const SKILL_ABILITY = {
@@ -66,17 +68,14 @@ export function populateSheet(data) {
   _populating = true;
   const d = data || {};
 
-  // Fill all [data-path] inputs / textareas / selects
+  // Fill all [data-path] inputs / textareas / selects — mai sul campo che si sta
+  // editando ora, altrimenti un update Firebase non correlato (es. avatar
+  // caricato dal master) cancellerebbe quello che si sta scrivendo.
   document.querySelectorAll('#view-character [data-path]').forEach(el => {
+    if (el === document.activeElement) return;
     const path  = el.dataset.path;
     const value = getNestedValue(d, path);
-    if (el.tagName === 'SELECT') {
-      el.value = value ?? '';
-    } else if (el.tagName === 'TEXTAREA') {
-      el.value = value ?? '';
-    } else {
-      el.value = value ?? '';
-    }
+    el.value = value ?? '';
   });
 
   // Aggiorna il ritratto solo se l'avatar è cambiato
@@ -233,6 +232,7 @@ export function renderAttacks(attacks, data, onRemove) {
 export function renderSpellSlots(slots, onSetUsed, onSetMax) {
   const container = document.getElementById('spell-slots-list');
   if (!container) return;
+  const focusSnap = captureFocusState(container);
   container.innerHTML = SPELL_LEVELS.map(lvl => {
     const s    = slots?.[lvl] || {};
     const max  = s.max  ?? 0;
@@ -251,6 +251,7 @@ export function renderSpellSlots(slots, onSetUsed, onSetMax) {
         <input type="number" class="slot-max-input" data-level="${lvl}" min="0" max="9" value="${max}" title="Slot massimi">
       </div>`;
   }).join('');
+  restoreFocusState(container, focusSnap);
 
   container.onclick = (e) => {
     const btn = e.target.closest('.btn-slot-adj');
@@ -350,6 +351,7 @@ export function renderInventory(inventory, editingId, callbacks = {}) {
     return;
   }
 
+  const focusSnap = captureFocusState(container);
   container.innerHTML = entries.map(([id, item]) => {
     if (id === editingId) {
       return `
@@ -379,6 +381,7 @@ export function renderInventory(inventory, editingId, callbacks = {}) {
         </span>
       </div>`;
   }).join('');
+  restoreFocusState(container, focusSnap);
 
   if (!container._bound) {
     container._bound = true;
@@ -466,22 +469,27 @@ export function renderClassFeatures(classFeatures, classStats, onRemoveFeature, 
       <button type="submit" class="btn btn--sm">+ Aggiungi</button>
     </form>`;
 
+  const focusSnap = captureFocusState(container);
   container.innerHTML = html;
+  restoreFocusState(container, focusSnap);
 
-  container.addEventListener('click', (e) => {
-    const removeFeature = e.target.closest('[data-action="remove-feature"]');
-    if (removeFeature) { onRemoveFeature?.(removeFeature.dataset.id); return; }
-    const removeStat = e.target.closest('[data-action="remove-stat"]');
-    if (removeStat)    { onRemoveStat?.(removeStat.dataset.id); return; }
-    const saveBtn = e.target.closest('.cf-save-btn');
-    if (saveBtn) {
-      const card = saveBtn.closest('.class-feature-card');
-      const nameVal = card?.querySelector('.cf-name-input')?.value.trim() ?? '';
-      const descVal = card?.querySelector('.cf-desc-input')?.value.trim() ?? '';
-      onEditFeature?.(saveBtn.dataset.id, nameVal, descVal);
-      return;
-    }
-  });
+  if (!container._bound) {
+    container._bound = true;
+    container.addEventListener('click', (e) => {
+      const removeFeature = e.target.closest('[data-action="remove-feature"]');
+      if (removeFeature) { onRemoveFeature?.(removeFeature.dataset.id); return; }
+      const removeStat = e.target.closest('[data-action="remove-stat"]');
+      if (removeStat)    { onRemoveStat?.(removeStat.dataset.id); return; }
+      const saveBtn = e.target.closest('.cf-save-btn');
+      if (saveBtn) {
+        const card = saveBtn.closest('.class-feature-card');
+        const nameVal = card?.querySelector('.cf-name-input')?.value.trim() ?? '';
+        const descVal = card?.querySelector('.cf-desc-input')?.value.trim() ?? '';
+        onEditFeature?.(saveBtn.dataset.id, nameVal, descVal);
+        return;
+      }
+    });
+  }
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

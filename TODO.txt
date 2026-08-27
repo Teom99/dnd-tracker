@@ -9,6 +9,9 @@
 
 ## Fatto
 
+- FEAT: Tasto ispirazione (✦) su ogni card combattente — il proprietario della card o il master lo attiva/disattiva, si illumina oro quando attivo (`combatants/{id}/inspiration`)
+- FEAT: Flash colorato sulla card quando subisce danno (rosso neon) o cura (verde neon), visibile un paio di secondi — completate le animazioni `dmg-flash`/`heal-pulse` già abbozzate in CSS ma mai collegate
+- BUG concorrenza: qualsiasi update Firebase sulla sessione (es. un giocatore che muove un token) ricostruiva da zero tutta la UI, azzerando scroll/focus/testo di chi in quel momento scriveva una cronaca, editava iniziativa/HP max/HP temp/CA su una card, o editava scheda personaggio (inventario, slot incantesimo, capacità di classe). Aggiunta utility riusabile `src/utils/domPreserve.js` (cattura/ripristina focus, valore, cursore, scroll) e applicata a Cronache, card combattente, scheda personaggio, pannello nave. Risolto anche un leak di event listener duplicati su ogni render in `renderClassFeatures`.
 - Inventario nella scheda: risolto bug eliminazione e blocco form dopo primo add; migliorato allineamento tasti rimozione
 
 - Ogni aggiornamento Firebase causa un re-render che riporta tutti in cima alla pagina — da evitare (es. aggiornare solo i nodi DOM che cambiano invece di fare innerHTML completo)

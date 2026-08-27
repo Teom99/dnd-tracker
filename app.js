@@ -17,6 +17,7 @@ import { LevelUp }   from './src/logic/LevelUp.js';
 import { LevelUpUI } from './src/ui/LevelUpUI.js';
 import { Ship }    from './src/data/Ship.js';
 import * as ShipUI from './src/ui/ShipUI.js';
+import { captureFocusState, restoreFocusState } from './src/utils/domPreserve.js';
 import { updateHomeAuthUI, loadCharacterLibrary, populateJoinPicker, populateCreaturePicker, saveUserSession, loadUserSessions } from './src/views/home.js';
 
 // --- Theme Management ---
@@ -952,6 +953,7 @@ function _renderShipPanel() {
   if (!el || !state.shipPanelOpen) return;
   const combatants = Object.entries(state.snapshot?.combatants ?? {})
     .map(([id, c]) => ({ id, ...c }));
+  const focusSnap = captureFocusState(el);
   el.innerHTML = ShipUI.renderShipPanel(
     state.shipData,
     combatants,
@@ -959,6 +961,7 @@ function _renderShipPanel() {
     state.session.isMaster,
     state._selectedShipToken
   );
+  restoreFocusState(el, focusSnap);
 }
 
 function _bindShipEvents() {

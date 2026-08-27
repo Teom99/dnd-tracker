@@ -72,6 +72,10 @@ export class Combatant {
     await set(ref(this._db, `sessions/${this._code}/combatants/${id}/showAC`), visible);
   }
 
+  async setInspiration(id, value) {
+    await set(ref(this._db, `sessions/${this._code}/combatants/${id}/inspiration`), Boolean(value));
+  }
+
   async setArmorClass(id, ac) {
     await set(ref(this._db, `sessions/${this._code}/combatants/${id}/armorClass`), parseInt(ac) || 0);
   }

@@ -36,6 +36,7 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | `src/logic/grid.js` | `renderGrid`, `renderTokenBar` — orchestrazione render griglia |
 | `src/utils/DndApi.js` | Fetch mostri/incantesimi/condizioni da api.open5e.com |
 | `src/utils/imageUtils.js` | `resizeToBase64` — ridimensionamento avatar prima dell'upload |
+| `src/utils/domPreserve.js` | `captureFocusState`/`restoreFocusState` — preserva focus, valore, cursore e scroll di un input durante un rebuild `innerHTML` |
 | `src/views/home.js` | Auth UI, libreria personaggi, picker join/creature, sessioni utente salvate |
 | `src/views/sheet.js` | Sheet listener, `makeCallbacks`, `initSheet`, `openCharacterSheet`, `openLibrarySheet`, `bindSheetEvents` |
 | `src/views/core.js` | `initCombatManagers`, `exitToHome`, `esc`, `openConditionModal`, `removeCombatant`, `closeConditionModal` |
@@ -50,7 +51,7 @@ sessions/{code}/
   gridConfig/  cols, rows                  (dimensioni decise dal master, default 20x20)
   combatants/{id}/  name, type (player|creature), initiative, hpMax, hpCurrent,
                     conditions/{name: true}, ownerUid, charId, armorClass,
-                    currentAction, showHealthHint,
+                    currentAction, showHealthHint, inspiration (bool),
                     size (tiny|small|medium|large|huge|gargantuan)
   grid/{combatantId}/  col, row            (angolo top-left del footprint)
   walls/{col_row}: true
@@ -111,6 +112,9 @@ userSessions/{uid}/{code}/
 - Rework "Cenere e Verderame" scheda personaggio: testata con nome/sottotitolo/barra XP, layout 2 colonne a sezioni `details.tome`, pip CSS per competenze/expertise, cstat per statistiche, slot incantesimo a rombi, righe attacchi/incantesimi/inventario a tema (mockup `Rework/04 Scheda.html`)
 - Fight card e player dock: barra XP resa come cornice del ritratto (`.fc-pframe`/`.dock-pframe`, conic-gradient con `--xp`); quando il level-up è pronto la cornice diventa oro pieno e pulsa (`.lvlup`, niente badge testuale); numero XP visibile nel dock (`.dock-xp`) e nel tooltip del ritratto; campo quantità danno/cura compatto (placeholder "0", stessa altezza dei bottoni)
 - Rework pannello nave Damselfly: ponti renderizzati come stanze CSS grid (tutti i deck visibili, niente tab), spostamento equipaggio token→stanza, carte armi con chip equipaggio e select stato, barra integrità scafo (mockup `Rework/06 Damselfly.html`)
+- Fix concorrenza multi-giocatore: `src/utils/domPreserve.js` (`captureFocusState`/`restoreFocusState`) preserva focus, valore, cursore e scroll di un input quando il suo contenitore viene ricostruito da un re-render non correlato (es. un giocatore muove un token mentre un altro scrive). Applicato a Cronache (`UI.renderSessionNotes`, riscritta a patch incrementale — non ricrea mai i nodi title/textarea), editor inline iniziativa/HP max/HP temp/CA sulle card (`UI.renderCombatantList`), scheda personaggio (`SheetUI.renderClassFeatures/renderInventory/renderSpellSlots/populateSheet`), pannello nave (`_renderShipPanel` in `app.js`)
+- Tasto ispirazione (✦) su ogni card combattente: `combatants/{id}/inspiration`, editabile da proprietario/master (`Combatant.setInspiration`), si illumina oro (`.insp-btn.active` in `index.html`) quando attivo
+- Flash colorato sulla card a ogni variazione di `hpCurrent`: rosso neon per danno, verde neon per cura, ~2.5s (`dmg-flash`/`heal-pulse` in `styles/base.css`, applicate da `UI.renderCombatantList` tramite una mappa `_prevHp`/`_hpFlash` che confronta l'HP col render precedente — sopravvive a rebuild concorrenti)
 
 ### Bug noti non ancora risolti
 Nessuno al momento.
@@ -132,6 +136,8 @@ Nessuno al momento.
 4. Se serve sync al combattente: aggiungere logica in `setupSheetListener` in `src/views/sheet.js`
 
 **Scritture concorrenti critiche:** usare `runTransaction` (vedi `Combatant.updateHp`, `Session.nextTurnAtomic`, `CharacterSheet.setSpellSlotsUsed`)
+
+**Renderer con `innerHTML` chiamato dal listener Firebase (session o sheet):** se il contenitore include `<input>`/`<textarea>`/`<select>` editabili, avvolgere il rebuild con `captureFocusState`/`restoreFocusState` da `src/utils/domPreserve.js` (vedi `renderCombatantList`, `SheetUI.renderInventory` per l'uso). Senza questo, un update Firebase non correlato (es. un altro giocatore che agisce) cancella focus/testo/scroll di chi sta scrivendo in quel momento — è la causa root del bug "la sessione si resetta quando un altro giocatore interagisce" riapparso più volte in passato.
 
 ---
 

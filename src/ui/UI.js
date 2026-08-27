@@ -1,3 +1,5 @@
+import { captureFocusState, restoreFocusState } from '../utils/domPreserve.js';
+
 const XP_THRESHOLDS = [0,300,900,2700,6500,14000,23000,34000,48000,64000,
                         85000,100000,120000,140000,165000,195000,225000,265000,305000,355000];
 
@@ -106,15 +108,14 @@ export function renderSessionNotes(notesObj, canEdit, expandedIds, noteLocks = {
   const container = document.getElementById('session-notes-list');
   if (!container) return;
 
-  const focusedNoteId = document.activeElement?.dataset?.noteId ?? null;
-
   const notes = Object.entries(notesObj ?? {})
     .map(([id, n]) => ({ id, ...n }))
     .sort((a, b) => b.date - a.date);
 
   if (notes.length === 0) {
-    const isEditingNote = document.activeElement?.classList.contains('note-textarea') ||
-                          document.activeElement?.classList.contains('note-title-input');
+    const active = document.activeElement;
+    const isEditingNote = active?.classList.contains('note-textarea') ||
+                          active?.classList.contains('note-title-input');
     if (!isEditingNote) container.innerHTML = '';
     return;
   }
@@ -125,54 +126,118 @@ export function renderSessionNotes(notesObj, canEdit, expandedIds, noteLocks = {
     const lock            = noteLocks[note.id] ?? null;
     const isLockedByOther = lock && lock.uid !== myUid;
     const isEditingByMe   = lock && lock.uid === myUid;
-    const disabledAttr    = isLockedByOther ? ' disabled' : '';
+    const disabled        = Boolean(isLockedByOther);
 
     let el = container.querySelector(`.note-entry[data-note-id="${note.id}"]`);
     if (!el) {
       el = document.createElement('div');
+      el.className = 'note-entry';
       el.dataset.noteId = note.id;
       container.appendChild(el);
     }
 
-    // Aggiorna classe e colore del lock
+    // Classe e colore del lock (non tocca mai gli input/textarea sottostanti)
     el.className = 'note-entry' + (isLockedByOther ? ' note-locked' : isEditingByMe ? ' note-editing-self' : '');
     if (lock) el.style.setProperty('--lock-color', lock.color);
     else      el.style.removeProperty('--lock-color');
 
-    const presenceTagHtml = lock
-      ? `<div class="note-presence-tag">✏️ ${escapeHtml(lock.name)}</div>`
-      : '';
-
-    const headerHtml = `
-      <div class="note-header" data-action="toggle" data-note-id="${note.id}">
-        <span class="note-chevron">${isExpanded ? '▼' : '▶'}</span>
-        <input class="note-title-input" data-note-id="${note.id}" value="${escapeHtml(note.title ?? '')}" title="Modifica titolo"${disabledAttr}>
-        <input type="date" class="note-date-input" data-note-id="${note.id}" value="${dateVal}"${disabledAttr}>
-        ${canEdit ? `<button class="btn-remove-sm note-delete-btn" data-action="delete" data-note-id="${note.id}" title="Elimina">×</button>` : ''}
-      </div>`;
-
-    const bodyHtml = isExpanded ? `
-      <div class="note-body">
-        <textarea class="note-textarea" data-note-id="${note.id}"
-                  placeholder="Scrivi qui cosa è successo in questa sessione..."
-                  rows="6"${disabledAttr}>${escapeHtml(note.content ?? '')}</textarea>
-      </div>` : '';
-
-    if (note.id !== focusedNoteId) {
-      el.innerHTML = presenceTagHtml + headerHtml + bodyHtml;
-    } else {
-      // Nota con focus: aggiorna header e tag presenza senza toccare il textarea
-      const existingHeader = el.querySelector('.note-header');
-      if (existingHeader) existingHeader.outerHTML = headerHtml;
-
-      const existingTag = el.querySelector('.note-presence-tag');
-      if (lock && !existingTag) {
-        el.insertAdjacentHTML('afterbegin', presenceTagHtml);
-      } else if (!lock && existingTag) {
-        existingTag.remove();
-      } else if (lock && existingTag) {
-        existingTag.innerHTML = `✏️ ${escapeHtml(lock.name)}`;
+    // Presence tag ("✏️ Nome" di chi sta editando)
+    let tagEl = el.querySelector('.note-presence-tag');
+    if (lock) {
+      const tagText = `✏️ ${escapeHtml(lock.name)}`;
+      if (!tagEl) {
+        tagEl = document.createElement('div');
+        tagEl.className = 'note-presence-tag';
+        el.insertAdjacentElement('afterbegin', tagEl);
       }
+      if (tagEl.innerHTML !== tagText) tagEl.innerHTML = tagText;
+    } else if (tagEl) {
+      tagEl.remove();
+    }
+
+    // Header: chevron, titolo, data, elimina — i nodi esistenti vengono SEMPRE
+    // riusati (mai ricreati), così focus/cursore/scroll non saltano mai, a
+    // prescindere dal fatto che l'utente ci abbia cliccato dentro o no.
+    let headerEl = el.querySelector('.note-header');
+    if (!headerEl) {
+      headerEl = document.createElement('div');
+      headerEl.className = 'note-header';
+      headerEl.dataset.action = 'toggle';
+      headerEl.dataset.noteId = note.id;
+      el.appendChild(headerEl);
+    }
+
+    let chevronEl = headerEl.querySelector('.note-chevron');
+    if (!chevronEl) {
+      chevronEl = document.createElement('span');
+      chevronEl.className = 'note-chevron';
+      headerEl.appendChild(chevronEl);
+    }
+    const chevronText = isExpanded ? '▼' : '▶';
+    if (chevronEl.textContent !== chevronText) chevronEl.textContent = chevronText;
+
+    let titleEl = headerEl.querySelector('.note-title-input');
+    if (!titleEl) {
+      titleEl = document.createElement('input');
+      titleEl.className = 'note-title-input';
+      titleEl.dataset.noteId = note.id;
+      titleEl.title = 'Modifica titolo';
+      headerEl.appendChild(titleEl);
+    }
+    if (document.activeElement !== titleEl && titleEl.value !== (note.title ?? '')) {
+      titleEl.value = note.title ?? '';
+    }
+    titleEl.disabled = disabled;
+
+    let dateEl = headerEl.querySelector('.note-date-input');
+    if (!dateEl) {
+      dateEl = document.createElement('input');
+      dateEl.type = 'date';
+      dateEl.className = 'note-date-input';
+      dateEl.dataset.noteId = note.id;
+      headerEl.appendChild(dateEl);
+    }
+    if (document.activeElement !== dateEl && dateEl.value !== dateVal) {
+      dateEl.value = dateVal;
+    }
+    dateEl.disabled = disabled;
+
+    let delBtn = headerEl.querySelector('.note-delete-btn');
+    if (canEdit && !delBtn) {
+      delBtn = document.createElement('button');
+      delBtn.className = 'btn-remove-sm note-delete-btn';
+      delBtn.dataset.action = 'delete';
+      delBtn.dataset.noteId = note.id;
+      delBtn.title = 'Elimina';
+      delBtn.textContent = '×';
+      headerEl.appendChild(delBtn);
+    } else if (!canEdit && delBtn) {
+      delBtn.remove();
+    }
+
+    // Body: textarea contenuto — stesso principio, mai ricreata
+    let bodyEl = el.querySelector('.note-body');
+    if (isExpanded) {
+      if (!bodyEl) {
+        bodyEl = document.createElement('div');
+        bodyEl.className = 'note-body';
+        const textarea = document.createElement('textarea');
+        textarea.className = 'note-textarea';
+        textarea.dataset.noteId = note.id;
+        textarea.placeholder = 'Scrivi qui cosa è successo in questa sessione...';
+        textarea.rows = 6;
+        bodyEl.appendChild(textarea);
+        el.appendChild(bodyEl);
+      }
+      const textarea = bodyEl.querySelector('.note-textarea');
+      if (textarea) {
+        if (document.activeElement !== textarea && textarea.value !== (note.content ?? '')) {
+          textarea.value = note.content ?? '';
+        }
+        textarea.disabled = disabled;
+      }
+    } else if (bodyEl) {
+      bodyEl.remove();
     }
   });
 
@@ -252,6 +317,13 @@ let _rendering = false;
 const _lastActiveTurn  = {};
 const _selectedTargets = new Map(); // combatantId (owner) → Set<targetId>
 
+// Flash danno/cura: confronta l'HP col render precedente per decidere se una
+// card deve lampeggiare. Persistito qui (non nel DOM) così il flash sopravvive
+// anche a un rebuild della lista innescato da un update non correlato.
+const _prevHp  = new Map(); // combatantId → ultimo hpCurrent visto
+const _hpFlash = new Map(); // combatantId → { dir: 'dmg'|'heal', until: timestamp }
+const HP_FLASH_MS = 2500;   // deve combaciare con la durata di dmg-flash/heal-pulse in base.css
+
 export function renderCombatantList(combatants, currentTurnId, myUid, masterUid, callbacks, acMap = {}, myDeathSaves = null, progressionData = {}, listId = 'combatant-list', emptyMsgId = 'empty-list-msg', allCombatants = null, selectedDockId = null) {
   const list     = document.getElementById(listId);
   const emptyMsg = document.getElementById(emptyMsgId);
@@ -263,13 +335,8 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
   const fullList = allCombatants ?? combatants;
 
   // ── Salva scroll, focus e stato action panel prima di distruggere il DOM ──
-  const savedScrollY    = window.scrollY;
-  const focused         = document.activeElement;
-  const isInsideList    = list.contains(focused);
-  const focusedCardId   = isInsideList ? focused.closest('[data-combatant-id]')?.dataset.combatantId : null;
-  const focusedIsAction = isInsideList && focused.classList.contains('action-input');
-  const focusedIsAmount = isInsideList && focused.classList.contains('attack-amount');
-  const focusedValue    = (focusedIsAction || focusedIsAmount) ? focused.value : null;
+  const savedScrollY = window.scrollY;
+  const focusSnap     = captureFocusState(list);
 
   // Snapshot quantità di ogni card (il bersaglio è ora in _selectedTargets, persiste da solo)
   const savedPanelState = {};
@@ -339,7 +406,17 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const isAlly = !isCreature || c.faction === 'good';
     const hpPct  = c.hpMax > 0 ? Math.min(1, Math.max(0, c.hpCurrent / c.hpMax)) : 0;
 
-    li.className = ['fight-card', isActive ? 'is-active' : '', isKO ? 'is-down' : '',
+    // Flash danno/cura: solo se avevamo già visto questa card in precedenza
+    // (evita che tutte le card lampeggino al primo caricamento della pagina)
+    const prevHp = _prevHp.get(c.id);
+    if (prevHp !== undefined && prevHp !== c.hpCurrent) {
+      _hpFlash.set(c.id, { dir: c.hpCurrent < prevHp ? 'dmg' : 'heal', until: Date.now() + HP_FLASH_MS });
+    }
+    _prevHp.set(c.id, c.hpCurrent);
+    const flash = _hpFlash.get(c.id);
+    const flashClass = flash && flash.until > Date.now() ? (flash.dir === 'dmg' ? 'anim-dmg' : 'anim-heal') : '';
+
+    li.className = ['fight-card', isActive ? 'is-active' : '', isKO ? 'is-down' : '', flashClass,
       (listIsMaster && c.id === selectedDockId) ? 'dock-selected' : '']
       .filter(Boolean).join(' ');
     li.dataset.combatantId = c.id;
@@ -478,6 +555,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       ` : ''}
 
       <div class="fc-controls">
+        ${canEdit ? `<button class="btn btn--ghost btn--sm insp-btn${c.inspiration ? ' active' : ''}" data-id="${c.id}" data-action="toggle-inspiration" title="${c.inspiration ? 'Rimuovi ispirazione' : 'Concedi ispirazione'}">✦ Ispirazione</button>` : ''}
         ${canEdit ? `<button class="btn btn--ghost btn--sm" data-id="${c.id}" data-action="open-conditions" style="font-size:9.5px;">${conditions.length > 0 ? '✎ Condizioni' : '+ Condizioni'}</button>` : ''}
         ${isMaster && isCreature ? `
           <div class="faction-switch">
@@ -511,22 +589,25 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     if (isActive && turnChanged) li.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
 
-  // ── Ripristina scroll e focus ─────────────────────────────────────────────
-  window.scrollTo(0, savedScrollY);
-
-  if (focusedCardId) {
-    const newCard = list.querySelector(`[data-combatant-id="${focusedCardId}"]`);
-    if (newCard) {
-      const sel = focusedIsAction ? '.action-input' : focusedIsAmount ? '.attack-amount' : null;
-      if (sel) {
-        const newInput = newCard.querySelector(sel);
-        if (newInput) {
-          newInput.focus({ preventScroll: true });
-          if (focusedValue !== null) newInput.value = focusedValue;
-        }
-      }
+  // ── Ripristina editor inline pendente (iniziativa/HP max/HP temp/CA) ───────
+  // Questi bottoni si trasformano in <input> al click, fuori dal normale ciclo
+  // di render: il rebuild li rimpiazza sempre col bottone di default, quindi
+  // vanno ricreati esplicitamente prima di poter ripristinare focus/cursore.
+  if (_activeInlineEdit) {
+    const { id, field } = _activeInlineEdit;
+    const actionByField = { initiative: 'edit-initiative', hpMax: 'edit-hp-max', tempHp: 'edit-temp-hp', ac: 'edit-ac' };
+    const btn = list.querySelector(`[data-id="${id}"][data-action="${actionByField[field]}"]`);
+    if (btn) {
+      if      (field === 'initiative') openInitiativeEdit(btn, id, callbacks.onInitiativeChange, true);
+      else if (field === 'hpMax')      openHpMaxEdit(btn, id, callbacks.onSetMaxHp, true);
+      else if (field === 'tempHp')     openTempHpEdit(btn, id, callbacks.onSetTempHp, true);
+      else if (field === 'ac')         openAcEdit(btn, id, callbacks.onSetAc, true);
     }
   }
+
+  // ── Ripristina scroll e focus ─────────────────────────────────────────────
+  window.scrollTo(0, savedScrollY);
+  restoreFocusState(list, focusSnap);
 
   list.onclick = (e) => {
     const btn = e.target.closest('[data-action]');
@@ -583,6 +664,10 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       callbacks.onToggleShowAC?.(id, btn.classList.contains('hint-active'));
       return;
     }
+    if (action === 'toggle-inspiration') {
+      callbacks.onToggleInspiration?.(id, btn.classList.contains('active'));
+      return;
+    }
     if (action === 'end-turn')        { callbacks.onEndTurn?.(); return; }
     if (action === 'death-save') {
       const type   = btn.dataset.type;
@@ -615,113 +700,92 @@ function _flashError(btn, message) {
   setTimeout(() => { btn.textContent = original; btn.style.opacity = ''; }, 2000);
 }
 
-function openInitiativeEdit(btn, id, onInitiativeChange) {
-  const original = btn.textContent.trim();
-  const input    = document.createElement('input');
+// Editor inline (iniziativa/HP max/HP temp/CA): tiene traccia di quale campo è
+// in editing e col suo valore corrente, così un rebuild della lista (innescato
+// da un update Firebase non correlato, es. un altro giocatore che agisce)
+// può ricreare l'editor com'era invece di perderlo — vedi renderCombatantList.
+let _activeInlineEdit = null; // { id, field, value }
+
+function _openInlineNumberEdit(btn, id, field, initialValue, { min, max, placeholder, className = 'hp-max-edit-input', beforeReplace, onConfirm }, restoring = false) {
+  const input = document.createElement('input');
   input.type      = 'number';
-  input.value     = original;
-  input.className = 'initiative-edit-input';
+  input.className = className;
+  input.dataset.id        = id;
+  input.dataset.editField = field;
+  if (min !== undefined)   input.min = min;
+  if (max !== undefined)   input.max = max;
+  if (placeholder)         input.placeholder = placeholder;
+
+  input.value = (restoring && _activeInlineEdit?.id === id && _activeInlineEdit?.field === field)
+    ? _activeInlineEdit.value
+    : String(initialValue);
+
+  input.addEventListener('input', () => { _activeInlineEdit = { id, field, value: input.value }; });
 
   const confirm = () => {
-    const val = parseInt(input.value);
-    btn.textContent = isNaN(val) ? original : String(val);
+    const val = input.value === '' ? NaN : parseInt(input.value);
+    _activeInlineEdit = null;
+    beforeReplace(val, isNaN(val));
     input.replaceWith(btn);
-    if (!isNaN(val) && val !== parseInt(original)) onInitiativeChange(id, val);
+    if (!isNaN(val)) onConfirm(val);
   };
 
   input.onblur    = confirm;
   input.onkeydown = (e) => {
     if (e.key === 'Enter')  { e.preventDefault(); input.blur(); }
-    if (e.key === 'Escape') { input.value = original; input.blur(); }
+    if (e.key === 'Escape') { _activeInlineEdit = null; input.value = String(initialValue); input.blur(); }
   };
 
   btn.replaceWith(input);
-  input.focus();
-  input.select();
+  if (restoring) {
+    // Focus/cursore vengono ripristinati subito dopo da restoreFocusState
+    // in renderCombatantList (stesso meccanismo usato per gli altri input).
+  } else {
+    _activeInlineEdit = { id, field, value: input.value };
+    input.focus();
+    input.select();
+  }
+  return input;
 }
 
-function openHpMaxEdit(btn, id, onSetMaxHp) {
-  const original = btn.textContent.trim();
-  const input    = document.createElement('input');
-  input.type      = 'number';
-  input.value     = original;
-  input.className = 'hp-max-edit-input';
-  input.min       = '1';
-  input.max       = '9999';
-
-  const confirm = () => {
-    const val = parseInt(input.value);
-    btn.textContent = isNaN(val) ? original : String(val);
-    input.replaceWith(btn);
-    if (!isNaN(val) && val !== parseInt(original)) onSetMaxHp(id, val);
-  };
-
-  input.onblur    = confirm;
-  input.onkeydown = (e) => {
-    if (e.key === 'Enter')  { e.preventDefault(); input.blur(); }
-    if (e.key === 'Escape') { input.value = original; input.blur(); }
-  };
-
-  btn.replaceWith(input);
-  input.focus();
-  input.select();
+function openInitiativeEdit(btn, id, onInitiativeChange, restoring = false) {
+  const original = parseInt(btn.textContent.trim());
+  return _openInlineNumberEdit(btn, id, 'initiative', original, {
+    beforeReplace: (val, invalid) => { btn.textContent = invalid ? String(original) : String(val); },
+    onConfirm:     (val) => { if (val !== original) onInitiativeChange(id, val); },
+  }, restoring);
 }
 
-function openTempHpEdit(btn, id, onSetTempHp) {
+function openHpMaxEdit(btn, id, onSetMaxHp, restoring = false) {
+  const original = parseInt(btn.textContent.trim());
+  return _openInlineNumberEdit(btn, id, 'hpMax', original, {
+    min: 1, max: 9999,
+    beforeReplace: (val, invalid) => { btn.textContent = invalid ? String(original) : String(val); },
+    onConfirm:     (val) => { if (val !== original) onSetMaxHp(id, val); },
+  }, restoring);
+}
+
+function openTempHpEdit(btn, id, onSetTempHp, restoring = false) {
   const original = parseInt(btn.dataset.tempHp ?? '0') || 0;
-  const input    = document.createElement('input');
-  input.type        = 'number';
-  input.value       = original;
-  input.className   = 'hp-max-edit-input';
-  input.min         = '0';
-  input.max         = '9999';
-  input.placeholder = '0 = rimuovi';
-
-  const confirm = () => {
-    const val = Math.max(0, parseInt(input.value) || 0);
-    btn.dataset.tempHp  = val;
-    btn.textContent     = val > 0 ? `THP: ${val}` : '+ HP Temp.';
-    btn.classList.toggle('active', val > 0);
-    input.replaceWith(btn);
-    if (val !== original) onSetTempHp(id, val);
-  };
-
-  input.onblur    = confirm;
-  input.onkeydown = (e) => {
-    if (e.key === 'Enter')  { e.preventDefault(); input.blur(); }
-    if (e.key === 'Escape') { input.value = original; input.blur(); }
-  };
-
-  btn.replaceWith(input);
-  input.focus();
-  input.select();
+  return _openInlineNumberEdit(btn, id, 'tempHp', original, {
+    min: 0, max: 9999, placeholder: '0 = rimuovi',
+    beforeReplace: (val, invalid) => {
+      const v = invalid ? original : Math.max(0, val);
+      btn.dataset.tempHp = v;
+      btn.textContent    = v > 0 ? `THP: ${v}` : '+ HP Temp.';
+      btn.classList.toggle('active', v > 0);
+    },
+    onConfirm: (val) => { const v = Math.max(0, val); if (v !== original) onSetTempHp(id, v); },
+  }, restoring);
 }
 
-function openAcEdit(btn, id, onSetAc) {
-  const original = btn.textContent.replace('CA ', '').trim();
-  const input    = document.createElement('input');
-  input.type      = 'number';
-  input.value     = original;
-  input.className = 'hp-max-edit-input';
-  input.min       = '0';
-  input.max       = '30';
-
-  const confirm = () => {
-    const val = parseInt(input.value);
-    btn.textContent = isNaN(val) ? `CA ${original}` : `CA ${val}`;
-    input.replaceWith(btn);
-    if (!isNaN(val) && val !== parseInt(original)) onSetAc(id, val);
-  };
-
-  input.onblur    = confirm;
-  input.onkeydown = (e) => {
-    if (e.key === 'Enter')  { e.preventDefault(); input.blur(); }
-    if (e.key === 'Escape') { input.value = original; input.blur(); }
-  };
-
-  btn.replaceWith(input);
-  input.focus();
-  input.select();
+function openAcEdit(btn, id, onSetAc, restoring = false) {
+  const original = parseInt(btn.textContent.replace('CA ', '').trim());
+  return _openInlineNumberEdit(btn, id, 'ac', original, {
+    min: 0, max: 30,
+    beforeReplace: (val, invalid) => { btn.textContent = invalid ? `CA ${original}` : `CA ${val}`; },
+    onConfirm:     (val) => { if (val !== original) onSetAc(id, val); },
+  }, restoring);
 }
 
 export function renderConditionModal(combatantId, activeConditions, onToggle) {
@@ -759,7 +823,7 @@ function healthHintText(percent) {
   if (percent === 100) return '⚔ Nel pieno delle forze';
   if (percent >= 75)   return '⚔ Leggermente ferito';
   if (percent >= 50)   return '⚔ Ferito';
-  if (percent >= 25)   return '⚔ Gravemente ferito';
+  if (percent >= 20)   return '⚔ Gravemente ferito';
   if (percent > 0)     return '⚔ In fin di vita';
   return '☠ A terra';
 }
