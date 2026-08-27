@@ -448,6 +448,10 @@
   fill: color-mix(in oklab, var(--accent) 9%, transparent);
 }
 
+.sq-template {
+  fill: color-mix(in oklab, #c084fc 20%, transparent);
+}
+
 .sq-hover {
   fill: rgba(255,255,255,0.06);
 }
@@ -513,6 +517,11 @@
   background: var(--gold);
   color: #1a1a2e;
   border-color: var(--gold);
+}
+#grid-template-controls button.active {
+  background: #c084fc;
+  color: #1a1a2e;
+  border-color: #c084fc;
 }
 .grid-dim-input {
   width: 3.2rem;

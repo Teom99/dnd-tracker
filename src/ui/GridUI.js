@@ -96,6 +96,75 @@ function fmtM(d) {
   return d === Math.floor(d) ? `${d}m` : `${d.toFixed(1)}m`;
 }
 
+// ─── Template ad area (cerchio/cono/linea) ───────────────────────────────────
+const TEMPLATE_LABEL     = { circle: 'Cerchio', cone: 'Cono', line: 'Linea' };
+const TEMPLATE_COLOR     = '#c084fc'; // viola neutro, distinto da muri/reach/selezione
+const CONE_HALF_ANGLE    = 45;        // cono 5e: larghezza = distanza dall'origine (angolo totale 90°)
+const LINE_HALF_WIDTH_M  = 0.75;      // linea larga 1.5m
+const TEMPLATE_MIN_M     = { circle: 3, cone: 9, line: 9 }; // default se origine e conferma coincidono
+
+function cellCenterOf(col, row) {
+  const { x, y } = cellXY(col, row);
+  return { x: x + CELL / 2, y: y + CELL / 2 };
+}
+
+// Distanza (in metri) e angolo (in gradi) dall'origine a una cella target
+function templateGeometryTo(originCol, originRow, col, row) {
+  const o = cellCenterOf(originCol, originRow);
+  const p = cellCenterOf(col, row);
+  const dx = p.x - o.x, dy = p.y - o.y;
+  const distM = Math.sqrt(dx * dx + dy * dy) / CELL;
+  const angleDeg = Math.atan2(dy, dx) * 180 / Math.PI;
+  return { distM, angleDeg };
+}
+
+function templateContainsCell(t, col, row) {
+  const { distM, angleDeg } = templateGeometryTo(t.originCol, t.originRow, col, row);
+  if (distM < 0.05) return true; // la cella di origine è sempre inclusa
+  if (t.shape === 'circle') return distM <= t.size;
+  let diff = Math.abs(angleDeg - t.angleDeg);
+  if (diff > 180) diff = 360 - diff;
+  if (t.shape === 'cone') return distM <= t.size && diff <= CONE_HALF_ANGLE;
+  if (t.shape === 'line') {
+    const rad  = diff * Math.PI / 180;
+    const along = distM * Math.cos(rad);
+    const perp  = Math.abs(distM * Math.sin(rad));
+    return along >= -0.05 && along <= t.size && perp <= LINE_HALF_WIDTH_M;
+  }
+  return false;
+}
+
+// Markup SVG della forma (usato sia per il template confermato sia per l'anteprima)
+function templateShapeMarkup(shape, originCol, originRow, size, angleDeg, color, fillOpacity, strokeOpacity, dashed) {
+  const o = cellCenterOf(originCol, originRow);
+  const r = size * CELL;
+  const dash = dashed ? ' stroke-dasharray="6 4"' : '';
+  const common = `fill="${color}" fill-opacity="${fillOpacity}" stroke="${color}" stroke-opacity="${strokeOpacity}" stroke-width="2"${dash} pointer-events="none"`;
+
+  if (shape === 'circle') {
+    return `<circle cx="${o.x.toFixed(1)}" cy="${o.y.toFixed(1)}" r="${r.toFixed(1)}" ${common}/>`;
+  }
+  const rad = angleDeg * Math.PI / 180;
+  if (shape === 'cone') {
+    const a1 = rad - CONE_HALF_ANGLE * Math.PI / 180;
+    const a2 = rad + CONE_HALF_ANGLE * Math.PI / 180;
+    const p2 = { x: o.x + r * Math.cos(a1), y: o.y + r * Math.sin(a1) };
+    const p3 = { x: o.x + r * Math.cos(a2), y: o.y + r * Math.sin(a2) };
+    return `<polygon points="${o.x.toFixed(1)},${o.y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)} ${p3.x.toFixed(1)},${p3.y.toFixed(1)}" ${common}/>`;
+  }
+  if (shape === 'line') {
+    const dirX = Math.cos(rad), dirY = Math.sin(rad);
+    const perpX = -dirY, perpY = dirX;
+    const hw = LINE_HALF_WIDTH_M * CELL;
+    const p1 = { x: o.x + perpX * hw,         y: o.y + perpY * hw };
+    const p2 = { x: o.x - perpX * hw,         y: o.y - perpY * hw };
+    const p3 = { x: p2.x + dirX * r,          y: p2.y + dirY * r };
+    const p4 = { x: p1.x + dirX * r,          y: p1.y + dirY * r };
+    return `<polygon points="${p1.x.toFixed(1)},${p1.y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)} ${p3.x.toFixed(1)},${p3.y.toFixed(1)} ${p4.x.toFixed(1)},${p4.y.toFixed(1)}" ${common}/>`;
+  }
+  return '';
+}
+
 function esc(s) {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
@@ -112,12 +181,34 @@ export function setReRenderCallback(fn) { _reRenderCallback = fn; }
  * @param editMode boolean       — modalità modifica del master (disegno muri)
  * @param onSetWall (cellKey, value) => void   — imposta/rimuove un muro
  */
-export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onSetWall) {
+export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onSetWall, template, placingShape, templateOrigin, onSetTemplateOrigin, onCommitTemplate) {
   const pos   = gridPos    || {};
   const comb  = combatants || {};
   const wall  = walls      || {};
   const cols  = Math.max(1, gridConfig?.cols || 20);
   const rows  = Math.max(1, gridConfig?.rows || 20);
+
+  // Celle coperte dal template attivo + combattenti coinvolti (per evidenziazione ed elenco)
+  const templateCells = new Set();
+  const templateHitNames = [];
+  if (template) {
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        if (templateContainsCell(template, col, row)) templateCells.add(`${col}_${row}`);
+      }
+    }
+    Object.entries(pos).forEach(([id, p]) => {
+      if (p == null || p.col == null || !comb[id]) return;
+      const n = footprintOf(comb[id].size);
+      let hit = false;
+      for (let dc = 0; dc < n && !hit; dc++) {
+        for (let dr = 0; dr < n && !hit; dr++) {
+          if (templateCells.has(`${p.col + dc}_${p.row + dr}`)) hit = true;
+        }
+      }
+      if (hit) templateHitNames.push(comb[id].name || '?');
+    });
+  }
 
   // Mappa cella → id del token che la occupa (considerando il footprint)
   const occCell = {};
@@ -164,8 +255,14 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
           && squareDistance(selPos.col, selPos.row, selSide, col, row, 1) <= reachSpeed) {
         cls += ' sq-reach';
       }
+      if (templateCells.has(key)) cls += ' sq-template';
       inner += `<rect class="${cls}" x="${x}" y="${y}" width="${CELL}" height="${CELL}" data-c="${col}" data-r="${row}"/>`;
     }
+  }
+
+  // 1b) Contorno del template confermato (sopra le celle, sotto i token)
+  if (template) {
+    inner += templateShapeMarkup(template.shape, template.originCol, template.originRow, template.size, template.angleDeg, TEMPLATE_COLOR, 0.12, 0.7, false);
   }
 
   // 2) Token (un rect per footprint)
@@ -253,7 +350,11 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   // Hint contestuale nella toolbar
   const hintEl = document.getElementById('grid-hint');
   if (hintEl) {
-    if (editMode && isMaster) {
+    if (placingShape && !templateOrigin) {
+      hintEl.textContent = `${TEMPLATE_LABEL[placingShape]}: tocca la cella di origine`;
+    } else if (placingShape && templateOrigin) {
+      hintEl.textContent = `${TEMPLATE_LABEL[placingShape]}: muovi per orientare, tocca per confermare`;
+    } else if (editMode && isMaster) {
       hintEl.textContent = '✏️ Modifica: imposta le dimensioni e clicca le caselle vuote per i muri';
     } else if (showReach) {
       hintEl.textContent = `${selComb.name} — raggio di movimento ${fmtM(reachSpeed)} · tocca la destinazione`;
@@ -261,6 +362,11 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
       hintEl.textContent = selPos
         ? `${selComb.name} selezionato`
         : `${selComb.name} — tocca una casella per posizionarlo`;
+    } else if (template) {
+      const label = `${TEMPLATE_LABEL[template.shape]} ${fmtM(template.size)}`;
+      hintEl.textContent = templateHitNames.length > 0
+        ? `${label} — nel template: ${templateHitNames.join(', ')}`
+        : `${label} — nessun combattente nel template`;
     } else {
       hintEl.textContent = '1 casella = 1 m · Seleziona un token, poi tocca la destinazione';
     }
@@ -310,13 +416,29 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
                stroke="${color}" stroke-opacity=".55" stroke-width="3.5"/>`;
   }
 
+  // Anteprima del template in corso di piazzamento: segue il mouse una volta fissata l'origine
+  let templateGhost = null;
+  const removeTemplateGhost = () => { templateGhost?.remove(); templateGhost = null; };
+  function updateTemplateGhost(c, r) {
+    if (!placingShape || !templateOrigin) { removeTemplateGhost(); return; }
+    const { distM, angleDeg } = templateGeometryTo(templateOrigin.col, templateOrigin.row, c, r);
+    const size = distM < 0.5 ? TEMPLATE_MIN_M[placingShape] : distM;
+    if (!templateGhost) {
+      templateGhost = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      templateGhost.setAttribute('pointer-events', 'none');
+      svg.appendChild(templateGhost);
+    }
+    templateGhost.innerHTML = templateShapeMarkup(placingShape, templateOrigin.col, templateOrigin.row, size, angleDeg, TEMPLATE_COLOR, 0.18, 0.9, true);
+  }
+
   // Tooltip nome al passaggio del mouse
   let nameTooltip = null;
   svg.addEventListener('mousemove', (e) => {
     const hit = e.target.closest('.sq-hit');
-    if (!hit) { nameTooltip?.remove(); nameTooltip = null; removeGhost(); return; }
+    if (!hit) { nameTooltip?.remove(); nameTooltip = null; removeGhost(); removeTemplateGhost(); return; }
     const c = parseInt(hit.dataset.c), r = parseInt(hit.dataset.r);
-    updateGhost(c, r);
+    if (placingShape) { removeGhost(); updateTemplateGhost(c, r); }
+    else { removeTemplateGhost(); updateGhost(c, r); }
     const occId = occCell[`${c}_${r}`];
     const occ   = occId ? comb[occId] : null;
     if (occ) {
@@ -346,6 +468,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     svg.querySelectorAll('.sq.sq-hover').forEach(h => h.classList.remove('sq-hover'));
     nameTooltip?.remove(); nameTooltip = null;
     removeGhost();
+    removeTemplateGhost();
   });
 
   svg.addEventListener('click', (e) => {
@@ -355,6 +478,18 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     const col = parseInt(el.dataset.c);
     const row = parseInt(el.dataset.r);
     const occupantId = occCell[`${col}_${row}`];
+
+    // Piazzamento template: primo tocco fissa l'origine, il secondo conferma
+    if (placingShape) {
+      if (!templateOrigin) {
+        onSetTemplateOrigin(col, row);
+      } else {
+        const { distM, angleDeg } = templateGeometryTo(templateOrigin.col, templateOrigin.row, col, row);
+        const size = distM < 0.5 ? TEMPLATE_MIN_M[placingShape] : distM;
+        onCommitTemplate(placingShape, templateOrigin.col, templateOrigin.row, size, angleDeg);
+      }
+      return;
+    }
 
     // Modalità modifica (master): i muri si disegnano con mousedown/drag (vedi _bindWallPaint)
     if (editMode && isMaster) return;

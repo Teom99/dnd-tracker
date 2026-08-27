@@ -11,7 +11,7 @@ import * as GridUI           from './src/ui/GridUI.js';
 import { state }             from './src/utils/state.js';
 import { initCombatManagers, exitToHome, esc, closeConditionModal } from './src/views/core.js';
 import { CharacterSheet } from './src/data/CharacterSheet.js';
-import { renderGrid }        from './src/logic/grid.js';
+import { renderGrid, toggleTemplatePlacement, clearTemplate } from './src/logic/grid.js';
 import { initSheet, setupSheetListener, makeCallbacks } from './src/views/sheet.js';
 import { LevelUp }   from './src/logic/LevelUp.js';
 import { LevelUpUI } from './src/ui/LevelUpUI.js';
@@ -1054,6 +1054,7 @@ function _initGridMasterControls(isMaster) {
     const turningOff = state.gridEditMode;
     state.gridEditMode = !state.gridEditMode;
     if (turningOff) _applyGridDims();   // commit eventuali dimensioni in sospeso
+    else { state.templatePlacingShape = null; state.templateOrigin = null; } // mutuamente esclusivo col piazzamento template
     _applyGridEditUI();
     _rerenderGridFromSnapshot();
   });
@@ -1102,6 +1103,29 @@ function _rerenderGridFromSnapshot() {
   const sorted = state.tracker.sortedCombatants(data.combatants);
   renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null, sorted, data.gridConfig || null, data.walls || {});
 }
+
+// ─── TEMPLATE AD AREA (cerchio/cono/linea) ───────────────────────────────────
+
+function _applyTemplateControlsUI() {
+  document.querySelectorAll('#grid-template-controls button[data-shape]').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.shape === state.templatePlacingShape);
+  });
+  const clearBtn = document.getElementById('btn-template-clear');
+  if (!clearBtn) return;
+  const t = state.snapshot?.template;
+  const canClear = !!t && (state.session?.isMaster || t.ownerUid === state.myUid);
+  clearBtn.style.display = canClear ? '' : 'none';
+}
+
+document.getElementById('grid-template-controls')?.addEventListener('click', (e) => {
+  const shapeBtn = e.target.closest('[data-shape]');
+  if (shapeBtn) {
+    toggleTemplatePlacement(shapeBtn.dataset.shape);
+    _applyTemplateControlsUI();
+    return;
+  }
+  if (e.target.closest('#btn-template-clear')) clearTemplate();
+});
 
 function _renderCombatLists() {
   const data = state.snapshot;
@@ -1176,6 +1200,7 @@ function _startListening() {
     }
 
     renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null, sorted, data.gridConfig || null, data.walls || {});
+    _applyTemplateControlsUI();
 
     if (state.session.isMaster) {
       const cfg = data.gridConfig || { cols: 20, rows: 20 };

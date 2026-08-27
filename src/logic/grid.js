@@ -63,10 +63,36 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
     state.gridEditMode,
     selectToken,
     (id, col, row) => state.session.setGridPosition(id, col, row),
-    (cellKey, value) => state.session.setWall(cellKey, value)
+    (cellKey, value) => state.session.setWall(cellKey, value),
+    state.snapshot?.template ?? null,
+    state.templatePlacingShape,
+    state.templateOrigin,
+    (col, row) => { state.templateOrigin = { col, row }; reRender(); },
+    (shape, originCol, originRow, size, angleDeg) => {
+      state.session.setTemplate(shape, originCol, originRow, size, angleDeg, state.myUid);
+      state.templatePlacingShape = null;
+      state.templateOrigin       = null;
+      reRender();
+    }
   );
   renderTokenBar(gridPos, combatants);
   updateTokenSizeControl(combatants);
+}
+
+// Attiva/disattiva la modalità di piazzamento di un template ad area.
+// Ricliccare la stessa forma annulla il piazzamento in corso.
+export function toggleTemplatePlacement(shape) {
+  state.templatePlacingShape = state.templatePlacingShape === shape ? null : shape;
+  state.templateOrigin       = null;
+  state.gridEditMode         = false; // mutuamente esclusivo con la modifica muri
+  if (state.snapshot) {
+    const sorted = state.tracker.sortedCombatants(state.snapshot.combatants);
+    renderGrid(state.snapshot.grid || {}, state.snapshot.combatants || {}, state.snapshot.currentTurnId ?? null, sorted, state.snapshot.gridConfig || null, state.snapshot.walls || {});
+  }
+}
+
+export function clearTemplate() {
+  state.session.clearTemplate();
 }
 
 // Riflette la taglia del token selezionato sul controllo del master.

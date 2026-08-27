@@ -5,10 +5,16 @@
 - FEAT: Integrare un db di creature da DnD 5e 2024
 - FEAT: Creare un'interfaccia lato master per creare combattimenti in base alla CR delle creature nemiche e al livello dei giocatori e/o NPC. L'interfaccia calcola il grado di difficoltà automaticamente e lo mostra al DM.
 - FEAT: Mettere un'impostazione attivabile opzionalmente lato master per non vedere la salute precisa dei giocatori. I giocatori possono vedere la salute di ciascuno di loro, il master vede solo quella delle creature ostili e degli NPC (e una stima di quelle dei giocatori).
+- FEAT: Tiro salvezza concentrazione automatico — quando un PG con la condizione "Concentrato" subisce danno, promemoria con la CD calcolata (max(10, danno/2))
+- FEAT: Dado integrato sulla card (d20+mod per iniziativa/attacco/salvezza) col risultato nel log condiviso
+- FEAT: Annulla ultima azione (undo per l'ultimo danno/cura applicato per errore)
+- FEAT: Note private del master su un combattente (tattiche, HP reali), non visibili ai giocatori
+- FEAT: Notifica/vibrazione quando tocca il proprio turno (utile su mobile)
 
 
 ## Fatto
 
+- FEAT: Template ad area sulla griglia (cerchio/cono/linea) — piazzamento clic-clic con anteprima live, condiviso in tempo reale con tutti i giocatori, celle coperte evidenziate e combattenti coinvolti elencati
 - FEAT: Tasto ispirazione (✦) su ogni card combattente — il proprietario della card o il master lo attiva/disattiva, si illumina oro quando attivo (`combatants/{id}/inspiration`)
 - FEAT: Flash colorato sulla card quando subisce danno (rosso neon) o cura (verde neon), visibile un paio di secondi — completate le animazioni `dmg-flash`/`heal-pulse` già abbozzate in CSS ma mai collegate
 - BUG concorrenza: qualsiasi update Firebase sulla sessione (es. un giocatore che muove un token) ricostruiva da zero tutta la UI, azzerando scroll/focus/testo di chi in quel momento scriveva una cronaca, editava iniziativa/HP max/HP temp/CA su una card, o editava scheda personaggio (inventario, slot incantesimo, capacità di classe). Aggiunta utility riusabile `src/utils/domPreserve.js` (cattura/ripristina focus, valore, cursore, scroll) e applicata a Cronache, card combattente, scheda personaggio, pannello nave. Risolto anche un leak di event listener duplicati su ogni render in `renderClassFeatures`.

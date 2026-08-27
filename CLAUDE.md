@@ -55,6 +55,8 @@ sessions/{code}/
                     size (tiny|small|medium|large|huge|gargantuan)
   grid/{combatantId}/  col, row            (angolo top-left del footprint)
   walls/{col_row}: true
+  template/  shape (circle|cone|line), originCol, originRow, size (metri), angleDeg, ownerUid
+             (un solo template attivo per sessione; null se nessuno)
   logs/{logId}/
     message, type, actor, target, amount, createdByUid,
     timestamp (serverTimestamp), clientTimestamp
@@ -115,6 +117,7 @@ userSessions/{uid}/{code}/
 - Fix concorrenza multi-giocatore: `src/utils/domPreserve.js` (`captureFocusState`/`restoreFocusState`) preserva focus, valore, cursore e scroll di un input quando il suo contenitore viene ricostruito da un re-render non correlato (es. un giocatore muove un token mentre un altro scrive). Applicato a Cronache (`UI.renderSessionNotes`, riscritta a patch incrementale — non ricrea mai i nodi title/textarea), editor inline iniziativa/HP max/HP temp/CA sulle card (`UI.renderCombatantList`), scheda personaggio (`SheetUI.renderClassFeatures/renderInventory/renderSpellSlots/populateSheet`), pannello nave (`_renderShipPanel` in `app.js`)
 - Tasto ispirazione (✦) su ogni card combattente: `combatants/{id}/inspiration`, editabile da proprietario/master (`Combatant.setInspiration`), si illumina oro (`.insp-btn.active` in `index.html`) quando attivo
 - Flash colorato sulla card a ogni variazione di `hpCurrent`: rosso neon per danno, verde neon per cura, ~2.5s (`dmg-flash`/`heal-pulse` in `styles/base.css`, applicate da `UI.renderCombatantList` tramite una mappa `_prevHp`/`_hpFlash` che confronta l'HP col render precedente — sopravvive a rebuild concorrenti)
+- Template ad area sulla griglia (cerchio/cono/linea): piazzamento clic-clic (origine poi conferma con anteprima live), condiviso in tempo reale (`sessions/{code}/template`), celle coperte evidenziate e combattenti coinvolti elencati nell'hint della toolbar
 
 ### Bug noti non ancora risolti
 Nessuno al momento.
@@ -229,14 +232,15 @@ Nessuno al momento.
 
 ### Griglia di battaglia
 
-**Cosa fa:** Griglia quadrata SVG adattiva (viewBox + preserveAspectRatio). Zoom +/−/reset con pulsanti flottanti. Pan con drag quando zoom > 1. Il master disegna/rimuove muri cliccando. Selezione token mostra raggio di movimento. Token multi-cella per taglia. Ghost preview al passaggio mouse.
+**Cosa fa:** Griglia quadrata SVG adattiva (viewBox + preserveAspectRatio). Zoom +/−/reset con pulsanti flottanti. Pan con drag quando zoom > 1. Il master disegna/rimuove muri cliccando. Selezione token mostra raggio di movimento. Token multi-cella per taglia. Ghost preview al passaggio mouse. Template ad area (cerchio/cono/linea) per incantesimi, condivisi in tempo reale con evidenziazione celle e combattenti coinvolti.
 
-**File:** `src/logic/grid.js` (orchestrazione render), `src/ui/GridUI.js` (SVG, token, muri, movimento)
+**File:** `src/logic/grid.js` (orchestrazione render), `src/ui/GridUI.js` (SVG, token, muri, movimento, template)
 
 **Firebase paths:**
 - `sessions/{code}/gridConfig/` — cols, rows (default 20×20)
 - `sessions/{code}/grid/{combatantId}/` — col, row (angolo top-left del footprint)
 - `sessions/{code}/walls/{col_row}` — true se muro presente
+- `sessions/{code}/template/` — shape, originCol, originRow, size (metri), angleDeg, ownerUid (un solo template alla volta)
 
 **Invarianti:**
 - 1 casella = 1 metro; diagonali alternate 5-10-5 (variante DMG: `max + floor(min/2)`)
@@ -244,6 +248,9 @@ Nessuno al momento.
 - La casella cliccata è ~il centro del footprint per token grandi (offset `floor((n-1)/2)`)
 - Movimento valida bordi, muri e sovrapposizioni sull'intero footprint prima di scrivere
 - Reset (solo master) svuota `grid/` e `walls/` — token e muri cancellati
+- Piazzamento template: clic-clic (origine poi conferma), non drag; mutuamente esclusivo con la modalità modifica muri (`state.gridEditMode`)
+- Geometria template: cerchio = raggio; cono = 90° totali (±45° dall'angolo); linea = larghezza fissa 1.5m — celle incluse per centro-cella, non footprint esatto
+- Solo chi l'ha piazzato o il master possono cancellare il template attivo; piazzarne uno nuovo sovrascrive il precedente
 
 ---
 

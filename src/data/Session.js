@@ -178,6 +178,16 @@ export class Session {
     await set(ref(this._db, `sessions/${this.code}/walls`), null);
   }
 
+  async setTemplate(shape, originCol, originRow, size, angleDeg, ownerUid) {
+    await set(ref(this._db, `sessions/${this.code}/template`), {
+      shape, originCol, originRow, size, angleDeg: angleDeg ?? 0, ownerUid,
+    });
+  }
+
+  async clearTemplate() {
+    await set(ref(this._db, `sessions/${this.code}/template`), null);
+  }
+
   async addLogEvent(message, type = 'info', meta = {}) {
     if (!this.code) return;
     const newRef = push(ref(this._db, `sessions/${this.code}/logs`));

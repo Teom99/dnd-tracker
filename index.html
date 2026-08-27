@@ -838,6 +838,12 @@
       <main class="panel stage-grid is-mobile-on" id="panel-grid">
         <div class="grid-toolbar">
           <div id="grid-token-bar" class="grid-token-bar"></div>
+          <div id="grid-template-controls" style="display:flex; align-items:center; gap:2px;">
+            <button id="btn-template-circle" class="btn btn--ghost btn--sm btn--icon" data-shape="circle" title="Piazza area circolare">⭕</button>
+            <button id="btn-template-cone"   class="btn btn--ghost btn--sm btn--icon" data-shape="cone"   title="Piazza area a cono">📐</button>
+            <button id="btn-template-line"   class="btn btn--ghost btn--sm btn--icon" data-shape="line"   title="Piazza area a linea">📏</button>
+            <button id="btn-template-clear"  class="btn btn--ghost btn--sm btn--icon" title="Rimuovi area" style="display:none;">✕</button>
+          </div>
           <span class="grid-hint grow" id="grid-hint">1 casella = 1 m · Seleziona un token, poi tocca la destinazione</span>
           <button id="btn-grid-edit" class="btn btn--ghost btn--sm" title="Modifica dimensioni e muri" style="display:none;">✏️ Modifica</button>
           <span id="grid-edit-controls" style="display:none; align-items:center; gap:4px; font-size:11px; color:var(--faint);">
