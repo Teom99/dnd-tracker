@@ -555,7 +555,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       ` : ''}
 
       <div class="fc-controls">
-        ${canEdit ? `<button class="btn btn--ghost btn--sm insp-btn${c.inspiration ? ' active' : ''}" data-id="${c.id}" data-action="toggle-inspiration" title="${c.inspiration ? 'Rimuovi ispirazione' : 'Concedi ispirazione'}">✦ Ispirazione</button>` : ''}
+        <button class="btn btn--ghost btn--sm insp-btn${c.inspiration ? ' active' : ''}" data-id="${c.id}" data-action="toggle-inspiration" title="${canEdit ? (c.inspiration ? 'Rimuovi ispirazione' : 'Concedi ispirazione') : (c.inspiration ? 'Ha ispirazione' : 'Nessuna ispirazione')}"${canEdit ? '' : ' disabled'}>✦ Ispirazione</button>
         ${canEdit ? `<button class="btn btn--ghost btn--sm" data-id="${c.id}" data-action="open-conditions" style="font-size:9.5px;">${conditions.length > 0 ? '✎ Condizioni' : '+ Condizioni'}</button>` : ''}
         ${isMaster && isCreature ? `
           <div class="faction-switch">
