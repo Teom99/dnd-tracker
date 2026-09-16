@@ -21,6 +21,8 @@ export const state = {
   gridEditMode:           false,
   templatePlacingShape:   null,  // 'circle' | 'cone' | 'line' mentre si sta piazzando un template area
   templateOrigin:         null,  // { col, row } una volta fissata l'origine, in attesa della conferma
+  drawMode:               false, // true quando la modalità "disegna sulla mappa" è attiva
+  drawColor:              '#e74c3c', // colore correntemente selezionato per il disegno; null = gomma
   ship:                   null,
   shipData:               null,
   shipPanelOpen:          false,

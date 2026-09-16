@@ -847,6 +847,22 @@
             <button id="btn-template-line"   class="btn btn--ghost btn--sm btn--icon" data-shape="line"   title="Piazza area a linea">📏</button>
             <button id="btn-template-clear"  class="btn btn--ghost btn--sm btn--icon" title="Rimuovi area" style="display:none;">✕</button>
           </div>
+          <div id="grid-draw-controls" style="display:flex; align-items:center; gap:2px;">
+            <button id="btn-draw-toggle" class="btn btn--ghost btn--sm btn--icon" title="Disegna sulla mappa">🎨</button>
+          </div>
+          <span id="grid-draw-palette" style="display:none; align-items:center; gap:4px;">
+            <button class="draw-swatch" data-color="#e74c3c" style="background:#e74c3c;" title="Rosso"></button>
+            <button class="draw-swatch" data-color="#e67e22" style="background:#e67e22;" title="Arancio"></button>
+            <button class="draw-swatch" data-color="#f1c40f" style="background:#f1c40f;" title="Giallo"></button>
+            <button class="draw-swatch" data-color="#2ecc71" style="background:#2ecc71;" title="Verde"></button>
+            <button class="draw-swatch" data-color="#3498db" style="background:#3498db;" title="Blu"></button>
+            <button class="draw-swatch" data-color="#9b59b6" style="background:#9b59b6;" title="Viola"></button>
+            <button class="draw-swatch" data-color="#a0642c" style="background:#a0642c;" title="Marrone"></button>
+            <button class="draw-swatch" data-color="#ecf0f1" style="background:#ecf0f1;" title="Bianco"></button>
+            <input type="color" id="input-draw-custom" title="Colore personalizzato" value="#ff0000" style="width:26px;height:26px;padding:0;border:none;background:none;cursor:pointer;">
+            <button id="btn-draw-eraser" class="draw-swatch draw-eraser" title="Gomma">✕</button>
+            <button id="btn-paint-clear" class="btn btn--ghost btn--sm btn--icon" title="Pulisci tutto il disegno" style="display:none;">🗑</button>
+          </span>
           <span class="grid-hint grow" id="grid-hint">1 casella = 1 m · Seleziona un token, poi tocca la destinazione</span>
           <button id="btn-grid-edit" class="btn btn--ghost btn--sm" title="Modifica dimensioni e muri" style="display:none;">✏️ Modifica</button>
           <span id="grid-edit-controls" style="display:none; align-items:center; gap:4px; font-size:11px; color:var(--faint);">

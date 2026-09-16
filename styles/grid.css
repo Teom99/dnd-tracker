@@ -70,6 +70,8 @@
 }
 .grid-container.grid-edit-active { user-select: none; }
 .grid-container.grid-edit-active .sq-hit { cursor: crosshair; }
+#grid-container.grid-draw-active { user-select: none; }
+#grid-container.grid-draw-active .sq-hit { cursor: crosshair; }
 
 .grid-zoom-controls {
   display: flex;
@@ -494,6 +496,39 @@
   pointer-events: none;
   user-select: none;
   text-shadow: 0 0 4px rgba(0,0,0,1);
+}
+
+/* ── Palette disegno sulla mappa ──────────────────────────────────────── */
+.draw-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+.draw-swatch.active {
+  border-color: #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.4);
+}
+.draw-eraser {
+  background: var(--bg2);
+  color: var(--faint);
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-color: var(--line-strong);
+}
+.draw-eraser.active {
+  border-color: #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.4);
+}
+#btn-draw-toggle.active {
+  color: var(--gold-bright);
+  border-color: var(--gold);
+  border-style: solid;
+  background: var(--gold-faint);
 }
 
 .grid-master-controls {

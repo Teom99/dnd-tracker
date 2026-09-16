@@ -17,13 +17,17 @@ let _panStart = null;   // { x, y, px, py, moved } durante un drag
 let _totalW   = 0;      // dimensioni totali viewBox in coordinate SVG
 let _totalH   = 0;
 
-// ─── Disegno muri con drag (tieni premuto LMB in modalità modifica) ──────────
+// ─── Disegno muri / colore con drag (tieni premuto LMB) ──────────────────────
 // Le listener stanno sul container (persiste tra i re-render); leggono _ctx,
-// il contesto dell'ultimo render, aggiornato a ogni renderGrid.
+// il contesto dell'ultimo render, aggiornato a ogni renderGrid. Muri (master-
+// only) e colore (chiunque) sono mutuamente esclusivi, quindi condividono lo
+// stesso tracking del drag — solo _paintMode cambia cosa viene scritto.
 let _ctx               = null;
 let _paintBound        = false;
 let _painting          = false;
-let _paintValue        = false;
+let _paintMode         = null;  // 'wall' | 'color', deciso al pointerdown
+let _paintValue        = false; // usato da _paintMode === 'wall'
+let _paintColorValue   = null;  // usato da _paintMode === 'color' (hex o null = gomma)
 let _paintedThisStroke = null;
 
 function _cellFromEvent(e) {
@@ -38,24 +42,41 @@ function _paintAt(col, row) {
   const key = `${col}_${row}`;
   if (_paintedThisStroke.has(key)) return;
   _paintedThisStroke.add(key);
-  if (_ctx.occCell[key]) return;                       // niente muri sotto i token
-  if (Boolean(_ctx.wall[key]) === _paintValue) return; // già nello stato voluto
-  _ctx.onSetWall(key, _paintValue);
+  if (_paintMode === 'wall') {
+    if (_ctx.occCell[key]) return;                       // niente muri sotto i token
+    if (Boolean(_ctx.wall[key]) === _paintValue) return; // già nello stato voluto
+    _ctx.onSetWall(key, _paintValue);
+  } else if (_paintMode === 'color') {
+    const current = _ctx.paint?.[key] ?? null;
+    if (current === _paintColorValue) return; // già nello stato voluto
+    _ctx.onSetPaint(key, _paintColorValue);
+  }
 }
 
-function _bindWallPaint(container) {
+function _bindCellPaint(container) {
   if (_paintBound) return;
   _paintBound = true;
 
   container.addEventListener('pointerdown', (e) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
-    if (!_ctx || !_ctx.isMaster || !_ctx.editMode) return;
+    if (!_ctx) return;
     const cell = _cellFromEvent(e);
     if (!cell) return;
     const key = `${cell.col}_${cell.row}`;
-    if (_ctx.occCell[key]) return;
+
+    const wallMode  = _ctx.isMaster && _ctx.editMode;
+    const colorMode = !wallMode && _ctx.drawMode;
+    if (!wallMode && !colorMode) return;
+
+    if (wallMode) {
+      if (_ctx.occCell[key]) return;
+      _paintMode  = 'wall';
+      _paintValue = !_ctx.wall[key];   // cella vuota → disegna; muro → cancella
+    } else {
+      _paintMode       = 'color';
+      _paintColorValue = _ctx.drawColor; // null = gomma
+    }
     _painting          = true;
-    _paintValue        = !_ctx.wall[key];   // cella vuota → disegna; muro → cancella
     _paintedThisStroke = new Set();
     _paintAt(cell.col, cell.row);
     e.preventDefault();
@@ -95,6 +116,13 @@ export function squareDistance(c1, r1, n1, c2, r2, n2) {
 function fmtM(d) {
   return d === Math.floor(d) ? `${d}m` : `${d.toFixed(1)}m`;
 }
+
+// ─── Disegno a colori sulla mappa ─────────────────────────────────────────────
+// Validato anche in lettura (non solo in scrittura, vedi Session.setPaintCell):
+// le security rules permettono a qualsiasi utente autenticato di scrivere su
+// sessions/{code}, quindi un valore malevolo potrebbe bypassare l'app e finire
+// direttamente in Firebase — qui evitiamo di interpolarlo comunque nell'SVG.
+const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
 // ─── Template ad area (cerchio/cono/linea) ───────────────────────────────────
 const TEMPLATE_LABEL     = { circle: 'Cerchio', cone: 'Cono', line: 'Linea' };
@@ -180,11 +208,14 @@ export function setReRenderCallback(fn) { _reRenderCallback = fn; }
  * Ridisegna la griglia quadrata, adattata al contenitore.
  * @param editMode boolean       — modalità modifica del master (disegno muri)
  * @param onSetWall (cellKey, value) => void   — imposta/rimuove un muro
+ * @param drawMode boolean       — modalità "disegna sulla mappa" (chiunque)
+ * @param onSetPaint (cellKey, color) => void  — imposta/rimuove il colore di una cella
  */
-export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onSetWall, template, placingShape, templateOrigin, onSetTemplateOrigin, onCommitTemplate) {
+export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onSetWall, template, placingShape, templateOrigin, onSetTemplateOrigin, onCommitTemplate, paint, drawMode, drawColor, onSetPaint) {
   const pos   = gridPos    || {};
   const comb  = combatants || {};
   const wall  = walls      || {};
+  const cellPaint = paint  || {};
   const cols  = Math.max(1, gridConfig?.cols || 20);
   const rows  = Math.max(1, gridConfig?.rows || 20);
 
@@ -257,6 +288,11 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
       }
       if (templateCells.has(key)) cls += ' sq-template';
       inner += `<rect class="${cls}" x="${x}" y="${y}" width="${CELL}" height="${CELL}" data-c="${col}" data-r="${row}"/>`;
+
+      const paintColor = cellPaint[key];
+      if (paintColor && HEX_COLOR_RE.test(paintColor)) {
+        inner += `<rect x="${x}" y="${y}" width="${CELL}" height="${CELL}" fill="${paintColor}" fill-opacity=".45" pointer-events="none"/>`;
+      }
     }
   }
 
@@ -346,11 +382,16 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   container.innerHTML =
     `<svg class="sq-svg" viewBox="${_panX.toFixed(0)} ${_panY.toFixed(0)} ${zVbW} ${zVbH}" preserveAspectRatio="xMidYMid meet" width="100%" height="100%">${defs ? `<defs>${defs}</defs>` : ''}${inner}</svg>`;
   container.classList.toggle('grid-edit-active', !!editMode);
+  container.classList.toggle('grid-draw-active', !!drawMode);
 
   // Hint contestuale nella toolbar
   const hintEl = document.getElementById('grid-hint');
   if (hintEl) {
-    if (placingShape && !templateOrigin) {
+    if (drawMode) {
+      hintEl.textContent = drawColor
+        ? '🎨 Disegna: trascina per colorare le caselle'
+        : '🎨 Disegna: trascina per cancellare il colore (gomma attiva)';
+    } else if (placingShape && !templateOrigin) {
       hintEl.textContent = `${TEMPLATE_LABEL[placingShape]}: tocca la cella di origine`;
     } else if (placingShape && templateOrigin) {
       hintEl.textContent = `${TEMPLATE_LABEL[placingShape]}: muovi per orientare, tocca per confermare`;
@@ -372,9 +413,9 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     }
   }
 
-  // Aggiorna il contesto usato dal disegno muri con drag e assicura il binding.
-  _ctx = { cols, rows, wall, occCell, isMaster, editMode: !!editMode, onSetWall };
-  _bindWallPaint(container);
+  // Aggiorna il contesto usato dal disegno (muri/colore) con drag e assicura il binding.
+  _ctx = { cols, rows, wall, occCell, isMaster, editMode: !!editMode, onSetWall, paint: cellPaint, drawMode: !!drawMode, drawColor: drawColor ?? null, onSetPaint };
+  _bindCellPaint(container);
 
   const svg = container.querySelector('svg');
 
@@ -396,7 +437,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   let ghost = null;
   const removeGhost = () => { ghost?.remove(); ghost = null; };
   function updateGhost(c, r) {
-    const canMoveSel = selectedId && !((editMode && isMaster)) && (isMaster || myOwnedIds.has(selectedId));
+    const canMoveSel = selectedId && !((editMode && isMaster)) && !drawMode && (isMaster || myOwnedIds.has(selectedId));
     if (!canMoveSel || occCell[`${c}_${r}`]) { removeGhost(); return; }   // sopra un token il click seleziona, niente preview
     const ac = c - selOff;
     const ar = r - selOff;
@@ -491,8 +532,8 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
       return;
     }
 
-    // Modalità modifica (master): i muri si disegnano con mousedown/drag (vedi _bindWallPaint)
-    if (editMode && isMaster) return;
+    // Modalità modifica (master) o disegno: si dipinge con mousedown/drag (vedi _bindCellPaint)
+    if ((editMode && isMaster) || drawMode) return;
 
     if (occupantId) {
       // Click su token → seleziona/deseleziona
@@ -607,7 +648,7 @@ export function initGridControls(onGridReset) {
   container.addEventListener('pointerdown', (e) => {
     if (e.button !== 0 && e.pointerType === 'mouse') return;
     if (_zoom <= 1) return;
-    if (_ctx?.editMode && _ctx?.isMaster) return;
+    if ((_ctx?.editMode && _ctx?.isMaster) || _ctx?.drawMode) return;
     if (_panStart) return;   // un solo puntatore alla volta
     _panStart = { id: e.pointerId, x: e.clientX, y: e.clientY, px: _panX, py: _panY, moved: false };
   });

@@ -73,7 +73,11 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
       state.templatePlacingShape = null;
       state.templateOrigin       = null;
       reRender();
-    }
+    },
+    state.snapshot?.paint ?? {},
+    state.drawMode,
+    state.drawColor,
+    (cellKey, color) => state.session.setPaintCell(cellKey, color)
   );
   renderTokenBar(gridPos, combatants);
   updateTokenSizeControl(combatants);
@@ -84,7 +88,8 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
 export function toggleTemplatePlacement(shape) {
   state.templatePlacingShape = state.templatePlacingShape === shape ? null : shape;
   state.templateOrigin       = null;
-  state.gridEditMode         = false; // mutuamente esclusivo con la modifica muri
+  state.gridEditMode         = false; // mutuamente esclusivo con modifica muri e disegno
+  state.drawMode             = false;
   if (state.snapshot) {
     const sorted = state.tracker.sortedCombatants(state.snapshot.combatants);
     renderGrid(state.snapshot.grid || {}, state.snapshot.combatants || {}, state.snapshot.currentTurnId ?? null, sorted, state.snapshot.gridConfig || null, state.snapshot.walls || {});
@@ -93,6 +98,33 @@ export function toggleTemplatePlacement(shape) {
 
 export function clearTemplate() {
   state.session.clearTemplate();
+}
+
+// Attiva/disattiva la modalità "disegna sulla mappa" (chiunque). Mutuamente
+// esclusiva con modifica muri e piazzamento template.
+export function toggleDrawMode() {
+  state.drawMode = !state.drawMode;
+  if (state.drawMode) {
+    state.gridEditMode         = false;
+    state.templatePlacingShape = null;
+    state.templateOrigin       = null;
+  }
+  if (state.snapshot) {
+    const sorted = state.tracker.sortedCombatants(state.snapshot.combatants);
+    renderGrid(state.snapshot.grid || {}, state.snapshot.combatants || {}, state.snapshot.currentTurnId ?? null, sorted, state.snapshot.gridConfig || null, state.snapshot.walls || {});
+  }
+}
+
+export function setDrawColor(color) {
+  state.drawColor = color; // null = gomma
+  if (state.snapshot) {
+    const sorted = state.tracker.sortedCombatants(state.snapshot.combatants);
+    renderGrid(state.snapshot.grid || {}, state.snapshot.combatants || {}, state.snapshot.currentTurnId ?? null, sorted, state.snapshot.gridConfig || null, state.snapshot.walls || {});
+  }
+}
+
+export function clearPaint() {
+  state.session.clearPaint();
 }
 
 // Riflette la taglia del token selezionato sul controllo del master.

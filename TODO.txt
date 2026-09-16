@@ -14,6 +14,7 @@
 
 ## Fatto
 
+- FEAT: Disegno libero a colori sulla mappa — bottone 🎨 in toolbar griglia, aperto a chiunque; palette di 8 colori predefiniti + color picker per colori custom + gomma; drag-to-paint come i muri, condiviso in tempo reale; "Pulisci tutto" solo master, con conferma
 - FEAT: Tasti Riposo breve/lungo in topbar (premibili da chiunque, con conferma) — riposo breve cura tutti i PG+famigli di metà della vita massima (additivo, cap al massimo), riposo lungo li porta a piena vita
 - FEAT: Template ad area sulla griglia (cerchio/cono/linea) — piazzamento clic-clic con anteprima live, condiviso in tempo reale con tutti i giocatori, celle coperte evidenziate e combattenti coinvolti elencati
 - FEAT: Tasto ispirazione (✦) su ogni card combattente — il proprietario della card o il master lo attiva/disattiva, si illumina oro quando attivo (`combatants/{id}/inspiration`)

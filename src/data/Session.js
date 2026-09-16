@@ -173,6 +173,15 @@ export class Session {
     await set(ref(this._db, `sessions/${this.code}/walls`), null);
   }
 
+  async setPaintCell(cellKey, color) {
+    const value = (color && /^#[0-9a-fA-F]{6}$/.test(color)) ? color.toLowerCase() : null;
+    await set(ref(this._db, `sessions/${this.code}/paint/${cellKey}`), value);
+  }
+
+  async clearPaint() {
+    await set(ref(this._db, `sessions/${this.code}/paint`), null);
+  }
+
   async resetGrid() {
     await set(ref(this._db, `sessions/${this.code}/grid`), null);
     await set(ref(this._db, `sessions/${this.code}/walls`), null);

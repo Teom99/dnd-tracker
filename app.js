@@ -11,7 +11,7 @@ import * as GridUI           from './src/ui/GridUI.js';
 import { state }             from './src/utils/state.js';
 import { initCombatManagers, exitToHome, esc, closeConditionModal } from './src/views/core.js';
 import { CharacterSheet } from './src/data/CharacterSheet.js';
-import { renderGrid, toggleTemplatePlacement, clearTemplate } from './src/logic/grid.js';
+import { renderGrid, toggleTemplatePlacement, clearTemplate, toggleDrawMode, setDrawColor, clearPaint } from './src/logic/grid.js';
 import { initSheet, setupSheetListener, makeCallbacks } from './src/views/sheet.js';
 import { LevelUp }   from './src/logic/LevelUp.js';
 import { LevelUpUI } from './src/ui/LevelUpUI.js';
@@ -1066,8 +1066,8 @@ function _initGridMasterControls(isMaster) {
     const turningOff = state.gridEditMode;
     state.gridEditMode = !state.gridEditMode;
     if (turningOff) _applyGridDims();   // commit eventuali dimensioni in sospeso
-    else { state.templatePlacingShape = null; state.templateOrigin = null; } // mutuamente esclusivo col piazzamento template
-    _applyGridEditUI();
+    else { state.templatePlacingShape = null; state.templateOrigin = null; state.drawMode = false; } // mutuamente esclusivo col piazzamento template e col disegno
+    _syncGridModeUI();
     _rerenderGridFromSnapshot();
   });
 
@@ -1116,6 +1116,14 @@ function _rerenderGridFromSnapshot() {
   renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null, sorted, data.gridConfig || null, data.walls || {});
 }
 
+// Tiene sincronizzati i tre pannelli mutuamente esclusivi della toolbar griglia
+// (modifica muri / template / disegno) ad ogni cambio di modalità.
+function _syncGridModeUI() {
+  _applyGridEditUI();
+  _applyTemplateControlsUI();
+  _applyDrawControlsUI();
+}
+
 // ─── TEMPLATE AD AREA (cerchio/cono/linea) ───────────────────────────────────
 
 function _applyTemplateControlsUI() {
@@ -1133,10 +1141,59 @@ document.getElementById('grid-template-controls')?.addEventListener('click', (e)
   const shapeBtn = e.target.closest('[data-shape]');
   if (shapeBtn) {
     toggleTemplatePlacement(shapeBtn.dataset.shape);
-    _applyTemplateControlsUI();
+    _syncGridModeUI();
     return;
   }
   if (e.target.closest('#btn-template-clear')) clearTemplate();
+});
+
+// ─── DISEGNO SULLA MAPPA (colorazione caselle) ───────────────────────────────
+
+function _applyDrawControlsUI() {
+  document.getElementById('btn-draw-toggle')?.classList.toggle('active', state.drawMode);
+  const palette = document.getElementById('grid-draw-palette');
+  if (palette) palette.style.display = state.drawMode ? 'flex' : 'none';
+
+  document.querySelectorAll('#grid-draw-palette .draw-swatch:not(.draw-eraser)').forEach(sw => {
+    sw.classList.toggle('active', state.drawColor === sw.dataset.color);
+  });
+  document.getElementById('btn-draw-eraser')?.classList.toggle('active', state.drawColor === null);
+
+  const customInput = document.getElementById('input-draw-custom');
+  if (customInput && state.drawColor && document.activeElement !== customInput) {
+    customInput.value = state.drawColor;
+  }
+
+  const clearBtn = document.getElementById('btn-paint-clear');
+  if (clearBtn) clearBtn.style.display = state.session?.isMaster ? '' : 'none';
+}
+
+document.getElementById('btn-draw-toggle')?.addEventListener('click', () => {
+  toggleDrawMode();
+  _syncGridModeUI();
+});
+
+document.getElementById('grid-draw-palette')?.addEventListener('click', (e) => {
+  const swatch = e.target.closest('.draw-swatch:not(.draw-eraser)');
+  if (swatch) {
+    setDrawColor(swatch.dataset.color);
+    _applyDrawControlsUI();
+    return;
+  }
+  if (e.target.closest('#btn-draw-eraser')) {
+    setDrawColor(null);
+    _applyDrawControlsUI();
+    return;
+  }
+  if (e.target.closest('#btn-paint-clear')) {
+    if (!confirm('Cancellare tutto il disegno sulla mappa?')) return;
+    clearPaint();
+  }
+});
+
+document.getElementById('input-draw-custom')?.addEventListener('input', (e) => {
+  setDrawColor(e.target.value);
+  _applyDrawControlsUI();
 });
 
 function _renderCombatLists() {
@@ -1212,7 +1269,7 @@ function _startListening() {
     }
 
     renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null, sorted, data.gridConfig || null, data.walls || {});
-    _applyTemplateControlsUI();
+    _syncGridModeUI();
 
     if (state.session.isMaster) {
       const cfg = data.gridConfig || { cols: 20, rows: 20 };

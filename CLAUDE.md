@@ -55,6 +55,7 @@ sessions/{code}/
                     size (tiny|small|medium|large|huge|gargantuan)
   grid/{combatantId}/  col, row            (angolo top-left del footprint)
   walls/{col_row}: true
+  paint/{col_row}: "#rrggbb"               (colore libero sulla mappa, disegnabile da chiunque)
   template/  shape (circle|cone|line), originCol, originRow, size (metri), angleDeg, ownerUid
              (un solo template attivo per sessione; null se nessuno)
   logs/{logId}/
@@ -119,6 +120,7 @@ userSessions/{uid}/{code}/
 - Flash colorato sulla card a ogni variazione di `hpCurrent`: rosso neon per danno, verde neon per cura, ~2.5s (`dmg-flash`/`heal-pulse` in `styles/base.css`, applicate da `UI.renderCombatantList` tramite una mappa `_prevHp`/`_hpFlash` che confronta l'HP col render precedente — sopravvive a rebuild concorrenti)
 - Template ad area sulla griglia (cerchio/cono/linea): piazzamento clic-clic (origine poi conferma con anteprima live), condiviso in tempo reale (`sessions/{code}/template`), celle coperte evidenziate e combattenti coinvolti elencati nell'hint della toolbar
 - Riposo breve/lungo: bottoni in topbar visibili a tutti (non master-only), con conferma; riposo breve cura PG+famigli di metà `hpMax` (additivo, cap al massimo), riposo lungo li porta a piena vita (`Combatant.restParty`)
+- Disegno libero sulla mappa: bottone 🎨 in toolbar griglia, aperto a chiunque; palette di 8 colori predefiniti + color picker custom + gomma; drag-to-paint come i muri (stesso binder generalizzato `_bindCellPaint` in `GridUI.js`); "Pulisci tutto" master-only con conferma; mutuamente esclusivo con modifica muri e piazzamento template (`state.drawMode`)
 
 ### Bug noti non ancora risolti
 Nessuno al momento.
@@ -234,25 +236,27 @@ Nessuno al momento.
 
 ### Griglia di battaglia
 
-**Cosa fa:** Griglia quadrata SVG adattiva (viewBox + preserveAspectRatio). Zoom +/−/reset con pulsanti flottanti. Pan con drag quando zoom > 1. Il master disegna/rimuove muri cliccando. Selezione token mostra raggio di movimento. Token multi-cella per taglia. Ghost preview al passaggio mouse. Template ad area (cerchio/cono/linea) per incantesimi, condivisi in tempo reale con evidenziazione celle e combattenti coinvolti.
+**Cosa fa:** Griglia quadrata SVG adattiva (viewBox + preserveAspectRatio). Zoom +/−/reset con pulsanti flottanti. Pan con drag quando zoom > 1. Il master disegna/rimuove muri cliccando. Selezione token mostra raggio di movimento. Token multi-cella per taglia. Ghost preview al passaggio mouse. Template ad area (cerchio/cono/linea) per incantesimi, condivisi in tempo reale con evidenziazione celle e combattenti coinvolti. Disegno libero a colori sulla mappa (chiunque), con palette predefinita + color picker, condiviso in tempo reale.
 
-**File:** `src/logic/grid.js` (orchestrazione render), `src/ui/GridUI.js` (SVG, token, muri, movimento, template)
+**File:** `src/logic/grid.js` (orchestrazione render), `src/ui/GridUI.js` (SVG, token, muri, movimento, template, disegno)
 
 **Firebase paths:**
 - `sessions/{code}/gridConfig/` — cols, rows (default 20×20)
 - `sessions/{code}/grid/{combatantId}/` — col, row (angolo top-left del footprint)
 - `sessions/{code}/walls/{col_row}` — true se muro presente
 - `sessions/{code}/template/` — shape, originCol, originRow, size (metri), angleDeg, ownerUid (un solo template alla volta)
+- `sessions/{code}/paint/{col_row}` — colore hex `"#rrggbb"` se la cella è dipinta
 
 **Invarianti:**
 - 1 casella = 1 metro; diagonali alternate 5-10-5 (variante DMG: `max + floor(min/2)`)
 - Footprint token: Tiny/Small/Medium=1×1, Large=2×2, Huge=3×3, Gargantuan=4×4
 - La casella cliccata è ~il centro del footprint per token grandi (offset `floor((n-1)/2)`)
 - Movimento valida bordi, muri e sovrapposizioni sull'intero footprint prima di scrivere
-- Reset (solo master) svuota `grid/` e `walls/` — token e muri cancellati
-- Piazzamento template: clic-clic (origine poi conferma), non drag; mutuamente esclusivo con la modalità modifica muri (`state.gridEditMode`)
+- Reset (solo master) svuota `grid/` e `walls/` — token e muri cancellati (non tocca `template/` né `paint/`, che hanno i loro controlli dedicati)
+- Piazzamento template: clic-clic (origine poi conferma), non drag; mutuamente esclusivo con la modalità modifica muri e col disegno (`state.gridEditMode`, `state.drawMode`)
 - Geometria template: cerchio = raggio; cono = 90° totali (±45° dall'angolo); linea = larghezza fissa 1.5m — celle incluse per centro-cella, non footprint esatto
 - Solo chi l'ha piazzato o il master possono cancellare il template attivo; piazzarne uno nuovo sovrascrive il precedente
+- Disegno sulla mappa: chiunque (non master-only) colora con drag-to-paint, mutuamente esclusivo con modifica muri e template (`state.drawMode`); nessun owner per cella — "Pulisci tutto" (master-only) è l'unico modo per una cancellazione di massa; il colore letto da Firebase è validato con un regex hex prima di finire nell'SVG (`HEX_COLOR_RE` in `GridUI.js`), perché le security rules permettono a qualunque utente autenticato di scrivere direttamente su `sessions/{code}`
 
 ---
 
