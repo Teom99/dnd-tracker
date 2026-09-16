@@ -760,11 +760,20 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   to   { transform: translateX(120%) scale(0.92); opacity: 0; }
 }
 
-.notification {
+.notification-stack {
   position: fixed;
   top: 20px;
   right: 20px;
   z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  pointer-events: none;
+}
+
+.notification {
+  pointer-events: auto;
   font-family: 'Cinzel', serif;
   font-size: 0.82rem;
   max-width: 280px;

@@ -38,32 +38,25 @@ export function showError(message, targetId = 'error-message') {
   setTimeout(() => el.classList.add('hidden'), 4000);
 }
 
+// Container fisso che impila le notifiche verticalmente (flex): creato una
+// sola volta, ogni notifica vi si accoda senza bisogno di calcolare offset.
+let _notificationStack = null;
+function _getNotificationStack() {
+  if (!_notificationStack) {
+    _notificationStack = document.createElement('div');
+    _notificationStack.className = 'notification-stack';
+    document.body.appendChild(_notificationStack);
+  }
+  return _notificationStack;
+}
+
 export function showNotification(message, type = 'info') {
-  // Crea un elemento di notifica temporaneo
+  const stack = _getNotificationStack();
   const notification = document.createElement('div');
   notification.className = `notification notification-${type}`;
   notification.textContent = message;
-  
-  // Stili inline per posizionamento
-  notification.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: ${type === 'damage' ? '#8b2020' : type === 'heal' ? '#2d6b3a' : '#4a4a4a'};
-    color: white;
-    padding: 12px 20px;
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    z-index: 1000;
-    font-family: 'Cinzel', serif;
-    font-size: 14px;
-    max-width: 300px;
-    word-wrap: break-word;
-    animation: slideIn 0.3s ease-out;
-  `;
-  
-  document.body.appendChild(notification);
-  
+  stack.appendChild(notification);
+
   // Rimuovi dopo 3 secondi
   setTimeout(() => {
     notification.style.animation = 'slideOut 0.3s ease-in';

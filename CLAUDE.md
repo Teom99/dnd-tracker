@@ -103,7 +103,7 @@ userSessions/{uid}/{code}/
 - `nextTurn` atomico con `runTransaction` (no race condition)
 - `updateHp` atomico su nodo intero combattente (legge `hpMax` e aggiorna `hpCurrent` in un solo transaction)
 - I player KO restano nel turno per death saves; creature KO saltate
-- Notifiche popup per danni/cure ricevuti dal proprio personaggio
+- Notifiche popup per danni/cure ricevuti dal proprio personaggio; popup di riepilogo broadcast (attore, bersaglio, ammontare) visibile a tutti ad ogni danno/cura diretta a un bersaglio; entrambe impilate in un container invece di sovrapporsi
 - Log eventi condivisi e realtime su Firebase (`sessions/{code}/logs`)
 - Log azioni attaccante->bersaglio (es. "A ha colpito B infliggendogli N danni")
 - Cancellazione log condivisa (`session.clearLogs`)
@@ -120,7 +120,7 @@ userSessions/{uid}/{code}/
 - Flash colorato sulla card a ogni variazione di `hpCurrent`: rosso neon per danno, verde neon per cura, ~2.5s (`dmg-flash`/`heal-pulse` in `styles/base.css`, applicate da `UI.renderCombatantList` tramite una mappa `_prevHp`/`_hpFlash` che confronta l'HP col render precedente — sopravvive a rebuild concorrenti)
 - Template ad area sulla griglia (cerchio/cono/linea): piazzamento clic-clic (origine poi conferma con anteprima live), condiviso in tempo reale (`sessions/{code}/template`), celle coperte evidenziate e combattenti coinvolti elencati nell'hint della toolbar
 - Riposo breve/lungo: bottoni in topbar visibili a tutti (non master-only), con conferma; riposo breve cura PG+famigli di metà `hpMax` (additivo, cap al massimo), riposo lungo li porta a piena vita (`Combatant.restParty`)
-- Disegno libero sulla mappa: bottone 🎨 in toolbar griglia, aperto a chiunque; palette di 8 colori predefiniti + color picker custom + gomma; drag-to-paint come i muri (stesso binder generalizzato `_bindCellPaint` in `GridUI.js`); "Pulisci tutto" master-only con conferma; mutuamente esclusivo con modifica muri e piazzamento template (`state.drawMode`)
+- Disegno libero sulla mappa: bottone 🎨 in toolbar griglia, aperto a chiunque; palette di 8 colori predefiniti + color picker custom + gomma; drag-to-paint come i muri (stesso binder generalizzato `_bindCellPaint` in `GridUI.js`); "Pulisci tutto" aperto a chiunque con conferma; mutuamente esclusivo con modifica muri e piazzamento template (`state.drawMode`)
 
 ### Bug noti non ancora risolti
 Nessuno al momento.
@@ -256,7 +256,7 @@ Nessuno al momento.
 - Piazzamento template: clic-clic (origine poi conferma), non drag; mutuamente esclusivo con la modalità modifica muri e col disegno (`state.gridEditMode`, `state.drawMode`)
 - Geometria template: cerchio = raggio; cono = 90° totali (±45° dall'angolo); linea = larghezza fissa 1.5m — celle incluse per centro-cella, non footprint esatto
 - Solo chi l'ha piazzato o il master possono cancellare il template attivo; piazzarne uno nuovo sovrascrive il precedente
-- Disegno sulla mappa: chiunque (non master-only) colora con drag-to-paint, mutuamente esclusivo con modifica muri e template (`state.drawMode`); nessun owner per cella — "Pulisci tutto" (master-only) è l'unico modo per una cancellazione di massa; il colore letto da Firebase è validato con un regex hex prima di finire nell'SVG (`HEX_COLOR_RE` in `GridUI.js`), perché le security rules permettono a qualunque utente autenticato di scrivere direttamente su `sessions/{code}`
+- Disegno sulla mappa: chiunque (non master-only) colora con drag-to-paint, mutuamente esclusivo con modifica muri e template (`state.drawMode`); nessun owner per cella — "Pulisci tutto" (chiunque, con conferma) è l'unico modo per una cancellazione di massa; il colore letto da Firebase è validato con un regex hex prima di finire nell'SVG (`HEX_COLOR_RE` in `GridUI.js`), perché le security rules permettono a qualunque utente autenticato di scrivere direttamente su `sessions/{code}`
 
 ---
 
@@ -305,6 +305,22 @@ Nessuno al momento.
 - Scrivere log solo nelle azioni utente (mai nel listener Firebase) per evitare duplicati multi-client
 - Nel listener fare solo `UI.renderLogs(snapshot)`, mai `addLogEvent`
 - `clientTimestamp` è usato per ordinamento locale quando il server timestamp non è ancora disponibile
+
+---
+
+### Notifiche popup
+
+**Cosa fa:** Due tipi di popup temporanei in alto a destra (3s, poi svaniscono), impilati verticalmente se più di uno è attivo insieme. (1) Notifica personale: avvisa il proprio giocatore quando il proprio PG subisce danno o cura (calcolata confrontando l'HP col render precedente). (2) Riepilogo broadcast: ogni volta che un giocatore infligge danno o cura a un bersaglio, **tutti** i presenti in sessione vedono un popup col riepilogo (attore, bersaglio, ammontare) — nessuna scrittura Firebase aggiuntiva, deriva dalle voci di `sessions/{code}/logs` già trasmesse a tutti.
+
+**File:** `src/ui/UI.js` (`showNotification`), `app.js` (diff delle voci di log nel listener di sessione)
+
+**Firebase paths:** nessuno dedicato — legge `sessions/{code}/logs/{logId}/` (stesso nodo di "Log eventi"), nessuna scrittura propria.
+
+**Invarianti:**
+- Il riepilogo broadcast scatta solo per voci di log con `type` `damage`/`heal` **e** `actor`/`target` entrambi valorizzati — esclude automaticamente eventi di gruppo senza bersaglio specifico (es. riposo breve/lungo)
+- `state.seenLogIds` traccia le voci già viste da questo client per evitare una raffica di popup al primo caricamento di una sessione con storico; resettato a `null` ad ogni join/rejoin
+- Nessuna scrittura Firebase nel listener — il popup è puramente una reazione locale allo snapshot già ricevuto (rispetta l'invariante di "Log eventi" sopra)
+- `showNotification` accoda ogni notifica in un container fisso (`.notification-stack`, flex column) invece di posizionare ogni elemento singolarmente — così notifiche multiple e ravvicinate si impilano senza sovrapporsi
 
 ---
 

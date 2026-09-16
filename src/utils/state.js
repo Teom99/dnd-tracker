@@ -12,6 +12,7 @@ export const state = {
   sheetData:              null,
   acMap:                  {},
   lastKnownHp:            null,
+  seenLogIds:             null, // Set<string> | null — null finché non è stato processato il primo snapshot di logs
   library:                null,
   selectedJoinCharId:     null,
   selectedCreatureCharId: null,

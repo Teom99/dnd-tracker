@@ -187,6 +187,7 @@ document.getElementById('form-join').addEventListener('submit', async (e) => {
     localStorage.setItem('dnd_combatant_id', state.myCombatantId);
     await saveUserSession(state.myUid, code, state.myCombatantId, savedCharName, 'player', charId);
     state.lastKnownHp = null;
+    state.seenLogIds  = null;
     _enterCombatView(code, false);
   } catch (err) {
     UI.showError(err.message);
@@ -1163,9 +1164,6 @@ function _applyDrawControlsUI() {
   if (customInput && state.drawColor && document.activeElement !== customInput) {
     customInput.value = state.drawColor;
   }
-
-  const clearBtn = document.getElementById('btn-paint-clear');
-  if (clearBtn) clearBtn.style.display = state.session?.isMaster ? '' : 'none';
 }
 
 document.getElementById('btn-draw-toggle')?.addEventListener('click', () => {
@@ -1224,6 +1222,23 @@ function _startListening() {
     state.snapshot = data;
 
     UI.renderLogs(data.logs || {});
+
+    // Popup di riepilogo attacco/cura, visibile a tutti: diff delle voci di
+    // log non ancora viste da questo client (nessuna scrittura Firebase qui).
+    const logs = data.logs || {};
+    if (state.seenLogIds === null) {
+      // Primo snapshot visto da questo client: registra lo storico senza notificare
+      state.seenLogIds = new Set(Object.keys(logs));
+    } else {
+      for (const [logId, entry] of Object.entries(logs)) {
+        if (state.seenLogIds.has(logId)) continue;
+        state.seenLogIds.add(logId);
+        if ((entry.type === 'damage' || entry.type === 'heal') && entry.actor && entry.target) {
+          const icon = entry.type === 'damage' ? '🗡 ' : '✚ ';
+          UI.showNotification(icon + entry.message, entry.type);
+        }
+      }
+    }
 
     const combatants = data.combatants || {};
     if (!state.session.isMaster && state.myCombatantId && !combatants[state.myCombatantId]) {
@@ -1311,6 +1326,7 @@ async function _rejoinSession(code, savedCombatantId, role, savedCharId = null) 
     state.myUid         = uid;
     state.myCombatantId = savedCombatantId || null;
     state.lastKnownHp   = null;
+    state.seenLogIds    = null;
     localStorage.setItem('dnd_session_code', code);
     if (savedCombatantId) localStorage.setItem('dnd_combatant_id', savedCombatantId);
     initCombatManagers(code);
