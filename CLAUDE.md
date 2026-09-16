@@ -118,6 +118,7 @@ userSessions/{uid}/{code}/
 - Tasto ispirazione (✦) su ogni card combattente: `combatants/{id}/inspiration`, visibile a tutti (si illumina oro via `.insp-btn.active` in `index.html`), ma cliccabile solo da proprietario/master (`disabled` altrimenti; `Combatant.setInspiration`)
 - Flash colorato sulla card a ogni variazione di `hpCurrent`: rosso neon per danno, verde neon per cura, ~2.5s (`dmg-flash`/`heal-pulse` in `styles/base.css`, applicate da `UI.renderCombatantList` tramite una mappa `_prevHp`/`_hpFlash` che confronta l'HP col render precedente — sopravvive a rebuild concorrenti)
 - Template ad area sulla griglia (cerchio/cono/linea): piazzamento clic-clic (origine poi conferma con anteprima live), condiviso in tempo reale (`sessions/{code}/template`), celle coperte evidenziate e combattenti coinvolti elencati nell'hint della toolbar
+- Riposo breve/lungo: bottoni in topbar visibili a tutti (non master-only), con conferma; riposo breve cura PG+famigli di metà `hpMax` (additivo, cap al massimo), riposo lungo li porta a piena vita (`Combatant.restParty`)
 
 ### Bug noti non ancora risolti
 Nessuno al momento.
@@ -195,7 +196,7 @@ Nessuno al momento.
 
 ### Combat tracker
 
-**Cosa fa:** Ordina i combattenti per iniziativa, gestisce il turno corrente, permette danni/cure (atomici), toggle condizioni, azioni dichiarate, death saves.
+**Cosa fa:** Ordina i combattenti per iniziativa, gestisce il turno corrente, permette danni/cure (atomici), toggle condizioni, azioni dichiarate, death saves. Riposo breve/lungo curano l'intero party (chiunque può premerli).
 
 **File:** `src/logic/CombatTracker.js` (ordinamento, nextTurn), `src/data/Combatant.js` (CRUD Firebase), `src/ui/UI.js` (render lista), `src/views/core.js` (orchestrazione)
 
@@ -208,6 +209,7 @@ Nessuno al momento.
 - Player KO restano nel turno per death saves; creature KO vengono saltate
 - Visibilità HP: master vede tutto · player vede tutti i PG · creature mostrano solo hint opzionale
 - Death saves inline: 3 successi = revive a 1 HP (scritto via `Combatant.updateHp`)
+- `Combatant.restParty(kind)`: `'short'` cura PG+famigli di metà `hpMax` (cap al massimo, additivo); `'long'` li porta a piena vita; scrittura multi-path in un'unica `update()`, non tocca creature/NPC né `deathSaves` (coerente con le cure normali)
 
 ---
 

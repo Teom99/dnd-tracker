@@ -1,5 +1,5 @@
 import {
-  ref, set, get, push, remove, runTransaction, query, orderByChild, equalTo
+  ref, set, get, push, remove, update, runTransaction, query, orderByChild, equalTo
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 
 export class Combatant {
@@ -130,6 +130,23 @@ export class Combatant {
       ref(this._db, `sessions/${this._code}/combatants/${id}/hpCurrent`),
       (current) => Math.min(current ?? 0, hp)
     );
+  }
+
+  // Riposo breve: cura tutti i PG/famigli di metà del loro hpMax (cap all'hpMax).
+  // Riposo lungo: li porta a piena vita. Scrittura multi-path in un'unica chiamata.
+  async restParty(kind) {
+    const snap = await get(this._ref());
+    const all  = snap.val() || {};
+    const updates = {};
+    for (const [id, c] of Object.entries(all)) {
+      if (c.type !== 'player' && c.type !== 'pet') continue;
+      const hpMax = c.hpMax ?? 0;
+      if (hpMax <= 0) continue;
+      const current = c.hpCurrent ?? hpMax;
+      const newHp = kind === 'long' ? hpMax : Math.min(hpMax, current + Math.floor(hpMax / 2));
+      if (newHp !== current) updates[`${id}/hpCurrent`] = newHp;
+    }
+    if (Object.keys(updates).length > 0) await update(this._ref(), updates);
   }
 
   async findByOwner(uid) {

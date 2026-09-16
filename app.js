@@ -597,6 +597,18 @@ document.getElementById('btn-reset').addEventListener('click', async () => {
   await state.session.addLogEvent('Incontro resettato - tutti i combattenti rimossi', 'turn');
 });
 
+document.getElementById('btn-rest-short').addEventListener('click', async () => {
+  if (!confirm('Riposo breve: tutti i giocatori (e famigli) recuperano metà della loro vita massima. Procedere?')) return;
+  await state.combatantManager.restParty('short');
+  await state.session.addLogEvent('🌙 Riposo breve — il gruppo recupera metà della vita massima', 'heal');
+});
+
+document.getElementById('btn-rest-long').addEventListener('click', async () => {
+  if (!confirm('Riposo lungo: tutti i giocatori (e famigli) recuperano tutta la vita. Procedere?')) return;
+  await state.combatantManager.restParty('long');
+  await state.session.addLogEvent('☀️ Riposo lungo — il gruppo recupera tutta la vita', 'heal');
+});
+
 document.getElementById('btn-copy-code').addEventListener('click', () => {
   navigator.clipboard.writeText(state.session.code).then(() => {
     const btn = document.getElementById('btn-copy-code');
