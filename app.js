@@ -129,6 +129,56 @@ document.getElementById('btn-create-session').addEventListener('click', async ()
 
 // ─── HOME: Entra nella sessione (giocatore) ───────────────────────────────────
 
+// Logica condivisa di ingresso in sessione: usata sia dal form "Entra nella
+// sessione" (con eventuale personaggio scelto dal picker) sia dal tasto
+// "Entra" diretto sotto ogni personaggio in libreria (dnd:join-with-character).
+async function _joinSessionAsCharacter(code, name, charId, initiative = '0') {
+  state.myUid = await state.session.join(code);
+  initCombatManagers(code);
+
+  if (!charId) {
+    if (!state.library && auth.currentUser) state.library = new CharacterLibrary(db, auth.currentUser.uid);
+    if (state.library) charId = await state.library.create(name, 'player');
+  }
+
+  initSheet(state.myUid, charId);
+
+  const existing = await state.combatantManager.findByOwner(state.myUid);
+  let savedCharName = name;
+  if (existing) {
+    const existingName = existing.name || 'il tuo personaggio';
+    const rejoin = confirm(
+      `Sei già presente in questa sessione con il personaggio "${existingName}".\n\n` +
+      `OK → Rientra con "${existingName}"\n` +
+      `Annulla → Rimuovi il vecchio e crea "${name}"`
+    );
+    if (rejoin) {
+      state.myCombatantId = existing.id;
+      savedCharName = existing.name || name;
+      if (!existing.name) await state.combatantManager.setName(existing.id, name);
+      const existingCharId = existing.charId ?? charId;
+      if (existingCharId !== charId) {
+        state.myCurrentCharId = existingCharId;
+        state.sheet = new CharacterSheet(db, state.myUid, existingCharId);
+        setupSheetListener();
+      }
+      charId = existingCharId;
+    } else {
+      await state.combatantManager.remove(existing.id);
+      state.myCombatantId = await state.combatantManager.add(name, initiative, 1, 'player', state.myUid, charId);
+    }
+  } else {
+    state.myCombatantId = await state.combatantManager.add(name, initiative, 1, 'player', state.myUid, charId);
+  }
+
+  state.selectedJoinCharId = null;
+  localStorage.setItem('dnd_combatant_id', state.myCombatantId);
+  await saveUserSession(state.myUid, code, state.myCombatantId, savedCharName, 'player', charId);
+  state.lastKnownHp = null;
+  state.seenLogIds  = null;
+  _enterCombatView(code, false);
+}
+
 document.getElementById('form-join').addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -146,55 +196,23 @@ document.getElementById('form-join').addEventListener('submit', async (e) => {
   submitBtn.textContent = 'Caricamento...';
 
   try {
-    state.myUid = await state.session.join(code);
-    initCombatManagers(code);
-
-    let charId = state.selectedJoinCharId ?? null;
-    if (!charId) {
-      if (!state.library && auth.currentUser) state.library = new CharacterLibrary(db, auth.currentUser.uid);
-      if (state.library) charId = await state.library.create(name, 'player');
-    }
-
-    initSheet(state.myUid, charId);
-
-    const existing = await state.combatantManager.findByOwner(state.myUid);
-    let savedCharName = name;
-    if (existing) {
-      const existingName = existing.name || 'il tuo personaggio';
-      const rejoin = confirm(
-        `Sei già presente in questa sessione con il personaggio "${existingName}".\n\n` +
-        `OK → Rientra con "${existingName}"\n` +
-        `Annulla → Rimuovi il vecchio e crea "${name}"`
-      );
-      if (rejoin) {
-        state.myCombatantId = existing.id;
-        savedCharName = existing.name || name;
-        if (!existing.name) await state.combatantManager.setName(existing.id, name);
-        const existingCharId = existing.charId ?? charId;
-        if (existingCharId !== charId) {
-          state.myCurrentCharId = existingCharId;
-          state.sheet = new CharacterSheet(db, state.myUid, existingCharId);
-          setupSheetListener();
-        }
-        charId = existingCharId;
-      } else {
-        await state.combatantManager.remove(existing.id);
-        state.myCombatantId = await state.combatantManager.add(name, initiative, 1, 'player', state.myUid, charId);
-      }
-    } else {
-      state.myCombatantId = await state.combatantManager.add(name, initiative, 1, 'player', state.myUid, charId);
-    }
-
-    state.selectedJoinCharId = null;
-    localStorage.setItem('dnd_combatant_id', state.myCombatantId);
-    await saveUserSession(state.myUid, code, state.myCombatantId, savedCharName, 'player', charId);
-    state.lastKnownHp = null;
-    state.seenLogIds  = null;
-    _enterCombatView(code, false);
+    await _joinSessionAsCharacter(code, name, state.selectedJoinCharId ?? null, initiative);
   } catch (err) {
     UI.showError(err.message);
     submitBtn.disabled = false;
     submitBtn.textContent = 'Entra nella Sessione';
+  }
+});
+
+// Tasto "Entra" diretto sotto ogni personaggio della libreria (bypassa il
+// form/picker principale — usa il charId della card, nessuna ambiguità).
+document.addEventListener('dnd:join-with-character', async (e) => {
+  const { code, charId, name } = e.detail;
+  if (!code || !charId) return;
+  try {
+    await _joinSessionAsCharacter(code, name, charId);
+  } catch (err) {
+    UI.showError(err.message);
   }
 });
 

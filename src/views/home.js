@@ -69,6 +69,7 @@ export async function loadCharacterLibrary() {
       const avatarHtml = avatarSrc
         ? `<img src="${esc(avatarSrc)}" class="lib-avatar" alt="">`
         : `<span class="lib-avatar lib-avatar--icon">${c.type === 'player' ? '⚔' : '👹'}</span>`;
+      const canJoin = c.type !== 'creature';
       return `
       <div class="char-lib-entry">
         ${avatarHtml}
@@ -80,6 +81,11 @@ export async function loadCharacterLibrary() {
           <button class="btn-secondary btn-sm" data-action="open-sheet" data-id="${id}">📜 Apri</button>
           <button class="btn-remove-sm" data-action="delete-char" data-id="${id}" aria-label="Elimina">×</button>
         </div>
+        ${canJoin ? `
+        <form class="char-lib-join" data-id="${id}" data-name="${esc(c.name)}">
+          <input type="text" class="input input--sm" placeholder="Codice sessione" maxlength="8">
+          <button type="submit" class="btn-secondary btn-sm">Entra</button>
+        </form>` : ''}
       </div>`;
     }).join('');
   }
@@ -91,6 +97,18 @@ export async function loadCharacterLibrary() {
     if (openBtn) { openLibrarySheet(openBtn.dataset.id); return; }
     const delBtn = e.target.closest('[data-action="delete-char"]');
     if (delBtn) { deleteLibraryChar(delBtn.dataset.id); }
+  };
+
+  list.onsubmit = (e) => {
+    const form = e.target.closest('.char-lib-join');
+    if (!form) return;
+    e.preventDefault();
+    const input = form.querySelector('input');
+    const code  = input.value.trim().toUpperCase();
+    if (!code) { input.focus(); return; }
+    document.dispatchEvent(new CustomEvent('dnd:join-with-character', {
+      detail: { code, charId: form.dataset.id, name: form.dataset.name }
+    }));
   };
 }
 
