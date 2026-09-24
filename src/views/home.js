@@ -103,9 +103,14 @@ export async function loadCharacterLibrary() {
     const form = e.target.closest('.char-lib-join');
     if (!form) return;
     e.preventDefault();
-    const input = form.querySelector('input');
-    const code  = input.value.trim().toUpperCase();
+    const input  = form.querySelector('input');
+    const button = form.querySelector('button');
+    const code   = input.value.trim().toUpperCase();
     if (!code) { input.focus(); return; }
+    // Disabilita subito per evitare un doppio click che scateni due ingressi
+    // concorrenti (in caso di errore, loadCharacterLibrary() li riabilita).
+    input.disabled = true;
+    button.disabled = true;
     document.dispatchEvent(new CustomEvent('dnd:join-with-character', {
       detail: { code, charId: form.dataset.id, name: form.dataset.name }
     }));

@@ -10,9 +10,8 @@ import * as UI               from './src/ui/UI.js';
 import * as GridUI           from './src/ui/GridUI.js';
 import { state }             from './src/utils/state.js';
 import { initCombatManagers, exitToHome, esc, closeConditionModal } from './src/views/core.js';
-import { CharacterSheet } from './src/data/CharacterSheet.js';
 import { renderGrid, toggleTemplatePlacement, clearTemplate, toggleDrawMode, setDrawColor, clearPaint } from './src/logic/grid.js';
-import { initSheet, setupSheetListener, makeCallbacks } from './src/views/sheet.js';
+import { initSheet, makeCallbacks } from './src/views/sheet.js';
 import { LevelUp }   from './src/logic/LevelUp.js';
 import { LevelUpUI } from './src/ui/LevelUpUI.js';
 import { Ship }    from './src/data/Ship.js';
@@ -132,7 +131,26 @@ document.getElementById('btn-create-session').addEventListener('click', async ()
 // Logica condivisa di ingresso in sessione: usata sia dal form "Entra nella
 // sessione" (con eventuale personaggio scelto dal picker) sia dal tasto
 // "Entra" diretto sotto ogni personaggio in libreria (dnd:join-with-character).
+//
+// _joinInProgress blocca chiamate concorrenti (es. doppio click su un tasto
+// senza feedback immediato): due chiamate sovrapposte possono entrambe trovare
+// lo stesso combattente esistente, aprire ciascuna il proprio confirm() (che
+// blocca l'intero thread JS, quindi i due dialoghi si accodano invece di
+// escludersi a vicenda), e finire per scrivere risultati incoerenti tra loro
+// sullo stesso record — causa concreta di un personaggio corrotto in sessione.
+let _joinInProgress = false;
+
 async function _joinSessionAsCharacter(code, name, charId, initiative = '0') {
+  if (_joinInProgress) return;
+  _joinInProgress = true;
+  try {
+    await _doJoinSessionAsCharacter(code, name, charId, initiative);
+  } finally {
+    _joinInProgress = false;
+  }
+}
+
+async function _doJoinSessionAsCharacter(code, name, charId, initiative = '0') {
   state.myUid = await state.session.join(code);
   initCombatManagers(code);
 
@@ -140,8 +158,6 @@ async function _joinSessionAsCharacter(code, name, charId, initiative = '0') {
     if (!state.library && auth.currentUser) state.library = new CharacterLibrary(db, auth.currentUser.uid);
     if (state.library) charId = await state.library.create(name, 'player');
   }
-
-  initSheet(state.myUid, charId);
 
   const existing = await state.combatantManager.findByOwner(state.myUid);
   let savedCharName = name;
@@ -156,13 +172,7 @@ async function _joinSessionAsCharacter(code, name, charId, initiative = '0') {
       state.myCombatantId = existing.id;
       savedCharName = existing.name || name;
       if (!existing.name) await state.combatantManager.setName(existing.id, name);
-      const existingCharId = existing.charId ?? charId;
-      if (existingCharId !== charId) {
-        state.myCurrentCharId = existingCharId;
-        state.sheet = new CharacterSheet(db, state.myUid, existingCharId);
-        setupSheetListener();
-      }
-      charId = existingCharId;
+      charId = existing.charId ?? charId;
     } else {
       await state.combatantManager.remove(existing.id);
       state.myCombatantId = await state.combatantManager.add(name, initiative, 1, 'player', state.myUid, charId);
@@ -170,6 +180,13 @@ async function _joinSessionAsCharacter(code, name, charId, initiative = '0') {
   } else {
     state.myCombatantId = await state.combatantManager.add(name, initiative, 1, 'player', state.myUid, charId);
   }
+
+  // Avviato solo ora che myCombatantId e charId sono definitivi: la primissima
+  // sincronizzazione HP max/avatar/nome dalla scheda (dentro setupSheetListener,
+  // condizionata su state.myCombatantId) deve trovarlo già valorizzato, altrimenti
+  // viene scartata silenziosamente e il combattente resta bloccato ai placeholder
+  // (hpMax 1, nessun avatar) finché la scheda non cambia di nuovo per altri motivi.
+  initSheet(state.myUid, charId);
 
   state.selectedJoinCharId = null;
   localStorage.setItem('dnd_combatant_id', state.myCombatantId);
@@ -213,6 +230,7 @@ document.addEventListener('dnd:join-with-character', async (e) => {
     await _joinSessionAsCharacter(code, name, charId);
   } catch (err) {
     UI.showError(err.message);
+    loadCharacterLibrary(); // ripristina il campo/tasto disabilitati sulla card
   }
 });
 
