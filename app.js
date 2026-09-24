@@ -160,14 +160,16 @@ document.getElementById('form-join').addEventListener('submit', async (e) => {
     const existing = await state.combatantManager.findByOwner(state.myUid);
     let savedCharName = name;
     if (existing) {
+      const existingName = existing.name || 'il tuo personaggio';
       const rejoin = confirm(
-        `Sei già presente in questa sessione con il personaggio "${existing.name}".\n\n` +
-        `OK → Rientra con "${existing.name}"\n` +
+        `Sei già presente in questa sessione con il personaggio "${existingName}".\n\n` +
+        `OK → Rientra con "${existingName}"\n` +
         `Annulla → Rimuovi il vecchio e crea "${name}"`
       );
       if (rejoin) {
         state.myCombatantId = existing.id;
-        savedCharName = existing.name;
+        savedCharName = existing.name || name;
+        if (!existing.name) await state.combatantManager.setName(existing.id, name);
         const existingCharId = existing.charId ?? charId;
         if (existingCharId !== charId) {
           state.myCurrentCharId = existingCharId;

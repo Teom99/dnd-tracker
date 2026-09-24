@@ -108,7 +108,9 @@ export async function populateJoinPicker() {
 
   let chars = {};
   try { chars = await state.library.getAll(); } catch { return; }
-  const players = Object.entries(chars).filter(([, c]) => c.type === 'player');
+  // Esclude solo le creature (non richiede type === 'player' esplicito): una
+  // scheda con campo type mancante/corrotto resta comunque selezionabile.
+  const players = Object.entries(chars).filter(([, c]) => c.type !== 'creature');
 
   if (players.length === 0) {
     picker.classList.add('hidden');
