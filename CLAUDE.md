@@ -122,7 +122,7 @@ userSessions/{uid}/{code}/
 - Tasto ispirazione (✦) su ogni card combattente: `combatants/{id}/inspiration`, visibile a tutti (si illumina oro via `.insp-btn.active` in `index.html`), ma cliccabile solo da proprietario/master (`disabled` altrimenti; `Combatant.setInspiration`)
 - Flash colorato sulla card a ogni variazione di `hpCurrent`: rosso neon per danno, verde neon per cura, ~2.5s (`dmg-flash`/`heal-pulse` in `styles/base.css`, applicate da `UI.renderCombatantList` tramite una mappa `_prevHp`/`_hpFlash` che confronta l'HP col render precedente — sopravvive a rebuild concorrenti)
 - Template ad area sulla griglia (cerchio/cono/linea): piazzamento clic-clic (origine poi conferma con anteprima live), condiviso in tempo reale (`sessions/{code}/template`), celle coperte evidenziate e combattenti coinvolti elencati nell'hint della toolbar
-- Riposo breve/lungo: bottoni in topbar visibili a tutti (non master-only), con conferma; riposo breve cura PG+famigli di metà `hpMax` (additivo, cap al massimo), riposo lungo li porta a piena vita (`Combatant.restParty`)
+- Riposo breve/lungo: bottoni in topbar visibili a tutti (non master-only), con conferma; riposo breve cura PG+famigli di metà `hpMax` (additivo, cap al massimo), riposo lungo li porta a piena vita e azzera gli HP temporanei (`Combatant.restParty`)
 - Disegno libero sulla mappa: bottone 🎨 in toolbar griglia, aperto a chiunque; palette di 8 colori predefiniti + color picker custom + gomma; drag-to-paint come i muri (stesso binder generalizzato `_bindCellPaint` in `GridUI.js`); "Pulisci tutto" aperto a chiunque con conferma; mutuamente esclusivo con modifica muri e piazzamento template (`state.drawMode`)
 - Cursori live multiplayer sulla griglia: ogni giocatore vede il puntatore colorato (colore deterministico per uid) con nome di tutti gli altri (mai il proprio riflesso — si ha già il puntatore reale del sistema), sempre attivo mentre il mouse resta sulla griglia; posizione in coordinate griglia (non pixel), indipendente da zoom/pan locale di ciascun viewer; canale Firebase separato (`sessions/{code}/cursors`) per non appesantire il render principale; cleanup automatico alla disconnessione
 
@@ -215,7 +215,7 @@ Nessuno al momento.
 - Player KO restano nel turno per death saves; creature KO vengono saltate
 - Visibilità HP: master vede tutto · player vede tutti i PG · creature mostrano solo hint opzionale
 - Death saves inline: 3 successi = revive a 1 HP (scritto via `Combatant.updateHp`)
-- `Combatant.restParty(kind)`: `'short'` cura PG+famigli di metà `hpMax` (cap al massimo, additivo); `'long'` li porta a piena vita; scrittura multi-path in un'unica `update()`, non tocca creature/NPC né `deathSaves` (coerente con le cure normali)
+- `Combatant.restParty(kind)`: `'short'` cura PG+famigli di metà `hpMax` (cap al massimo, additivo); `'long'` li porta a piena vita e azzera `tempHp` (regola 5e: gli HP temporanei si perdono al riposo lungo); scrittura multi-path in un'unica `update()`, non tocca creature/NPC né `deathSaves` (coerente con le cure normali)
 
 ---
 

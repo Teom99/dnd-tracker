@@ -145,6 +145,7 @@ export class Combatant {
       const current = c.hpCurrent ?? hpMax;
       const newHp = kind === 'long' ? hpMax : Math.min(hpMax, current + Math.floor(hpMax / 2));
       if (newHp !== current) updates[`${id}/hpCurrent`] = newHp;
+      if (kind === 'long' && (c.tempHp ?? 0) > 0) updates[`${id}/tempHp`] = 0;
     }
     if (Object.keys(updates).length > 0) await update(this._ref(), updates);
   }
