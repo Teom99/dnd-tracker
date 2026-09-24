@@ -124,7 +124,7 @@ userSessions/{uid}/{code}/
 - Template ad area sulla griglia (cerchio/cono/linea): piazzamento clic-clic (origine poi conferma con anteprima live), condiviso in tempo reale (`sessions/{code}/template`), celle coperte evidenziate e combattenti coinvolti elencati nell'hint della toolbar
 - Riposo breve/lungo: bottoni in topbar visibili a tutti (non master-only), con conferma; riposo breve cura PG+famigli di metà `hpMax` (additivo, cap al massimo), riposo lungo li porta a piena vita (`Combatant.restParty`)
 - Disegno libero sulla mappa: bottone 🎨 in toolbar griglia, aperto a chiunque; palette di 8 colori predefiniti + color picker custom + gomma; drag-to-paint come i muri (stesso binder generalizzato `_bindCellPaint` in `GridUI.js`); "Pulisci tutto" aperto a chiunque con conferma; mutuamente esclusivo con modifica muri e piazzamento template (`state.drawMode`)
-- Cursori live multiplayer sulla griglia: ogni giocatore vede il puntatore colorato (colore deterministico per uid) con nome di tutti, incluso il proprio, sempre attivo mentre il mouse resta sulla griglia; posizione in coordinate griglia (non pixel), indipendente da zoom/pan locale di ciascun viewer; canale Firebase separato (`sessions/{code}/cursors`) per non appesantire il render principale; cleanup automatico alla disconnessione
+- Cursori live multiplayer sulla griglia: ogni giocatore vede il puntatore colorato (colore deterministico per uid) con nome di tutti gli altri (mai il proprio riflesso — si ha già il puntatore reale del sistema), sempre attivo mentre il mouse resta sulla griglia; posizione in coordinate griglia (non pixel), indipendente da zoom/pan locale di ciascun viewer; canale Firebase separato (`sessions/{code}/cursors`) per non appesantire il render principale; cleanup automatico alla disconnessione
 
 ### Bug noti non ancora risolti
 Nessuno al momento.
@@ -240,7 +240,7 @@ Nessuno al momento.
 
 ### Griglia di battaglia
 
-**Cosa fa:** Griglia quadrata SVG adattiva (viewBox + preserveAspectRatio). Zoom +/−/reset con pulsanti flottanti. Pan con drag quando zoom > 1. Il master disegna/rimuove muri cliccando. Selezione token mostra raggio di movimento. Token multi-cella per taglia. Ghost preview al passaggio mouse. Template ad area (cerchio/cono/linea) per incantesimi, condivisi in tempo reale con evidenziazione celle e combattenti coinvolti. Disegno libero a colori sulla mappa (chiunque), con palette predefinita + color picker, condiviso in tempo reale. Cursori live: ogni giocatore vede sulla griglia il puntatore colorato con nome di tutti gli altri (e il proprio riflesso), sempre attivo mentre il mouse resta sull'area della griglia.
+**Cosa fa:** Griglia quadrata SVG adattiva (viewBox + preserveAspectRatio). Zoom +/−/reset con pulsanti flottanti. Pan con drag quando zoom > 1. Il master disegna/rimuove muri cliccando. Selezione token mostra raggio di movimento. Token multi-cella per taglia. Ghost preview al passaggio mouse. Template ad area (cerchio/cono/linea) per incantesimi, condivisi in tempo reale con evidenziazione celle e combattenti coinvolti. Disegno libero a colori sulla mappa (chiunque), con palette predefinita + color picker, condiviso in tempo reale. Cursori live: ogni giocatore vede sulla griglia il puntatore colorato con nome di tutti gli altri (mai il proprio), sempre attivo mentre il mouse resta sull'area della griglia.
 
 **File:** `src/logic/grid.js` (orchestrazione render), `src/ui/GridUI.js` (SVG, token, muri, movimento, template, disegno, cursori)
 

@@ -229,8 +229,9 @@ export function setReRenderCallback(fn) { _reRenderCallback = fn; }
 // container.innerHTML di renderGrid, che ricostruisce l'SVG a ogni update
 // Firebase). I dati arrivano da un canale Firebase dedicato (vedi
 // Session.listenCursors), non dal render principale della griglia.
-let _cursors     = {};
-let _cursorLayer = null;
+let _cursors      = {};
+let _cursorsMyUid = null; // il proprio riflesso non viene mai mostrato (si ha già il puntatore reale)
+let _cursorLayer  = null;
 let _lastCursorSend = 0;
 const CURSOR_THROTTLE_MS = 120;
 
@@ -250,6 +251,7 @@ function _renderCursorOverlay() {
 
   const seen = new Set();
   for (const [uid, c] of Object.entries(_cursors)) {
+    if (uid === _cursorsMyUid) continue;
     if (c == null || typeof c.col !== 'number' || typeof c.row !== 'number') continue;
     seen.add(uid);
     const { x, y } = _gridToScreen(c.col, c.row, svg, container);
@@ -274,8 +276,9 @@ function _renderCursorOverlay() {
   });
 }
 
-export function setCursors(cursorsObj) {
+export function setCursors(cursorsObj, myUid) {
   _cursors = cursorsObj || {};
+  _cursorsMyUid = myUid ?? null;
   _renderCursorOverlay();
 }
 

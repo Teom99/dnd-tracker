@@ -1249,7 +1249,7 @@ function _startListening() {
   });
 
   state.session.listenCursors(cursors => {
-    GridUI.setCursors(cursors);
+    GridUI.setCursors(cursors, state.myUid);
   });
 
   state.session.listen((snap) => {
