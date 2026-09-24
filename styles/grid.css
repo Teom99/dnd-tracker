@@ -498,6 +498,38 @@
   text-shadow: 0 0 4px rgba(0,0,0,1);
 }
 
+/* ── Cursori live multiplayer ─────────────────────────────────────────── */
+.grid-cursor-layer {
+  position: absolute;
+  inset: 44px 0 0 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 2;
+}
+.grid-cursor {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transform: translate(-2px, -2px);
+  transition: left .08s linear, top .08s linear;
+}
+.grid-cursor .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(0,0,0,.5);
+  flex-shrink: 0;
+}
+.grid-cursor .label {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: #111;
+  white-space: nowrap;
+}
+
 /* ── Palette disegno sulla mappa ──────────────────────────────────────── */
 .draw-swatch {
   width: 22px;

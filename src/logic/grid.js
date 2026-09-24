@@ -1,5 +1,6 @@
 import * as GridUI from '../ui/GridUI.js';
 import { state }   from '../utils/state.js';
+import { playerColor } from '../utils/presence.js';
 
 export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants, gridConfig, walls) {
   const container = document.getElementById('grid-container');
@@ -77,7 +78,18 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
     state.snapshot?.paint ?? {},
     state.drawMode,
     state.drawColor,
-    (cellKey, color) => state.session.setPaintCell(cellKey, color)
+    (cellKey, color) => state.session.setPaintCell(cellKey, color),
+    (col, row) => {
+      if (!state.myUid) return;
+      if (col === null) {
+        state.session.clearCursorPosition(state.myUid);
+        return;
+      }
+      const myName = isMaster
+        ? (state.session.displayName || 'Master')
+        : (state.sheetData?.characterName || state.session.displayName || 'Giocatore');
+      state.session.setCursorPosition(state.myUid, col, row, myName, playerColor(state.myUid));
+    }
   );
   renderTokenBar(gridPos, combatants);
   updateTokenSizeControl(combatants);

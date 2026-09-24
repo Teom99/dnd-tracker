@@ -315,6 +315,31 @@ export class Session {
     });
   }
 
+  async setCursorPosition(uid, col, row, name, color) {
+    if (!this.code) return;
+    const r = ref(this._db, `sessions/${this.code}/cursors/${uid}`);
+    await set(r, { col, row, name, color });
+    // Armato una sola volta per client/sessione: a differenza del lock delle
+    // note (scritture rare, su focus) qui si scrive di continuo, ri-registrare
+    // onDisconnect ad ogni chiamata sarebbe inutile.
+    if (!this._cursorDisconnectArmed) {
+      this._cursorDisconnectArmed = true;
+      onDisconnect(r).remove();
+    }
+  }
+
+  async clearCursorPosition(uid) {
+    if (!this.code) return;
+    await set(ref(this._db, `sessions/${this.code}/cursors/${uid}`), null);
+  }
+
+  listenCursors(callback) {
+    if (!this.code) return;
+    onValue(ref(this._db, `sessions/${this.code}/cursors`), snap => {
+      callback(snap.val() || {});
+    });
+  }
+
   _generateCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     return Array.from({ length: 6 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');

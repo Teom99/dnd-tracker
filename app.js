@@ -17,6 +17,7 @@ import { LevelUpUI } from './src/ui/LevelUpUI.js';
 import { Ship }    from './src/data/Ship.js';
 import * as ShipUI from './src/ui/ShipUI.js';
 import { captureFocusState, restoreFocusState } from './src/utils/domPreserve.js';
+import { playerColor } from './src/utils/presence.js';
 import { updateHomeAuthUI, loadCharacterLibrary, populateJoinPicker, populateCreaturePicker, saveUserSession, loadUserSessions } from './src/views/home.js';
 
 // --- Theme Management ---
@@ -691,13 +692,6 @@ const _expandedNoteIds    = new Set();
 const _noteDebounceTimers = {};
 let   _noteLocks          = {};
 
-const _PLAYER_COLORS = ['#ff6b6b','#4ecdc4','#45b7d1','#96e6a1','#ffd93d','#ff9a3c','#c779d0','#6bcb77'];
-function _playerColor(uid) {
-  let h = 0;
-  for (const c of uid) h = (Math.imul(31, h) + c.charCodeAt(0)) | 0;
-  return _PLAYER_COLORS[Math.abs(h) % _PLAYER_COLORS.length];
-}
-
 function _renderSessionNotes() {
   UI.renderSessionNotes(
     state.snapshot?.sessionNotes ?? {},
@@ -879,7 +873,7 @@ document.getElementById('session-notes-list').addEventListener('focusin', (e) =>
   const lock = _noteLocks[noteId];
   if (lock && lock.uid !== state.myUid) return;
   const name  = state.sheetData?.characterName || state.session.displayName || 'Giocatore';
-  state.session.acquireNoteLock(noteId, state.myUid, name, _playerColor(state.myUid));
+  state.session.acquireNoteLock(noteId, state.myUid, name, playerColor(state.myUid));
 });
 
 document.getElementById('session-notes-list').addEventListener('focusout', (e) => {
@@ -1252,6 +1246,10 @@ function _startListening() {
   state.session.listenNoteLocks(locks => {
     _noteLocks = locks;
     _renderSessionNotes();
+  });
+
+  state.session.listenCursors(cursors => {
+    GridUI.setCursors(cursors);
   });
 
   state.session.listen((snap) => {

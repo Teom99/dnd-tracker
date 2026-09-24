@@ -100,6 +100,28 @@ function cellXY(col, row) {
   return { x: PAD + col * CELL, y: PAD + row * CELL };
 }
 
+// Screen-px ↔ spazio SVG fisso (indipendente da zoom/pan) — stessa idiomatica
+// già usata dal pan-drag in initGridControls (rect + rapporto viewBox/rect).
+function _screenToGrid(clientX, clientY, svg, container) {
+  const rect = container.getBoundingClientRect();
+  const scaleX = svg.viewBox.baseVal.width  / (rect.width  || 1);
+  const scaleY = svg.viewBox.baseVal.height / (rect.height || 1);
+  const svgX = _panX + (clientX - rect.left) * scaleX;
+  const svgY = _panY + (clientY - rect.top)  * scaleY;
+  return { col: (svgX - PAD) / CELL, row: (svgY - PAD) / CELL };
+}
+
+function _gridToScreen(col, row, svg, container) {
+  const rect = container.getBoundingClientRect();
+  const vb = svg.viewBox.baseVal;
+  const scaleX = rect.width  / vb.width;
+  const scaleY = rect.height / vb.height;
+  return {
+    x: (PAD + col * CELL - vb.x) * scaleX,
+    y: (PAD + row * CELL - vb.y) * scaleY,
+  };
+}
+
 // Separazione su un asse tra due intervalli [a1,a2] e [b1,b2] (0 se si toccano/sovrappongono, +1 se adiacenti)
 function axisDist(a1, a2, b1, b2) {
   return Math.max(0, Math.max(a1, b1) - Math.min(a2, b2));
@@ -202,6 +224,61 @@ function esc(s) {
 let _reRenderCallback = null;
 export function setReRenderCallback(fn) { _reRenderCallback = fn; }
 
+// ─── Cursori live multiplayer ─────────────────────────────────────────────────
+// Layer HTML separato, sibling di #grid-container (mai toccato dal
+// container.innerHTML di renderGrid, che ricostruisce l'SVG a ogni update
+// Firebase). I dati arrivano da un canale Firebase dedicato (vedi
+// Session.listenCursors), non dal render principale della griglia.
+let _cursors     = {};
+let _cursorLayer = null;
+let _lastCursorSend = 0;
+const CURSOR_THROTTLE_MS = 120;
+
+function _ensureCursorLayer(container) {
+  if (_cursorLayer && _cursorLayer.isConnected) return _cursorLayer;
+  _cursorLayer = document.createElement('div');
+  _cursorLayer.className = 'grid-cursor-layer';
+  container.insertAdjacentElement('afterend', _cursorLayer);
+  return _cursorLayer;
+}
+
+function _renderCursorOverlay() {
+  const container = document.getElementById('grid-container');
+  const svg = container?.querySelector('svg');
+  if (!container || !svg) return;
+  const layer = _ensureCursorLayer(container);
+
+  const seen = new Set();
+  for (const [uid, c] of Object.entries(_cursors)) {
+    if (c == null || typeof c.col !== 'number' || typeof c.row !== 'number') continue;
+    seen.add(uid);
+    const { x, y } = _gridToScreen(c.col, c.row, svg, container);
+    let el = layer.querySelector(`[data-cursor-uid="${uid}"]`);
+    if (!el) {
+      el = document.createElement('div');
+      el.className = 'grid-cursor';
+      el.dataset.cursorUid = uid;
+      el.innerHTML = '<span class="dot"></span><span class="label"></span>';
+      layer.appendChild(el);
+    }
+    el.style.left = `${x}px`;
+    el.style.top  = `${y}px`;
+    const color = typeof c.color === 'string' ? c.color : '#888';
+    el.querySelector('.dot').style.background   = color;
+    const label = el.querySelector('.label');
+    label.style.background = color;
+    label.textContent = typeof c.name === 'string' ? c.name : 'Giocatore';
+  }
+  layer.querySelectorAll('[data-cursor-uid]').forEach(el => {
+    if (!seen.has(el.dataset.cursorUid)) el.remove();
+  });
+}
+
+export function setCursors(cursorsObj) {
+  _cursors = cursorsObj || {};
+  _renderCursorOverlay();
+}
+
 // ─── Render ──────────────────────────────────────────────────────────────────
 
 /**
@@ -210,8 +287,9 @@ export function setReRenderCallback(fn) { _reRenderCallback = fn; }
  * @param onSetWall (cellKey, value) => void   — imposta/rimuove un muro
  * @param drawMode boolean       — modalità "disegna sulla mappa" (chiunque)
  * @param onSetPaint (cellKey, color) => void  — imposta/rimuove il colore di una cella
+ * @param onCursorMove (col, row) => void      — broadcast della propria posizione mouse (null,null = uscito dalla griglia)
  */
-export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onSetWall, template, placingShape, templateOrigin, onSetTemplateOrigin, onCommitTemplate, paint, drawMode, drawColor, onSetPaint) {
+export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onSetWall, template, placingShape, templateOrigin, onSetTemplateOrigin, onCommitTemplate, paint, drawMode, drawColor, onSetPaint, onCursorMove) {
   const pos   = gridPos    || {};
   const comb  = combatants || {};
   const wall  = walls      || {};
@@ -384,6 +462,11 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   container.classList.toggle('grid-edit-active', !!editMode);
   container.classList.toggle('grid-draw-active', !!drawMode);
 
+  // Il layer cursori vive fuori dall'SVG (sibling), ma le posizioni a schermo
+  // vanno ricalcolate ad ogni rebuild (nuovo viewBox.baseVal dopo zoom/pan/update).
+  _ensureCursorLayer(container);
+  _renderCursorOverlay();
+
   // Hint contestuale nella toolbar
   const hintEl = document.getElementById('grid-hint');
   if (hintEl) {
@@ -475,6 +558,14 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   // Tooltip nome al passaggio del mouse
   let nameTooltip = null;
   svg.addEventListener('mousemove', (e) => {
+    if (onCursorMove) {
+      const now = Date.now();
+      if (now - _lastCursorSend >= CURSOR_THROTTLE_MS) {
+        _lastCursorSend = now;
+        const { col, row } = _screenToGrid(e.clientX, e.clientY, svg, container);
+        onCursorMove(Math.max(0, Math.min(cols, col)), Math.max(0, Math.min(rows, row)));
+      }
+    }
     const hit = e.target.closest('.sq-hit');
     if (!hit) { nameTooltip?.remove(); nameTooltip = null; removeGhost(); removeTemplateGhost(); return; }
     const c = parseInt(hit.dataset.c), r = parseInt(hit.dataset.r);
@@ -510,6 +601,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     nameTooltip?.remove(); nameTooltip = null;
     removeGhost();
     removeTemplateGhost();
+    onCursorMove?.(null, null);
   });
 
   svg.addEventListener('click', (e) => {
