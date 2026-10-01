@@ -177,7 +177,7 @@ export function renderTokenBar(gridPos, combatants) {
     return `<button
       class="grid-token-chip${selected ? ' selected' : ''}${ko ? ' ko' : ''}"
       data-token-id="${id}"
-      title="${placed ? 'Riposiziona' : 'Posiziona sulla griglia'}"
+      title="${placed ? 'Rimuovi dalla griglia' : 'Posiziona sulla griglia'}"
     >${(c.name || '?').slice(0, 2).toUpperCase()}${ko ? ' 💀' : ''}${placed ? '' : ' +'}</button>`;
   }).join('');
 
@@ -185,6 +185,11 @@ export function renderTokenBar(gridPos, combatants) {
     const btn = e.target.closest('[data-token-id]');
     if (!btn) return;
     const id = btn.dataset.tokenId;
+    if (pos[id] != null) {
+      if (state.selectedGridTokenId === id) state.selectedGridTokenId = null;
+      state.session.clearGridPosition(id);
+      return;
+    }
     state.selectedGridTokenId = state.selectedGridTokenId === id ? null : id;
     if (state.snapshot) {
       const sorted = state.tracker.sortedCombatants(state.snapshot.combatants);

@@ -555,7 +555,9 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
       templateGhost.setAttribute('pointer-events', 'none');
       svg.appendChild(templateGhost);
     }
-    templateGhost.innerHTML = templateShapeMarkup(placingShape, templateOrigin.col, templateOrigin.row, size, angleDeg, TEMPLATE_COLOR, 0.18, 0.9, true);
+    const { x: lx, y: ly } = cellCenterOf(c, r);
+    const label = `<text x="${lx.toFixed(1)}" y="${(ly - 10).toFixed(1)}" text-anchor="middle" font-size="11" class="sq-dist" pointer-events="none">${esc(fmtM(size))}</text>`;
+    templateGhost.innerHTML = templateShapeMarkup(placingShape, templateOrigin.col, templateOrigin.row, size, angleDeg, TEMPLATE_COLOR, 0.18, 0.9, true) + label;
   }
 
   // Tooltip nome al passaggio del mouse

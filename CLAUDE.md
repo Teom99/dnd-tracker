@@ -125,6 +125,8 @@ userSessions/{uid}/{code}/
 - Riposo breve/lungo: bottoni in topbar visibili a tutti (non master-only), con conferma; riposo breve cura PG+famigli di metà `hpMax` (additivo, cap al massimo), riposo lungo li porta a piena vita e azzera gli HP temporanei (`Combatant.restParty`)
 - Disegno libero sulla mappa: bottone 🎨 in toolbar griglia, aperto a chiunque; palette di 8 colori predefiniti + color picker custom + gomma; drag-to-paint come i muri (stesso binder generalizzato `_bindCellPaint` in `GridUI.js`); "Pulisci tutto" aperto a chiunque con conferma; mutuamente esclusivo con modifica muri e piazzamento template (`state.drawMode`)
 - Cursori live multiplayer sulla griglia: ogni giocatore vede il puntatore colorato (colore deterministico per uid) con nome di tutti gli altri (mai il proprio riflesso — si ha già il puntatore reale del sistema), sempre attivo mentre il mouse resta sulla griglia; posizione in coordinate griglia (non pixel), indipendente da zoom/pan locale di ciascun viewer; canale Firebase separato (`sessions/{code}/cursors`) per non appesantire il render principale; cleanup automatico alla disconnessione
+- Barra token: cliccare la chip di un personaggio già piazzato sulla griglia lo rimuove (`clearGridPosition`), invece di limitarsi a selezionarlo; riposizionare resta possibile cliccando il token direttamente sulla griglia
+- Anteprima template (cerchio/cono/linea): durante il piazzamento, prima della conferma, mostra una misura in metri sulla mappa accanto al cursore (riusa `.sq-dist`), aggiornata in tempo reale mentre si mira
 
 ### Bug noti non ancora risolti
 Nessuno al momento.

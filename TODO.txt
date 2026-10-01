@@ -14,6 +14,7 @@
 
 ## Fatto
 
+- FEAT: Rimuovi token dalla griglia dalla barra in alto (ricliccando la stessa chip) + misura in metri sulla mappa durante il piazzamento di un template (cerchio/cono/linea), aggiornata in tempo reale mentre si mira
 - FEAT: Cursori live multiplayer sulla griglia — ogni giocatore vede il puntatore colorato con nome di tutti gli altri (mai il proprio, già visibile come puntatore reale), sempre attivo mentre il mouse resta sull'area della griglia; posizione condivisa in coordinate griglia (non pixel), quindi resta corretta indipendentemente dallo zoom/pan di ciascuno; sparisce automaticamente alla disconnessione
 - FEAT: Popup di riepilogo attacco/cura visibile a tutti — ogni volta che un giocatore infligge danno o cura a un bersaglio, tutti i presenti vedono un popup in alto a destra con attore/bersaglio/ammontare (deriva dal log condiviso, nessuna scrittura Firebase aggiuntiva); le notifiche ora si impilano invece di sovrapporsi
 - FEAT: Disegno libero a colori sulla mappa — bottone 🎨 in toolbar griglia, aperto a chiunque; palette di 8 colori predefiniti + color picker per colori custom + gomma; drag-to-paint come i muri, condiviso in tempo reale; "Pulisci tutto" aperto a chiunque, con conferma
