@@ -131,6 +131,7 @@ userSessions/{uid}/{code}/
 - Dimensione regolabile (1×1-4×4) di pennello e gomma sul disegno della mappa: selettore `#select-draw-size` in toolbar, blocco N×N centrato sulla cella sotto il cursore (`_paintAt` in `GridUI.js`), disabilitato quando è attivo il secchiello (non applicabile al flood fill)
 - Forma regolabile (quadrata/rotonda ⬛/⚪) di pennello e gomma: maschera a raggio inscritto sul blocco N×N (`_isInRoundMask` in `GridUI.js`), disabilitata quando è attivo il secchiello
 - Anteprima dell'area pennello/gomma sotto al cursore: ghost locale (nessuna scrittura Firebase) che mostra le celle del blocco N×N che verrebbero toccate, rispettando dimensione e forma correnti
+- Fix color picker custom del disegno mappa (`#input-draw-custom`): il colore selezionato poteva venire sovrascritto a metà scelta da un re-render concorrente (ogni snapshot Firebase, quindi ogni azione di un qualsiasi giocatore), perché `document.activeElement` non è affidabile su `<input type="color">` col picker nativo aperto. Aggiunto flag esplicito `_customColorPicking` su focus/blur in `app.js`
 
 ### Bug noti non ancora risolti
 Nessuno al momento.
@@ -154,6 +155,8 @@ Nessuno al momento.
 **Scritture concorrenti critiche:** usare `runTransaction` (vedi `Combatant.updateHp`, `Session.nextTurnAtomic`, `CharacterSheet.setSpellSlotsUsed`)
 
 **Renderer con `innerHTML` chiamato dal listener Firebase (session o sheet):** se il contenitore include `<input>`/`<textarea>`/`<select>` editabili, avvolgere il rebuild con `captureFocusState`/`restoreFocusState` da `src/utils/domPreserve.js` (vedi `renderCombatantList`, `SheetUI.renderInventory` per l'uso). Senza questo, un update Firebase non correlato (es. un altro giocatore che agisce) cancella focus/testo/scroll di chi sta scrivendo in quel momento — è la causa root del bug "la sessione si resetta quando un altro giocatore interagisce" riapparso più volte in passato.
+
+**Controlli statici (mai ricreati via `innerHTML`) risincronizzati a ogni snapshot:** stessa classe di bug, causa diversa — una funzione tipo `_applyXUI()` chiamata a ogni render che fa `el.value = state.qualcosa` può comunque "rubare" un input mentre l'utente lo sta ancora modificando, anche se il nodo DOM non viene mai distrutto. `document.activeElement !== el` da solo non basta per `<input type="color">`: col picker nativo aperto (soprattutto macOS, finestra di sistema separata) l'input può smettere di risultare `activeElement` pur essendo ancora in modifica. Pattern usato per `#input-draw-custom` in `app.js`: un flag esplicito (`_customColorPicking`) settato su `focus`/`blur` dell'elemento, controllato in aggiunta al check su `activeElement` prima di sovrascrivere `.value`.
 
 ---
 

@@ -1182,6 +1182,15 @@ document.getElementById('grid-template-controls')?.addEventListener('click', (e)
 
 // ─── DISEGNO SULLA MAPPA (colorazione caselle) ───────────────────────────────
 
+// Mentre il color picker nativo è aperto, document.activeElement su
+// #input-draw-custom non è affidabile (su alcuni browser/OS, es. macOS, il
+// pannello colore è una finestra separata e l'input perde il focus "visto"
+// dal DOM pur restando in modifica) — un re-render concorrente (ad ogni
+// snapshot Firebase, quindi ad ogni azione di qualsiasi giocatore) sovrascrive
+// altrimenti .value col colore precedente mentre l'utente sta ancora
+// scegliendo. Flag esplicito su focus/blur come difesa aggiuntiva.
+let _customColorPicking = false;
+
 function _applyDrawControlsUI() {
   document.getElementById('btn-draw-toggle')?.classList.toggle('active', state.drawMode);
   const palette = document.getElementById('grid-draw-palette');
@@ -1212,7 +1221,7 @@ function _applyDrawControlsUI() {
   document.getElementById('btn-draw-shape-round')?.toggleAttribute('disabled', bucketActive);
 
   const customInput = document.getElementById('input-draw-custom');
-  if (customInput && state.drawColor && document.activeElement !== customInput) {
+  if (customInput && state.drawColor && !_customColorPicking && document.activeElement !== customInput) {
     customInput.value = state.drawColor;
   }
 }
@@ -1251,6 +1260,12 @@ document.getElementById('grid-draw-palette')?.addEventListener('click', (e) => {
   }
 });
 
+document.getElementById('input-draw-custom')?.addEventListener('focus', () => {
+  _customColorPicking = true;
+});
+document.getElementById('input-draw-custom')?.addEventListener('blur', () => {
+  _customColorPicking = false;
+});
 document.getElementById('input-draw-custom')?.addEventListener('input', (e) => {
   setDrawColor(e.target.value);
   _applyDrawControlsUI();
