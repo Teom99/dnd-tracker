@@ -39,18 +39,68 @@ function _cellFromEvent(e) {
 
 function _paintAt(col, row) {
   if (!_ctx) return;
-  const key = `${col}_${row}`;
-  if (_paintedThisStroke.has(key)) return;
-  _paintedThisStroke.add(key);
   if (_paintMode === 'wall') {
+    const key = `${col}_${row}`;
+    if (_paintedThisStroke.has(key)) return;
+    _paintedThisStroke.add(key);
     if (_ctx.occCell[key]) return;                       // niente muri sotto i token
     if (Boolean(_ctx.wall[key]) === _paintValue) return; // già nello stato voluto
     _ctx.onSetWall(key, _paintValue);
-  } else if (_paintMode === 'color') {
-    const current = _ctx.paint?.[key] ?? null;
-    if (current === _paintColorValue) return; // già nello stato voluto
-    _ctx.onSetPaint(key, _paintColorValue);
+    return;
   }
+  if (_paintMode === 'color') {
+    // Pennello/gomma a blocco N×N centrato sulla cella sotto il cursore (stesso
+    // offset floor((n-1)/2) già usato per il centro del footprint dei token).
+    const size   = Math.max(1, Math.min(4, _ctx.drawSize || 1));
+    const offset = Math.floor((size - 1) / 2);
+    const newKeys = [];
+    for (let dc = 0; dc < size; dc++) {
+      for (let dr = 0; dr < size; dr++) {
+        const c = col - offset + dc;
+        const r = row - offset + dr;
+        if (c < 0 || r < 0 || c >= _ctx.cols || r >= _ctx.rows) continue;
+        const key = `${c}_${r}`;
+        if (_paintedThisStroke.has(key)) continue;
+        _paintedThisStroke.add(key);
+        const current = _ctx.paint?.[key] ?? null;
+        if (current === _paintColorValue) continue; // già nello stato voluto
+        newKeys.push(key);
+      }
+    }
+    if (newKeys.length === 1) _ctx.onSetPaint(newKeys[0], _paintColorValue);
+    else if (newKeys.length > 1) _ctx.onPaintCells(newKeys, _paintColorValue);
+  }
+}
+
+// Secchiello: BFS a 4 direzioni dalla cella cliccata, attraverso celle dello
+// stesso colore di partenza (null incluso = nessun colore). Si ferma su muri,
+// celle di colore diverso e bordo griglia — i token non bloccano (il colore è
+// puramente cosmetico, stessa logica già usata dal pennello).
+function _floodFillKeys(startCol, startRow) {
+  const { cols, rows, wall, paint } = _ctx;
+  const startKey = `${startCol}_${startRow}`;
+  if (wall[startKey]) return [];
+  const startColor = paint?.[startKey] ?? null;
+  const targetColor = _ctx.drawColor ?? null;
+  if (startColor === targetColor) return []; // già così, niente da fare
+
+  const visited = new Set([startKey]);
+  const queue   = [[startCol, startRow]];
+  const result  = [];
+  while (queue.length) {
+    const [c, r] = queue.shift();
+    result.push(`${c}_${r}`);
+    for (const [nc, nr] of [[c + 1, r], [c - 1, r], [c, r + 1], [c, r - 1]]) {
+      if (nc < 0 || nr < 0 || nc >= cols || nr >= rows) continue;
+      const nk = `${nc}_${nr}`;
+      if (visited.has(nk)) continue;
+      if (wall[nk]) continue;
+      if ((paint?.[nk] ?? null) !== startColor) continue;
+      visited.add(nk);
+      queue.push([nc, nr]);
+    }
+  }
+  return result;
 }
 
 function _bindCellPaint(container) {
@@ -64,9 +114,17 @@ function _bindCellPaint(container) {
     if (!cell) return;
     const key = `${cell.col}_${cell.row}`;
 
-    const wallMode  = _ctx.isMaster && _ctx.editMode;
-    const colorMode = !wallMode && _ctx.drawMode;
+    const wallMode   = _ctx.isMaster && _ctx.editMode;
+    const colorMode  = !wallMode && _ctx.drawMode;
+    const bucketMode = colorMode && _ctx.drawTool === 'bucket';
     if (!wallMode && !colorMode) return;
+
+    if (bucketMode) {
+      const keys = _floodFillKeys(cell.col, cell.row);
+      if (keys.length > 0) _ctx.onPaintCells(keys, _ctx.drawColor ?? null);
+      e.preventDefault();
+      return; // azione singola al click, nessun drag da tracciare
+    }
 
     if (wallMode) {
       if (_ctx.occCell[key]) return;
@@ -291,8 +349,11 @@ export function setCursors(cursorsObj, myUid) {
  * @param drawMode boolean       — modalità "disegna sulla mappa" (chiunque)
  * @param onSetPaint (cellKey, color) => void  — imposta/rimuove il colore di una cella
  * @param onCursorMove (col, row) => void      — broadcast della propria posizione mouse (null,null = uscito dalla griglia)
+ * @param drawTool 'brush' | 'bucket'          — strumento di disegno attivo
+ * @param onPaintCells (cellKeys, color) => void — scrittura batch multi-cella (secchiello e pennello/gomma a blocco N×N)
+ * @param drawSize number (1-4)                — lato del blocco N×N del pennello/gomma, centrato sulla cella sotto il cursore
  */
-export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onSetWall, template, placingShape, templateOrigin, onSetTemplateOrigin, onCommitTemplate, paint, drawMode, drawColor, onSetPaint, onCursorMove) {
+export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onSetWall, template, placingShape, templateOrigin, onSetTemplateOrigin, onCommitTemplate, paint, drawMode, drawColor, onSetPaint, onCursorMove, drawTool, onPaintCells, drawSize) {
   const pos   = gridPos    || {};
   const comb  = combatants || {};
   const wall  = walls      || {};
@@ -500,7 +561,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   }
 
   // Aggiorna il contesto usato dal disegno (muri/colore) con drag e assicura il binding.
-  _ctx = { cols, rows, wall, occCell, isMaster, editMode: !!editMode, onSetWall, paint: cellPaint, drawMode: !!drawMode, drawColor: drawColor ?? null, onSetPaint };
+  _ctx = { cols, rows, wall, occCell, isMaster, editMode: !!editMode, onSetWall, paint: cellPaint, drawMode: !!drawMode, drawColor: drawColor ?? null, onSetPaint, drawTool: drawTool || 'brush', onPaintCells, drawSize: drawSize || 1 };
   _bindCellPaint(container);
 
   const svg = container.querySelector('svg');

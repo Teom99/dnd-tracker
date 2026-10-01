@@ -1,4 +1,4 @@
-import { ref, set, get, remove, onValue, onDisconnect, runTransaction, push, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { ref, set, get, update, remove, onValue, onDisconnect, runTransaction, push, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import {
   signInAnonymously, signInWithPopup, GoogleAuthProvider
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -176,6 +176,16 @@ export class Session {
   async setPaintCell(cellKey, color) {
     const value = (color && /^#[0-9a-fA-F]{6}$/.test(color)) ? color.toLowerCase() : null;
     await set(ref(this._db, `sessions/${this.code}/paint/${cellKey}`), value);
+  }
+
+  // Scrittura batch per il secchiello: tutte le celle riempite in un'unica
+  // update() multi-path, invece di una scrittura singola per cella.
+  async setPaintCells(cellKeys, color) {
+    if (!this.code || !cellKeys?.length) return;
+    const value = (color && /^#[0-9a-fA-F]{6}$/.test(color)) ? color.toLowerCase() : null;
+    const updates = {};
+    for (const key of cellKeys) updates[`paint/${key}`] = value;
+    await update(ref(this._db, `sessions/${this.code}`), updates);
   }
 
   async clearPaint() {

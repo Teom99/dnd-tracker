@@ -562,6 +562,24 @@
   border-style: solid;
   background: var(--gold-faint);
 }
+#btn-draw-bucket.active {
+  color: var(--gold-bright);
+  border-color: var(--gold);
+  border-style: solid;
+  background: var(--gold-faint);
+}
+.bucket-color-dot {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--line-strong);
+  background: transparent;
+  flex-shrink: 0;
+}
+.bucket-color-dot.is-eraser {
+  background: repeating-linear-gradient(45deg, var(--bg2) 0 2px, transparent 2px 4px);
+}
 
 .grid-master-controls {
   display: flex;

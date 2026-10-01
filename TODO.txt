@@ -14,6 +14,8 @@
 
 ## Fatto
 
+- FEAT: Dimensione regolabile (1×1-4×4) di pennello e gomma per il disegno sulla mappa, selettore in toolbar, blocco centrato sulla cella sotto il cursore
+- FEAT: Secchiello (🪣) per il disegno sulla mappa — riempie ad area le zone delimitate da muri o celle di colore diverso (tipo Paint); flusso: si seleziona il secchiello, poi il colore (un pallino di fianco al bottone mostra il colore scelto), poi si clicca sulla griglia per riempire
 - FEAT: Rimuovi token dalla griglia dalla barra in alto (ricliccando la stessa chip) + misura in metri sulla mappa durante il piazzamento di un template (cerchio/cono/linea), aggiornata in tempo reale mentre si mira
 - FEAT: Cursori live multiplayer sulla griglia — ogni giocatore vede il puntatore colorato con nome di tutti gli altri (mai il proprio, già visibile come puntatore reale), sempre attivo mentre il mouse resta sull'area della griglia; posizione condivisa in coordinate griglia (non pixel), quindi resta corretta indipendentemente dallo zoom/pan di ciascuno; sparisce automaticamente alla disconnessione
 - FEAT: Popup di riepilogo attacco/cura visibile a tutti — ogni volta che un giocatore infligge danno o cura a un bersaglio, tutti i presenti vedono un popup in alto a destra con attore/bersaglio/ammontare (deriva dal log condiviso, nessuna scrittura Firebase aggiuntiva); le notifiche ora si impilano invece di sovrapporsi

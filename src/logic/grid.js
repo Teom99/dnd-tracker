@@ -89,7 +89,10 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
         ? (state.session.displayName || 'Master')
         : (state.sheetData?.characterName || state.session.displayName || 'Giocatore');
       state.session.setCursorPosition(state.myUid, col, row, myName, playerColor(state.myUid));
-    }
+    },
+    state.drawTool,
+    (cellKeys, color) => state.session.setPaintCells(cellKeys, color),
+    state.drawSize
   );
   renderTokenBar(gridPos, combatants);
   updateTokenSizeControl(combatants);
@@ -137,6 +140,26 @@ export function setDrawColor(color) {
 
 export function clearPaint() {
   state.session.clearPaint();
+}
+
+// Attiva/disattiva lo strumento secchiello (riempimento ad area). Resta dentro
+// la modalità disegno già attiva; non tocca drawMode/gridEditMode/template.
+export function toggleDrawTool() {
+  state.drawTool = state.drawTool === 'bucket' ? 'brush' : 'bucket';
+  if (state.snapshot) {
+    const sorted = state.tracker.sortedCombatants(state.snapshot.combatants);
+    renderGrid(state.snapshot.grid || {}, state.snapshot.combatants || {}, state.snapshot.currentTurnId ?? null, sorted, state.snapshot.gridConfig || null, state.snapshot.walls || {});
+  }
+}
+
+// Imposta il lato (1-4) del blocco N×N di pennello/gomma. Ignorato dal secchiello
+// (il flood fill non ha una "dimensione").
+export function setDrawSize(size) {
+  state.drawSize = Math.max(1, Math.min(4, parseInt(size, 10) || 1));
+  if (state.snapshot) {
+    const sorted = state.tracker.sortedCombatants(state.snapshot.combatants);
+    renderGrid(state.snapshot.grid || {}, state.snapshot.combatants || {}, state.snapshot.currentTurnId ?? null, sorted, state.snapshot.gridConfig || null, state.snapshot.walls || {});
+  }
 }
 
 // Riflette la taglia del token selezionato sul controllo del master.

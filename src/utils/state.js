@@ -24,6 +24,8 @@ export const state = {
   templateOrigin:         null,  // { col, row } una volta fissata l'origine, in attesa della conferma
   drawMode:               false, // true quando la modalità "disegna sulla mappa" è attiva
   drawColor:              '#e74c3c', // colore correntemente selezionato per il disegno; null = gomma
+  drawTool:               'brush', // 'brush' | 'bucket' — strumento di disegno attivo
+  drawSize:               1, // lato in caselle (1-4) del blocco pennello/gomma, centrato sulla cella sotto il cursore
   ship:                   null,
   shipData:               null,
   shipPanelOpen:          false,

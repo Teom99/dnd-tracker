@@ -851,6 +851,8 @@
             <button id="btn-draw-toggle" class="btn btn--ghost btn--sm btn--icon" title="Disegna sulla mappa">🎨</button>
           </div>
           <span id="grid-draw-palette" style="display:none; align-items:center; gap:4px;">
+            <button id="btn-draw-bucket" class="btn btn--ghost btn--sm btn--icon" title="Secchiello (riempi area)">🪣</button>
+            <span id="bucket-color-dot" class="bucket-color-dot" title="Colore selezionato per il secchiello"></span>
             <button class="draw-swatch" data-color="#e74c3c" style="background:#e74c3c;" title="Rosso"></button>
             <button class="draw-swatch" data-color="#e67e22" style="background:#e67e22;" title="Arancio"></button>
             <button class="draw-swatch" data-color="#f1c40f" style="background:#f1c40f;" title="Giallo"></button>
@@ -861,6 +863,12 @@
             <button class="draw-swatch" data-color="#ecf0f1" style="background:#ecf0f1;" title="Bianco"></button>
             <input type="color" id="input-draw-custom" title="Colore personalizzato" value="#ff0000" style="width:26px;height:26px;padding:0;border:none;background:none;cursor:pointer;">
             <button id="btn-draw-eraser" class="draw-swatch draw-eraser" title="Gomma">✕</button>
+            <select id="select-draw-size" class="select" title="Dimensione pennello/gomma" style="min-height:26px; font-size:9.5px; padding:2px 18px 2px 5px;">
+              <option value="1">1×1</option>
+              <option value="2">2×2</option>
+              <option value="3">3×3</option>
+              <option value="4">4×4</option>
+            </select>
             <button id="btn-paint-clear" class="btn btn--ghost btn--sm btn--icon" title="Pulisci tutto il disegno">🗑</button>
           </span>
           <span class="grid-hint grow" id="grid-hint">1 casella = 1 m · Seleziona un token, poi tocca la destinazione</span>

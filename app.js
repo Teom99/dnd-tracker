@@ -10,7 +10,7 @@ import * as UI               from './src/ui/UI.js';
 import * as GridUI           from './src/ui/GridUI.js';
 import { state }             from './src/utils/state.js';
 import { initCombatManagers, exitToHome, esc, closeConditionModal } from './src/views/core.js';
-import { renderGrid, toggleTemplatePlacement, clearTemplate, toggleDrawMode, setDrawColor, clearPaint } from './src/logic/grid.js';
+import { renderGrid, toggleTemplatePlacement, clearTemplate, toggleDrawMode, setDrawColor, clearPaint, toggleDrawTool, setDrawSize } from './src/logic/grid.js';
 import { initSheet, makeCallbacks } from './src/views/sheet.js';
 import { LevelUp }   from './src/logic/LevelUp.js';
 import { LevelUpUI } from './src/ui/LevelUpUI.js';
@@ -1191,6 +1191,19 @@ function _applyDrawControlsUI() {
     sw.classList.toggle('active', state.drawColor === sw.dataset.color);
   });
   document.getElementById('btn-draw-eraser')?.classList.toggle('active', state.drawColor === null);
+  document.getElementById('btn-draw-bucket')?.classList.toggle('active', state.drawTool === 'bucket');
+
+  const dot = document.getElementById('bucket-color-dot');
+  if (dot) {
+    dot.classList.toggle('is-eraser', state.drawColor === null);
+    dot.style.background = state.drawColor || '';
+  }
+
+  const sizeSel = document.getElementById('select-draw-size');
+  if (sizeSel) {
+    sizeSel.disabled = state.drawTool === 'bucket'; // la dimensione non si applica al secchiello
+    if (document.activeElement !== sizeSel) sizeSel.value = String(state.drawSize || 1);
+  }
 
   const customInput = document.getElementById('input-draw-custom');
   if (customInput && state.drawColor && document.activeElement !== customInput) {
@@ -1204,6 +1217,11 @@ document.getElementById('btn-draw-toggle')?.addEventListener('click', () => {
 });
 
 document.getElementById('grid-draw-palette')?.addEventListener('click', (e) => {
+  if (e.target.closest('#btn-draw-bucket')) {
+    toggleDrawTool();
+    _applyDrawControlsUI();
+    return;
+  }
   const swatch = e.target.closest('.draw-swatch:not(.draw-eraser)');
   if (swatch) {
     setDrawColor(swatch.dataset.color);
@@ -1223,6 +1241,11 @@ document.getElementById('grid-draw-palette')?.addEventListener('click', (e) => {
 
 document.getElementById('input-draw-custom')?.addEventListener('input', (e) => {
   setDrawColor(e.target.value);
+  _applyDrawControlsUI();
+});
+
+document.getElementById('select-draw-size')?.addEventListener('change', (e) => {
+  setDrawSize(e.target.value);
   _applyDrawControlsUI();
 });
 
