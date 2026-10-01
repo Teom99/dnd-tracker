@@ -14,6 +14,7 @@
 
 ## Fatto
 
+- FEAT: Anteprima dell'area di pennello/gomma sotto al cursore sulla mappa, rispettando dimensione e forma correnti
 - FEAT: Forma regolabile (quadrata/rotonda) di pennello e gomma per il disegno sulla mappa, bottoni ⬛/⚪ in toolbar
 - FEAT: Dimensione regolabile (1×1-4×4) di pennello e gomma per il disegno sulla mappa, selettore in toolbar, blocco centrato sulla cella sotto il cursore
 - FEAT: Secchiello (🪣) per il disegno sulla mappa — riempie ad area le zone delimitate da muri o celle di colore diverso (tipo Paint); flusso: si seleziona il secchiello, poi il colore (un pallino di fianco al bottone mostra il colore scelto), poi si clicca sulla griglia per riempire

@@ -639,6 +639,41 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     templateGhost.innerHTML = templateShapeMarkup(placingShape, templateOrigin.col, templateOrigin.row, size, angleDeg, TEMPLATE_COLOR, 0.18, 0.9, true) + label;
   }
 
+  // Anteprima area pennello/gomma: le celle del blocco N×N (quadrato o maschera
+  // rotonda, stessa logica di _paintAt/_isInRoundMask) che verrebbero toccate
+  // cliccando qui. Non per il secchiello (area dipendente dal flood fill, non
+  // da size/shape).
+  const colorDrawMode = drawMode && !(editMode && isMaster);
+  let drawGhost = null;
+  const removeDrawGhost = () => { drawGhost?.remove(); drawGhost = null; };
+  function updateDrawGhost(c, r) {
+    if (!colorDrawMode || drawTool === 'bucket') { removeDrawGhost(); return; }
+    const size    = Math.max(1, Math.min(4, drawSize || 1));
+    const offset  = Math.floor((size - 1) / 2);
+    const round   = drawShape === 'round';
+    const isErase = !drawColor;
+    const col_    = isErase ? '#ffffff' : drawColor;
+    let rects = '';
+    for (let dc = 0; dc < size; dc++) {
+      for (let dr = 0; dr < size; dr++) {
+        if (round && !_isInRoundMask(dc, dr, size)) continue;
+        const cc = c - offset + dc;
+        const rr = r - offset + dr;
+        if (cc < 0 || rr < 0 || cc >= cols || rr >= rows) continue;
+        const { x, y } = cellXY(cc, rr);
+        rects += `<rect x="${x + 1}" y="${y + 1}" width="${CELL - 2}" height="${CELL - 2}" rx="3"
+          fill="${isErase ? 'none' : col_}" fill-opacity="${isErase ? 0 : 0.28}"
+          stroke="${col_}" stroke-opacity=".8" stroke-width="1.5" ${isErase ? 'stroke-dasharray="4 3"' : ''}/>`;
+      }
+    }
+    if (!drawGhost) {
+      drawGhost = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      drawGhost.setAttribute('pointer-events', 'none');
+      svg.appendChild(drawGhost);
+    }
+    drawGhost.innerHTML = rects;
+  }
+
   // Tooltip nome al passaggio del mouse
   let nameTooltip = null;
   svg.addEventListener('mousemove', (e) => {
@@ -651,10 +686,11 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
       }
     }
     const hit = e.target.closest('.sq-hit');
-    if (!hit) { nameTooltip?.remove(); nameTooltip = null; removeGhost(); removeTemplateGhost(); return; }
+    if (!hit) { nameTooltip?.remove(); nameTooltip = null; removeGhost(); removeTemplateGhost(); removeDrawGhost(); return; }
     const c = parseInt(hit.dataset.c), r = parseInt(hit.dataset.r);
-    if (placingShape) { removeGhost(); updateTemplateGhost(c, r); }
-    else { removeTemplateGhost(); updateGhost(c, r); }
+    if (placingShape) { removeGhost(); removeDrawGhost(); updateTemplateGhost(c, r); }
+    else if (colorDrawMode) { removeGhost(); removeTemplateGhost(); updateDrawGhost(c, r); }
+    else { removeTemplateGhost(); removeDrawGhost(); updateGhost(c, r); }
     const occId = occCell[`${c}_${r}`];
     const occ   = occId ? comb[occId] : null;
     if (occ) {
@@ -685,6 +721,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     nameTooltip?.remove(); nameTooltip = null;
     removeGhost();
     removeTemplateGhost();
+    removeDrawGhost();
     onCursorMove?.(null, null);
   });
 
