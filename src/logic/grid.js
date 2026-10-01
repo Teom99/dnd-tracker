@@ -92,7 +92,8 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
     },
     state.drawTool,
     (cellKeys, color) => state.session.setPaintCells(cellKeys, color),
-    state.drawSize
+    state.drawSize,
+    state.drawShape
   );
   renderTokenBar(gridPos, combatants);
   updateTokenSizeControl(combatants);
@@ -156,6 +157,16 @@ export function toggleDrawTool() {
 // (il flood fill non ha una "dimensione").
 export function setDrawSize(size) {
   state.drawSize = Math.max(1, Math.min(4, parseInt(size, 10) || 1));
+  if (state.snapshot) {
+    const sorted = state.tracker.sortedCombatants(state.snapshot.combatants);
+    renderGrid(state.snapshot.grid || {}, state.snapshot.combatants || {}, state.snapshot.currentTurnId ?? null, sorted, state.snapshot.gridConfig || null, state.snapshot.walls || {});
+  }
+}
+
+// Imposta la forma (quadrato/rotondo) del blocco pennello/gomma. Ignorata dal
+// secchiello.
+export function setDrawShape(shape) {
+  state.drawShape = shape === 'round' ? 'round' : 'square';
   if (state.snapshot) {
     const sorted = state.tracker.sortedCombatants(state.snapshot.combatants);
     renderGrid(state.snapshot.grid || {}, state.snapshot.combatants || {}, state.snapshot.currentTurnId ?? null, sorted, state.snapshot.gridConfig || null, state.snapshot.walls || {});

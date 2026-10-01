@@ -37,6 +37,20 @@ function _cellFromEvent(e) {
   return { col: parseInt(hit.dataset.c), row: parseInt(hit.dataset.r) };
 }
 
+// Maschera rotonda per il blocco N×N del pennello/gomma: esclude gli angoli il
+// cui centro-cella supera il raggio inscritto (floor(size/2)) dal centro del
+// blocco — unica formula valida sia per taglie pari che dispari (verificata:
+// size 1→cella singola, 2→quadrato pieno 2×2, 3→rombo a 5 celle, 4→quadrato
+// 4×4 con i 4 angoli tagliati).
+function _isInRoundMask(dc, dr, size) {
+  if (size <= 1) return true;
+  const center = size / 2;
+  const a = dc + 0.5 - center;
+  const b = dr + 0.5 - center;
+  const radius = Math.floor(size / 2);
+  return (a * a + b * b) <= radius * radius + 1e-6;
+}
+
 function _paintAt(col, row) {
   if (!_ctx) return;
   if (_paintMode === 'wall') {
@@ -50,12 +64,15 @@ function _paintAt(col, row) {
   }
   if (_paintMode === 'color') {
     // Pennello/gomma a blocco N×N centrato sulla cella sotto il cursore (stesso
-    // offset floor((n-1)/2) già usato per il centro del footprint dei token).
+    // offset floor((n-1)/2) già usato per il centro del footprint dei token),
+    // con maschera rotonda opzionale (state.drawShape).
     const size   = Math.max(1, Math.min(4, _ctx.drawSize || 1));
     const offset = Math.floor((size - 1) / 2);
+    const round  = _ctx.drawShape === 'round';
     const newKeys = [];
     for (let dc = 0; dc < size; dc++) {
       for (let dr = 0; dr < size; dr++) {
+        if (round && !_isInRoundMask(dc, dr, size)) continue;
         const c = col - offset + dc;
         const r = row - offset + dr;
         if (c < 0 || r < 0 || c >= _ctx.cols || r >= _ctx.rows) continue;
@@ -352,8 +369,9 @@ export function setCursors(cursorsObj, myUid) {
  * @param drawTool 'brush' | 'bucket'          — strumento di disegno attivo
  * @param onPaintCells (cellKeys, color) => void — scrittura batch multi-cella (secchiello e pennello/gomma a blocco N×N)
  * @param drawSize number (1-4)                — lato del blocco N×N del pennello/gomma, centrato sulla cella sotto il cursore
+ * @param drawShape 'square' | 'round'         — forma del blocco pennello/gomma
  */
-export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onSetWall, template, placingShape, templateOrigin, onSetTemplateOrigin, onCommitTemplate, paint, drawMode, drawColor, onSetPaint, onCursorMove, drawTool, onPaintCells, drawSize) {
+export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onSetWall, template, placingShape, templateOrigin, onSetTemplateOrigin, onCommitTemplate, paint, drawMode, drawColor, onSetPaint, onCursorMove, drawTool, onPaintCells, drawSize, drawShape) {
   const pos   = gridPos    || {};
   const comb  = combatants || {};
   const wall  = walls      || {};
@@ -561,7 +579,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   }
 
   // Aggiorna il contesto usato dal disegno (muri/colore) con drag e assicura il binding.
-  _ctx = { cols, rows, wall, occCell, isMaster, editMode: !!editMode, onSetWall, paint: cellPaint, drawMode: !!drawMode, drawColor: drawColor ?? null, onSetPaint, drawTool: drawTool || 'brush', onPaintCells, drawSize: drawSize || 1 };
+  _ctx = { cols, rows, wall, occCell, isMaster, editMode: !!editMode, onSetWall, paint: cellPaint, drawMode: !!drawMode, drawColor: drawColor ?? null, onSetPaint, drawTool: drawTool || 'brush', onPaintCells, drawSize: drawSize || 1, drawShape: drawShape || 'square' };
   _bindCellPaint(container);
 
   const svg = container.querySelector('svg');

@@ -26,6 +26,7 @@ export const state = {
   drawColor:              '#e74c3c', // colore correntemente selezionato per il disegno; null = gomma
   drawTool:               'brush', // 'brush' | 'bucket' — strumento di disegno attivo
   drawSize:               1, // lato in caselle (1-4) del blocco pennello/gomma, centrato sulla cella sotto il cursore
+  drawShape:              'square', // 'square' | 'round' — forma del blocco pennello/gomma
   ship:                   null,
   shipData:               null,
   shipPanelOpen:          false,

@@ -10,7 +10,7 @@ import * as UI               from './src/ui/UI.js';
 import * as GridUI           from './src/ui/GridUI.js';
 import { state }             from './src/utils/state.js';
 import { initCombatManagers, exitToHome, esc, closeConditionModal } from './src/views/core.js';
-import { renderGrid, toggleTemplatePlacement, clearTemplate, toggleDrawMode, setDrawColor, clearPaint, toggleDrawTool, setDrawSize } from './src/logic/grid.js';
+import { renderGrid, toggleTemplatePlacement, clearTemplate, toggleDrawMode, setDrawColor, clearPaint, toggleDrawTool, setDrawSize, setDrawShape } from './src/logic/grid.js';
 import { initSheet, makeCallbacks } from './src/views/sheet.js';
 import { LevelUp }   from './src/logic/LevelUp.js';
 import { LevelUpUI } from './src/ui/LevelUpUI.js';
@@ -1205,6 +1205,12 @@ function _applyDrawControlsUI() {
     if (document.activeElement !== sizeSel) sizeSel.value = String(state.drawSize || 1);
   }
 
+  const bucketActive = state.drawTool === 'bucket'; // anche la forma non si applica al secchiello
+  document.getElementById('btn-draw-shape-square')?.classList.toggle('active', !bucketActive && state.drawShape !== 'round');
+  document.getElementById('btn-draw-shape-round')?.classList.toggle('active', !bucketActive && state.drawShape === 'round');
+  document.getElementById('btn-draw-shape-square')?.toggleAttribute('disabled', bucketActive);
+  document.getElementById('btn-draw-shape-round')?.toggleAttribute('disabled', bucketActive);
+
   const customInput = document.getElementById('input-draw-custom');
   if (customInput && state.drawColor && document.activeElement !== customInput) {
     customInput.value = state.drawColor;
@@ -1219,6 +1225,12 @@ document.getElementById('btn-draw-toggle')?.addEventListener('click', () => {
 document.getElementById('grid-draw-palette')?.addEventListener('click', (e) => {
   if (e.target.closest('#btn-draw-bucket')) {
     toggleDrawTool();
+    _applyDrawControlsUI();
+    return;
+  }
+  const shapeBtn = e.target.closest('[data-draw-shape]');
+  if (shapeBtn) {
+    setDrawShape(shapeBtn.dataset.drawShape);
     _applyDrawControlsUI();
     return;
   }

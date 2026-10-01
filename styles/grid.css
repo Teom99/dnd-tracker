@@ -580,6 +580,18 @@
 .bucket-color-dot.is-eraser {
   background: repeating-linear-gradient(45deg, var(--bg2) 0 2px, transparent 2px 4px);
 }
+#btn-draw-shape-square.active,
+#btn-draw-shape-round.active {
+  color: var(--gold-bright);
+  border-color: var(--gold);
+  border-style: solid;
+  background: var(--gold-faint);
+}
+#btn-draw-shape-square:disabled,
+#btn-draw-shape-round:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
 
 .grid-master-controls {
   display: flex;
