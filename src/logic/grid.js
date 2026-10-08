@@ -125,14 +125,19 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
     (cellKey, color) => state.session.setPaintCell(cellKey, color),
     (col, row) => {
       if (!state.myUid) return;
+      // Scritture non awaited (girano a ogni movimento del mouse): il .catch
+      // evita che un eventuale permission-denied — es. la regola "presence"
+      // non ancora applicata in Console — riempia la console di unhandled
+      // rejection. I cursori sono puramente estetici: se non si possono
+      // scrivere, si perdono in silenzio senza toccare il resto.
       if (col === null) {
-        state.session.clearCursorPosition(state.myUid);
+        state.session.clearCursorPosition(state.myUid).catch(() => {});
         return;
       }
       const myName = isMaster
         ? (state.session.displayName || 'Master')
         : (state.sheetData?.characterName || state.session.displayName || 'Giocatore');
-      state.session.setCursorPosition(state.myUid, col, row, myName, playerColor(state.myUid));
+      state.session.setCursorPosition(state.myUid, col, row, myName, playerColor(state.myUid)).catch(() => {});
     },
     state.drawTool,
     (cellKeys, color) => state.session.setPaintCells(cellKeys, color),

@@ -10,6 +10,21 @@ export class Session {
     this._provider = new GoogleAuthProvider();
     this.code      = null;
     this.masterUid = null;
+    this._cursorDisconnectArmed = false;
+  }
+
+  // Presenza volatile (cursori, lock delle note) FUORI da sessions/{code}.
+  // Motivo: un onValue su sessions/{code} scatta per QUALUNQUE discendente,
+  // quindi scrivere qui ogni 120ms (un cursore che si muove) faceva
+  // (1) rieseguire tutta la pipeline di render su ogni client ~8 volte al
+  //     secondo, SVG della griglia distrutto e ricostruito incluso, e
+  // (2) invalidare in continuazione la runTransaction di nextTurnAtomic, che
+  //     gira proprio su sessions/{code}: l'SDK riprova 25 volte e poi falla,
+  //     ed è la causa di "Fine Turno non ha fatto niente / ha avanzato due
+  //     volte / ci ha messo tre secondi".
+  // Richiede la regola: "presence": { "$code": { ".read": true, ".write": "auth != null" } }
+  _presenceRef(path) {
+    return ref(this._db, `presence/${this.code}/${path}`);
   }
 
   get isMaster()     { return this._auth.currentUser?.uid === this.masterUid; }
@@ -65,6 +80,7 @@ export class Session {
     });
 
     this.code      = code;
+    this._cursorDisconnectArmed = false; // nuovo codice → onDisconnect va riarmato sul nuovo path
     this.masterUid = uid;
     localStorage.setItem('dnd_session_code', code);
     return code;
@@ -76,6 +92,7 @@ export class Session {
     if (!snap.exists()) throw new Error('Sessione non trovata. Controlla il codice.');
 
     this.code      = code;
+    this._cursorDisconnectArmed = false; // nuovo codice → onDisconnect va riarmato sul nuovo path
     this.masterUid = snap.val().masterUid;
     localStorage.setItem('dnd_session_code', code);
     return this._auth.currentUser.uid;
@@ -89,6 +106,7 @@ export class Session {
     if (!snap.exists()) return false;
 
     this.code      = code;
+    this._cursorDisconnectArmed = false; // nuovo codice → onDisconnect va riarmato sul nuovo path
     this.masterUid = snap.val().masterUid;
     return this._auth.currentUser.uid;
   }
@@ -322,28 +340,28 @@ export class Session {
 
   async acquireNoteLock(noteId, uid, name, color) {
     if (!this.code) return;
-    const r = ref(this._db, `sessions/${this.code}/noteLocks/${noteId}`);
+    const r = this._presenceRef(`noteLocks/${noteId}`);
     await set(r, { uid, name, color });
     onDisconnect(r).remove();
   }
 
   async releaseNoteLock(noteId) {
     if (!this.code) return;
-    await set(ref(this._db, `sessions/${this.code}/noteLocks/${noteId}`), null);
+    await set(this._presenceRef(`noteLocks/${noteId}`), null);
   }
 
   // Restituisce l'unsubscriber, come listen(): serve a staccare il listener
   // all'uscita dalla sessione (vedi detachSessionListeners in views/core.js).
   listenNoteLocks(callback) {
     if (!this.code) return null;
-    return onValue(ref(this._db, `sessions/${this.code}/noteLocks`), snap => {
+    return onValue(this._presenceRef('noteLocks'), snap => {
       callback(snap.val() || {});
     });
   }
 
   async setCursorPosition(uid, col, row, name, color) {
     if (!this.code) return;
-    const r = ref(this._db, `sessions/${this.code}/cursors/${uid}`);
+    const r = this._presenceRef(`cursors/${uid}`);
     await set(r, { col, row, name, color });
     // Armato una sola volta per client/sessione: a differenza del lock delle
     // note (scritture rare, su focus) qui si scrive di continuo, ri-registrare
@@ -356,12 +374,12 @@ export class Session {
 
   async clearCursorPosition(uid) {
     if (!this.code) return;
-    await set(ref(this._db, `sessions/${this.code}/cursors/${uid}`), null);
+    await set(this._presenceRef(`cursors/${uid}`), null);
   }
 
   listenCursors(callback) {
     if (!this.code) return null;
-    return onValue(ref(this._db, `sessions/${this.code}/cursors`), snap => {
+    return onValue(this._presenceRef('cursors'), snap => {
       callback(snap.val() || {});
     });
   }

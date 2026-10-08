@@ -59,11 +59,14 @@ sessions/{code}/
   paint/{col_row}: "#rrggbb"               (colore libero sulla mappa, disegnabile da chiunque)
   template/  shape (circle|cone|line), originCol, originRow, size (metri), angleDeg, ownerUid
              (un solo template attivo per sessione; null se nessuno)
-  cursors/{uid}/  col, row (float, spazio griglia), name, color
-                  (posizione live del mouse sulla griglia; rimosso su disconnessione)
   logs/{logId}/
     message, type, actor, target, amount, createdByUid,
     timestamp (serverTimestamp), clientTimestamp
+
+presence/{code}/                           (presenza volatile — NON sotto sessions/, vedi sotto)
+  cursors/{uid}/   col, row (float, spazio griglia), name, color
+                   (posizione live del mouse sulla griglia; rimosso su disconnessione)
+  noteLocks/{noteId}/  uid, name, color    (chi sta editando una cronaca; rimosso su disconnessione)
 
 characters/{uid}/{charId}/
   name, type, armorClass, hpMax, abilities/{str,dex,...}, skills/,
@@ -75,12 +78,36 @@ userSessions/{uid}/{code}/
   combatantId, characterName, role, charId, lastSeen
 ```
 
-**Firebase Security Rules** (impostare manualmente in Console):
+**Perché `presence/` sta fuori da `sessions/`** — non è un dettaglio estetico, è la causa del bug di concorrenza più grosso che il progetto ha avuto. Un `onValue` su `sessions/{code}` scatta per **qualunque discendente**, e i cursori si scrivono ogni 120ms per ogni mouse in movimento. Tenendoli sotto `sessions/` succedeva che:
+1. un solo giocatore che muoveva il mouse faceva rieseguire a **ogni** client l'intera pipeline di render ~8 volte al secondo (SVG della griglia distrutto e ricostruito incluso) — da cui click mangiati, ghost che lampeggiano, UI che sembra "rotta";
+2. **ogni `runTransaction` su `sessions/{code}` veniva invalidata di continuo.** `nextTurnAtomic` gira proprio là: l'SDK riprova 25 volte e poi falla con `maxretry`. Era la causa di "Fine Turno non ha fatto niente / ha avanzato due volte / ci ha messo tre secondi".
+
+Regola: **qualunque dato scritto ad alta frequenza, o non di gioco, va fuori da `sessions/{code}`.**
+
+**Firebase Security Rules** (impostare manualmente in Console). Questo è lo stato **raccomandato**; `presence` è verificato attivo (probe di scrittura/lettura riuscita), il resto va confrontato con la Console prima di fidarsi — questo blocco è già stato fuori sincrono con la realtà in passato:
 ```json
-"sessions": { "$code": { ".read": true, ".write": "auth != null" } },
-"characters": { "$uid": { ".read": "$uid === auth.uid", ".write": "$uid === auth.uid" } },
-"userSessions": { "$uid": { ".read": "$uid === auth.uid", ".write": "$uid === auth.uid" } }
+{
+  "rules": {
+    "sessions": {
+      "$code": {
+        ".read": true,
+        ".write": "auth != null",
+        "combatants": { ".indexOn": ["ownerUid"] }
+      }
+    },
+    "presence": {
+      "$code": { ".read": true, ".write": "auth != null" }
+    },
+    "characters": {
+      "$uid": { ".read": "$uid === auth.uid", ".write": "$uid === auth.uid" }
+    },
+    "userSessions": {
+      "$uid": { ".read": "auth != null && auth.uid === $uid", ".write": "auth != null && auth.uid === $uid" }
+    }
+  }
+}
 ```
+Note: `.indexOn: ["ownerUid"]` serve a `Combatant.findByOwner`. `.read`/`.write` di `sessions` vanno sotto `$code`, non sul nodo `sessions`: i permessi Firebase **discendono a cascata e non si possono revocare più in basso**, quindi metterli in alto permetterebbe a qualunque utente autenticato di scrivere su `/sessions` e cancellare tutte le sessioni in un colpo. Nessun punto del codice accede a `/sessions` senza un codice.
 
 ---
 
@@ -124,7 +151,7 @@ userSessions/{uid}/{code}/
 - Template ad area sulla griglia (cerchio/cono/linea): piazzamento clic-clic (origine poi conferma con anteprima live), condiviso in tempo reale (`sessions/{code}/template`), celle coperte evidenziate e combattenti coinvolti elencati nell'hint della toolbar
 - Riposo breve/lungo: bottoni in topbar visibili a tutti (non master-only), con conferma; riposo breve cura PG+famigli di metà `hpMax` (additivo, cap al massimo), riposo lungo li porta a piena vita e azzera gli HP temporanei (`Combatant.restParty`)
 - Disegno libero sulla mappa: bottone 🎨 in toolbar griglia, aperto a chiunque; palette di 8 colori predefiniti + color picker custom + gomma; drag-to-paint come i muri (stesso binder generalizzato `_bindCellPaint` in `GridUI.js`); "Pulisci tutto" aperto a chiunque con conferma; mutuamente esclusivo con modifica muri e piazzamento template (`state.drawMode`)
-- Cursori live multiplayer sulla griglia: ogni giocatore vede il puntatore colorato (colore deterministico per uid) con nome di tutti gli altri (mai il proprio riflesso — si ha già il puntatore reale del sistema), sempre attivo mentre il mouse resta sulla griglia; posizione in coordinate griglia (non pixel), indipendente da zoom/pan locale di ciascun viewer; canale Firebase separato (`sessions/{code}/cursors`) per non appesantire il render principale; cleanup automatico alla disconnessione
+- Cursori live multiplayer sulla griglia: ogni giocatore vede il puntatore colorato (colore deterministico per uid) con nome di tutti gli altri (mai il proprio riflesso — si ha già il puntatore reale del sistema), sempre attivo mentre il mouse resta sulla griglia; posizione in coordinate griglia (non pixel), indipendente da zoom/pan locale di ciascun viewer; scritti su `presence/{code}/cursors`, **fuori** dal nodo sessione, perché un `onValue` su `sessions/{code}` scatta per qualunque discendente (vedi "Perché `presence/` sta fuori da `sessions/`"); cleanup automatico alla disconnessione
 - Barra token: cliccare la chip di un personaggio già piazzato sulla griglia lo rimuove (`clearGridPosition`), invece di limitarsi a selezionarlo; riposizionare resta possibile cliccando il token direttamente sulla griglia
 - Anteprima template (cerchio/cono/linea): durante il piazzamento, prima della conferma, mostra una misura in metri sulla mappa accanto al cursore (riusa `.sq-dist`), aggiornata in tempo reale mentre si mira
 - Secchiello (🪣) per il disegno sulla mappa: riempie ad area le zone delimitate da muri o celle di colore diverso (flood fill BFS, `_floodFillKeys` in `GridUI.js`); flusso select-tool-poi-colore (si attiva il bottone, poi si sceglie il colore — un pallino di fianco al bottone mostra il colore corrente), click singolo sulla griglia per riempire; scrittura batch (`Session.setPaintCells`, un solo `update()` multi-path)
@@ -264,7 +291,7 @@ Nessuno al momento.
 - `sessions/{code}/walls/{col_row}` — true se muro presente
 - `sessions/{code}/template/` — shape, originCol, originRow, size (metri), angleDeg, ownerUid (un solo template alla volta)
 - `sessions/{code}/paint/{col_row}` — colore hex `"#rrggbb"` se la cella è dipinta
-- `sessions/{code}/cursors/{uid}/` — col, row (float), name, color; rimosso automaticamente alla disconnessione
+- `presence/{code}/cursors/{uid}/` — col, row (float), name, color; **fuori da `sessions/`** di proposito; rimosso automaticamente alla disconnessione
 
 **Invarianti:**
 - 1 casella = 1 metro; diagonali alternate 5-10-5 (variante DMG: `max + floor(min/2)`)
@@ -282,7 +309,7 @@ Nessuno al momento.
 - Forma pennello/gomma (`state.drawShape: 'square' | 'round'`, bottoni `#btn-draw-shape-square`/`#btn-draw-shape-round`): quadrata (default, blocco N×N pieno) o rotonda (`_isInRoundMask` in `GridUI.js`, maschera a raggio inscritto `floor(size/2)` applicata al blocco — size 1 e 2 restano piene per mancanza di risoluzione, 3 diventa un rombo a 5 celle, 4 un quadrato con i 4 angoli tagliati); come la dimensione, non si applica al secchiello (bottoni disabilitati quando `drawTool === 'bucket'`)
 - Anteprima pennello/gomma: al passaggio del mouse in modalità disegno (non secchiello), un ghost SVG locale (`updateDrawGhost` in `GridUI.js`, puramente client-side, nessuna scrittura Firebase) evidenzia le celle del blocco N×N che verrebbero toccate cliccando lì, rispettando dimensione e forma correnti; riempito e tratteggiato nel colore corrente se si sta colorando, solo contorno tratteggiato bianco se è selezionata la gomma; mutuamente esclusivo con il ghost di spostamento token e quello del template (un solo ghost visibile alla volta, stesso pattern già usato da quei due)
 - Undo/redo del disegno (`#btn-draw-undo`/`#btn-draw-redo`, bottoni ↶/↷): **locale a ciascun client**, non condiviso tra giocatori e non persistito (si perde al reload/rejoin, come il resto dello stato locale della griglia) — pile `_undoStack`/`_redoStack` in `src/logic/grid.js`, cap a 50 voci. Ogni voce è lo snapshot `[{key, before, after}]` di UNA pennellata (intera, non per singola cella — raccolta durante il drag in `_colorStrokeChanges` e inviata via `onStrokeEnd` al pointerup/pointercancel), UN secchiello, o UN "Pulisci tutto" **fatto da questo giocatore**: non si può annullare una modifica fatta da qualcun altro, e una nuova azione svuota la pila redo. Scrittura via `Session.setPaintMap` (valore diverso per cella, serve perché una pennellata può aver coperto celle che partivano da colori diversi tra loro). Limite noto e accettato: se un'altra cella viene ripitturata da un altro giocatore tra l'azione originale e l'undo, quest'ultimo sovrascrive comunque col valore "prima" registrato — nessuna risoluzione di conflitto, scelta deliberata per restare semplice (niente storico condiviso su Firebase)
-- Cursori: posizione trasmessa in coordinate griglia (spazio SVG fisso, indipendente da zoom/pan di ciascun viewer — non pixel schermo), throttle a 120ms; canale Firebase separato (`Session.listenCursors`) dal listener principale della sessione, per non innescare la pipeline di render pesante ad ogni movimento mouse (stesso pattern di `noteLocks`); layer HTML sibling di `#grid-container`, mai toccato dal rebuild dell'SVG; cleanup automatico via `onDisconnect` alla chiusura scheda/disconnessione
+- Cursori: posizione trasmessa in coordinate griglia (spazio SVG fisso, indipendente da zoom/pan di ciascun viewer — non pixel schermo), throttle a 120ms. **Scritti su `presence/{code}/cursors`, non sotto `sessions/`** (stesso trattamento per `noteLocks`): avere un listener dedicato `Session.listenCursors` **non basta**, perché il listener principale su `sessions/{code}` scatta comunque per qualunque discendente — era questo il bug, vedi "Perché `presence/` sta fuori da `sessions/`" nella sezione modello dati. Layer HTML **sibling** di `#grid-container` (`insertAdjacentElement('afterend', …)`), mai toccato dal rebuild dell'SVG — e per lo stesso motivo svuotare l'innerHTML del container non lo pulisce: all'uscita serve `GridUI.clearCursors()`. Cleanup automatico via `onDisconnect`, riarmato a ogni nuovo codice sessione (`_cursorDisconnectArmed` azzerato in `create`/`join`/`restore`, perché l'istanza `Session` è unica e riusata tra sessioni)
 
 ---
 
