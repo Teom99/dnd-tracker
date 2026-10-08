@@ -10,7 +10,7 @@ import * as UI               from './src/ui/UI.js';
 import * as GridUI           from './src/ui/GridUI.js';
 import { state }             from './src/utils/state.js';
 import { initCombatManagers, exitToHome, esc, closeConditionModal } from './src/views/core.js';
-import { renderGrid, toggleTemplatePlacement, clearTemplate, toggleDrawMode, setDrawColor, clearPaint, toggleDrawTool, setDrawSize, setDrawShape } from './src/logic/grid.js';
+import { renderGrid, toggleTemplatePlacement, clearTemplate, toggleDrawMode, setDrawColor, clearPaint, toggleDrawTool, setDrawSize, setDrawShape, undoPaint, redoPaint } from './src/logic/grid.js';
 import { initSheet, makeCallbacks } from './src/views/sheet.js';
 import { LevelUp }   from './src/logic/LevelUp.js';
 import { LevelUpUI } from './src/ui/LevelUpUI.js';
@@ -1257,6 +1257,15 @@ document.getElementById('grid-draw-palette')?.addEventListener('click', (e) => {
   if (e.target.closest('#btn-paint-clear')) {
     if (!confirm('Cancellare tutto il disegno sulla mappa?')) return;
     clearPaint();
+    return;
+  }
+  if (e.target.closest('#btn-draw-undo')) {
+    undoPaint();
+    return;
+  }
+  if (e.target.closest('#btn-draw-redo')) {
+    redoPaint();
+    return;
   }
 });
 

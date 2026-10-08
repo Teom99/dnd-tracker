@@ -2,6 +2,50 @@ import * as GridUI from '../ui/GridUI.js';
 import { state }   from '../utils/state.js';
 import { playerColor } from '../utils/presence.js';
 
+// ─── Undo/redo del disegno sulla mappa (locale a questo client, non condiviso
+// e non persistito — si perde al reload, come il resto dello stato locale
+// della griglia). Ogni voce è l'elenco [{key, before, after}] di una singola
+// pennellata/secchiello/pulisci-tutto fatta DA QUESTO giocatore; undo/redo di
+// un'altra persona non è possibile e non invalida questa pila.
+const UNDO_LIMIT = 50;
+let _undoStack = [];
+let _redoStack = [];
+
+function recordPaintChange(changes) {
+  if (!changes || !changes.length) return;
+  _undoStack.push(changes);
+  if (_undoStack.length > UNDO_LIMIT) _undoStack.shift();
+  _redoStack = []; // una nuova azione invalida i redo pendenti
+  updateUndoRedoButtons();
+}
+
+function updateUndoRedoButtons() {
+  const undoBtn = document.getElementById('btn-draw-undo');
+  const redoBtn = document.getElementById('btn-draw-redo');
+  if (undoBtn) undoBtn.disabled = _undoStack.length === 0;
+  if (redoBtn) redoBtn.disabled = _redoStack.length === 0;
+}
+
+export async function undoPaint() {
+  const entry = _undoStack.pop();
+  if (!entry) return;
+  _redoStack.push(entry);
+  const map = {};
+  for (const { key, before } of entry) map[key] = before;
+  await state.session.setPaintMap(map);
+  updateUndoRedoButtons();
+}
+
+export async function redoPaint() {
+  const entry = _redoStack.pop();
+  if (!entry) return;
+  _undoStack.push(entry);
+  const map = {};
+  for (const { key, after } of entry) map[key] = after;
+  await state.session.setPaintMap(map);
+  updateUndoRedoButtons();
+}
+
 export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants, gridConfig, walls) {
   const container = document.getElementById('grid-container');
   if (!container) return;
@@ -93,10 +137,12 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
     state.drawTool,
     (cellKeys, color) => state.session.setPaintCells(cellKeys, color),
     state.drawSize,
-    state.drawShape
+    state.drawShape,
+    (changes) => recordPaintChange(changes)
   );
   renderTokenBar(gridPos, combatants);
   updateTokenSizeControl(combatants);
+  updateUndoRedoButtons();
 }
 
 // Attiva/disattiva la modalità di piazzamento di un template ad area.
@@ -140,6 +186,9 @@ export function setDrawColor(color) {
 }
 
 export function clearPaint() {
+  const current = state.snapshot?.paint || {};
+  const changes = Object.keys(current).map(key => ({ key, before: current[key], after: null }));
+  if (changes.length) recordPaintChange(changes);
   state.session.clearPaint();
 }
 

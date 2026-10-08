@@ -192,6 +192,20 @@ export class Session {
     await set(ref(this._db, `sessions/${this.code}/paint`), null);
   }
 
+  // Scrittura batch con un colore diverso per cella (undo/redo del disegno:
+  // una pennellata può aver sovrascritto celle che partivano da colori diversi).
+  async setPaintMap(cellColorMap) {
+    if (!this.code || !cellColorMap) return;
+    const keys = Object.keys(cellColorMap);
+    if (!keys.length) return;
+    const updates = {};
+    for (const key of keys) {
+      const color = cellColorMap[key];
+      updates[`paint/${key}`] = (color && /^#[0-9a-fA-F]{6}$/.test(color)) ? color.toLowerCase() : null;
+    }
+    await update(ref(this._db, `sessions/${this.code}`), updates);
+  }
+
   async resetGrid() {
     await set(ref(this._db, `sessions/${this.code}/grid`), null);
     await set(ref(this._db, `sessions/${this.code}/walls`), null);

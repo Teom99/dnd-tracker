@@ -592,6 +592,11 @@
   opacity: 0.35;
   cursor: not-allowed;
 }
+#btn-draw-undo:disabled,
+#btn-draw-redo:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
 
 .grid-master-controls {
   display: flex;

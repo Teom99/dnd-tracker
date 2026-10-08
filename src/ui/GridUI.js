@@ -29,6 +29,7 @@ let _paintMode         = null;  // 'wall' | 'color', deciso al pointerdown
 let _paintValue        = false; // usato da _paintMode === 'wall'
 let _paintColorValue   = null;  // usato da _paintMode === 'color' (hex o null = gomma)
 let _paintedThisStroke = null;
+let _colorStrokeChanges = null; // { [cellKey]: { before, after } } — solo modalità colore, per l'undo/redo
 
 function _cellFromEvent(e) {
   let hit = e.target?.closest?.('.sq-hit');
@@ -82,6 +83,9 @@ function _paintAt(col, row) {
         const current = _ctx.paint?.[key] ?? null;
         if (current === _paintColorValue) continue; // già nello stato voluto
         newKeys.push(key);
+        if (_colorStrokeChanges && !(key in _colorStrokeChanges)) {
+          _colorStrokeChanges[key] = { before: current, after: _paintColorValue };
+        }
       }
     }
     if (newKeys.length === 1) _ctx.onSetPaint(newKeys[0], _paintColorValue);
@@ -138,7 +142,12 @@ function _bindCellPaint(container) {
 
     if (bucketMode) {
       const keys = _floodFillKeys(cell.col, cell.row);
-      if (keys.length > 0) _ctx.onPaintCells(keys, _ctx.drawColor ?? null);
+      if (keys.length > 0) {
+        const fillColor = _ctx.drawColor ?? null;
+        const changes = keys.map(k => ({ key: k, before: _ctx.paint?.[k] ?? null, after: fillColor }));
+        _ctx.onPaintCells(keys, fillColor);
+        _ctx.onStrokeEnd?.(changes);
+      }
       e.preventDefault();
       return; // azione singola al click, nessun drag da tracciare
     }
@@ -148,8 +157,9 @@ function _bindCellPaint(container) {
       _paintMode  = 'wall';
       _paintValue = !_ctx.wall[key];   // cella vuota → disegna; muro → cancella
     } else {
-      _paintMode       = 'color';
-      _paintColorValue = _ctx.drawColor; // null = gomma
+      _paintMode          = 'color';
+      _paintColorValue    = _ctx.drawColor; // null = gomma
+      _colorStrokeChanges = {};
     }
     _painting          = true;
     _paintedThisStroke = new Set();
@@ -163,7 +173,15 @@ function _bindCellPaint(container) {
     if (cell) _paintAt(cell.col, cell.row);
   });
 
-  const stop = () => { _painting = false; };
+  const stop = () => {
+    _painting = false;
+    if (_paintMode === 'color' && _colorStrokeChanges) {
+      const changes = Object.entries(_colorStrokeChanges).map(([key, v]) => ({ key, ...v }));
+      if (changes.length) _ctx?.onStrokeEnd?.(changes);
+    }
+    _colorStrokeChanges = null;
+    _paintMode          = null;
+  };
   container.addEventListener('pointerup', stop);
   container.addEventListener('pointercancel', stop);
   window.addEventListener('pointerup', stop);
@@ -370,8 +388,9 @@ export function setCursors(cursorsObj, myUid) {
  * @param onPaintCells (cellKeys, color) => void — scrittura batch multi-cella (secchiello e pennello/gomma a blocco N×N)
  * @param drawSize number (1-4)                — lato del blocco N×N del pennello/gomma, centrato sulla cella sotto il cursore
  * @param drawShape 'square' | 'round'         — forma del blocco pennello/gomma
+ * @param onStrokeEnd (changes) => void        — fine di una modifica colore (pennellata o secchiello); changes = [{key, before, after}], per l'undo/redo locale
  */
-export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onSetWall, template, placingShape, templateOrigin, onSetTemplateOrigin, onCommitTemplate, paint, drawMode, drawColor, onSetPaint, onCursorMove, drawTool, onPaintCells, drawSize, drawShape) {
+export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onSetWall, template, placingShape, templateOrigin, onSetTemplateOrigin, onCommitTemplate, paint, drawMode, drawColor, onSetPaint, onCursorMove, drawTool, onPaintCells, drawSize, drawShape, onStrokeEnd) {
   const pos   = gridPos    || {};
   const comb  = combatants || {};
   const wall  = walls      || {};
@@ -579,7 +598,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   }
 
   // Aggiorna il contesto usato dal disegno (muri/colore) con drag e assicura il binding.
-  _ctx = { cols, rows, wall, occCell, isMaster, editMode: !!editMode, onSetWall, paint: cellPaint, drawMode: !!drawMode, drawColor: drawColor ?? null, onSetPaint, drawTool: drawTool || 'brush', onPaintCells, drawSize: drawSize || 1, drawShape: drawShape || 'square' };
+  _ctx = { cols, rows, wall, occCell, isMaster, editMode: !!editMode, onSetWall, paint: cellPaint, drawMode: !!drawMode, drawColor: drawColor ?? null, onSetPaint, drawTool: drawTool || 'brush', onPaintCells, drawSize: drawSize || 1, drawShape: drawShape || 'square', onStrokeEnd };
   _bindCellPaint(container);
 
   const svg = container.querySelector('svg');
