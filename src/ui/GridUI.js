@@ -424,6 +424,12 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   const occCell = {};
   Object.entries(pos).forEach(([id, p]) => {
     if (p == null || p.col == null) return;
+    // Stesso bail del loop di disegno dei token più sotto (`if (!occ) return`):
+    // una voce orfana in grid/ (combattente rimosso, o "Resetta incontro" che
+    // svuotava combatants senza toccare grid) non viene disegnata, quindi non
+    // deve nemmeno occupare celle — altrimenti resta una casella occupata
+    // INVISIBILE che blocca movimento e muri e fa sparire il ghost.
+    if (!comb[id]) return;
     const n = footprintOf(comb[id]?.size);
     for (let dc = 0; dc < n; dc++) {
       for (let dr = 0; dr < n; dr++) {

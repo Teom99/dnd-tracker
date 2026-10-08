@@ -268,6 +268,7 @@ Nessuno al momento.
 - La casella cliccata è ~il centro del footprint per token grandi (offset `floor((n-1)/2)`)
 - Movimento valida bordi, muri e sovrapposizioni sull'intero footprint prima di scrivere
 - Reset (solo master) svuota `grid/` e `walls/` — token e muri cancellati (non tocca `template/` né `paint/`, che hanno i loro controlli dedicati)
+- **Chi cancella combattenti deve cancellare anche le loro voci in `grid/`.** `grid/{id}` e `combatants/{id}` sono due sottoalberi separati che vanno tenuti consistenti a mano: `removeCombatant` (`src/views/core.js`) lo fa già per la rimozione singola, e "Resetta incontro" (`btn-reset` in `app.js`) ora chiama `Session.clearAllGridPositions()` dopo `removeAll()`. Una voce orfana in `grid/` non viene disegnata (il loop dei token fa `if (!occ) return`) ma **occupava** celle: il risultato era una casella occupata invisibile che bloccava per sempre movimento e muri. Il loop di `occCell` in `GridUI.renderGrid` ha ora lo stesso bail, come seconda linea di difesa
 - Piazzamento template: clic-clic (origine poi conferma), non drag; mutuamente esclusivo con la modalità modifica muri e col disegno (`state.gridEditMode`, `state.drawMode`)
 - Geometria template: cerchio = raggio; cono = 90° totali (±45° dall'angolo); linea = larghezza fissa 1.5m — celle incluse per centro-cella, non footprint esatto
 - Solo chi l'ha piazzato o il master possono cancellare il template attivo; piazzarne uno nuovo sovrascrive il precedente

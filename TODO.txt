@@ -14,6 +14,7 @@
 
 ## Fatto
 
+- BUG: "Resetta incontro" lasciava la mappa rotta in modo permanente — svuotava i combattenti senza cancellare le loro posizioni sulla griglia, e le celle prima occupate restavano bloccate da token invisibili (bloccavano piazzamento e muri) finché non si premeva "Svuota griglia". Ora il reset cancella anche grid/, e il calcolo delle celle occupate ignora le voci orfane
 - FEAT: Undo/redo (↶/↷) del disegno sulla mappa, locale a ciascun giocatore (solo le proprie pennellate/secchiello/pulisci-tutto, non persistito)
 - FIX: Color picker custom del disegno mappa — il colore scelto poteva venire resettato a metà selezione da un'azione concorrente di un altro giocatore (bug di concorrenza sullo stesso schema già risolto altrove, qui su un input mai ricreato via innerHTML)
 - FEAT: Anteprima dell'area di pennello/gomma sotto al cursore sulla mappa, rispettando dimensione e forma correnti

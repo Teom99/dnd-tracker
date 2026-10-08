@@ -633,6 +633,11 @@ document.getElementById('btn-next-turn').addEventListener('click', async () => {
 document.getElementById('btn-reset').addEventListener('click', async () => {
   if (!confirm('Sei sicuro di voler resettare l\'incontro?\nTutti i combattenti verranno rimossi.')) return;
   await state.combatantManager.removeAll();
+  // Senza questo, grid/ restava pieno di voci orfane: i combattenti erano
+  // spariti ma le loro celle risultavano ancora occupate — e siccome il token
+  // non viene più disegnato, erano celle occupate INVISIBILI che bloccavano
+  // per sempre piazzamento e muri.
+  await state.session.clearAllGridPositions();
   await state.tracker.reset();
   await state.session.addLogEvent('Incontro resettato - tutti i combattenti rimossi', 'turn');
 });
