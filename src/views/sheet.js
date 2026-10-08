@@ -34,6 +34,16 @@ export async function onDeathSave(type, count) {
 
 export function setupSheetListener() {
   if (!state.sheet) return;
+  // Stacca il listener di scheda precedente. È raggiungibile da quattro punti
+  // (initSheet su entra/rientra/restore + openLibrarySheet) e l'unsubscriber
+  // veniva scartato: ogni listener sopravvissuto ha le SUE closure prevAc/
+  // prevHpMax/prevName/prevSize/... e pubblica i valori del PROPRIO
+  // personaggio su state.myCombatantId. Aprire una scheda dalla libreria e
+  // poi rientrare in sessione lasciava più listener che si sovrascrivevano a
+  // vicenda nome, HP max, CA e avatar dello stesso combattente.
+  try { state._sheetUnsub?.(); } catch { /* già staccato */ }
+  state._sheetUnsub = null;
+
   let populated       = false;
   let prevAc          = undefined;
   let prevHpMax       = undefined;
@@ -42,7 +52,7 @@ export function setupSheetListener() {
   let prevSize        = undefined;
   let prevSpeed       = undefined;
   let prevAvatarThumb = undefined;
-  state.sheet.listen((snap) => {
+  state._sheetUnsub = state.sheet.listen((snap) => {
     state.sheetData = snap.val() || {};
 
     // Sincronizza AC al combattente solo se effettivamente cambiata

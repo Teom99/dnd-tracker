@@ -31,4 +31,12 @@ export const state = {
   shipData:               null,
   shipPanelOpen:          false,
   _selectedShipToken:     null,
+  // Unsubscriber Firebase attivi. Prima non venivano conservati da nessuna
+  // parte (in tutto il progetto non esisteva un solo off()), quindi ogni
+  // ri-ingresso in sessione o riapertura di scheda registrava un listener in
+  // più sullo stesso nodo: pipeline eseguita N volte per snapshot, notifiche
+  // duplicate, e N listener di scheda che si sovrascrivevano a vicenda i
+  // campi del combattente.
+  _sessionUnsubs:         [],
+  _sheetUnsub:            null,
 };

@@ -9,7 +9,7 @@ import { CharacterLibrary }  from './src/data/CharacterLibrary.js';
 import * as UI               from './src/ui/UI.js';
 import * as GridUI           from './src/ui/GridUI.js';
 import { state }             from './src/utils/state.js';
-import { initCombatManagers, exitToHome, esc, closeConditionModal } from './src/views/core.js';
+import { initCombatManagers, exitToHome, esc, closeConditionModal, detachSessionListeners } from './src/views/core.js';
 import { renderGrid, toggleTemplatePlacement, clearTemplate, toggleDrawMode, setDrawColor, clearPaint, toggleDrawTool, setDrawSize, setDrawShape, undoPaint, redoPaint } from './src/logic/grid.js';
 import { initSheet, makeCallbacks } from './src/views/sheet.js';
 import { LevelUp }   from './src/logic/LevelUp.js';
@@ -1307,16 +1307,22 @@ function _renderCombatLists() {
 }
 
 function _startListening() {
-  state.session.listenNoteLocks(locks => {
+  // Stacca sempre prima di riattaccare: questa funzione è raggiungibile da
+  // quattro punti (crea / entra / rientra dalla lista / restore all'avvio) e
+  // senza questo ogni passaggio lasciava attivo il listener precedente.
+  // Farlo qui copre tutti e quattro i percorsi in una riga sola.
+  detachSessionListeners();
+
+  state._sessionUnsubs.push(state.session.listenNoteLocks(locks => {
     _noteLocks = locks;
     _renderSessionNotes();
-  });
+  }));
 
-  state.session.listenCursors(cursors => {
+  state._sessionUnsubs.push(state.session.listenCursors(cursors => {
     GridUI.setCursors(cursors, state.myUid);
-  });
+  }));
 
-  state.session.listen((snap) => {
+  state._sessionUnsubs.push(state.session.listen((snap) => {
     const data = snap.val();
     if (!data) return;
     state.snapshot = data;
@@ -1406,7 +1412,7 @@ function _startListening() {
     if (state.shipPanelOpen) _renderShipPanel();
 
     _renderSessionNotes();
-  });
+  }));
 }
 
 async function _rejoinSession(code, savedCombatantId, role, savedCharId = null) {

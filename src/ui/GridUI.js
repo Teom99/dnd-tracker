@@ -369,6 +369,19 @@ function _renderCursorOverlay() {
   });
 }
 
+// Rimuove del tutto il layer dei cursori. Non passa da _renderCursorOverlay
+// perché quello esce subito se non trova l'SVG — ed è esattamente il caso
+// all'uscita dalla sessione, dopo che #grid-container è stato svuotato. Il
+// layer è un SIBLING del container (insertAdjacentElement 'afterend'), quindi
+// svuotarne l'innerHTML non lo tocca: senza questo i cursori della sessione
+// precedente restavano a schermo in quella nuova.
+export function clearCursors() {
+  _cursors      = {};
+  _cursorsMyUid = null;
+  _cursorLayer?.remove();
+  _cursorLayer  = null;
+}
+
 export function setCursors(cursorsObj, myUid) {
   _cursors = cursorsObj || {};
   _cursorsMyUid = myUid ?? null;

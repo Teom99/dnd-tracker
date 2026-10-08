@@ -332,9 +332,11 @@ export class Session {
     await set(ref(this._db, `sessions/${this.code}/noteLocks/${noteId}`), null);
   }
 
+  // Restituisce l'unsubscriber, come listen(): serve a staccare il listener
+  // all'uscita dalla sessione (vedi detachSessionListeners in views/core.js).
   listenNoteLocks(callback) {
-    if (!this.code) return;
-    onValue(ref(this._db, `sessions/${this.code}/noteLocks`), snap => {
+    if (!this.code) return null;
+    return onValue(ref(this._db, `sessions/${this.code}/noteLocks`), snap => {
       callback(snap.val() || {});
     });
   }
@@ -358,8 +360,8 @@ export class Session {
   }
 
   listenCursors(callback) {
-    if (!this.code) return;
-    onValue(ref(this._db, `sessions/${this.code}/cursors`), snap => {
+    if (!this.code) return null;
+    return onValue(ref(this._db, `sessions/${this.code}/cursors`), snap => {
       callback(snap.val() || {});
     });
   }
