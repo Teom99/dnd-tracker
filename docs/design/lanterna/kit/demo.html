@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lanterna — demo componenti</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Alegreya+Sans:wght@400;500;700&family=Cinzel:wght@500;600;700&family=Cormorant:wght@500;600;700&family=EB+Garamond:wght@400;500;600&family=Grenze+Gotisch:wght@600;700&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css"><link rel="stylesheet" href="primitives.css"><link rel="stylesheet" href="components.css"><link rel="stylesheet" href="views.css">
+<!-- Nessun build step: Preact + htm come moduli ES da CDN, versioni pinnate. Serve un server statico (es. `python3 -m http.server`) perché i moduli ES non girano da file://. -->
+<script type="importmap">
+{
+  "imports": {
+    "preact": "https://cdn.jsdelivr.net/npm/preact@10.29.8/dist/preact.module.js",
+    "preact/hooks": "https://cdn.jsdelivr.net/npm/preact@10.29.8/hooks/dist/hooks.module.js",
+    "htm": "https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.module.js",
+    "htm/preact": "https://cdn.jsdelivr.net/npm/htm@3.1.1/preact/index.module.js"
+  }
+}
+</script>
+</head>
+<body>
+<div class="ds-fog"></div>
+<div id="app"></div>
+<script src="aspetto.js"></script>
+<script type="module" src="demo.js"></script>
+</body>
+</html>
