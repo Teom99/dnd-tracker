@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Test — adapt.js</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background:#0a0c0b; color:#e8e2d2;
+         margin:0; padding:24px 20px 60px; }
+  h1 { font-size:16px; margin:0 0 4px; letter-spacing:.04em; }
+  p.sub { color:#8f8f82; margin:0 0 20px; font-size:12.5px; }
+  h2 { font-size:13px; color:#c9a24a; margin:22px 0 6px; letter-spacing:.08em; text-transform:uppercase; }
+  .t { padding:2px 0 2px 22px; position:relative; }
+  .t::before { position:absolute; left:0; width:16px; }
+  .ok::before  { content:"PASS"; color:#7cc78a; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko::before  { content:"FAIL"; content:"FAIL"; color:#e0685c; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko { color:#e0685c; }
+  .detail { color:#8f8f82; font-size:12px; padding-left:22px; }
+  #summary { position:fixed; left:0; right:0; bottom:0; padding:12px 20px;
+             background:#161b19; border-top:1px solid #2b3631; font-weight:700; }
+</style>
+</head>
+<body>
+<h1>adapt.js — toCardModel</h1>
+<p class="sub">Nel progetto non c'è un runner di test e sulla macchina non c'è Node.
+Questa pagina esegue le asserzioni nel browser, cioè dove il codice gira davvero.
+Aprila con un server statico: <code>python3 -m http.server</code> → <code>/test/adapt.html</code></p>
+<div id="out"></div>
+<div id="summary">esecuzione…</div>
+
+<script type="importmap">
+{ "imports": {
+    "preact":       "https://cdn.jsdelivr.net/npm/preact@10.29.8/dist/preact.module.js",
+    "preact/hooks": "https://cdn.jsdelivr.net/npm/preact@10.29.8/hooks/dist/hooks.module.js",
+    "htm":          "https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.module.js",
+    "htm/preact":   "https://cdn.jsdelivr.net/npm/htm@3.1.1/preact/index.module.js" } }
+</script>
+
+<script type="module">
+import { toCardModel } from '../src/ui/components/adapt.js';
+
+const out = document.getElementById('out');
+let pass = 0, fail = 0;
+
+const group = (name) => { const h = document.createElement('h2'); h.textContent = name; out.append(h); };
+function check(label, got, want) {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  ok ? pass++ : fail++;
+  const d = document.createElement('div');
+  d.className = 't ' + (ok ? 'ok' : 'ko');
+  d.textContent = label;
+  out.append(d);
+  if (!ok) {
+    const e = document.createElement('div');
+    e.className = 'detail';
+    e.textContent = `atteso ${JSON.stringify(want)} · ottenuto ${JSON.stringify(got)}`;
+    out.append(e);
+  }
+}
+
+// ── Attori ────────────────────────────────────────────────────────────────
+const MASTER = 'uid-master', ME = 'uid-io', ALTRO = 'uid-altro';
+
+const creatura = { id:'c1', name:'Troll delle Cripte', type:'creature', faction:'evil',
+                   hpCurrent:61, hpMax:84, armorClass:15, initiative:11, size:'large',
+                   conditions:{ Prono:true } };
+const mioPg    = { id:'p1', name:"Aldric Vento-d'Autunno", type:'player', ownerUid:ME,
+                   hpCurrent:41, hpMax:47, tempHp:5, initiative:22, inspiration:true,
+                   currentAction:'Colpo divino', size:'medium' };
+const altroPg  = { id:'p2', name:'Cael Ombra-Sottile', type:'player', ownerUid:ALTRO,
+                   hpCurrent:12, hpMax:31, initiative:21, size:'medium' };
+const famiglio = { id:'f1', name:'Lupo Spettrale', type:'pet', ownerUid:ME,
+                   hpCurrent:11, hpMax:11, armorClass:13, initiative:5, size:'medium' };
+
+const comeMaster    = { viewerUid:MASTER, masterUid:MASTER };
+const comeGiocatore = { viewerUid:ME,     masterUid:MASTER };
+
+// ── La regola che non deve mai rompersi ───────────────────────────────────
+group('Visibilità HP delle creature');
+check('il master vede gli HP della creatura',
+      toCardModel(creatura, comeMaster).hp, 61);
+check('il giocatore NON vede gli HP della creatura',
+      toCardModel(creatura, comeGiocatore).hp, null);
+check('…e nemmeno gli HP massimi (rivelerebbero la soglia)',
+      toCardModel(creatura, comeGiocatore).hpMax, null);
+check('…e nemmeno gli HP temporanei',
+      toCardModel(creatura, comeGiocatore).temp, null);
+check('il flag hpHidden avvisa il componente',
+      toCardModel(creatura, comeGiocatore).hpHidden, true);
+check('senza showHealthHint non c\'è nessun hint',
+      toCardModel(creatura, comeGiocatore).hint, null);
+check('col hint acceso dal master il giocatore legge lo stato a parole',
+      toCardModel({ ...creatura, showHealthHint:true }, comeGiocatore).hint, 'Ferito');
+check('…e l\'hint resta qualitativo, mai un numero',
+      toCardModel({ ...creatura, showHealthHint:true }, comeGiocatore).hp, null);
+
+group('Visibilità HP dei personaggi');
+check('vedo gli HP del mio PG', toCardModel(mioPg, comeGiocatore).hp, 41);
+check('vedo gli HP degli altri PG', toCardModel(altroPg, comeGiocatore).hp, 12);
+check('vedo gli HP del mio famiglio', toCardModel(famiglio, comeGiocatore).hp, 11);
+
+group('Visibilità CA');
+check('il master vede la CA della creatura', toCardModel(creatura, comeMaster).ac, 15);
+check('il giocatore NON vede la CA della creatura', toCardModel(creatura, comeGiocatore).ac, null);
+check('col flag showAC la vede', toCardModel({ ...creatura, showAC:true }, comeGiocatore).ac, 15);
+check('la CA dei PG arriva da acMap (sincronizzata dalla scheda)',
+      toCardModel(altroPg, { ...comeGiocatore, acMap:{ [ALTRO]:17 } }).ac, 17);
+
+group('Tipo → kind del kit');
+check('player → pc',                 toCardModel(mioPg, comeGiocatore).kind, 'pc');
+check('creature evil → enemy',       toCardModel(creatura, comeMaster).kind, 'enemy');
+check('creature good → ally',        toCardModel({ ...creatura, faction:'good' }, comeMaster).kind, 'ally');
+check('pet → ally',                  toCardModel(famiglio, comeGiocatore).kind, 'ally');
+
+group('Morto contro morente');
+check('PG a 0 HP NON è morto (tira i salvezza)',
+      toCardModel({ ...mioPg, hpCurrent:0 }, comeGiocatore).dead, false);
+check('creatura a 0 HP è fuori combattimento',
+      toCardModel({ ...creatura, hpCurrent:0 }, comeMaster).dead, true);
+check('famiglio a 0 HP è fuori combattimento',
+      toCardModel({ ...famiglio, hpCurrent:0 }, comeGiocatore).dead, true);
+
+group('Rinomina dei campi');
+check('tempHp → temp',           toCardModel(mioPg, comeGiocatore).temp, 5);
+check('initiative → init',       toCardModel(mioPg, comeGiocatore).init, 22);
+check('inspiration → insp',      toCardModel(mioPg, comeGiocatore).insp, true);
+check('inspiration assente → false', toCardModel(altroPg, comeGiocatore).insp, false);
+check('currentAction → action',  toCardModel(mioPg, comeGiocatore).action, 'Colpo divino');
+check('conditions oggetto → array {id,label}',
+      toCardModel(creatura, comeMaster).conds.map(c => c.id), ['Prono']);
+check('nessuna condizione → array vuoto',
+      toCardModel(mioPg, comeGiocatore).conds, []);
+check('deathSaves successes/failures → ok/ko',
+      toCardModel(mioPg, { ...comeGiocatore, deathSaves:{ successes:1, failures:2 } }).deathSaves,
+      { ok:1, ko:2 });
+check('size large → footprint 2 (riusa footprintOf di GridUI)',
+      toCardModel(creatura, comeMaster).size, 2);
+check('size medium → footprint 1', toCardModel(mioPg, comeGiocatore).size, 1);
+
+group('Permessi');
+check('il master può modificare la creatura', toCardModel(creatura, comeMaster).canEdit, true);
+check('il giocatore non può modificare la creatura', toCardModel(creatura, comeGiocatore).canEdit, false);
+check('il giocatore può modificare il proprio PG', toCardModel(mioPg, comeGiocatore).canEdit, true);
+check('il giocatore non può modificare il PG di un altro', toCardModel(altroPg, comeGiocatore).canEdit, false);
+check('isMine solo sul proprio PG', toCardModel(mioPg, comeGiocatore).isMine, true);
+check('isMine falso sul PG altrui', toCardModel(altroPg, comeGiocatore).isMine, false);
+
+group('Campi che il modello dati non ha (documentati, non inventati)');
+check('sub resta vuoto: classe/livello non sono nello snapshot di sessione',
+      toCardModel(mioPg, comeGiocatore).sub, '');
+check('owner resta null: c\'è solo ownerUid, nessuna mappa uid→nome',
+      toCardModel(mioPg, comeGiocatore).owner, null);
+check('short è derivato dalla prima parola del nome',
+      toCardModel(mioPg, comeGiocatore).short, 'Aldric');
+
+// ── Esito ─────────────────────────────────────────────────────────────────
+const s = document.getElementById('summary');
+s.textContent = fail === 0
+  ? `tutti verdi — ${pass} asserzioni passate`
+  : `${fail} FALLITE su ${pass + fail}`;
+s.style.color = fail === 0 ? '#7cc78a' : '#e0685c';
+</script>
+</body>
+</html>
