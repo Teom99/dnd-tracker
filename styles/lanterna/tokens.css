@@ -1,0 +1,152 @@
+/* ==========================================================================
+   LANTERNA — tokens.css          (un solo file: token + convenzione di naming)
+   Nessun build step: questo file si carica così com'è.
+
+   CONVENZIONE DI NAMING  (BEM + prefisso per area)
+   --------------------------------------------------------------------------
+   Formato     .prefisso-blocco  ·  .prefisso-blocco__elemento  ·  .prefisso-blocco--variante
+   Stati       .is-*  /  .has-*  sempre COMBINATI con il blocco: `.fc.is-open`, mai `.is-open` da solo.
+   Prefissi    ds-  primitive condivise (panel, heading, btn, chip, field, seg, tabs, bar, portrait, emblem, ic, empty, saves, corner, fog, t-*)
+               ly-  shell di layout (colonne, aree, tabbar)         tb-  TopBar + banner turno (tb-turn)
+               ir-  InitiativeRail        cl-  CombatantList        fc-  FightCard
+               dk-  Dock giocatore / master      lg-  EventLog     cr-  Cronache
+               gr-  Griglia tattica (SVG)        nt-  Notifiche    md-  Modali
+               hm-  Home      lo-  Login         sh-  Scheda        sp-  Nave      ap-  Pannello Aspetto
+   Una regola CSS è valida solo se è: (1) un token (custom property), (2) una primitiva ds-*
+   dichiarata, oppure (3) una classe con il prefisso del proprio componente.
+   Eccezioni ammesse, e solo in tokens.css/primitives.css: reset (*, html, body), :root,
+   [data-palette|ornament|typeface] su <html>, :focus-visible, @keyframes (prefisso del componente).
+   Mai selettori di tag annidati (`.fc p`), mai id, mai !important (unica eccezione: il reset prefers-reduced-motion), mai stili su classi di un altro prefisso.
+
+   ASSI PARAMETRICI (attributi su <html>, persistiti in localStorage dal pannello Aspetto)
+   data-palette   cenere (default) · ambra · arcano · vespro
+   data-ornament  standard (default) · essenziale · ricco
+   data-typeface  cormorant (default) · grenze
+   ========================================================================== */
+
+:root {
+  color-scheme: dark;
+  /* Oro antico — costante in tutte le palette: è la LUCE della lanterna (solo ciò che è attivo la emette). */
+  --gold: #c9a24a;
+  --gold-bright: #efd48a;
+  --gold-dim: #8f7433;
+  --gold-faint: #c9a24a24;
+  --on-gold: var(--bg0);          /* testo sopra riempimenti oro/accento */
+  /* Palette di default: Cenere & Verderame */
+  --bg0: #0a0c0b;
+  --bg1: #101413;
+  --bg2: #161b19;
+  --bg3: #1e2522;
+  --line: #2b3631;
+  --line-strong: #6b7068;
+  --bone: #e8e2d2;
+  --mut: #aaa797;
+  --faint: #8f8f82;
+  --accent: #6db5a1;
+  --accent-dim: #3f7466;
+  --accent-faint: #6db5a124;
+  --blood: #e0685c;
+  --blood-deep: #4d1a17;
+  --heal: #7cc78a;
+  --hp-fill: #5fa86b;
+  --hp-trail: #a8463c;
+  --ember: #e0a64a;
+  /* Semantici costanti (tipo di combattente: colore + forma dell'anello, mai solo colore) */
+  --kind-pc: #78c58e;  --kind-ally: #6fb0e8;  --kind-enemy: #e8705f;  --kind-dead: #8f8f8a;
+  /* Scala spaziatura */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-12: 48px;
+  /* Raggi: morbidi (controlli 10 · carte 14 · pannelli 20) */
+  --r: 10px; --r-md: 14px; --r-lg: 20px; --r-pill: 999px;
+  --tap: 44px;
+  /* Tipografia */
+  --font-display: 'Cormorant', 'Cormorant Garamond', Georgia, serif;
+  --font-label: 'Sora', 'Alegreya Sans', system-ui, sans-serif;   /* NUOVO font (l'unico ammesso): etichette, numeri, pulsanti */
+  --font-num: 'Sora', 'Alegreya Sans', system-ui, sans-serif;
+  --font-serif: 'Cinzel', 'Cormorant', Georgia, serif;           /* solo titoli di scena/login e archivio */
+  --font-ui: 'Alegreya Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body: 'EB Garamond', Georgia, serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --fs-xs: 11px; --fs-sm: 13px; --fs-md: 15px; --fs-lg: 18px; --fs-xl: 24px; --fs-2xl: 34px;
+  /* Ombre e luce (mai per singola cella della griglia) */
+  --sh-panel: 0 10px 28px rgba(0, 0, 0, .38);
+  --sh-pop: 0 18px 48px rgba(0, 0, 0, .55);
+  --glow-turn: 0 0 0 1px var(--gold-dim), 0 8px 36px color-mix(in srgb, var(--gold) 24%, transparent);
+  /* Movimento */
+  --dur-1: 120ms; --dur-2: 200ms; --dur-3: 320ms; --dur-4: 700ms; --dur-flash: 1200ms;
+  --ease-out: cubic-bezier(.2, .8, .2, 1); --ease-io: cubic-bezier(.65, 0, .35, 1); --ease-spring: cubic-bezier(.34, 1.45, .64, 1);
+  /* Z-index */
+  --z-dock: 20; --z-pop: 40; --z-modal: 60; --z-toast: 80; --z-fog: 90;
+  /* Layout shell (vedi ly-) */
+  --ly-top: 64px; --ly-dock: 112px; --ly-rail: clamp(248px, 17vw, 320px); --ly-side: clamp(404px, 29vw, 560px);
+  /* Assi parametrici → valori */
+  --orn-grain: .35; --orn-corner: 0px; --orn-size: 1;
+}
+
+/* ---- Palette ---- */
+[data-palette="ambra"] {
+  --bg0: #0d0a07;
+  --bg1: #14100b;
+  --bg2: #1b150f;
+  --bg3: #251d14;
+  --line: #352a1c;
+  --line-strong: #746959;
+  --bone: #efe4cf;
+  --mut: #b3a78f;
+  --faint: #938872;
+  --accent: #e0953f;
+  --accent-dim: #8a5a22;
+  --accent-faint: #e0953f24;
+  --blood: #e8695a;
+  --blood-deep: #4d1a15;
+  --heal: #86c47a;
+  --hp-fill: #7fae5a;
+  --hp-trail: #a8463c;
+  --ember: #f0b24f;
+}
+[data-palette="arcano"] {
+  --bg0: #09080f;
+  --bg1: #0f0d19;
+  --bg2: #161326;
+  --bg3: #1f1b34;
+  --line: #2c2745;
+  --line-strong: #6b6780;
+  --bone: #e6e3f2;
+  --mut: #a9a6c2;
+  --faint: #8a87a6;
+  --accent: #9c93ee;
+  --accent-dim: #5b53a8;
+  --accent-faint: #9c93ee24;
+  --blood: #ee6f7a;
+  --blood-deep: #4d1a24;
+  --heal: #7fd0a6;
+  --hp-fill: #5fb08a;
+  --hp-trail: #b04a56;
+  --ember: #e0b25a;
+}
+[data-palette="vespro"] {
+  --bg0: #0f090b;
+  --bg1: #160e11;
+  --bg2: #1e1317;
+  --bg3: #291a20;
+  --line: #3a2830;
+  --line-strong: #76666a;
+  --bone: #f0e3e0;
+  --mut: #b8a4a4;
+  --faint: #98868a;
+  --accent: #dc7a8b;
+  --accent-dim: #8a4252;
+  --accent-faint: #dc7a8b24;
+  --blood: #ef7a62;
+  --blood-deep: #4d1f17;
+  --heal: #8fc98a;
+  --hp-fill: #6fae6a;
+  --hp-trail: #b0503f;
+  --ember: #f0a85a;
+}
+
+/* ---- Ornamento: essenziale = piatto, senza glow/grana · standard = pulito · ricco = cornici d'angolo, grana, rombi sui titoli ---- */
+[data-ornament="essenziale"] { --orn-grain: 0; --orn-corner: 0px; --orn-size: 0; --glow-turn: 0 0 0 1px var(--gold-dim); }
+[data-ornament="ricco"] { --orn-grain: .9; --orn-corner: 18px; --orn-size: 1.5; }
+
+/* ---- Tipografia ---- */
+[data-typeface="grenze"] { --font-display: 'Grenze Gotisch', 'Cormorant', Georgia, serif; --fs-xl: 26px; --fs-2xl: 36px; }

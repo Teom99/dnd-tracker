@@ -311,7 +311,7 @@ input::placeholder { color: var(--text-muted); }
 }
 
 /* palette alternative (tweak) */
-[data-palette="brace"] {
+[data-palette="ambra"] {
   --bg0:#0d0b09; --bg1:#141110; --bg2:#1b1714; --bg3:#231d18;
   --accent:#c1763d; --accent-dim:rgba(193,118,61,.45); --accent-faint:rgba(193,118,61,.14);
   --heal:#7da35b;
@@ -333,7 +333,7 @@ input::placeholder { color: var(--text-muted); }
 }
 
 /* coppia font alternativa (tweak) */
-[data-typeface="gotico"] {
+[data-typeface="grenze"] {
   --font-display: 'Grenze Gotisch', serif;
 }
 

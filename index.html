@@ -6,16 +6,42 @@
   <title>D&D Combat Tracker</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐉</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Grenze+Gotisch:wght@500;700&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@400;500;600;700&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Grenze+Gotisch:wght@500;700&family=Cinzel:wght@400;600;700&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles/base.css">
   <link rel="stylesheet" href="styles/home.css">
   <link rel="stylesheet" href="styles/combat.css">
   <link rel="stylesheet" href="styles/character.css">
   <link rel="stylesheet" href="styles/grid.css">
   <link rel="stylesheet" href="styles/ship.css">
+
+  <!-- Rework «Lanterna». Questi due vanno DOPO i CSS storici: ridefiniscono gli
+       stessi token in :root e a parità di specificità vince l'ultimo caricato.
+       compat.css è un'impalcatura temporanea, vedi il commento in testa al file. -->
+  <link rel="stylesheet" href="styles/lanterna/tokens.css">
+  <link rel="stylesheet" href="styles/lanterna/compat.css">
+
+  <!-- Preact + htm come moduli ES, senza build step. Versioni pinnate esatte:
+       un range farebbe cambiare il sito sotto i piedi senza un commit.
+       Deve stare prima di qualunque <script type="module">. -->
+  <script type="importmap">
+  { "imports": {
+      "preact":       "https://cdn.jsdelivr.net/npm/preact@10.29.8/dist/preact.module.js",
+      "preact/hooks": "https://cdn.jsdelivr.net/npm/preact@10.29.8/hooks/dist/hooks.module.js",
+      "htm":          "https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.module.js",
+      "htm/preact":   "https://cdn.jsdelivr.net/npm/htm@3.1.1/preact/index.module.js" } }
+  </script>
   <script>
     try {
       var t = JSON.parse(localStorage.getItem('dnd-rework-tweaks') || '{}');
+      // Migrazione una tantum ai nomi del rework «Lanterna». Senza questa, chi
+      // aveva scelto Ambra o il titolo gotico si ritroverebbe il default: il
+      // valore vecchio resta in localStorage e non corrisponde più a nulla.
+      var RENAMED = { palette: { brace: 'ambra' }, typeface: { gotico: 'grenze' } };
+      var migrated = false;
+      for (var k in RENAMED) {
+        if (RENAMED[k][t[k]]) { t[k] = RENAMED[k][t[k]]; migrated = true; }
+      }
+      if (migrated) localStorage.setItem('dnd-rework-tweaks', JSON.stringify(t));
       if (t.palette)  document.documentElement.dataset.palette  = t.palette;
       if (t.ornament) document.documentElement.dataset.ornament = t.ornament;
       if (t.typeface) document.documentElement.dataset.typeface = t.typeface;
@@ -1458,10 +1484,12 @@
       <section class="tp-section">
         <p class="tp-label">Palette</p>
         <div class="tp-row" id="tp-palette">
-          <button class="tp-swatch" data-val="" title="Cenere &amp; Verderame"><span style="background:#5b9e8f"></span><span style="background:#c9a84c"></span></button>
-          <button class="tp-swatch" data-val="brace" title="Ambra"><span style="background:#c1763d"></span><span style="background:#d4a050"></span></button>
-          <button class="tp-swatch" data-val="arcano" title="Arcano"><span style="background:#8d76c9"></span><span style="background:#c9a84c"></span></button>
-          <button class="tp-swatch" data-val="vespro" title="Vespro"><span style="background:#c84ca6"></span><span style="background:#f0c060"></span></button>
+          <!-- Campioni = accento della palette + oro. L'oro è costante in tutte e quattro
+               (è «la luce della lanterna»): cambia solo il primo quadratino. -->
+          <button class="tp-swatch" data-val="" title="Cenere &amp; Verderame"><span style="background:#6db5a1"></span><span style="background:#c9a24a"></span></button>
+          <button class="tp-swatch" data-val="ambra" title="Ambra"><span style="background:#e0953f"></span><span style="background:#c9a24a"></span></button>
+          <button class="tp-swatch" data-val="arcano" title="Arcano"><span style="background:#9c93ee"></span><span style="background:#c9a24a"></span></button>
+          <button class="tp-swatch" data-val="vespro" title="Vespro"><span style="background:#dc7a8b"></span><span style="background:#c9a24a"></span></button>
         </div>
       </section>
       <section class="tp-section">
@@ -1476,7 +1504,7 @@
         <p class="tp-label">Font titoli</p>
         <div class="tp-row" id="tp-typeface">
           <button class="tp-chip" data-val="" style="font-family:'Cormorant Garamond',serif">Cormorant</button>
-          <button class="tp-chip" data-val="gotico" style="font-family:'Grenze Gotisch',serif">Grenze Gotisch</button>
+          <button class="tp-chip" data-val="grenze" style="font-family:'Grenze Gotisch',serif">Grenze Gotisch</button>
         </div>
       </section>
     </div>

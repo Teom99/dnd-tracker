@@ -1,0 +1,83 @@
+/* ==========================================================================
+   LANTERNA — compat.css          IMPALCATURA TEMPORANEA, DA SVUOTARE
+   --------------------------------------------------------------------------
+   Perché esiste
+   I 6 CSS storici (base, home, combat, character, grid, ship) fanno 987
+   riferimenti var(), e 441 di questi — il 45% — puntano a nomi di token che
+   `lanterna/tokens.css` non definisce più. Senza questo file, adottare i token
+   nuovi vorrebbe dire aprire il sito con i colori rotti ovunque.
+
+   Qui i 38 nomi legacy sono rimappati sui token nuovi, così il CSS vecchio
+   continua a funzionare mentre viene migrato una zona alla volta.
+
+   Come si svuota
+   Quando una zona passa al design nuovo (classi con prefisso del componente,
+   token nuovi usati direttamente), si cancellano da qui le righe che quella
+   zona era l'ultima a usare. Per sapere se un nome è ancora vivo:
+
+       grep -rn -- "var(--NOME" styles/ index.html src/
+
+   Quando questo file è vuoto, la migrazione è finita e va cancellato
+   insieme al suo <link> in index.html.
+
+   Ordine di caricamento (importante)
+   Va caricato DOPO i 6 CSS storici e DOPO tokens.css: entrambi definiscono
+   alcuni di questi nomi in :root, e a parità di specificità vince l'ultimo.
+
+   NON stanno qui, di proposito
+   --room  --xp  --lock-color   sono variabili LOCALI, impostate inline sul
+   singolo elemento (ShipUI per le stanze, UI.js per la barra XP e per il
+   colore del lock delle Cronache). Definirle globalmente non servirebbe a
+   nulla e confonderebbe: il valore inline vince comunque.
+   ========================================================================== */
+
+:root {
+  /* ── Superfici ─────────────────────────────────────────────────── */
+  --bg-deep:        var(--bg0);
+  --bg-card:        var(--bg1);
+  --bg-card-alt:    var(--bg2);
+  --bg-hover:       var(--bg3);
+  --active-turn-bg: var(--bg2);
+  --input-bg:       var(--bg0);
+  --hp-bar-bg:      var(--bg0);
+
+  /* ── Bordi e filetti ───────────────────────────────────────────── */
+  --border-warm:    var(--line);
+  --hp-bar-border:  var(--line);
+
+  /* ── Testo ─────────────────────────────────────────────────────── */
+  --text:           var(--bone);
+  --text-primary:   var(--bone);
+  --text-bright:    var(--bone);   /* mai definita prima: era già rotta */
+  --text-muted:     var(--mut);
+  --c:              var(--mut);
+
+  /* ── Oro ───────────────────────────────────────────────────────── */
+  --gold-light:     var(--gold-bright);
+  --gold-muted:     var(--gold-dim);   /* mai definita prima: era già rotta */
+  --gold-glow:      var(--gold-faint);
+  --purple-main:    var(--gold);       /* il viola della vecchia palette è diventato oro */
+
+  /* ── Semantici ─────────────────────────────────────────────────── */
+  --red-bright:     var(--blood);
+  --danger:         var(--blood);
+  --green:          var(--hp-fill);
+  --green-bright:   var(--heal);       /* mai definita prima: era già rotta */
+  --hp-color:       var(--hp-fill);
+  --hp-low:         var(--ember);
+  --cond-color:     var(--accent);     /* senza questa cadeva sempre sul fallback #666 */
+
+  /* ── Forma e profondità ────────────────────────────────────────── */
+  --radius:         var(--r);
+  --radius-sm:      6px;
+  --shadow:         var(--sh-panel);
+  --ink:            rgba(0, 0, 0, .38);
+
+  /* ── Pulsante primario (nel design nuovo è oro, non viola) ─────── */
+  --btn-primary-bg:            linear-gradient(180deg, var(--gold-bright), var(--gold));
+  --btn-primary-color:         var(--on-gold);
+  --btn-primary-border:        var(--gold-dim);
+  --btn-primary-radius:        var(--r);
+  --btn-primary-shadow:        var(--sh-panel);
+  --btn-primary-hover-shadow:  var(--glow-turn);
+}

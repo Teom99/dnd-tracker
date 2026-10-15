@@ -1,0 +1,160 @@
+/* LANTERNA — primitives.css · primitive condivise (prefisso ds-). Convenzione: vedi tokens.css.
+   Linguaggio: superfici morbide, raggi generosi, luce calda solo su ciò che è attivo, numeri grandi in Sora. */
+
+/* ---- base (eccezione dichiarata: reset) ---- */
+*, *::before, *::after { box-sizing: border-box; }
+html { background: var(--bg0); color: var(--bone); font-family: var(--font-ui); font-size: 16px; -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg0); font-size: var(--fs-md); line-height: 1.4; font-variant-numeric: lining-nums tabular-nums; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 2px; }
+::selection { background: var(--gold-dim); color: var(--bone); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; } }
+
+/* ---- tipografia ---- */
+.ds-t-display { font-family: var(--font-display); font-weight: 700; letter-spacing: .005em; }
+.ds-t-label { font-family: var(--font-label); font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--mut); }
+.ds-t-gold { color: var(--gold); }
+
+/* ---- fog: grana + vignetta + lume ambientale in alto (decorativa, mai sulla griglia SVG) ---- */
+.ds-fog { position: fixed; inset: 0; z-index: var(--z-fog); pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 40%, transparent 60%, rgba(0, 0, 0, .45) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: calc(.02 + var(--orn-grain) * .07); mix-blend-mode: screen; }
+.ds-fog::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 40% at 50% -5%, var(--gold-faint), transparent 70%), radial-gradient(ellipse 40% 40% at 100% 100%, var(--accent-faint), transparent 70%); opacity: 1; }
+
+/* ---- panel + corner ---- */
+.ds-panel { position: relative; background: linear-gradient(180deg, color-mix(in srgb, var(--bg3) 70%, var(--bg2)) 0, var(--bg2) 28%, var(--bg1) 100%); border: 1px solid color-mix(in srgb, var(--bone) 9%, transparent); border-radius: var(--r-lg);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .07), var(--sh-panel); }
+.ds-corner { position: absolute; display: none; width: var(--orn-corner); height: var(--orn-corner); pointer-events: none; opacity: .9; }
+.ds-corner--tl { top: 8px; left: 8px; border-top: 1px solid var(--gold); border-left: 1px solid var(--gold); border-top-left-radius: 8px; }
+.ds-corner--br { bottom: 8px; right: 8px; border-bottom: 1px solid var(--gold); border-right: 1px solid var(--gold); border-bottom-right-radius: 8px; }
+.ds-corner--tr { top: 8px; right: 8px; border-top: 1px solid var(--gold-dim); border-right: 1px solid var(--gold-dim); border-top-right-radius: 8px; }
+.ds-corner--bl { bottom: 8px; left: 8px; border-bottom: 1px solid var(--gold-dim); border-left: 1px solid var(--gold-dim); border-bottom-left-radius: 8px; }
+[data-ornament="ricco"] .ds-corner { display: block; }
+
+/* ---- heading: punto di luce + etichetta + filetto che sfuma ---- */
+.ds-heading { display: flex; align-items: center; gap: var(--s-3); margin: 0; font-family: var(--font-label); font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--bone); }
+.ds-heading::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--gold-bright); box-shadow: 0 0 10px var(--gold); flex: none; }
+.ds-heading::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--line-strong), transparent); opacity: .6; }
+[data-ornament="essenziale"] .ds-heading::before { box-shadow: none; }
+[data-ornament="ricco"] .ds-heading::before { border-radius: 0; transform: rotate(45deg); }
+.ds-sep { display: flex; align-items: center; gap: var(--s-2); color: var(--gold-dim); font-size: 9px; }
+.ds-sep::before, .ds-sep::after { content: ''; flex: 1; height: 1px; background: var(--line-strong); opacity: .4; }
+
+/* ---- icone ---- */
+.ds-ic { flex: none; display: inline-block; vertical-align: -.2em; }
+.ds-ic--right { margin-left: 2px; }
+.ds-ic.is-flip { transform: rotate(180deg); }
+
+/* ---- emblema ---- */
+.ds-emblem { position: relative; display: inline-grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 14px; color: var(--on-gold);
+  background: linear-gradient(135deg, var(--gold-bright), var(--gold)); box-shadow: 0 6px 20px color-mix(in srgb, var(--gold) 35%, transparent), inset 0 1px 0 rgba(255, 255, 255, .45); }
+.ds-emblem--lg { width: 72px; height: 72px; border-radius: 24px; }
+.ds-empty .ds-emblem { background: var(--bg3); color: var(--gold); box-shadow: inset 0 0 0 1px var(--line-strong); }
+
+/* ---- bottoni ---- */
+.ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 38px; padding: 0 var(--s-4); border: 1px solid color-mix(in srgb, var(--bone) 16%, transparent); border-radius: var(--r);
+  background: color-mix(in srgb, var(--bone) 7%, var(--bg2)); color: var(--bone); font-family: var(--font-label); font-size: 13px; font-weight: 600; letter-spacing: .01em; white-space: nowrap;
+  transition: transform var(--dur-1) var(--ease-out), background-color var(--dur-2), border-color var(--dur-2), color var(--dur-2), opacity var(--dur-2), box-shadow var(--dur-2); }
+.ds-btn:active { transform: translateY(1px) scale(.985); }
+.ds-btn[disabled] { opacity: .5; cursor: not-allowed; transform: none; }
+.ds-btn--primary { background: linear-gradient(135deg, var(--gold-bright), var(--gold)); border-color: transparent; color: var(--on-gold); font-weight: 700; box-shadow: 0 6px 20px color-mix(in srgb, var(--gold) 30%, transparent), inset 0 1px 0 rgba(255, 255, 255, .4); }
+.ds-btn--ghost { background: color-mix(in srgb, var(--gold) 8%, transparent); border-color: color-mix(in srgb, var(--gold) 45%, transparent); color: var(--gold-bright); }
+.ds-btn--quiet { background: transparent; border-color: transparent; color: var(--mut); padding: 0 var(--s-3); }
+.ds-btn--quiet.is-danger { color: var(--blood); }
+.ds-btn--icon { width: 38px; padding: 0; }
+.ds-btn--dmg { background: color-mix(in srgb, var(--blood) 18%, var(--bg1)); border-color: color-mix(in srgb, var(--blood) 60%, transparent); color: #ffd9d3; }
+.ds-btn--heal { background: color-mix(in srgb, var(--heal) 16%, var(--bg1)); border-color: color-mix(in srgb, var(--heal) 55%, transparent); color: #d6f5dc; }
+.ds-btn.is-loading { color: transparent; pointer-events: none; position: relative; }
+.ds-btn--primary.is-loading::after { border-color: var(--on-gold); border-right-color: transparent; }
+.ds-btn.is-loading::after { content: ''; position: absolute; width: 16px; height: 16px; border: 2px solid var(--gold); border-right-color: transparent; border-radius: 50%; animation: ds-spin 800ms linear infinite; }
+@keyframes ds-spin { to { transform: rotate(360deg); } }
+@media (hover: hover) {
+  .ds-btn:not([disabled]):hover { border-color: var(--gold); color: var(--gold-bright); transform: translateY(-1px); }
+  .ds-btn--primary:not([disabled]):hover { color: var(--on-gold); filter: brightness(1.07); box-shadow: 0 10px 28px color-mix(in srgb, var(--gold) 42%, transparent), inset 0 1px 0 rgba(255, 255, 255, .4); }
+  .ds-btn--quiet:not([disabled]):hover { background: var(--accent-faint); border-color: transparent; }
+  .ds-btn--dmg:not([disabled]):hover { background: var(--blood); color: var(--bg0); border-color: var(--blood); }
+  .ds-btn--heal:not([disabled]):hover { background: var(--heal); color: var(--bg0); border-color: var(--heal); }
+}
+@media (pointer: coarse), (max-width: 760px) { .ds-btn { min-height: var(--tap); } .ds-btn--icon { width: var(--tap); } }
+
+/* ---- chip (pillola) ---- */
+.ds-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 26px; padding: 0 var(--s-3); border: 1px solid color-mix(in srgb, var(--bone) 16%, transparent); border-radius: var(--r-pill); background: color-mix(in srgb, var(--bone) 5%, var(--bg1)); color: var(--mut); font-size: var(--fs-sm); font-weight: 600; line-height: 1; transition: background-color var(--dur-2), color var(--dur-2), border-color var(--dur-2); }
+.ds-chip--cond { background: color-mix(in srgb, var(--accent) 14%, var(--bg1)); border-color: color-mix(in srgb, var(--accent) 45%, transparent); color: var(--accent); }
+.ds-chip__pip { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.ds-chip__x { display: inline-grid; place-items: center; width: 16px; height: 16px; margin-right: -6px; padding: 0; border: 0; background: transparent; color: inherit; border-radius: 50%; }
+.ds-chip--pick { cursor: pointer; }
+.ds-chip--pick.is-on { background: color-mix(in srgb, var(--gold) 16%, var(--bg1)); border-color: var(--gold); color: var(--gold-bright); }
+.ds-chip--add { border-style: dashed; background: transparent; cursor: pointer; }
+.ds-chip--warn { background: color-mix(in srgb, var(--blood) 16%, var(--bg1)); border-color: color-mix(in srgb, var(--blood) 55%, transparent); color: var(--blood); }
+@media (hover: hover) { .ds-chip--pick:hover, .ds-chip--add:hover { border-color: var(--gold); color: var(--gold-bright); } }
+
+/* ---- campi ---- */
+.ds-field { width: 100%; min-height: 38px; padding: 0 var(--s-3); background: var(--bg0); border: 1px solid var(--line-strong); border-radius: var(--r); color: var(--bone); font-family: var(--font-ui); font-size: var(--fs-md); font-variant-numeric: tabular-nums; transition: border-color var(--dur-2), box-shadow var(--dur-2); }
+.ds-field::placeholder { color: var(--faint); }
+.ds-field:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 4px var(--gold-faint); }
+.ds-field.is-error { border-color: var(--blood); box-shadow: 0 0 0 4px color-mix(in srgb, var(--blood) 22%, transparent); }
+.ds-field[disabled] { opacity: .5; cursor: not-allowed; }
+.ds-stepper { display: inline-flex; align-items: stretch; }
+.ds-stepper__b { width: 36px; display: grid; place-items: center; background: var(--bg3); border: 1px solid var(--line-strong); color: var(--mut); padding: 0; }
+.ds-stepper__b:first-child { border-radius: var(--r) 0 0 var(--r); } .ds-stepper__b:last-child { border-radius: 0 var(--r) var(--r) 0; }
+.ds-stepper__in { width: 56px; border-radius: 0; text-align: center; border-left: 0; border-right: 0; font-family: var(--font-num); font-weight: 700; font-size: var(--fs-lg); }
+@media (hover: hover) { .ds-stepper__b:hover { color: var(--gold-bright); border-color: var(--gold-dim); } }
+
+/* ---- segmented + tabs ---- */
+.ds-seg { display: inline-flex; border: 1px solid color-mix(in srgb, var(--bone) 12%, transparent); border-radius: calc(var(--r) + 3px); background: var(--bg0); padding: 3px; gap: 2px; }
+.ds-seg__btn { display: inline-flex; align-items: center; gap: 6px; min-height: 30px; padding: 0 var(--s-3); border: 0; border-radius: var(--r); background: transparent; color: var(--mut); font-family: var(--font-label); font-size: 12.5px; font-weight: 600; transition: background-color var(--dur-2), color var(--dur-2), box-shadow var(--dur-2); }
+.ds-seg__btn.is-on { background: color-mix(in srgb, var(--bone) 11%, var(--bg3)); color: var(--gold-bright); box-shadow: 0 2px 8px rgba(0, 0, 0, .4), inset 0 1px 0 rgba(255, 255, 255, .08); }
+.ds-seg__n { font-size: 10.5px; color: var(--faint); font-weight: 700; } .ds-seg__btn.is-on .ds-seg__n { color: var(--gold-dim); }
+@media (hover: hover) { .ds-seg__btn:not(.is-on):hover { color: var(--bone); background: var(--bg2); } }
+.ds-tabs { display: flex; gap: 4px; padding: var(--s-2) var(--s-3) 0; border-bottom: 1px solid var(--line); }
+.ds-tabs__btn { position: relative; flex: 1; min-height: 44px; padding: 0 var(--s-3); border: 0; background: transparent; color: var(--mut); font-family: var(--font-label); font-size: 12.5px; font-weight: 600; letter-spacing: .02em; transition: color var(--dur-2); }
+.ds-tabs__btn::after { content: ''; position: absolute; left: 14%; right: 14%; bottom: -1px; height: 3px; border-radius: 3px 3px 0 0; background: linear-gradient(90deg, var(--gold), var(--gold-bright)); box-shadow: 0 0 12px var(--gold); transform: scaleX(0); transition: transform var(--dur-3) var(--ease-out); }
+.ds-tabs__btn.is-on { color: var(--bone); } .ds-tabs__btn.is-on::after { transform: scaleX(1); }
+.ds-tabs__n { margin-left: 6px; padding: 2px 7px; border-radius: var(--r-pill); background: color-mix(in srgb, var(--bone) 10%, var(--bg3)); color: var(--bone); font-size: 10.5px; letter-spacing: 0; }
+.ds-tabs__btn.is-on .ds-tabs__n { background: var(--gold); color: var(--on-gold); }
+@media (hover: hover) { .ds-tabs__btn:not(.is-on):hover { color: var(--bone); } }
+
+/* ---- ritratto + cornice XP ---- */
+.ds-portrait { --size: 42px; position: relative; flex: none; display: inline-grid; place-items: center; width: var(--size); height: var(--size); border-radius: 50%; padding: 3px; background: var(--ring, var(--line-strong)); }
+.ds-portrait--sm { --size: 30px; padding: 2px; } .ds-portrait--lg { --size: 60px; padding: 4px; } .ds-portrait--xl { --size: 96px; padding: 5px; }
+.ds-portrait--pc { --ring: var(--kind-pc); } .ds-portrait--ally { --ring: var(--kind-ally); } .ds-portrait--enemy { --ring: var(--kind-enemy); } .ds-portrait--dead { --ring: var(--kind-dead); }
+.ds-portrait--ally { background: repeating-conic-gradient(var(--ring) 0 20deg, transparent 20deg 30deg); }
+.ds-portrait.has-xp { background: conic-gradient(from 0deg, var(--gold-bright) var(--xp), color-mix(in srgb, var(--bone) 16%, var(--bg2)) 0); }
+.ds-portrait.has-xp.is-ready { background: var(--gold-bright); }
+.ds-portrait.has-xp.is-ready::after { content: ''; position: absolute; inset: -5px; border-radius: 50%; border: 2px solid var(--gold-bright); animation: ds-ready 1.6s var(--ease-io) infinite; }
+@keyframes ds-ready { 0%, 100% { opacity: .1; transform: scale(.96); } 50% { opacity: .9; transform: scale(1.07); } }
+.ds-portrait__face { display: grid; place-items: center; width: 100%; height: 100%; border-radius: 50%; background: radial-gradient(circle at 50% 25%, color-mix(in srgb, var(--ring, var(--bone)) 22%, var(--bg3)), var(--bg0)); border: 2px solid var(--bg1);
+  font-family: var(--font-num); font-weight: 700; font-size: calc(var(--size) * .4); color: var(--bone); }
+.ds-portrait--pc .ds-portrait__face { color: var(--kind-pc); } .ds-portrait--ally .ds-portrait__face { color: var(--kind-ally); } .ds-portrait--enemy .ds-portrait__face { color: var(--kind-enemy); } .ds-portrait--dead .ds-portrait__face { color: var(--kind-dead); }
+.ds-portrait--pc.has-xp { --ring: var(--kind-pc); }
+
+/* ---- barra HP (transform scaleX: compositor-only) ---- */
+.ds-bar { position: relative; display: block; width: 100%; height: 8px; overflow: hidden; border-radius: var(--r-pill); background: var(--bg0); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--bone) 8%, transparent); }
+.ds-bar--sm { height: 5px; } .ds-bar--lg { height: 14px; }
+.ds-bar__fill, .ds-bar__trail { position: absolute; inset: 0; transform-origin: left center; border-radius: var(--r-pill); }
+.ds-bar__fill { background: linear-gradient(90deg, color-mix(in srgb, var(--hp-fill) 70%, black), var(--hp-fill) 60%, color-mix(in srgb, var(--hp-fill) 70%, white)); transition: transform 450ms var(--ease-out); }
+.ds-bar__trail { background: var(--hp-trail); transition: transform 900ms var(--ease-out) 320ms; }
+.ds-bar.is-low .ds-bar__fill { background: linear-gradient(90deg, color-mix(in srgb, var(--ember) 70%, black), var(--ember)); } .ds-bar.is-crit .ds-bar__fill { background: linear-gradient(90deg, color-mix(in srgb, var(--blood) 70%, black), var(--blood)); } .ds-bar.is-zero .ds-bar__fill { background: transparent; }
+.ds-bar__temp { position: absolute; right: 0; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, var(--accent) 0 3px, transparent 3px 6px); opacity: .85; }
+
+/* ---- death saves ---- */
+.ds-saves { display: flex; align-items: center; gap: var(--s-4); padding: var(--s-2) var(--s-3); border: 1px solid color-mix(in srgb, var(--blood) 55%, transparent); border-radius: var(--r); background: color-mix(in srgb, var(--blood) 14%, var(--bg1)); }
+.ds-saves__skull { color: var(--blood); }
+.ds-saves__row { display: inline-flex; align-items: center; gap: 7px; }
+.ds-saves__label { font-family: var(--font-label); font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--mut); }
+.ds-saves__pip { width: 18px; height: 18px; padding: 0; border: 2px solid var(--mut); border-radius: 50%; background: transparent; transition: background-color var(--dur-2), transform var(--dur-3) var(--ease-spring); }
+.ds-saves__row--ok .ds-saves__pip.is-on { background: var(--heal); border-color: var(--heal); transform: scale(1.12); }
+.ds-saves__row--ko .ds-saves__pip.is-on { background: var(--blood); border-color: var(--blood); transform: scale(1.12); }
+.ds-saves__pip[disabled] { cursor: default; }
+
+/* ---- stato vuoto ---- */
+.ds-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--s-3); padding: var(--s-12) var(--s-6); text-align: center; color: var(--mut); }
+.ds-empty--compact { padding: var(--s-8) var(--s-4); }
+.ds-empty__title { margin: var(--s-2) 0 0; font-family: var(--font-display); font-size: var(--fs-xl); font-weight: 700; color: var(--bone); }
+.ds-empty__text { margin: 0; max-width: 30ch; font-size: var(--fs-md); }
+
+/* ---- scroll sottile ---- */
+.ds-scroll { overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
