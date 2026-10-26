@@ -143,7 +143,8 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
     (cellKeys, color) => state.session.setPaintCells(cellKeys, color),
     state.drawSize,
     state.drawShape,
-    (changes) => recordPaintChange(changes)
+    (changes) => recordPaintChange(changes),
+    state.drawFill
   );
   renderTokenBar(gridPos, combatants);
   updateTokenSizeControl(combatants);
@@ -197,10 +198,20 @@ export function clearPaint() {
   state.session.clearPaint();
 }
 
-// Attiva/disattiva lo strumento secchiello (riempimento ad area). Resta dentro
-// la modalità disegno già attiva; non tocca drawMode/gridEditMode/template.
-export function toggleDrawTool() {
-  state.drawTool = state.drawTool === 'bucket' ? 'brush' : 'bucket';
+// Seleziona lo strumento di disegno (secchiello o forma rect/square/circle);
+// riselezionare quello attivo torna al pennello. Resta dentro la modalità
+// disegno già attiva; non tocca drawMode/gridEditMode/template.
+export function setDrawTool(tool) {
+  state.drawTool = state.drawTool === tool ? 'brush' : tool;
+  if (state.snapshot) {
+    const sorted = state.tracker.sortedCombatants(state.snapshot.combatants);
+    renderGrid(state.snapshot.grid || {}, state.snapshot.combatants || {}, state.snapshot.currentTurnId ?? null, sorted, state.snapshot.gridConfig || null, state.snapshot.walls || {});
+  }
+}
+
+// Alterna contorno/pieno per le forme. Il contorno usa drawSize come spessore.
+export function toggleDrawFill() {
+  state.drawFill = state.drawFill === 'filled' ? 'outline' : 'filled';
   if (state.snapshot) {
     const sorted = state.tracker.sortedCombatants(state.snapshot.combatants);
     renderGrid(state.snapshot.grid || {}, state.snapshot.combatants || {}, state.snapshot.currentTurnId ?? null, sorted, state.snapshot.gridConfig || null, state.snapshot.walls || {});
