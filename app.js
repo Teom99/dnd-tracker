@@ -10,7 +10,7 @@ import * as UI               from './src/ui/UI.js';
 import * as GridUI           from './src/ui/GridUI.js';
 import { state }             from './src/utils/state.js';
 import { initCombatManagers, exitToHome, esc, closeConditionModal, detachSessionListeners } from './src/views/core.js';
-import { renderGrid, toggleTemplatePlacement, clearTemplate, toggleDrawMode, setDrawColor, clearPaint, toggleDrawTool, setDrawSize, setDrawShape, undoPaint, redoPaint } from './src/logic/grid.js';
+import { renderGrid, toggleTemplatePlacement, clearTemplate, toggleDrawMode, setDrawColor, clearPaint, setDrawTool, toggleDrawFill, setDrawSize, setDrawShape, undoPaint, redoPaint } from './src/logic/grid.js';
 import { initSheet, makeCallbacks } from './src/views/sheet.js';
 import { LevelUp }   from './src/logic/LevelUp.js';
 import { LevelUpUI } from './src/ui/LevelUpUI.js';
@@ -1205,7 +1205,6 @@ function _applyDrawControlsUI() {
     sw.classList.toggle('active', state.drawColor === sw.dataset.color);
   });
   document.getElementById('btn-draw-eraser')?.classList.toggle('active', state.drawColor === null);
-  document.getElementById('btn-draw-bucket')?.classList.toggle('active', state.drawTool === 'bucket');
 
   const dot = document.getElementById('bucket-color-dot');
   if (dot) {
@@ -1213,17 +1212,31 @@ function _applyDrawControlsUI() {
     dot.style.background = state.drawColor || '';
   }
 
+  const shapeTool = GridUI.isShapeTool(state.drawTool);
+  document.querySelectorAll('#grid-draw-palette [data-draw-tool]').forEach(btn => {
+    btn.classList.toggle('active', state.drawTool === btn.dataset.drawTool);
+  });
+  const fillBtn = document.getElementById('btn-draw-fill');
+  if (fillBtn) {
+    const filled = state.drawFill === 'filled';
+    fillBtn.toggleAttribute('disabled', !shapeTool); // contorno/pieno vale solo per le forme
+    fillBtn.classList.toggle('active', shapeTool && filled);
+    fillBtn.textContent = filled ? '■' : '▢';
+    fillBtn.title = filled ? 'Forma piena (clicca per solo contorno)' : 'Solo contorno (clicca per forma piena)';
+  }
+
   const sizeSel = document.getElementById('select-draw-size');
   if (sizeSel) {
-    sizeSel.disabled = state.drawTool === 'bucket'; // la dimensione non si applica al secchiello
+    // la dimensione non si applica al secchiello né alle forme piene (per il contorno è lo spessore)
+    sizeSel.disabled = state.drawTool === 'bucket' || (shapeTool && state.drawFill === 'filled');
     if (document.activeElement !== sizeSel) sizeSel.value = String(state.drawSize || 1);
   }
 
-  const bucketActive = state.drawTool === 'bucket'; // anche la forma non si applica al secchiello
-  document.getElementById('btn-draw-shape-square')?.classList.toggle('active', !bucketActive && state.drawShape !== 'round');
-  document.getElementById('btn-draw-shape-round')?.classList.toggle('active', !bucketActive && state.drawShape === 'round');
-  document.getElementById('btn-draw-shape-square')?.toggleAttribute('disabled', bucketActive);
-  document.getElementById('btn-draw-shape-round')?.toggleAttribute('disabled', bucketActive);
+  const brushActive = state.drawTool === 'brush'; // la forma del pennello vale solo per il pennello
+  document.getElementById('btn-draw-shape-square')?.classList.toggle('active', brushActive && state.drawShape !== 'round');
+  document.getElementById('btn-draw-shape-round')?.classList.toggle('active', brushActive && state.drawShape === 'round');
+  document.getElementById('btn-draw-shape-square')?.toggleAttribute('disabled', !brushActive);
+  document.getElementById('btn-draw-shape-round')?.toggleAttribute('disabled', !brushActive);
 
   const customInput = document.getElementById('input-draw-custom');
   if (customInput && state.drawColor && !_customColorPicking && document.activeElement !== customInput) {
@@ -1237,8 +1250,14 @@ document.getElementById('btn-draw-toggle')?.addEventListener('click', () => {
 });
 
 document.getElementById('grid-draw-palette')?.addEventListener('click', (e) => {
-  if (e.target.closest('#btn-draw-bucket')) {
-    toggleDrawTool();
+  const toolBtn = e.target.closest('[data-draw-tool]');
+  if (toolBtn) {
+    setDrawTool(toolBtn.dataset.drawTool);
+    _applyDrawControlsUI();
+    return;
+  }
+  if (e.target.closest('#btn-draw-fill')) {
+    toggleDrawFill();
     _applyDrawControlsUI();
     return;
   }

@@ -851,7 +851,7 @@
             <button id="btn-draw-toggle" class="btn btn--ghost btn--sm btn--icon" title="Disegna sulla mappa">🎨</button>
           </div>
           <span id="grid-draw-palette" style="display:none; align-items:center; gap:4px;">
-            <button id="btn-draw-bucket" class="btn btn--ghost btn--sm btn--icon" title="Secchiello (riempi area)">🪣</button>
+            <button id="btn-draw-bucket" class="btn btn--ghost btn--sm btn--icon" data-draw-tool="bucket" title="Secchiello (riempi area)">🪣</button>
             <span id="bucket-color-dot" class="bucket-color-dot" title="Colore selezionato per il secchiello"></span>
             <button class="draw-swatch" data-color="#e74c3c" style="background:#e74c3c;" title="Rosso"></button>
             <button class="draw-swatch" data-color="#e67e22" style="background:#e67e22;" title="Arancio"></button>
@@ -871,6 +871,10 @@
             </select>
             <button id="btn-draw-shape-square" class="btn btn--ghost btn--sm btn--icon" data-draw-shape="square" title="Pennello quadrato">⬛</button>
             <button id="btn-draw-shape-round"  class="btn btn--ghost btn--sm btn--icon" data-draw-shape="round"  title="Pennello rotondo">⚪</button>
+            <button id="btn-draw-tool-rect"   class="btn btn--ghost btn--sm btn--icon" data-draw-tool="rect"   title="Rettangolo (trascina da angolo ad angolo)">▭</button>
+            <button id="btn-draw-tool-square" class="btn btn--ghost btn--sm btn--icon" data-draw-tool="square" title="Quadrato (trascina da angolo ad angolo)">◻</button>
+            <button id="btn-draw-tool-circle" class="btn btn--ghost btn--sm btn--icon" data-draw-tool="circle" title="Cerchio (trascina dal centro)">◯</button>
+            <button id="btn-draw-fill" class="btn btn--ghost btn--sm btn--icon" title="Solo contorno (clicca per forma piena)" disabled>▢</button>
             <button id="btn-draw-undo" class="btn btn--ghost btn--sm btn--icon" title="Annulla la tua ultima modifica al disegno" disabled>↶</button>
             <button id="btn-draw-redo" class="btn btn--ghost btn--sm btn--icon" title="Ripeti la modifica annullata" disabled>↷</button>
             <button id="btn-paint-clear" class="btn btn--ghost btn--sm btn--icon" title="Pulisci tutto il disegno">🗑</button>

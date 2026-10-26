@@ -30,6 +30,11 @@ let _paintValue        = false; // usato da _paintMode === 'wall'
 let _paintColorValue   = null;  // usato da _paintMode === 'color' (hex o null = gomma)
 let _paintedThisStroke = null;
 let _colorStrokeChanges = null; // { [cellKey]: { before, after } } — solo modalità colore, per l'undo/redo
+let _shapeDrag          = null; // { tool, sc, sr, ec, er } — forma (rect/square/circle) in corso di trascinamento
+let _shapeGhost         = null; // <g> SVG dell'anteprima forma, ricreato dopo ogni rebuild dell'SVG
+
+const SHAPE_TOOLS = new Set(['rect', 'square', 'circle']);
+export function isShapeTool(tool) { return SHAPE_TOOLS.has(tool); }
 
 function _cellFromEvent(e) {
   let hit = e.target?.closest?.('.sq-hit');
@@ -124,6 +129,109 @@ function _floodFillKeys(startCol, startRow) {
   return result;
 }
 
+// Forme del disegno (rettangolo/quadrato/cerchio): celle coperte, calcolate in
+// coordinate non ritagliate (la forma può uscire dalla griglia) e ritagliate
+// solo alla fine, così il contorno resta aperto sul bordo invece di chiudersi
+// lungo il bordo della griglia.
+// - rect:   angolo di partenza → angolo opposto
+// - square: come rect, lato = il maggiore dei due spostamenti, nella direzione del drag
+// - circle: centro nella cella di partenza, raggio = distanza (arrotondata, in
+//           caselle) fino alla cella corrente; cella inclusa se il suo centro
+//           sta entro raggio + 0.5
+// Contorno = forma piena meno la sua erosione (4 vicini) ripetuta `thickness` volte.
+export function shapeCellKeys(tool, sc, sr, ec, er, filled, thickness, cols, rows) {
+  const inside = new Set();
+  if (tool === 'circle') {
+    const R = Math.round(Math.hypot(ec - sc, er - sr));
+    for (let dc = -R; dc <= R; dc++) {
+      for (let dr = -R; dr <= R; dr++) {
+        if (Math.hypot(dc, dr) <= R + 0.5) inside.add(`${sc + dc}_${sr + dr}`);
+      }
+    }
+  } else {
+    let tc = ec, tr = er;
+    if (tool === 'square') {
+      const side = Math.max(Math.abs(ec - sc), Math.abs(er - sr));
+      tc = sc + (ec >= sc ? side : -side);
+      tr = sr + (er >= sr ? side : -side);
+    }
+    for (let c = Math.min(sc, tc); c <= Math.max(sc, tc); c++) {
+      for (let r = Math.min(sr, tr); r <= Math.max(sr, tr); r++) inside.add(`${c}_${r}`);
+    }
+  }
+
+  let cells = inside;
+  if (!filled) {
+    let core = inside;
+    for (let i = 0; i < Math.max(1, thickness || 1); i++) {
+      const next = new Set();
+      for (const key of core) {
+        const [c, r] = key.split('_').map(Number);
+        if (core.has(`${c + 1}_${r}`) && core.has(`${c - 1}_${r}`) && core.has(`${c}_${r + 1}`) && core.has(`${c}_${r - 1}`)) next.add(key);
+      }
+      core = next;
+    }
+    cells = new Set([...inside].filter(k => !core.has(k)));
+  }
+
+  return [...cells].filter(key => {
+    const [c, r] = key.split('_').map(Number);
+    return c >= 0 && r >= 0 && c < cols && r < rows;
+  });
+}
+
+// Misura mostrata accanto al cursore durante il drag di una forma
+function _shapeLabel(d) {
+  if (d.tool === 'circle') return `r ${Math.round(Math.hypot(d.ec - d.sc, d.er - d.sr))}m`;
+  let w = Math.abs(d.ec - d.sc) + 1, h = Math.abs(d.er - d.sr) + 1;
+  if (d.tool === 'square') w = h = Math.max(w, h);
+  return `${w}×${h}m`;
+}
+
+function _removeShapeGhost() { _shapeGhost?.remove(); _shapeGhost = null; }
+
+// Anteprima locale (nessuna scrittura Firebase) della forma in corso. Chiamata
+// a ogni pointermove e dopo ogni renderGrid, perché il rebuild dell'SVG la cancella.
+function _renderShapeGhost() {
+  const svg = _ctx?.container?.querySelector('svg');
+  if (!_shapeDrag || !svg) { _removeShapeGhost(); return; }
+  const d = _shapeDrag;
+  const keys = shapeCellKeys(d.tool, d.sc, d.sr, d.ec, d.er, _ctx.drawFill === 'filled', _ctx.drawSize, _ctx.cols, _ctx.rows);
+  const isErase = !_ctx.drawColor;
+  const col_    = isErase ? '#ffffff' : _ctx.drawColor;
+  let html = '';
+  for (const key of keys) {
+    const [c, r] = key.split('_').map(Number);
+    const { x, y } = cellXY(c, r);
+    html += `<rect x="${x + 1}" y="${y + 1}" width="${CELL - 2}" height="${CELL - 2}" rx="3"
+      fill="${isErase ? 'none' : col_}" fill-opacity="${isErase ? 0 : 0.28}"
+      stroke="${col_}" stroke-opacity=".8" stroke-width="1.5" ${isErase ? 'stroke-dasharray="4 3"' : ''}/>`;
+  }
+  const { x: lx, y: ly } = cellXY(d.ec, d.er);
+  html += `<text x="${lx + CELL / 2}" y="${ly - 6}" text-anchor="middle" font-size="11" class="sq-dist" pointer-events="none">${_shapeLabel(d)}</text>`;
+  if (!_shapeGhost || _shapeGhost.ownerSVGElement !== svg) {
+    _shapeGhost?.remove();
+    _shapeGhost = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    _shapeGhost.setAttribute('pointer-events', 'none');
+    svg.appendChild(_shapeGhost);
+  }
+  _shapeGhost.innerHTML = html;
+}
+
+function _commitShape() {
+  const d = _shapeDrag;
+  _shapeDrag = null;
+  _removeShapeGhost();
+  if (!_ctx || !d) return;
+  const color = _ctx.drawColor ?? null;
+  const keys = shapeCellKeys(d.tool, d.sc, d.sr, d.ec, d.er, _ctx.drawFill === 'filled', _ctx.drawSize, _ctx.cols, _ctx.rows)
+    .filter(k => (_ctx.paint?.[k] ?? null) !== color);
+  if (!keys.length) return;
+  const changes = keys.map(k => ({ key: k, before: _ctx.paint?.[k] ?? null, after: color }));
+  _ctx.onPaintCells(keys, color);
+  _ctx.onStrokeEnd?.(changes);
+}
+
 function _bindCellPaint(container) {
   if (_paintBound) return;
   _paintBound = true;
@@ -152,6 +260,14 @@ function _bindCellPaint(container) {
       return; // azione singola al click, nessun drag da tracciare
     }
 
+    if (colorMode && isShapeTool(_ctx.drawTool)) {
+      // Forma: il drag aggiorna solo l'anteprima, la scrittura avviene al rilascio
+      _shapeDrag = { tool: _ctx.drawTool, sc: cell.col, sr: cell.row, ec: cell.col, er: cell.row };
+      _renderShapeGhost();
+      e.preventDefault();
+      return;
+    }
+
     if (wallMode) {
       if (_ctx.occCell[key]) return;
       _paintMode  = 'wall';
@@ -168,12 +284,22 @@ function _bindCellPaint(container) {
   });
 
   container.addEventListener('pointermove', (e) => {
+    if (_shapeDrag) {
+      const cell = _cellFromEvent(e);
+      if (cell && (cell.col !== _shapeDrag.ec || cell.row !== _shapeDrag.er)) {
+        _shapeDrag.ec = cell.col;
+        _shapeDrag.er = cell.row;
+        _renderShapeGhost();
+      }
+      return;
+    }
     if (!_painting) return;
     const cell = _cellFromEvent(e);
     if (cell) _paintAt(cell.col, cell.row);
   });
 
   const stop = () => {
+    if (_shapeDrag) _commitShape(); // azzera _shapeDrag: il secondo stop (container + window) non riscrive
     _painting = false;
     if (_paintMode === 'color' && _colorStrokeChanges) {
       const changes = Object.entries(_colorStrokeChanges).map(([key, v]) => ({ key, ...v }));
@@ -397,13 +523,14 @@ export function setCursors(cursorsObj, myUid) {
  * @param drawMode boolean       — modalità "disegna sulla mappa" (chiunque)
  * @param onSetPaint (cellKey, color) => void  — imposta/rimuove il colore di una cella
  * @param onCursorMove (col, row) => void      — broadcast della propria posizione mouse (null,null = uscito dalla griglia)
- * @param drawTool 'brush' | 'bucket'          — strumento di disegno attivo
+ * @param drawTool 'brush' | 'bucket' | 'rect' | 'square' | 'circle' — strumento di disegno attivo
  * @param onPaintCells (cellKeys, color) => void — scrittura batch multi-cella (secchiello e pennello/gomma a blocco N×N)
  * @param drawSize number (1-4)                — lato del blocco N×N del pennello/gomma, centrato sulla cella sotto il cursore
  * @param drawShape 'square' | 'round'         — forma del blocco pennello/gomma
- * @param onStrokeEnd (changes) => void        — fine di una modifica colore (pennellata o secchiello); changes = [{key, before, after}], per l'undo/redo locale
+ * @param onStrokeEnd (changes) => void        — fine di una modifica colore (pennellata, secchiello o forma); changes = [{key, before, after}], per l'undo/redo locale
+ * @param drawFill 'outline' | 'filled'        — forme: solo contorno (spesso drawSize caselle) o piene
  */
-export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onSetWall, template, placingShape, templateOrigin, onSetTemplateOrigin, onCommitTemplate, paint, drawMode, drawColor, onSetPaint, onCursorMove, drawTool, onPaintCells, drawSize, drawShape, onStrokeEnd) {
+export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onSetWall, template, placingShape, templateOrigin, onSetTemplateOrigin, onCommitTemplate, paint, drawMode, drawColor, onSetPaint, onCursorMove, drawTool, onPaintCells, drawSize, drawShape, onStrokeEnd, drawFill) {
   const pos   = gridPos    || {};
   const comb  = combatants || {};
   const wall  = walls      || {};
@@ -590,7 +717,11 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   // Hint contestuale nella toolbar
   const hintEl = document.getElementById('grid-hint');
   if (hintEl) {
-    if (drawMode) {
+    if (drawMode && isShapeTool(drawTool)) {
+      hintEl.textContent = drawTool === 'circle'
+        ? '🎨 Cerchio: premi sul centro e trascina per il raggio'
+        : `🎨 ${drawTool === 'square' ? 'Quadrato' : 'Rettangolo'}: trascina da un angolo all'angolo opposto`;
+    } else if (drawMode) {
       hintEl.textContent = drawColor
         ? '🎨 Disegna: trascina per colorare le caselle'
         : '🎨 Disegna: trascina per cancellare il colore (gomma attiva)';
@@ -617,8 +748,10 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   }
 
   // Aggiorna il contesto usato dal disegno (muri/colore) con drag e assicura il binding.
-  _ctx = { cols, rows, wall, occCell, isMaster, editMode: !!editMode, onSetWall, paint: cellPaint, drawMode: !!drawMode, drawColor: drawColor ?? null, onSetPaint, drawTool: drawTool || 'brush', onPaintCells, drawSize: drawSize || 1, drawShape: drawShape || 'square', onStrokeEnd };
+  _ctx = { cols, rows, wall, occCell, isMaster, editMode: !!editMode, onSetWall, paint: cellPaint, drawMode: !!drawMode, drawColor: drawColor ?? null, onSetPaint, drawTool: drawTool || 'brush', onPaintCells, drawSize: drawSize || 1, drawShape: drawShape || 'square', onStrokeEnd, drawFill: drawFill || 'outline', container };
   _bindCellPaint(container);
+  if (_shapeDrag && !(drawMode && !(editMode && isMaster) && isShapeTool(drawTool))) _shapeDrag = null; // strumento cambiato a metà drag
+  _renderShapeGhost(); // il rebuild dell'SVG ha cancellato l'anteprima della forma in corso
 
   const svg = container.querySelector('svg');
 
@@ -685,10 +818,12 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   let drawGhost = null;
   const removeDrawGhost = () => { drawGhost?.remove(); drawGhost = null; };
   function updateDrawGhost(c, r) {
-    if (!colorDrawMode || drawTool === 'bucket') { removeDrawGhost(); return; }
-    const size    = Math.max(1, Math.min(4, drawSize || 1));
+    if (!colorDrawMode || drawTool === 'bucket' || _shapeDrag) { removeDrawGhost(); return; }
+    // Con una forma, prima del drag si evidenzia solo la cella di partenza
+    const shape   = isShapeTool(drawTool);
+    const size    = shape ? 1 : Math.max(1, Math.min(4, drawSize || 1));
     const offset  = Math.floor((size - 1) / 2);
-    const round   = drawShape === 'round';
+    const round   = !shape && drawShape === 'round';
     const isErase = !drawColor;
     const col_    = isErase ? '#ffffff' : drawColor;
     let rects = '';

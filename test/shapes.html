@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Test — forme del disegno</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background:#0a0c0b; color:#e8e2d2;
+         margin:0; padding:24px 20px 60px; }
+  h1 { font-size:16px; margin:0 0 4px; letter-spacing:.04em; }
+  p.sub { color:#8f8f82; margin:0 0 20px; font-size:12.5px; }
+  h2 { font-size:13px; color:#c9a24a; margin:22px 0 6px; letter-spacing:.08em; text-transform:uppercase; }
+  .t { padding:2px 0 2px 22px; position:relative; }
+  .t::before { position:absolute; left:0; width:16px; }
+  .ok::before  { content:"PASS"; color:#7cc78a; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko::before  { content:"FAIL"; color:#e0685c; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko { color:#e0685c; }
+  .detail { color:#8f8f82; font-size:12px; padding-left:22px; white-space:pre; }
+  #summary { position:fixed; left:0; right:0; bottom:0; padding:12px 20px;
+             background:#161b19; border-top:1px solid #2b3631; font-weight:700; }
+</style>
+</head>
+<body>
+<h1>GridUI.js — shapeCellKeys</h1>
+<p class="sub">Celle coperte dalle forme del disegno (rettangolo/quadrato/cerchio, contorno o pieno).
+Aprila con un server statico: <code>python3 -m http.server</code> → <code>/test/shapes.html</code></p>
+<div id="out"></div>
+<div id="summary">esecuzione…</div>
+
+<script type="module">
+import { shapeCellKeys } from '../src/ui/GridUI.js';
+
+const out = document.getElementById('out');
+let pass = 0, fail = 0;
+const group = (name) => { const h = document.createElement('h2'); h.textContent = name; out.append(h); };
+function check(label, got, want) {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  ok ? pass++ : fail++;
+  const d = document.createElement('div');
+  d.className = 't ' + (ok ? 'ok' : 'ko');
+  d.textContent = label;
+  out.append(d);
+  if (!ok) {
+    const e = document.createElement('div');
+    e.className = 'detail';
+    e.textContent = `atteso\n${want}\nottenuto\n${got}`;
+    out.append(e);
+  }
+}
+
+// Disegno ASCII delle celle in un riquadro cols×rows ('#' = coperta)
+function ascii(keys, cols, rows) {
+  const set = new Set(keys);
+  const lines = [];
+  for (let r = 0; r < rows; r++) {
+    let line = '';
+    for (let c = 0; c < cols; c++) line += set.has(`${c}_${r}`) ? '#' : '.';
+    lines.push(line);
+  }
+  return lines.join('\n');
+}
+const grid = (...lines) => lines.join('\n');
+
+group('Rettangolo');
+check('pieno, da angolo ad angolo',
+  ascii(shapeCellKeys('rect', 1, 1, 4, 2, true, 1, 6, 4), 6, 4),
+  grid('......', '.####.', '.####.', '......'));
+check('trascinato all\'indietro dà la stessa forma',
+  ascii(shapeCellKeys('rect', 4, 2, 1, 1, true, 1, 6, 4), 6, 4),
+  grid('......', '.####.', '.####.', '......'));
+check('contorno spesso 1',
+  ascii(shapeCellKeys('rect', 0, 0, 4, 3, false, 1, 5, 4), 5, 4),
+  grid('#####', '#...#', '#...#', '#####'));
+check('contorno spesso 2',
+  ascii(shapeCellKeys('rect', 0, 0, 5, 5, false, 2, 6, 6), 6, 6),
+  grid('######', '######', '##..##', '##..##', '######', '######'));
+check('click senza trascinare = una cella',
+  shapeCellKeys('rect', 2, 2, 2, 2, false, 1, 5, 5), ['2_2']);
+check('ritagliato sul bordo: il contorno resta aperto, non si chiude lungo il bordo',
+  ascii(shapeCellKeys('rect', 1, 1, 6, 3, false, 1, 4, 4), 4, 4),
+  grid('....', '.###', '.#..', '.###'));
+
+group('Quadrato');
+check('il lato segue lo spostamento maggiore',
+  ascii(shapeCellKeys('square', 0, 0, 3, 1, true, 1, 5, 5), 5, 5),
+  grid('####.', '####.', '####.', '####.', '.....'));
+check('verso alto-sinistra parte dall\'angolo cliccato',
+  ascii(shapeCellKeys('square', 4, 4, 3, 2, true, 1, 5, 5), 5, 5),
+  grid('.....', '.....', '..###', '..###', '..###'));
+
+group('Cerchio');
+check('raggio 0 = una cella', shapeCellKeys('circle', 2, 2, 2, 2, true, 1, 5, 5), ['2_2']);
+check('raggio 2 pieno: 5×5 senza angoli',
+  ascii(shapeCellKeys('circle', 2, 2, 4, 2, true, 1, 5, 5), 5, 5),
+  grid('.###.', '#####', '#####', '#####', '.###.'));
+check('raggio 2 contorno: anello chiuso, centro vuoto',
+  ascii(shapeCellKeys('circle', 2, 2, 4, 2, false, 1, 5, 5), 5, 5),
+  grid('.###.', '#...#', '#...#', '#...#', '.###.'));
+check('il raggio è la distanza arrotondata (anche in diagonale)',
+  shapeCellKeys('circle', 5, 5, 7, 7, true, 1, 11, 11).length,
+  shapeCellKeys('circle', 5, 5, 8, 5, true, 1, 11, 11).length);
+
+document.getElementById('summary').textContent =
+  fail === 0 ? `✓ ${pass} test passati` : `✗ ${fail} falliti · ${pass} passati`;
+document.getElementById('summary').style.color = fail === 0 ? '#7cc78a' : '#e0685c';
+</script>
+</body>
+</html>
