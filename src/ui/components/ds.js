@@ -9,10 +9,18 @@ export function Portrait({ c, size = 'md', xp = true }) {
   const pct = c.xp ? c.xp.pct : 0;
   const ready = !!(c.xp && c.xp.ready);
   const ring = xp && c.kind === 'pc';
+  const iconSize = size === 'xl' ? 40 : size === 'lg' ? 26 : 18;
+  // L'app permette di caricare un ritratto: se c'è, vince sull'iniziale.
+  // `c.avatar` è già validato da adapt.js (solo data URL di immagine).
+  const face = c.dead
+    ? html`<${Icon} name="skull" size=${iconSize} />`
+    : c.avatar
+      ? html`<img class="ds-portrait__img" src=${c.avatar} alt="" />`
+      : (c.short || c.name || '?')[0];
   return html`<span class="ds-portrait ds-portrait--${state} ds-portrait--${size} ${ring ? 'has-xp' : ''} ${ready ? 'is-ready' : ''}"
       style=${ring ? `--xp:${ready ? 100 : pct}%` : null}
-      title=${ring ? (ready ? 'Level-up pronto' : `XP ${pct}%`) : null}>
-    <span class="ds-portrait__face">${c.dead ? html`<${Icon} name="skull" size=${size === 'xl' ? 40 : size === 'lg' ? 26 : 18} />` : c.short[0]}</span>
+      title=${ring ? (c.xp?.title || (ready ? 'Level-up pronto' : `XP ${pct}%`)) : null}>
+    <span class="ds-portrait__face">${face}</span>
   </span>`;
 }
 
