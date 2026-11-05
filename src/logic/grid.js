@@ -1,6 +1,7 @@
 import * as GridUI from '../ui/GridUI.js';
 import { state }   from '../utils/state.js';
 import { playerColor } from '../utils/presence.js';
+import { esc }     from '../views/core.js';
 
 // ─── Undo/redo del disegno sulla mappa (locale a questo client, non condiviso
 // e non persistito — si perde al reload, come il resto dello stato locale
@@ -262,8 +263,10 @@ export function renderTokenBar(gridPos, combatants) {
       : []
   );
 
-  const entries = Object.entries(comb).filter(([id, c]) => {
-    if (state.session.isMaster) return c.type === 'creature';
+  // Il master vede tutti i segnalini (creature e giocatori), così può anche
+  // togliere dalla mappa quelli dei giocatori; i giocatori solo i propri.
+  const entries = Object.entries(comb).filter(([id]) => {
+    if (state.session.isMaster) return true;
     return myOwnedIds.has(id);
   });
 
@@ -273,10 +276,11 @@ export function renderTokenBar(gridPos, combatants) {
     const placed   = pos[id] != null;
     const selected = id === state.selectedGridTokenId;
     const ko       = c.hpCurrent === 0;
+    const player   = c.type === 'player';
     return `<button
-      class="grid-token-chip${selected ? ' selected' : ''}${ko ? ' ko' : ''}"
+      class="grid-token-chip${selected ? ' selected' : ''}${ko ? ' ko' : ''}${player ? ' is-player' : ''}"
       data-token-id="${id}"
-      title="${placed ? 'Rimuovi dalla griglia' : 'Posiziona sulla griglia'}"
+      title="${esc(c.name || '?')} — ${placed ? 'rimuovi dalla griglia' : 'posiziona sulla griglia'}"
     >${(c.name || '?').slice(0, 2).toUpperCase()}${ko ? ' 💀' : ''}${placed ? '' : ' +'}</button>`;
   }).join('');
 

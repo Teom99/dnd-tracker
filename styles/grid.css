@@ -61,6 +61,7 @@
 .grid-token-chip:hover { border-color: var(--border-warm); color: var(--text); }
 .grid-token-chip.selected { border-color: var(--gold); color: var(--gold); background: rgba(124,58,237,0.1); }
 .grid-token-chip.ko { opacity: 0.4; }
+.grid-token-chip.is-player { border-left: 3px solid #4caf50; } /* verde = giocatori, come i token */
 
 .grid-container {
   overflow: hidden;
