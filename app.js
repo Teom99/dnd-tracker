@@ -18,19 +18,10 @@ import { Ship }    from './src/data/Ship.js';
 import * as ShipUI from './src/ui/ShipUI.js';
 import { captureFocusState, restoreFocusState } from './src/utils/domPreserve.js';
 import { playerColor } from './src/utils/presence.js';
+import { initTheme, toggleTheme } from './src/utils/theme.js';
 import { updateHomeAuthUI, loadCharacterLibrary, populateJoinPicker, populateCreaturePicker, saveUserSession, loadUserSessions } from './src/views/home.js';
 
-// --- Theme Management ---
-function initTheme() {
-  const savedTheme = localStorage.getItem('theme') || 'purple';
-  if (savedTheme === 'old') {
-    document.documentElement.classList.add('theme-old');
-  }
-}
-function toggleTheme() {
-  const isOld = document.documentElement.classList.toggle('theme-old');
-  localStorage.setItem('theme', isOld ? 'old' : 'purple');
-}
+// --- Tema chiaro/notte ---
 document.getElementById('btn-theme-toggle-home').addEventListener('click', toggleTheme);
 document.getElementById('btn-theme-toggle-combat').addEventListener('click', toggleTheme);
 initTheme();

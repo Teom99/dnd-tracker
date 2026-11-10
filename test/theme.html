@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Test — tema chiaro/notte</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background:#0a0c0b; color:#e8e2d2;
+         margin:0; padding:24px 20px 60px; }
+  h1 { font-size:16px; margin:0 0 4px; letter-spacing:.04em; }
+  p.sub { color:#8f8f82; margin:0 0 20px; font-size:12.5px; }
+  h2 { font-size:13px; color:#c9a24a; margin:22px 0 6px; letter-spacing:.08em; text-transform:uppercase; }
+  .t { padding:2px 0 2px 22px; position:relative; }
+  .t::before { position:absolute; left:0; width:16px; }
+  .ok::before  { content:"PASS"; color:#7cc78a; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko::before  { content:"FAIL"; color:#e0685c; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko { color:#e0685c; }
+  .detail { color:#8f8f82; font-size:12px; padding-left:22px; white-space:pre; }
+  #summary { position:fixed; left:0; right:0; bottom:0; padding:12px 20px;
+             background:#161b19; border-top:1px solid #2b3631; font-weight:700; }
+</style>
+</head>
+<body>
+<h1>theme.js — tema chiaro/notte</h1>
+<p class="sub">Aprila con un server statico: <code>python3 -m http.server</code> → <code>/test/theme.html</code></p>
+<div id="out"></div>
+<div id="summary">✗ modulo non caricato</div>
+
+<script type="module">
+import { resolveTheme, readSavedTheme, saveTheme, applyTheme, toggleTheme } from '../src/utils/theme.js';
+
+const out = document.getElementById('out');
+let pass = 0, fail = 0;
+const group = (name) => { const h = document.createElement('h2'); h.textContent = name; out.append(h); };
+function check(label, got, want) {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  ok ? pass++ : fail++;
+  const d = document.createElement('div');
+  d.className = 't ' + (ok ? 'ok' : 'ko');
+  d.textContent = label;
+  out.append(d);
+  if (!ok) {
+    const e = document.createElement('div');
+    e.className = 'detail';
+    e.textContent = `atteso ${JSON.stringify(want)} · ottenuto ${JSON.stringify(got)}`;
+    out.append(e);
+  }
+}
+const threw = (fn) => { try { fn(); return false; } catch { return true; } };
+
+group('resolveTheme');
+check('scelta salvata "light" vince sul sistema scuro', resolveTheme('light', true),  'light');
+check('scelta salvata "night" vince sul sistema chiaro', resolveTheme('night', false), 'night');
+check('nessuna scelta + sistema scuro → night', resolveTheme(null, true),  'night');
+check('nessuna scelta + sistema chiaro → light', resolveTheme(null, false), 'light');
+check('vecchio valore "old" ignorato', resolveTheme('old', false), 'light');
+check('vecchio valore "purple" ignorato', resolveTheme('purple', true), 'night');
+check('stringa vuota ignorata', resolveTheme('', true), 'night');
+
+group('storage');
+localStorage.removeItem('dnd-theme');
+check('nessuna scelta salvata → null', readSavedTheme(), null);
+saveTheme('night');
+check('saveTheme scrive la chiave dnd-theme', localStorage.getItem('dnd-theme'), 'night');
+check('readSavedTheme la rilegge', readSavedTheme(), 'night');
+
+group('toggle');
+applyTheme('light');
+check('applyTheme imposta data-theme', document.documentElement.dataset.theme, 'light');
+check('toggleTheme ritorna il nuovo tema', toggleTheme(), 'night');
+check('toggleTheme aggiorna data-theme', document.documentElement.dataset.theme, 'night');
+check('toggleTheme salva la scelta', localStorage.getItem('dnd-theme'), 'night');
+check('secondo toggle torna a light', toggleTheme(), 'light');
+localStorage.removeItem('dnd-theme');
+
+group('storage bloccato (navigazione privata)');
+const real = Object.getOwnPropertyDescriptor(window, 'localStorage');
+Object.defineProperty(window, 'localStorage', { get() { throw new Error('blocked'); }, configurable: true });
+check('readSavedTheme → null senza lanciare', threw(() => readSavedTheme()) ? 'lancia' : readSavedTheme(), null);
+check('saveTheme non lancia', threw(() => saveTheme('night')), false);
+applyTheme('light');
+check('toggleTheme funziona comunque', threw(() => toggleTheme()) ? 'lancia' : document.documentElement.dataset.theme, 'night');
+if (real) Object.defineProperty(window, 'localStorage', real); else delete window.localStorage;
+
+document.getElementById('summary').textContent =
+  fail === 0 ? `✓ ${pass} test passati` : `✗ ${fail} falliti · ${pass} passati`;
+document.getElementById('summary').style.color = fail === 0 ? '#7cc78a' : '#e0685c';
+</script>
+</body>
+</html>

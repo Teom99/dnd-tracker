@@ -39,40 +39,6 @@
   --purple-main: var(--gold);
 }
 
-.theme-old {
-  --bg-deep:       #07070f;
-  --bg-card:       #0e0d1e;
-  --bg-card-alt:   #131228;
-  --border-warm:   #3c2410;
-  --gold:          #c9a84c;
-  --gold-light:    #e8cc78;
-  --gold-dim:      #9e7e2e;
-  --gold-glow:     rgba(201, 168, 76, 0.32);
-  --text:          #ead6b4;
-  --text-muted:    #9e8c72;
-  --red:           #8b2020;
-  --red-bright:    #cc3333;
-  --green:         #4a7c59;
-  --radius:        10px;
-  --radius-sm:     6px;
-  --shadow:        0 4px 24px rgba(0,0,0,0.8);
-
-  --btn-primary-bg: linear-gradient(160deg, #7a3c0c 0%, #522808 50%, #3c1a06 100%);
-  --btn-primary-color: #e8cc78;
-  --btn-primary-border: rgba(201, 168, 76, 0.55);
-  --btn-primary-radius: 10px;
-  --btn-primary-shadow: 0 2px 14px rgba(90, 45, 10, 0.6), inset 0 1px 0 rgba(255,255,255,0.12);
-  --btn-primary-hover-shadow: 0 5px 28px rgba(201, 168, 76, 0.38), inset 0 1px 0 rgba(255,255,255,0.18);
-
-  --active-turn-bg: #120d04;
-  --input-bg: #070712;
-  --hp-low: var(--gold);
-  --hp-bar-bg: #0b0b1a;
-  --hp-bar-border: #1c1830;
-  --bg-hover:    #1a1628;
-  --danger:      var(--red-bright);
-  --purple-main: #7c3aed;
-}
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -310,32 +276,7 @@ input::placeholder { color: var(--text-muted); }
   color-scheme: dark;
 }
 
-/* palette alternative (tweak) */
-[data-palette="brace"] {
-  --bg0:#0d0b09; --bg1:#141110; --bg2:#1b1714; --bg3:#231d18;
-  --accent:#c1763d; --accent-dim:rgba(193,118,61,.45); --accent-faint:rgba(193,118,61,.14);
-  --heal:#7da35b;
-}
-[data-palette="arcano"] {
-  --bg0:#0c0b10; --bg1:#121017; --bg2:#18151e; --bg3:#1f1b27;
-  --accent:#8d76c9; --accent-dim:rgba(141,118,201,.45); --accent-faint:rgba(141,118,201,.14);
-}
-/* Vespro — Jet Black, Coffee Bean, Burnt Peach, Honey Bronze, Alabaster, Fuchsia Plum */
-[data-palette="vespro"] {
-  --bg0:#0f0718; --bg1:#151022; --bg2:#1b1d2c; --bg3:#1d2e38;
-  --line: rgba(234,234,234,.10); --line-strong: rgba(234,234,234,.20);
-  --gold:#e4b65b; --gold-bright:#f2cf8a; --gold-dim:rgba(228,182,91,.5); --gold-faint:rgba(228,182,91,.16);
-  --bone:#eaeaea; --mut:#a39fae; --faint:#746f80;
-  --accent:#c84ca6; --accent-dim:rgba(200,76,166,.45); --accent-faint:rgba(200,76,166,.14);
-  --blood:#d8705a; --blood-deep:#7a3526;
-  --heal:#c84ca6;
-  --hp-fill:#c05a44; --hp-trail:#e4b65b;
-}
 
-/* coppia font alternativa (tweak) */
-[data-typeface="gotico"] {
-  --font-display: 'Grenze Gotisch', serif;
-}
 
 /* ── 2. BASE ───────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
@@ -365,7 +306,6 @@ img { max-width: 100%; display: block; }
     radial-gradient(140% 120% at 50% 115%, rgba(0,0,0,.55), transparent 60%),
     radial-gradient(90% 90% at 50% 50%, transparent 55%, rgba(0,0,0,.5) 100%);
 }
-[data-ornament="essenziale"] .fog-stage::before { display: none; }
 
 /* ── 4. TIPOGRAFIA ─────────────────────────────────────────── */
 .t-display {
@@ -425,7 +365,6 @@ img { max-width: 100%; display: block; }
   width: 5px; height: 5px; transform: rotate(45deg);
   background: var(--gold-dim); flex: none;
 }
-[data-ornament="essenziale"] .ds-sep i { display: none; }
 
 /* pannello */
 .ds-panel {
@@ -436,9 +375,6 @@ img { max-width: 100%; display: block; }
   padding: 20px;
 }
 .ds-panel--quiet { background: var(--bg1); }
-[data-ornament="ricco"] .ds-panel {
-  box-shadow: inset 0 1px 0 rgba(217,211,195,.05), 0 14px 34px rgba(0,0,0,.35);
-}
 
 /* angoli in oro: <i class="orn-c tl"></i> ecc. dentro al pannello */
 .orn-c {
@@ -450,8 +386,6 @@ img { max-width: 100%; display: block; }
 .orn-c.bl { bottom: 5px; left: 5px;  border-right: 0; border-top: 0; }
 .orn-c.br { bottom: 5px; right: 5px; border-left: 0;  border-top: 0; }
 .orn-c.tr, .orn-c.bl { display: none; }            /* sobrio: 2 angoli */
-[data-ornament="ricco"] .orn-c { display: block; } /* ricco: 4 angoli */
-[data-ornament="essenziale"] .orn-c { display: none; }
 
 /* emblema: anello + rombo, solo CSS */
 .emblem {
