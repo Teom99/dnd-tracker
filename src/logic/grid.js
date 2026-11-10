@@ -128,12 +128,15 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
     state.snapshot?.template ?? null,
     state.templatePlacingShape,
     state.templateOrigin,
-    (col, row) => { state.templateOrigin = { col, row }; reRender(); },
+    (col, row) => { state.templateOrigin = { col, row }; reRender(); document.dispatchEvent(new CustomEvent('dnd:grid-mode-changed')); },
     (shape, originCol, originRow, size, angleDeg) => {
       state.session.setTemplate(shape, originCol, originRow, size, angleDeg, state.myUid);
       state.templatePlacingShape = null;
       state.templateOrigin       = null;
       reRender();
+      // La guida a passi e i bottoni dell'area si riallineano subito (il listener di sessione
+      // scatta prima che queste due righe azzerino lo stato)
+      document.dispatchEvent(new CustomEvent('dnd:grid-mode-changed'));
     },
     state.snapshot?.paint ?? {},
     state.drawMode,

@@ -411,7 +411,8 @@ function templateShapeMarkup(shape, originCol, originRow, size, angleDeg, color,
   const o = cellCenterOf(originCol, originRow);
   const r = size * CELL;
   const dash = dashed ? ' stroke-dasharray="6 4"' : '';
-  const common = `fill="${color}" fill-opacity="${fillOpacity}" stroke="${color}" stroke-opacity="${strokeOpacity}" stroke-width="2"${dash} pointer-events="none"`;
+  // Riempimento a righe diagonali (pattern #tpl-hatch) e bordo marcato: si legge subito come "area d'effetto"
+  const common = `fill="url(#tpl-hatch)" stroke="${color}" stroke-opacity="${Math.max(strokeOpacity, 0.85)}" stroke-width="2.5" stroke-linejoin="round"${dash} pointer-events="none"`;
 
   if (shape === 'circle') {
     return `<circle cx="${o.x.toFixed(1)}" cy="${o.y.toFixed(1)}" r="${r.toFixed(1)}" ${common}/>`;
@@ -435,6 +436,13 @@ function templateShapeMarkup(shape, originCol, originRow, size, angleDeg, color,
     return `<polygon points="${p1.x.toFixed(1)},${p1.y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)} ${p3.x.toFixed(1)},${p3.y.toFixed(1)} ${p4.x.toFixed(1)},${p4.y.toFixed(1)}" ${common}/>`;
   }
   return '';
+}
+
+// Chi ha piazzato il template: il nome del suo personaggio; se non ne ha uno è il master
+function _templateAuthor(ownerUid, comb) {
+  if (!ownerUid) return '';
+  const own = Object.values(comb || {}).find(c => c.ownerUid === ownerUid && c.type === 'player');
+  return own?.name || 'Master';
 }
 
 function esc(s) {
@@ -544,6 +552,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   // Celle coperte dal template attivo + combattenti coinvolti (per evidenziazione ed elenco)
   const templateCells = new Set();
   const templateHitNames = [];
+  const templateHitIds   = new Set();
   if (template) {
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
@@ -559,7 +568,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
           if (templateCells.has(`${p.col + dc}_${p.row + dr}`)) hit = true;
         }
       }
-      if (hit) templateHitNames.push(comb[id].name || '?');
+      if (hit) { templateHitNames.push(comb[id].name || '?'); templateHitIds.add(id); }
     });
   }
 
@@ -601,7 +610,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   _totalW = PAD * 2 + cols * CELL;
   _totalH = PAD * 2 + rows * CELL;
 
-  let defs  = '';
+  let defs  = '<pattern id="tpl-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="var(--c-foe)" fill-opacity=".10"/><line x1="0" y1="0" x2="0" y2="7" stroke="var(--c-foe)" stroke-opacity=".45" stroke-width="1.5"/></pattern>';
   let inner = '';
 
   // 1) Celle di sfondo + muri + raggio di movimento
@@ -627,6 +636,14 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   // 1b) Contorno del template confermato (sopra le celle, sotto i token)
   if (template) {
     inner += templateShapeMarkup(template.shape, template.originCol, template.originRow, template.size, template.angleDeg, TEMPLATE_COLOR, 0.12, 0.7, false);
+    // Punto d'origine ed etichetta "Forma misura · autore"
+    const o = cellCenterOf(template.originCol, template.originRow);
+    const author = _templateAuthor(template.ownerUid, comb);
+    const labelText = `${TEMPLATE_LABEL[template.shape]} ${fmtM(template.size)}${author ? ' · ' + author : ''}`;
+    const lw = Math.max(64, labelText.length * 6.4 + 14);
+    inner += `<circle cx="${o.x.toFixed(1)}" cy="${o.y.toFixed(1)}" r="4.5" fill="${TEMPLATE_COLOR}" pointer-events="none"/>`;
+    inner += `<g pointer-events="none"><rect x="${(o.x - lw / 2).toFixed(1)}" y="${(o.y - 54).toFixed(1)}" width="${lw.toFixed(1)}" height="19" rx="3" fill="var(--c-paper-hi)" stroke="${TEMPLATE_COLOR}"/>`
+           + `<text x="${o.x.toFixed(1)}" y="${(o.y - 41).toFixed(1)}" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--c-text)">${esc(labelText)}</text></g>`;
   }
 
   // 2) Token (un rect per footprint)
@@ -662,6 +679,9 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     const rRing  = rOuter - ringW / 2;
     const rBody  = rRing - ringW / 2;
 
+    if (templateHitIds.has(id)) {
+      inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 6}" fill="none" stroke="${TEMPLATE_COLOR}" stroke-width="2" stroke-dasharray="3 3" pointer-events="none"/>`;
+    }
     if (isActive) {
       inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 2}" fill="none" stroke="var(--gold-bright)" stroke-width="1.5" pointer-events="none"/>`;
     } else if (isSelected) {
@@ -720,6 +740,13 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   // vanno ricalcolate ad ogni rebuild (nuovo viewBox.baseVal dopo zoom/pan/update).
   _ensureCursorLayer(container);
   _renderCursorOverlay();
+
+  // Elenco dei combattenti dentro l'area, sotto le opzioni dell'area
+  const hitEl = document.getElementById('area-hit');
+  if (hitEl) {
+    hitEl.textContent = !template ? ''
+      : templateHitNames.length > 0 ? `Colpiti: ${templateHitNames.join(', ')}` : 'Nessun combattente nell\'area';
+  }
 
   // Hint contestuale nella toolbar
   const hintEl = document.getElementById('grid-hint');

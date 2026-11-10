@@ -1525,3 +1525,15 @@ button.init-num { cursor: pointer; border-bottom: 1px dashed var(--c-rule); }
 #grid-container { position: relative; inset: auto; flex: 1; min-height: 0; }
 #btn-draw-eraser.active { background: var(--c-paper-hi); border-color: var(--c-heading); color: var(--c-heading); }
 .grid-token-chip .ico { vertical-align: -.2em; }
+
+/* Guida a passi dell'area incantesimo */
+.steps { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 14px; }
+.steps span { color: var(--c-mute); }
+.steps[data-step="1"] span[data-step="1"],
+.steps[data-step="2"] span[data-step="2"],
+.steps[data-step="3"] span[data-step="3"] { color: var(--c-heading); font-weight: 700; }
+.steps[data-step="2"] span[data-step="1"],
+.steps[data-step="3"] span[data-step="1"],
+.steps[data-step="3"] span[data-step="2"] { text-decoration: line-through; }
+.area-hit { flex-basis: 100%; font-size: 14px; color: var(--c-text); }
+.area-hit:empty { display: none; }

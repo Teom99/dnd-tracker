@@ -478,6 +478,7 @@ document.addEventListener('dnd:toggle-inspiration', (e) => {
   makeCallbacks().onToggleInspiration?.(e.detail.id, e.detail.current);
 });
 document.addEventListener('dnd:rerender-grid', () => _rerenderGridFromSnapshot());
+document.addEventListener('dnd:grid-mode-changed', () => _syncGridModeUI());
 
 // Bottone "📖 Visualizza Dati" nelle card creature (master-only, riapre il stat block)
 document.getElementById('creature-list').addEventListener('click', async (e) => {
@@ -1229,12 +1230,25 @@ function _applyTemplateControlsUI() {
   document.querySelectorAll('#grid-template-controls button[data-shape]').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.shape === state.templatePlacingShape);
   });
+  // Passo corrente della guida: 1 forma · 2 origine · 3 orientamento e conferma
+  const step = !state.templatePlacingShape ? 1 : !state.templateOrigin ? 2 : 3;
+  const steps = document.getElementById('area-steps');
+  if (steps) steps.dataset.step = String(step);
+  const cancel = document.getElementById('btn-area-cancel');
+  if (cancel) cancel.style.display = state.templatePlacingShape ? '' : 'none';
   const clearBtn = document.getElementById('btn-template-clear');
   if (!clearBtn) return;
   const t = state.snapshot?.template;
   const canClear = !!t && (state.session?.isMaster || t.ownerUid === state.myUid);
   clearBtn.style.display = canClear ? '' : 'none';
 }
+
+document.getElementById('btn-area-cancel')?.addEventListener('click', () => {
+  state.templatePlacingShape = null;
+  state.templateOrigin = null;
+  _syncGridModeUI();
+  _rerenderGridFromSnapshot();
+});
 
 document.getElementById('grid-template-controls')?.addEventListener('click', (e) => {
   const shapeBtn = e.target.closest('[data-shape]');

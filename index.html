@@ -574,12 +574,19 @@
           </div>
 
           <div class="opt opt-area">
+            <div id="area-steps" class="steps" data-step="1">
+              <span data-step="1">1. Scegli la forma</span>
+              <span data-step="2">2. Tocca da dove parte</span>
+              <span data-step="3">3. Orienta e tocca per confermare</span>
+            </div>
             <div id="grid-template-controls" class="grp">
               <button id="btn-template-circle" class="btn btn--sm" data-shape="circle" title="Piazza area circolare" data-icon="circle"><span class="lbl">Cerchio</span></button>
               <button id="btn-template-cone"   class="btn btn--sm" data-shape="cone"   title="Piazza area a cono" data-icon="blast"><span class="lbl">Cono</span></button>
               <button id="btn-template-line"   class="btn btn--sm" data-shape="line"   title="Piazza area a linea" data-icon="rect"><span class="lbl">Linea</span></button>
+              <button id="btn-area-cancel" type="button" class="btn btn--sm btn--ghost" title="Annulla il piazzamento" style="display:none;"><span class="lbl">Annulla</span></button>
               <button id="btn-template-clear"  class="btn btn--sm btn--ghost" title="Rimuovi area" style="display:none;" data-icon="close"><span class="lbl">Rimuovi area</span></button>
             </div>
+            <div id="area-hit" class="area-hit"></div>
           </div>
 
           <div class="opt opt-traj" id="traj-controls"></div>
