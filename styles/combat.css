@@ -1489,3 +1489,39 @@ button.init-num { cursor: pointer; border-bottom: 1px dashed var(--c-rule); }
 #grid-initiative-list-container h3 { display: none; }
 .rail-init { min-width: 0; }
 .init-head .rule-head { text-align: left; }
+
+
+/* ═══════════════════════════════════════════
+   MAPPA — strumenti con nome e una riga di opzioni
+═══════════════════════════════════════════ */
+.stage-grid { display: flex; flex-direction: column; }
+.grid-toolbar { position: static; background: none; z-index: auto; padding: 8px 10px 4px; gap: 6px 10px; flex-shrink: 0; }
+.grid-toolbar .tools { display: flex; gap: 6px; flex-wrap: wrap; }
+.grid-toolbar .btn.active { background: var(--c-paper-lo); border-color: var(--c-heading); color: var(--c-heading); }
+.grid-hint { text-transform: none; letter-spacing: 0; font-size: 14px; font-style: italic; color: var(--c-mute); }
+.grid-options { flex-shrink: 0; padding: 0 10px 6px; }
+.opt { display: none; flex-wrap: wrap; align-items: center; gap: 6px 14px; padding: 6px 8px; background: var(--c-paper-lo); border-radius: var(--r); font-size: 14px; }
+#view-combat[data-tool="move"]  .opt-move,
+#view-combat[data-tool="area"]  .opt-area,
+#view-combat[data-tool="traj"]  .opt-traj,
+#view-combat[data-tool="draw"]  .opt-draw,
+#view-combat[data-tool="walls"] .opt-walls { display: flex; }
+.opt .grp, .draw-palette, .draw-palette .grp { display: inline-flex; align-items: center; gap: 4px 6px; flex-wrap: wrap; }
+.draw-palette { gap: 6px 14px; }
+.opt-lbl { color: var(--c-mute); font-size: 13px; }
+.opt .btn { min-height: 32px; padding: 5px 9px; font-size: 14px; background: var(--c-paper); }
+.opt .btn.active { background: var(--c-paper-hi); border-color: var(--c-heading); color: var(--c-heading); }
+.opt .select, .opt .input { min-height: 32px; width: auto; padding: 3px 28px 3px 8px; font-size: 14px; }
+.opt .input--num { width: 62px; padding: 3px 6px; }
+.opt .hint { color: var(--c-mute); font-style: italic; }
+/* gruppi di opzioni che valgono solo per certi strumenti di disegno */
+.draw-palette .grp-fill  { display: none; }
+.draw-palette[data-shape="1"] .grp-fill { display: inline-flex; }
+.draw-palette .grp-shape { display: none; }
+.draw-palette[data-tool="brush"] .grp-shape { display: inline-flex; }
+.draw-palette[data-tool="bucket"] .grp-size,
+.draw-palette[data-shape="1"][data-fill="filled"] .grp-size { display: none; }
+#input-draw-custom { width: 28px; height: 28px; padding: 0; border: 0; background: none; cursor: pointer; }
+#grid-container { position: relative; inset: auto; flex: 1; min-height: 0; }
+#btn-draw-eraser.active { background: var(--c-paper-hi); border-color: var(--c-heading); color: var(--c-heading); }
+.grid-token-chip .ico { vertical-align: -.2em; }

@@ -1,4 +1,4 @@
-import { icon } from './icons.js';
+import { icon, iconPath } from './icons.js';
 import { combatantView, healthHintText } from '../logic/visibility.js';
 import { captureFocusState, restoreFocusState } from '../utils/domPreserve.js';
 // Griglia quadrata. 1 cella = 1 m. Dimensioni guidate da gridConfig.
@@ -686,7 +686,11 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
       defs += `<clipPath id="${clipId}"><circle cx="${cx}" cy="${cy}" r="${rBody.toFixed(1)}"/></clipPath>`;
       inner += `<image href="${avatarSrc}" x="${(cx - rBody).toFixed(1)}" y="${(cy - rBody).toFixed(1)}" width="${(rBody * 2).toFixed(1)}" height="${(rBody * 2).toFixed(1)}" clip-path="url(#${clipId})" preserveAspectRatio="xMidYMid slice" pointer-events="none"/>`;
     } else {
-      inner += `<text x="${cx}" y="${(cy + fsz * 0.36).toFixed(1)}" text-anchor="middle" font-size="${fsz}" class="sq-name" pointer-events="none">${isDead ? '💀' : letter}</text>`;
+      inner += `<text x="${cx}" y="${(cy + fsz * 0.36).toFixed(1)}" text-anchor="middle" font-size="${fsz}" class="sq-name" pointer-events="none">${isDead ? '' : letter}</text>`;
+      if (isDead) {
+        // teschio al posto della lettera: stesso tracciato dell'icona "skull"
+        inner += `<g transform="translate(${(cx - fsz / 2).toFixed(1)} ${(cy - fsz / 2).toFixed(1)}) scale(${(fsz / 512).toFixed(4)})" fill="var(--c-dead)" pointer-events="none"><path d="${iconPath('skull')}"/></g>`;
+      }
     }
     inner += `<text x="${cx}" y="${(y + w + 9).toFixed(1)}" text-anchor="middle" class="sq-nm" pointer-events="none">${esc((occ.name || '').trim().slice(0, 12).toUpperCase())}</text>`;
 
@@ -722,18 +726,18 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   if (hintEl) {
     if (drawMode && isShapeTool(drawTool)) {
       hintEl.textContent = drawTool === 'circle'
-        ? '🎨 Cerchio: premi sul centro e trascina per il raggio'
-        : `🎨 ${drawTool === 'square' ? 'Quadrato' : 'Rettangolo'}: trascina da un angolo all'angolo opposto`;
+        ? 'Cerchio: premi sul centro e trascina per il raggio'
+        : `${drawTool === 'square' ? 'Quadrato' : 'Rettangolo'}: trascina da un angolo all'angolo opposto`;
     } else if (drawMode) {
       hintEl.textContent = drawColor
-        ? '🎨 Disegna: trascina per colorare le caselle'
-        : '🎨 Disegna: trascina per cancellare il colore (gomma attiva)';
+        ? 'Trascina sulla mappa per colorare'
+        : 'Trascina per cancellare il colore (gomma attiva)';
     } else if (placingShape && !templateOrigin) {
       hintEl.textContent = `${TEMPLATE_LABEL[placingShape]}: tocca la cella di origine`;
     } else if (placingShape && templateOrigin) {
       hintEl.textContent = `${TEMPLATE_LABEL[placingShape]}: muovi per orientare, tocca per confermare`;
     } else if (editMode && isMaster) {
-      hintEl.textContent = '✏️ Modifica: imposta le dimensioni e clicca le caselle vuote per i muri';
+      hintEl.textContent = 'Imposta le dimensioni e clicca le caselle vuote per i muri';
     } else if (showReach) {
       hintEl.textContent = `${selComb.name} — raggio di movimento ${fmtM(reachSpeed)} · tocca la destinazione`;
     } else if (selectedId && selComb) {
@@ -746,7 +750,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
         ? `${label} — nel template: ${templateHitNames.join(', ')}`
         : `${label} — nessun combattente nel template`;
     } else {
-      hintEl.textContent = '1 casella = 1 m · Seleziona un token, poi tocca la destinazione';
+      hintEl.textContent = '1 casella = 1 m · Tocca un segnalino, poi la destinazione';
     }
   }
 

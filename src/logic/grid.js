@@ -2,6 +2,7 @@ import * as GridUI from '../ui/GridUI.js';
 import { state }   from '../utils/state.js';
 import { playerColor } from '../utils/presence.js';
 import { esc }     from '../views/core.js';
+import { icon }    from '../ui/icons.js';
 import * as CombatChrome from '../ui/CombatChrome.js';
 import { readDensity } from './combatChrome.js';
 
@@ -295,7 +296,7 @@ export function renderTokenBar(gridPos, combatants) {
       class="grid-token-chip${selected ? ' selected' : ''}${ko ? ' ko' : ''}${player ? ' is-player' : ''}"
       data-token-id="${id}"
       title="${esc(c.name || '?')} — ${placed ? 'rimuovi dalla griglia' : 'posiziona sulla griglia'}"
-    >${(c.name || '?').slice(0, 2).toUpperCase()}${ko ? ' 💀' : ''}${placed ? '' : ' +'}</button>`;
+    >${(c.name || '?').slice(0, 2).toUpperCase()}${ko ? ' ' + icon('skull', { size: 13 }) : ''}${placed ? '' : ' +'}</button>`;
   }).join('');
 
   bar.onclick = (e) => {

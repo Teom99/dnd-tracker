@@ -57,6 +57,11 @@ export function apply() {
     b.classList.toggle('on', on);
     b.setAttribute('aria-pressed', String(on));
   });
+  document.querySelectorAll('#grid-tools [data-tool]').forEach(b => {
+    const on = b.dataset.tool === ui.tool;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', String(on));
+  });
   document.getElementById('btn-menu')?.setAttribute('aria-expanded', String(ui.menuOpen));
   const title = document.getElementById('drawer-title');
   const wanted = DRAWER_TITLES[ui.drawer] ?? '';

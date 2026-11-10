@@ -21,6 +21,7 @@ import { playerColor } from './src/utils/presence.js';
 import { initTheme, toggleTheme } from './src/utils/theme.js';
 import { icon } from './src/ui/icons.js';
 import * as CombatChrome from './src/ui/CombatChrome.js';
+import { toolTransition, toolFromState } from './src/logic/combatChrome.js';
 import { updateHomeAuthUI, loadCharacterLibrary, populateJoinPicker, populateCreaturePicker, saveUserSession, loadUserSessions } from './src/views/home.js';
 
 // --- Tema chiaro/notte ---
@@ -1165,9 +1166,7 @@ function _applyGridDims() {
 
 function _applyGridEditUI() {
   const on       = state.gridEditMode;
-  const editCtrl = document.getElementById('grid-edit-controls');
   const editBtn  = document.getElementById('btn-grid-edit');
-  if (editCtrl) editCtrl.style.display = on ? 'flex' : 'none';
   if (editBtn) {
     const lbl = editBtn.querySelector('.lbl');
     if (lbl) lbl.textContent = on ? 'Fine modifica mappa' : 'Muri e dimensioni mappa';
@@ -1189,7 +1188,40 @@ function _syncGridModeUI() {
   _applyGridEditUI();
   _applyTemplateControlsUI();
   _applyDrawControlsUI();
+  // Una modalità può cambiare anche da codice esistente (es. area piazzata, modifica muri dal menu):
+  // lo strumento mostrato segue sempre lo stato reale.
+  const tool = toolFromState({
+    gridEditMode: state.gridEditMode, drawMode: state.drawMode,
+    templatePlacingShape: state.templatePlacingShape, currentTool: state.ui.tool,
+  });
+  if (tool !== state.ui.tool) state.ui.tool = tool;
+  CombatChrome.apply();
 }
+
+// Clic su uno dei quattro strumenti. Cambiando strumento si annulla ciò che
+// il precedente aveva a metà (origine area, primo punto della traiettoria, ecc.).
+function _selectTool(next) {
+  const { tool, reset } = toolTransition(state.ui.tool, next);
+  if (reset.includes('gridEditMode')) _applyGridDims();   // commit di eventuali dimensioni in sospeso
+  for (const key of reset) {
+    state[key] = (key === 'drawMode' || key === 'gridEditMode') ? false : null;
+  }
+  state.ui.tool = tool;
+  if (tool === 'draw' && !state.drawMode) {
+    toggleDrawMode();                                      // esclusivo con muri e area, come sempre
+  }
+  if (tool === 'area') {                                   // area: nessuna forma finché non se ne sceglie una
+    state.drawMode = false;
+    state.gridEditMode = false;
+  }
+  _syncGridModeUI();
+  _rerenderGridFromSnapshot();
+}
+document.getElementById('grid-tools')?.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-tool]');
+  if (btn) _selectTool(btn.dataset.tool);
+});
+document.getElementById('btn-walls-done')?.addEventListener('click', () => document.getElementById('btn-grid-edit')?.click());
 
 // ─── TEMPLATE AD AREA (cerchio/cono/linea) ───────────────────────────────────
 
@@ -1224,11 +1256,10 @@ document.getElementById('grid-template-controls')?.addEventListener('click', (e)
 // altrimenti .value col colore precedente mentre l'utente sta ancora
 // scegliendo. Flag esplicito su focus/blur come difesa aggiuntiva.
 let _customColorPicking = false;
+let _lastBrushColor = state.drawColor || '#e74c3c'; // per tornare al pennello dopo la gomma
 
 function _applyDrawControlsUI() {
-  document.getElementById('btn-draw-toggle')?.classList.toggle('active', state.drawMode);
   const palette = document.getElementById('grid-draw-palette');
-  if (palette) palette.style.display = state.drawMode ? 'flex' : 'none';
 
   document.querySelectorAll('#grid-draw-palette .draw-swatch:not(.draw-eraser)').forEach(sw => {
     sw.classList.toggle('active', state.drawColor === sw.dataset.color);
@@ -1243,14 +1274,22 @@ function _applyDrawControlsUI() {
 
   const shapeTool = GridUI.isShapeTool(state.drawTool);
   document.querySelectorAll('#grid-draw-palette [data-draw-tool]').forEach(btn => {
-    btn.classList.toggle('active', state.drawTool === btn.dataset.drawTool);
+    // il pennello è attivo solo con un colore: senza colore è la gomma
+    const on = state.drawTool === btn.dataset.drawTool && (btn.dataset.drawTool !== 'brush' || state.drawColor !== null);
+    btn.classList.toggle('active', on);
   });
+  if (palette) {
+    // quali gruppi di opzioni hanno senso per lo strumento scelto lo decide il CSS da questi attributi
+    palette.dataset.tool  = state.drawTool;
+    palette.dataset.shape = shapeTool ? '1' : '';
+    palette.dataset.fill  = state.drawFill;
+  }
   const fillBtn = document.getElementById('btn-draw-fill');
   if (fillBtn) {
     const filled = state.drawFill === 'filled';
     fillBtn.toggleAttribute('disabled', !shapeTool); // contorno/pieno vale solo per le forme
     fillBtn.classList.toggle('active', shapeTool && filled);
-    fillBtn.textContent = filled ? '■' : '▢';
+    fillBtn.innerHTML = icon(filled ? 'fill' : 'outline') + `<span class="lbl">${filled ? 'Piena' : 'Contorno'}</span>`;
     fillBtn.title = filled ? 'Forma piena (clicca per solo contorno)' : 'Solo contorno (clicca per forma piena)';
   }
 
@@ -1273,15 +1312,13 @@ function _applyDrawControlsUI() {
   }
 }
 
-document.getElementById('btn-draw-toggle')?.addEventListener('click', () => {
-  toggleDrawMode();
-  _syncGridModeUI();
-});
 
 document.getElementById('grid-draw-palette')?.addEventListener('click', (e) => {
   const toolBtn = e.target.closest('[data-draw-tool]');
   if (toolBtn) {
     setDrawTool(toolBtn.dataset.drawTool);
+    // "Pennello" dopo la gomma torna all'ultimo colore usato
+    if (toolBtn.dataset.drawTool === 'brush' && state.drawColor === null) setDrawColor(_lastBrushColor);
     _applyDrawControlsUI();
     return;
   }
@@ -1298,6 +1335,7 @@ document.getElementById('grid-draw-palette')?.addEventListener('click', (e) => {
   }
   const swatch = e.target.closest('.draw-swatch:not(.draw-eraser)');
   if (swatch) {
+    _lastBrushColor = swatch.dataset.color;
     setDrawColor(swatch.dataset.color);
     _applyDrawControlsUI();
     return;
@@ -1329,6 +1367,7 @@ document.getElementById('input-draw-custom')?.addEventListener('blur', () => {
   _customColorPicking = false;
 });
 document.getElementById('input-draw-custom')?.addEventListener('input', (e) => {
+  _lastBrushColor = e.target.value;
   setDrawColor(e.target.value);
   _applyDrawControlsUI();
 });

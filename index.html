@@ -548,67 +548,106 @@
       <!-- Griglia (centro) -->
       <main class="panel stage-grid" id="panel-grid">
         <div class="grid-toolbar">
-          <div id="grid-token-bar" class="grid-token-bar"></div>
-          <div id="grid-template-controls" style="display:flex; align-items:center; gap:2px;">
-            <button id="btn-template-circle" class="btn btn--ghost btn--sm btn--icon" data-shape="circle" title="Piazza area circolare">⭕</button>
-            <button id="btn-template-cone"   class="btn btn--ghost btn--sm btn--icon" data-shape="cone"   title="Piazza area a cono">📐</button>
-            <button id="btn-template-line"   class="btn btn--ghost btn--sm btn--icon" data-shape="line"   title="Piazza area a linea">📏</button>
-            <button id="btn-template-clear"  class="btn btn--ghost btn--sm btn--icon" title="Rimuovi area" style="display:none;">✕</button>
+          <div class="tools" id="grid-tools" role="group" aria-label="Strumenti della mappa">
+            <button type="button" id="tool-move" class="btn btn--sm" data-tool="move" data-icon="footprints"><span class="lbl">Muovi</span></button>
+            <button type="button" id="tool-area" class="btn btn--sm" data-tool="area" data-icon="blast"><span class="lbl">Area</span></button>
+            <button type="button" id="tool-traj" class="btn btn--sm" data-tool="traj" data-icon="arrow-flight"><span class="lbl">Traiettoria</span></button>
+            <button type="button" id="tool-draw" class="btn btn--sm" data-tool="draw" data-icon="brush"><span class="lbl">Disegna</span></button>
           </div>
-          <div id="grid-draw-controls" style="display:flex; align-items:center; gap:2px;">
-            <button id="btn-draw-toggle" class="btn btn--ghost btn--sm btn--icon" title="Disegna sulla mappa">🎨</button>
+          <span class="grid-hint grow" id="grid-hint">1 casella = 1 m</span>
+        </div>
+        <!-- Una sola riga di opzioni, quella dello strumento attivo (#view-combat[data-tool]) -->
+        <div class="grid-options" id="grid-options">
+          <div class="opt opt-move">
+            <span class="opt-lbl">Segnalini</span>
+            <div id="grid-token-bar" class="grid-token-bar"></div>
+            <div id="grid-master-controls" class="grp" style="display:none;">
+              <label class="opt-lbl" for="select-token-size">Taglia</label>
+              <select id="select-token-size" class="select" disabled>
+                <option value="small">Piccola</option>
+                <option value="medium">Media</option>
+                <option value="large">Grande</option>
+                <option value="huge">Enorme</option>
+                <option value="gargantuan">Mastodontica</option>
+              </select>
+            </div>
           </div>
-          <span id="grid-draw-palette" style="display:none; align-items:center; gap:4px;">
-            <button id="btn-draw-bucket" class="btn btn--ghost btn--sm btn--icon" data-draw-tool="bucket" title="Secchiello (riempi area)">🪣</button>
-            <span id="bucket-color-dot" class="bucket-color-dot" title="Colore selezionato per il secchiello"></span>
-            <button class="draw-swatch" data-color="#e74c3c" style="background:#e74c3c;" title="Rosso"></button>
-            <button class="draw-swatch" data-color="#e67e22" style="background:#e67e22;" title="Arancio"></button>
-            <button class="draw-swatch" data-color="#f1c40f" style="background:#f1c40f;" title="Giallo"></button>
-            <button class="draw-swatch" data-color="#2ecc71" style="background:#2ecc71;" title="Verde"></button>
-            <button class="draw-swatch" data-color="#3498db" style="background:#3498db;" title="Blu"></button>
-            <button class="draw-swatch" data-color="#9b59b6" style="background:#9b59b6;" title="Viola"></button>
-            <button class="draw-swatch" data-color="#a0642c" style="background:#a0642c;" title="Marrone"></button>
-            <button class="draw-swatch" data-color="#ecf0f1" style="background:#ecf0f1;" title="Bianco"></button>
-            <input type="color" id="input-draw-custom" title="Colore personalizzato" value="#ff0000" style="width:26px;height:26px;padding:0;border:none;background:none;cursor:pointer;">
-            <button id="btn-draw-eraser" class="draw-swatch draw-eraser" title="Gomma">✕</button>
-            <select id="select-draw-size" class="select" title="Dimensione pennello/gomma" style="min-height:26px; font-size:9.5px; padding:2px 18px 2px 5px;">
-              <option value="1">1×1</option>
-              <option value="2">2×2</option>
-              <option value="3">3×3</option>
-              <option value="4">4×4</option>
-            </select>
-            <button id="btn-draw-shape-square" class="btn btn--ghost btn--sm btn--icon" data-draw-shape="square" title="Pennello quadrato">⬛</button>
-            <button id="btn-draw-shape-round"  class="btn btn--ghost btn--sm btn--icon" data-draw-shape="round"  title="Pennello rotondo">⚪</button>
-            <button id="btn-draw-tool-rect"   class="btn btn--ghost btn--sm btn--icon" data-draw-tool="rect"   title="Rettangolo (trascina da angolo ad angolo)">▭</button>
-            <button id="btn-draw-tool-square" class="btn btn--ghost btn--sm btn--icon" data-draw-tool="square" title="Quadrato (trascina da angolo ad angolo)">◻</button>
-            <button id="btn-draw-tool-circle" class="btn btn--ghost btn--sm btn--icon" data-draw-tool="circle" title="Cerchio (trascina dal centro)">◯</button>
-            <button id="btn-draw-fill" class="btn btn--ghost btn--sm btn--icon" title="Solo contorno (clicca per forma piena)" disabled>▢</button>
-            <button id="btn-draw-undo" class="btn btn--ghost btn--sm btn--icon" title="Annulla la tua ultima modifica al disegno" disabled>↶</button>
-            <button id="btn-draw-redo" class="btn btn--ghost btn--sm btn--icon" title="Ripeti la modifica annullata" disabled>↷</button>
-            <button id="btn-paint-clear" class="btn btn--ghost btn--sm btn--icon" title="Pulisci tutto il disegno">🗑</button>
-          </span>
-          <span class="grid-hint grow" id="grid-hint">1 casella = 1 m · Seleziona un token, poi tocca la destinazione</span>
-          <span id="grid-edit-controls" style="display:none; align-items:center; gap:4px; font-size:11px; color:var(--faint);">
-            <input type="number" id="input-grid-cols" min="1" max="60" class="input input--sm input--num" title="Larghezza (caselle)" style="width:46px;">
-            <span>×</span>
-            <input type="number" id="input-grid-rows" min="1" max="60" class="input input--sm input--num" title="Altezza (caselle)" style="width:46px;">
-          </span>
-          <div id="grid-master-controls" style="display:none; align-items:center; gap:5px;">
-            <span style="font-size:9.5px; color:var(--faint);">Token:</span>
-            <select id="select-token-size" class="select" disabled style="min-height:26px; font-size:9.5px; padding:2px 18px 2px 5px;">
-              <option value="small">Piccola</option>
-              <option value="medium">Media</option>
-              <option value="large">Grande</option>
-              <option value="huge">Enorme</option>
-              <option value="gargantuan">Mastodontica</option>
-            </select>
+
+          <div class="opt opt-area">
+            <div id="grid-template-controls" class="grp">
+              <button id="btn-template-circle" class="btn btn--sm" data-shape="circle" title="Piazza area circolare" data-icon="circle"><span class="lbl">Cerchio</span></button>
+              <button id="btn-template-cone"   class="btn btn--sm" data-shape="cone"   title="Piazza area a cono" data-icon="blast"><span class="lbl">Cono</span></button>
+              <button id="btn-template-line"   class="btn btn--sm" data-shape="line"   title="Piazza area a linea" data-icon="rect"><span class="lbl">Linea</span></button>
+              <button id="btn-template-clear"  class="btn btn--sm btn--ghost" title="Rimuovi area" style="display:none;" data-icon="close"><span class="lbl">Rimuovi area</span></button>
+            </div>
+          </div>
+
+          <div class="opt opt-traj" id="traj-controls"></div>
+
+          <div class="opt opt-draw">
+            <span id="grid-draw-palette" class="draw-palette">
+              <span class="grp grp-tool">
+                <button id="tool-brush" class="btn btn--sm" data-draw-tool="brush" title="Pennello" data-icon="brush"><span class="lbl">Pennello</span></button>
+                <button id="btn-draw-eraser" class="btn btn--sm" title="Gomma" data-icon="eraser"><span class="lbl">Gomma</span></button>
+                <button id="btn-draw-bucket" class="btn btn--sm" data-draw-tool="bucket" title="Secchiello (riempi area)" data-icon="bucket"><span class="lbl">Secchiello</span></button>
+                <button id="btn-draw-tool-rect"   class="btn btn--sm" data-draw-tool="rect"   title="Rettangolo (trascina da angolo ad angolo)" data-icon="rect"><span class="lbl">Rettangolo</span></button>
+                <button id="btn-draw-tool-square" class="btn btn--sm" data-draw-tool="square" title="Quadrato (trascina da angolo ad angolo)" data-icon="square"><span class="lbl">Quadrato</span></button>
+                <button id="btn-draw-tool-circle" class="btn btn--sm" data-draw-tool="circle" title="Cerchio (trascina dal centro)" data-icon="circle"><span class="lbl">Cerchio</span></button>
+              </span>
+              <span class="grp grp-color">
+                <span class="opt-lbl">Colore</span>
+                <span id="bucket-color-dot" class="bucket-color-dot" title="Colore selezionato"></span>
+                <button class="draw-swatch" data-color="#e74c3c" style="background:#e74c3c;" title="Rosso"></button>
+                <button class="draw-swatch" data-color="#e67e22" style="background:#e67e22;" title="Arancio"></button>
+                <button class="draw-swatch" data-color="#f1c40f" style="background:#f1c40f;" title="Giallo"></button>
+                <button class="draw-swatch" data-color="#2ecc71" style="background:#2ecc71;" title="Verde"></button>
+                <button class="draw-swatch" data-color="#3498db" style="background:#3498db;" title="Blu"></button>
+                <button class="draw-swatch" data-color="#9b59b6" style="background:#9b59b6;" title="Viola"></button>
+                <button class="draw-swatch" data-color="#a0642c" style="background:#a0642c;" title="Marrone"></button>
+                <button class="draw-swatch" data-color="#ecf0f1" style="background:#ecf0f1;" title="Bianco"></button>
+                <input type="color" id="input-draw-custom" title="Colore personalizzato" aria-label="Colore personalizzato" value="#ff0000">
+              </span>
+              <span class="grp grp-size">
+                <label class="opt-lbl" for="select-draw-size">Dimensione</label>
+                <select id="select-draw-size" class="select" title="Dimensione pennello/gomma">
+                  <option value="1">1×1</option>
+                  <option value="2">2×2</option>
+                  <option value="3">3×3</option>
+                  <option value="4">4×4</option>
+                </select>
+              </span>
+              <span class="grp grp-shape">
+                <button id="btn-draw-shape-square" class="btn btn--sm" data-draw-shape="square" title="Pennello quadrato" data-icon="square"><span class="lbl">Quadrato</span></button>
+                <button id="btn-draw-shape-round"  class="btn btn--sm" data-draw-shape="round"  title="Pennello rotondo" data-icon="circle"><span class="lbl">Rotondo</span></button>
+              </span>
+              <span class="grp grp-fill">
+                <button id="btn-draw-fill" class="btn btn--sm" title="Solo contorno (clicca per forma piena)" disabled data-icon="outline"><span class="lbl">Contorno</span></button>
+              </span>
+              <span class="grp">
+                <button id="btn-draw-undo" class="btn btn--sm btn--icon" title="Annulla la tua ultima modifica al disegno" aria-label="Annulla" disabled data-icon="undo"></button>
+                <button id="btn-draw-redo" class="btn btn--sm btn--icon" title="Ripeti la modifica annullata" aria-label="Ripeti" disabled data-icon="redo"></button>
+                <button id="btn-paint-clear" class="btn btn--sm btn--ghost" title="Pulisci tutto il disegno" data-icon="trash"><span class="lbl">Pulisci</span></button>
+              </span>
+            </span>
+          </div>
+
+          <div class="opt opt-walls">
+            <span id="grid-edit-controls" class="grp">
+              <label class="opt-lbl" for="input-grid-cols">Larghezza</label>
+              <input type="number" id="input-grid-cols" min="1" max="60" class="input input--sm input--num" title="Larghezza (caselle)">
+              <span class="opt-lbl">×</span>
+              <label class="opt-lbl" for="input-grid-rows">Altezza</label>
+              <input type="number" id="input-grid-rows" min="1" max="60" class="input input--sm input--num" title="Altezza (caselle)">
+            </span>
+            <span class="hint">Tocca o trascina sulle caselle vuote per i muri</span>
+            <button type="button" id="btn-walls-done" class="btn btn--sm" data-icon="check"><span class="lbl">Fine modifica</span></button>
           </div>
         </div>
         <div id="grid-container"></div>
         <div class="grid-zoom">
-          <button id="btn-zoom-in"    class="btn btn--icon" title="Ingrandisci">+</button>
-          <button id="btn-zoom-out"   class="btn btn--icon" title="Riduci">−</button>
-          <button id="btn-zoom-reset" class="btn btn--icon" title="Reimposta">◌</button>
+          <button id="btn-zoom-in" class="btn btn--icon" title="Ingrandisci" aria-label="Ingrandisci" data-icon="zoom-in"></button>
+          <button id="btn-zoom-out" class="btn btn--icon" title="Riduci" aria-label="Riduci" data-icon="zoom-out"></button>
+          <button id="btn-zoom-reset" class="btn btn--icon" title="Reimposta zoom" aria-label="Reimposta zoom" data-icon="zoom-reset"></button>
         </div>
       </main>
 

@@ -476,12 +476,6 @@
   border-color: var(--c-text);
   box-shadow: 0 0 0 1px var(--c-shadow);
 }
-#btn-draw-toggle.active {
-  color: var(--c-heading);
-  border-color: var(--c-heading);
-  border-style: solid;
-  background: var(--c-reach);
-}
 #btn-draw-bucket.active {
   color: var(--c-heading);
   border-color: var(--c-heading);

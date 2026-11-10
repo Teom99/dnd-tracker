@@ -65,6 +65,9 @@ const LINE = {
   'outline':    'M96 96h320v320H96z',
 };
 
+// Tracciato grezzo di un'icona piena, per inserirla dentro un SVG già esistente (es. la mappa)
+export function iconPath(name) { return Object.prototype.hasOwnProperty.call(SOLID, name) ? SOLID[name] : ''; }
+
 export const ICON_NAMES = [...Object.keys(SOLID), ...Object.keys(LINE)];
 
 const escAttr = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
