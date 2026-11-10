@@ -12,7 +12,7 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | File | Ruolo |
 |---|---|
 | `index.html` | Struttura viste: `#view-home`, `#view-combat`, `#view-character` + modal condizioni |
-| `styles/base.css` | Variabili CSS, reset, tipografia, bottoni, input — tema fantasy dark |
+| `styles/base.css` | Variabili CSS (`--c-*`, `--f-*`) per i temi chiaro/notte, alias temporanei delle variabili vecchie, reset, tipografia, bottoni, input — identità "Manuale" |
 | `styles/home.css` | Home view, auth panel, libreria personaggi, picker join/creature |
 | `styles/combat.css` | Vista combat, card combattente, dock giocatore, modal condizioni, log |
 | `styles/character.css` | Scheda personaggio, stat block, slot magia, inventario, level-up |
@@ -37,6 +37,10 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | `src/utils/DndApi.js` | Fetch mostri/incantesimi/condizioni da api.open5e.com |
 | `src/utils/imageUtils.js` | `resizeToBase64` — ridimensionamento avatar prima dell'upload |
 | `src/utils/domPreserve.js` | `captureFocusState`/`restoreFocusState` — preserva focus, valore, cursore e scroll di un input durante un rebuild `innerHTML` |
+| `src/utils/theme.js` | Tema chiaro/notte: `resolveTheme`, `initTheme`, `toggleTheme` — `<html data-theme>` + `localStorage['dnd-theme']` |
+| `src/ui/icons.js` | `icon(name, {size, title})` — icone SVG in tinta unita (`currentColor`); a tema da game-icons.net (crediti in `CREDITS.md`), di servizio disegnate a tratto |
+| `src/logic/combatantRules.js` | Updater puri delle transazioni sul combattente (`applyMaxHp`, `applyFields`) |
+| `test/*.html` | Test in pagina (niente Node): `shapes`, `theme`, `icons` + campionario `componenti.html`; servire con `python3 -m http.server` |
 | `src/utils/presence.js` | `playerColor(uid)` — colore deterministico per giocatore (hash su palette fissa), usato per lock note e cursori live |
 | `src/views/home.js` | Auth UI, libreria personaggi, picker join/creature, sessioni utente salvate |
 | `src/views/sheet.js` | Sheet listener, `makeCallbacks`, `initSheet`, `openCharacterSheet`, `openLibrarySheet`, `bindSheetEvents` |
@@ -137,7 +141,7 @@ Note: `.indexOn: ["ownerUid"]` serve a `Combatant.findByOwner`. `.read`/`.write`
 - Log eventi condivisi e realtime su Firebase (`sessions/{code}/logs`)
 - Log azioni attaccante->bersaglio (es. "A ha colpito B infliggendogli N danni")
 - Cancellazione log condivisa (`session.clearLogs`)
-- Favicon emoji drago SVG inline
+- Favicon: drago SVG inline (da `src/ui/icons.js`, stesso tracciato dell'icona `dragon`)
 - Slot incantesimo con counter numerico +/− e max editabile inline; scritture atomiche con `runTransaction`
 - Campo `spellBonusModifier` per modificatore extra su CD e bonus attacco magia
 - Refactor struttura progetto: `app.js` ridotto, stato in `src/state.js`, logica in moduli separati
@@ -163,10 +167,22 @@ Note: `.indexOn: ["ownerUid"]` serve a `Combatant.findByOwner`. `.read`/`.write`
 - Undo/redo (↶/↷) del disegno sulla mappa, locale a ciascun giocatore: annulla/ripete le proprie pennellate, secchiello e "Pulisci tutto" (non quelle di altri giocatori); non persistito, si perde al reload
 - Forme nel disegno sulla mappa: rettangolo ▭, quadrato ◻ (da angolo ad angolo) e cerchio ◯ (dal centro, trascinando per il raggio), solo contorno (spessore = selettore dimensione) o piene (bottone ▢/■); anteprima locale con misura in metri durante il drag, scrittura batch al rilascio, un solo passo di undo; test della geometria in `test/shapes.html`
 
+- Rework "Manuale", tappa 1 (fondamenta): identità carta/inchiostro in due temi (chiaro e notte, interruttore sole/luna in topbar), nuovo vocabolario di variabili, componenti di base rifatti, modulo icone. Layout e logica invariati. Design in `docs/superpowers/specs/2026-11-10-rework-manuale-design.md`; le tappe 2-5 (combattimento, scheda, home, resto) rifanno le schermate una alla volta
+- Fix rientro in sessione: un combattente rimosso non viene più ricreato (a 0 HP) dalla sincronizzazione della scheda di chi rientra con il vecchio id, e chi entra col segnaposto 1/1 parte a piena vita quando la scheda porta l'HP max al valore vero
+
 ### Bug noti non ancora risolti
 Nessuno al momento.
 
 ---
+
+## Tema e variabili (rework "Manuale")
+
+- **Due temi, una identità**: chiaro (default) e notte, scelti da `<html data-theme="light|night">`. Lo imposta uno script inline in `<head>` di `index.html` prima del primo paint (niente lampo), che **duplica** `resolveTheme` di `src/utils/theme.js`: vanno tenuti allineati. Scelta salvata in `localStorage['dnd-theme']`; senza scelta si segue il sistema. I vecchi temi (viola, `theme-old`) e il pannello "Aspetto" (palette/decorazioni/font) non esistono più.
+- **Solo variabili nei componenti**: i colori stanno in `styles/base.css` come `--c-*` (carta `--c-paper*`, testo `--c-text`/`--c-mute`, filetti `--c-rule`, titoli `--c-heading`, azione principale `--c-accent`, oro `--c-gold`, significato `--c-pc`/`--c-foe`/`--c-ally`, mappa `--c-map*`/`--c-wall`/`--c-reach`), i caratteri come `--f-display` (Alegreya SC) e `--f-body` (Alegreya). **Nessun colore letterale** in CSS o negli stili scritti dal JS: un letterale è leggibile in un tema solo. Negli attributi SVG generati dal JS `var(--c-…)` funziona (vedi i segnalini in `GridUI.renderGrid`).
+- **Alias temporanei**: in testa a `base.css` le variabili dei due vocabolari precedenti (`--gold`, `--text-muted`, `--border-warm`… e `--bg0`, `--bone`, `--mut`, `--line`…) sono alias delle nuove. Servono solo alle schermate non ancora rifatte: ogni tappa del rework le sostituisce nella propria schermata, e a fine tappa 5 il blocco va eliminato. Se una schermata vecchia rende male si corregge l'alias, non il componente.
+- **Un solo `.btn--primary` per schermata**; titoli di sezione con `.rule-head`, testate e dock con `.rule-double` / `.rule-double--top`. Campionario in `test/componenti.html`.
+- **Icone**: sempre `icon('nome')` da `src/ui/icons.js`, mai emoji. Le emoji ancora presenti nelle schermate vecchie spariscono con la tappa della schermata. Ogni bottone solo-icona ha `aria-label` e `title`.
+- **Eccezioni note ai letterali**: colori delle condizioni (`CONDITIONS` in `UI.js`), stanze della nave (`ShipUI.js`), palette del disegno sulla mappa (sono dati, non tema) e logo Google.
 
 ## Pattern ricorrenti da rispettare
 
@@ -255,6 +271,8 @@ Nessuno al momento.
 
 **Invarianti:**
 - `updateHp` è atomico: legge `hpMax` e aggiorna `hpCurrent` in un solo `runTransaction`
+- `setMaxHp` e i campi sincronizzati dalla scheda (CA, taglia, livello, velocità, nome, avatar) scrivono con una transazione sul nodo combattente che **non fa nulla se il combattente non esiste** (`applyMaxHp`/`applyFields` in `src/logic/combatantRules.js`): una `set` su un path figlio ricreerebbe a pezzi un combattente rimosso. `setMaxHp` lascia a piena vita chi era a piena vita, altrimenti limita gli HP correnti al nuovo massimo
+- Il rientro (`_rejoinSession` e restore all'avvio in `app.js`) verifica che il combattente salvato esista ancora prima di adottarne l'id
 - Player KO restano nel turno per death saves; creature KO vengono saltate
 - Visibilità HP: master vede tutto · player vede tutti i PG · creature mostrano solo hint opzionale
 - Death saves inline: 3 successi = revive a 1 HP (scritto via `Combatant.updateHp`)
