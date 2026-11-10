@@ -26,7 +26,7 @@
 <div id="summary">✗ modulo non caricato</div>
 
 <script type="module">
-import { toolTransition, toolFromState, detailStillValid, readDensity, saveDensity } from '../src/logic/combatChrome.js';
+import { toolTransition, toolFromState, detailStillValid, readDensity, saveDensity, nextInTurnOrder } from '../src/logic/combatChrome.js';
 
 const out = document.getElementById('out');
 let pass = 0, fail = 0;
@@ -84,6 +84,18 @@ let threw = false;
 try { check('storage bloccato: legge compatta', readDensity(), 'compact'); saveDensity('details'); } catch { threw = true; }
 check('storage bloccato: non lancia', threw, false);
 if (real) Object.defineProperty(window, 'localStorage', real); else delete window.localStorage;
+
+group('nextInTurnOrder (chi viene dopo)');
+const lyra = { id: 'l', type: 'player', hpCurrent: 24 }, gob = { id: 'g', type: 'creature', hpCurrent: 7 };
+const brakka = { id: 'b', type: 'player', hpCurrent: 0 }, orc = { id: 'o', type: 'creature', hpCurrent: 0 };
+check('il successivo in ordine', nextInTurnOrder([lyra, gob, brakka], 'l')?.id, 'g');
+check('dopo l\'ultimo si riparte dal primo', nextInTurnOrder([lyra, gob, brakka], 'b')?.id, 'l');
+check('un giocatore KO resta nel turno (tiri salvezza)', nextInTurnOrder([lyra, gob, brakka], 'g')?.id, 'b');
+check('una creatura KO viene saltata', nextInTurnOrder([lyra, orc, gob], 'l')?.id, 'g');
+check('da solo non c\'è un "poi"', nextInTurnOrder([lyra], 'l'), null);
+check('nessun turno corrente → null', nextInTurnOrder([lyra, gob], null), null);
+check('turno corrente di una creatura KO (non in ordine) → null', nextInTurnOrder([lyra, orc], 'o'), null);
+check('lista vuota → null', nextInTurnOrder([], 'l'), null);
 
 document.getElementById('summary').textContent =
   fail === 0 ? `✓ ${pass} test passati` : `✗ ${fail} falliti · ${pass} passati`;

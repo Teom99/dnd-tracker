@@ -1423,24 +1423,6 @@ body.is-master .fight-card { cursor: pointer; }
 #view-combat[data-drawer="log"]    .side-pane[data-pane="log"],
 #view-combat[data-drawer="notes"]  .side-pane[data-pane="notes"] { display: flex; }
 
-@media (max-width: 860px) {
-  /* Provvisorio: il layout da telefono vero arriva nel Task 9 del piano */
-  .combat-shell, #view-combat[data-density="details"] .combat-shell { display: block; padding: 8px 8px 0; flex: 1; }
-  #panel-init { display: none; }
-  #panel-grid { height: 100%; display: block; }
-  #panel-side { position: fixed; inset: 56px 0 0 0; z-index: 50; background: var(--c-paper) var(--paper-grain); padding: 12px; }
-  .grid-hint { display: none; }
-  .my-dock .btn { min-height: 40px; }
-  .combat-topbar .btn { min-height: 38px; }
-  .grid-token-chip { min-height: 34px; }
-  .fc-controls .btn { min-height: 36px; }
-}
-@media (max-width: 600px) {
-  .combat-topbar .turn-banner { display: none; }
-  .my-dock { grid-template-columns: 36px minmax(0, 1fr); row-gap: 6px; padding: 8px 10px; height: auto; overflow: visible; }
-  .my-dock .dock-vitals, .my-dock .dock-actions { grid-column: 1 / -1; }
-  .my-dock .dock-actions .btn { flex: 1; }
-}
 .log-head { justify-content: flex-end; }
 
 
@@ -1585,3 +1567,70 @@ button.init-num { cursor: pointer; border-bottom: 1px dashed var(--c-rule); }
 .spells-pop .sp-it small { color: var(--c-mute); }
 .spells-pop .empty-hint { color: var(--c-mute); font-style: italic; margin: 6px 0 10px; }
 @media (max-width: 600px) { .my-dock { grid-template-columns: 40px minmax(0, 1fr) auto; } .my-dock .dock-vitals, .my-dock .dock-actions { grid-column: 1 / -1; } .dock-stat { grid-column: 3; grid-row: 1; } }
+
+
+/* ═══════════════════════════════════════════
+   LARGHEZZE INTERMEDIE E TELEFONO
+═══════════════════════════════════════════ */
+.turn-pill, .sheet-dim, .init-close, .dock-more-btn, .dock-more { display: none; }
+.turn-pill { align-items: center; gap: 8px; width: 100%; padding: 7px 10px; background: var(--c-paper-lo); border: 0; border-radius: var(--r); color: var(--c-text); font: 500 15px var(--f-body); cursor: pointer; text-align: left; flex-shrink: 0; }
+.turn-pill .sp { flex: 1; }
+.turn-pill-av { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font: 700 12px var(--f-display); background: var(--c-paper-hi); border: 2.5px solid var(--c-pc); flex: none; }
+.turn-pill-next { color: var(--c-mute); font-size: 14px; }
+
+/* 761–1100px: due colonne, il pannello laterale sta sopra la mappa invece che in una terza colonna */
+@media (max-width: 1100px) {
+  .combat-shell, #view-combat[data-density="details"] .combat-shell { grid-template-columns: 190px minmax(0, 1fr); }
+  #view-combat[data-density="details"] .combat-shell { grid-template-columns: 250px minmax(0, 1fr); }
+  #view-combat:is([data-drawer="detail"], [data-drawer="log"], [data-drawer="notes"]) .combat-shell { grid-template-columns: 190px minmax(0, 1fr); }
+  #view-combat[data-density="details"]:is([data-drawer="detail"], [data-drawer="log"], [data-drawer="notes"]) .combat-shell { grid-template-columns: 250px minmax(0, 1fr); }
+  #panel-side { position: fixed; top: 56px; right: 0; bottom: 0; width: min(360px, 92vw); z-index: 50; padding: 12px; background: var(--c-paper) var(--paper-grain); border-left: 3px double var(--c-rule); box-shadow: -8px 0 24px var(--c-shadow); }
+}
+
+/* Telefono (≤760px): la mappa prende lo schermo; iniziativa e menu sono fogli */
+@media (max-width: 760px) {
+  .combat-topbar { gap: 8px; padding: 8px 10px; }
+  .session-tag .t-label, #btn-menu .lbl { display: none; }
+  .turn-banner { display: none; }
+  .topbar-more { position: fixed; top: 56px; left: 10px; right: 10px; width: auto; }
+
+  .combat-shell, #view-combat[data-density="details"] .combat-shell, #view-combat[data-density="details"]:is([data-drawer="detail"], [data-drawer="log"], [data-drawer="notes"]) .combat-shell, #view-combat:is([data-drawer="detail"], [data-drawer="log"], [data-drawer="notes"]) .combat-shell {
+    display: flex; flex-direction: column; gap: 8px; padding: 8px 10px 0; flex: 1; min-height: 0;
+  }
+  .turn-pill { display: flex; }
+  #panel-grid { flex: 1; min-height: 0; }
+  .grid-hint { display: none; }
+  .grid-toolbar .tools { flex-wrap: nowrap; overflow-x: auto; max-width: 100%; scrollbar-width: none; }
+  .grid-toolbar .tools .btn { flex: none; }
+  .grid-options { padding: 0 8px 6px; }
+  .opt .btn { min-height: 36px; }
+
+  /* iniziativa: foglio dal basso */
+  #panel-init {
+    display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 56;
+    max-height: 72dvh; padding: 12px 14px calc(env(safe-area-inset-bottom, 0px) + 12px);
+    background: var(--c-paper) var(--paper-grain); border-top: 3px double var(--c-rule); box-shadow: 0 -10px 28px var(--c-shadow);
+    transform: translateY(105%); transition: transform .22s ease; visibility: hidden;
+  }
+  #view-combat[data-init-sheet="open"] #panel-init { transform: none; visibility: visible; }
+  .init-close { display: inline-flex; }
+  .sheet-dim { position: fixed; inset: 0; z-index: 54; background: var(--c-veil); }
+  #view-combat[data-init-sheet="open"] .sheet-dim { display: block; }
+  #view-combat[data-init-sheet="open"] #panel-side { display: none; }
+
+  /* pannello laterale e popover: a tutto schermo / larghezza piena */
+  #panel-side { inset: 56px 0 0 0; width: auto; border-left: 0; z-index: 58; }
+  .spells-pop { left: 10px; right: 10px; width: auto; bottom: calc(env(safe-area-inset-bottom, 0px) + 180px); }
+  .dock-more { position: fixed; z-index: 56; left: auto; right: 10px; width: 230px; bottom: calc(env(safe-area-inset-bottom, 0px) + 180px); flex-direction: column; padding: 8px; background: var(--c-paper) var(--paper-grain); border: 1px solid var(--c-rule); border-radius: var(--r); box-shadow: 0 10px 28px var(--c-shadow); }
+  #view-combat[data-more="open"] .dock-more { display: flex; }
+
+  /* dock: ritratto, vita, CA, Attacca, Cura, Altro; Fine turno a tutta larghezza sotto */
+  .my-dock { grid-template-columns: 40px minmax(0, 1fr) auto; row-gap: 6px; padding: 8px 10px calc(env(safe-area-inset-bottom, 0px) + 8px); }
+  .my-dock .dock-vitals { grid-column: 1 / -1; }
+  .my-dock .dock-actions { grid-column: 1 / -1; flex-wrap: wrap; justify-content: stretch; }
+  .my-dock .dock-actions .btn { flex: 1; justify-content: center; min-height: 42px; }
+  .dock-extra { display: none; }
+  .dock-more-btn { display: inline-flex; }
+  .my-dock .dock-actions .dock-end { flex: 1 1 100%; }
+}
+@media (min-width: 761px) { .dock-more { display: none !important; } }

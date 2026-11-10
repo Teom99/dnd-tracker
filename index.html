@@ -523,10 +523,20 @@
     <!-- ── 3-COLONNE SHELL ── -->
     <div class="combat-shell shell-wrap">
 
+      <!-- Striscia del turno (solo telefono): chi tocca ora e chi viene dopo; toccandola sale l'iniziativa -->
+      <button type="button" id="turn-pill" class="turn-pill" aria-label="Apri l'iniziativa">
+        <span id="turn-pill-av" class="turn-pill-av"></span>
+        <b id="turn-pill-name">Nessun turno in corso</b>
+        <span id="turn-pill-next" class="turn-pill-next"></span>
+        <span class="sp"></span>
+        <span data-icon="chevron"></span>
+      </button>
+
       <!-- Rail iniziativa (sinistra) -->
       <aside class="panel rail-init" id="panel-init">
         <div class="init-head">
           <h3 class="rule-head">Iniziativa</h3>
+          <button type="button" id="btn-init-close" class="btn btn--ghost btn--sm btn--icon init-close" aria-label="Chiudi l'iniziativa" data-icon="close"></button>
           <div class="seg" id="init-density" role="group" aria-label="Densità dell'iniziativa">
             <button type="button" data-density="compact">Compatta</button>
             <button type="button" data-density="details">Dettagli</button>
@@ -713,6 +723,13 @@
 
     <!-- Dock personaggio (solo player, non master) -->
     <footer id="my-dock" class="my-dock"></footer>
+    <div id="sheet-dim" class="sheet-dim"></div>
+    <!-- "Altro" del dock (telefono): le azioni meno frequenti -->
+    <div id="dock-more" class="spells-pop dock-more" role="menu">
+      <button type="button" class="btn btn--ghost menu-item" data-action="dock-spells" data-icon="spellbook"><span class="lbl">Incantesimi</span></button>
+      <button type="button" class="btn btn--ghost menu-item" data-action="dock-conditions" data-icon="star"><span class="lbl">Condizioni</span></button>
+      <button type="button" class="btn btn--ghost menu-item" data-action="dock-sheet" data-icon="scroll"><span class="lbl">Scheda</span></button>
+    </div>
     <!-- Popover Incantesimi: fuori da #my-dock, così il rebuild del dock non lo tocca -->
     <div id="spells-pop" class="spells-pop" role="dialog" aria-label="Incantesimi"></div>
 

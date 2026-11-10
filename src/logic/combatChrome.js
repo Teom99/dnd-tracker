@@ -51,3 +51,13 @@ export function saveDensity(v) {
   if (!DENSITIES.includes(v)) return;
   try { localStorage.setItem(DENSITY_KEY, v); } catch { /* storage non disponibile */ }
 }
+
+// Chi viene dopo nell'ordine di turno, con le stesse regole di CombatTracker.nextTurn:
+// i giocatori KO restano (tiri salvezza), le creature KO sono saltate.
+// `sorted` è la lista ordinata per iniziativa. Null se non c'è un "poi".
+export function nextInTurnOrder(sorted, currentId) {
+  const active = (sorted || []).filter(c => c.hpCurrent > 0 || c.type === 'player');
+  const i = active.findIndex(c => c.id === currentId);
+  if (i === -1 || active.length < 2) return null;
+  return active[(i + 1) % active.length];
+}

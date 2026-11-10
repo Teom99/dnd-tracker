@@ -23,7 +23,7 @@ function _applyDetailStyle() {
     : '';
 }
 
-const DEFAULT_UI = () => ({ tool: 'move', menuOpen: false, drawer: null, detailId: null, spellsOpen: false, initSheetOpen: false });
+const DEFAULT_UI = () => ({ tool: 'move', menuOpen: false, drawer: null, detailId: null, spellsOpen: false, moreOpen: false, initSheetOpen: false });
 
 // <el data-icon="nome" [data-icon-size="24"]> → SVG inserito in testa al contenuto
 export function hydrateIcons(root = document) {
@@ -49,6 +49,7 @@ export function apply() {
   v.dataset.menu = ui.menuOpen ? 'open' : '';
   v.dataset.drawer = ui.drawer ?? '';
   v.dataset.spells = ui.spellsOpen ? 'open' : '';
+  v.dataset.more = ui.moreOpen ? 'open' : '';
   v.dataset.initSheet = ui.initSheetOpen ? 'open' : '';
   const density = readDensity();
   v.dataset.density = density;
@@ -101,6 +102,11 @@ export function init() {
     }
     // Clic fuori dal popover incantesimi lo chiude (il bottone del dock lo alterna da sé)
     if (state.ui.spellsOpen && !e.target.closest('#spells-pop, [data-action="dock-spells"]')) set({ spellsOpen: false });
+    // "Altro" del dock (telefono): stesso comportamento del popover incantesimi
+    if (state.ui.moreOpen && !e.target.closest('#dock-more, [data-action="dock-more"]')) set({ moreOpen: false });
+    // Foglio dell'iniziativa (telefono): si apre dalla striscia del turno, si chiude da X o toccando fuori
+    if (e.target.closest('#turn-pill')) { set({ initSheetOpen: true }); return; }
+    if (e.target.closest('#btn-init-close, #sheet-dim')) { set({ initSheetOpen: false }); return; }
     if (e.target.closest('#btn-drawer-close')) { set({ drawer: null, detailId: null }); return; }
     if (e.target.closest('#btn-open-notes')) set({ drawer: 'notes', menuOpen: false });
     else if (e.target.closest('#btn-open-log')) set({ drawer: 'log', menuOpen: false });
@@ -110,6 +116,8 @@ export function init() {
     if (e.key !== 'Escape') return;
     if (state.ui.menuOpen) set({ menuOpen: false });
     else if (state.ui.spellsOpen) set({ spellsOpen: false });
+    else if (state.ui.moreOpen) set({ moreOpen: false });
+    else if (state.ui.initSheetOpen) set({ initSheetOpen: false });
     else if (state.ui.drawer) set({ drawer: null, detailId: null });
   });
 

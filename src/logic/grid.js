@@ -97,7 +97,7 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
       if (isMaster) document.dispatchEvent(new CustomEvent('dnd:dock-select', { detail: { id } }));
       else selectToken(id);
       // ...e in più si apre (o si chiude) il dettaglio del combattente
-      if (id) CombatChrome.set({ drawer: 'detail', detailId: id });
+      if (id) CombatChrome.set({ drawer: 'detail', detailId: id, initSheetOpen: false });
       else CombatChrome.set({ drawer: state.ui.drawer === 'detail' ? null : state.ui.drawer, detailId: null });
     },
     comb,

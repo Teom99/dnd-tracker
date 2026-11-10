@@ -21,7 +21,7 @@ import { playerColor } from './src/utils/presence.js';
 import { initTheme, toggleTheme } from './src/utils/theme.js';
 import { icon } from './src/ui/icons.js';
 import * as CombatChrome from './src/ui/CombatChrome.js';
-import { toolTransition, toolFromState } from './src/logic/combatChrome.js';
+import { toolTransition, toolFromState, nextInTurnOrder } from './src/logic/combatChrome.js';
 import { updateHomeAuthUI, loadCharacterLibrary, populateJoinPicker, populateCreaturePicker, saveUserSession, loadUserSessions } from './src/views/home.js';
 
 // --- Tema chiaro/notte ---
@@ -426,10 +426,12 @@ document.getElementById('monster-stat-block-modal').addEventListener('click', (e
 });
 
 // Dock giocatore — azioni rapide (condizioni, scheda, fine turno, death saves)
-document.getElementById('my-dock')?.addEventListener('click', (e) => {
+function _onDockClick(e) {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
   const action = btn.dataset.action;
+  if (action === 'dock-more') { CombatChrome.set({ moreOpen: !state.ui.moreOpen, spellsOpen: false }); return; }
+  if (btn.closest('#dock-more')) CombatChrome.set({ moreOpen: false });
   const cb = makeCallbacks();
   // Per il master il soggetto del dock è la creatura/PG selezionato da carte o iniziativa; per il player è il proprio combattente
   const subjectId = state.session?.isMaster ? state.selectedDockId : state.myCombatantId;
@@ -461,7 +463,9 @@ document.getElementById('my-dock')?.addEventListener('click', (e) => {
     cb.onDeathSave?.(type, on ? index : index + 1);
     return;
   }
-});
+}
+document.getElementById('my-dock')?.addEventListener('click', _onDockClick);
+document.getElementById('dock-more')?.addEventListener('click', _onDockClick);
 
 // Popover incantesimi: i rombi degli slot (stessa scrittura della scheda) e i comandi del popover
 document.getElementById('spells-pop')?.addEventListener('click', (e) => {
@@ -1513,7 +1517,7 @@ function _startListening() {
     const creatures = sorted.filter(c => c.type === 'creature');
     const players   = sorted.filter(c => c.type === 'player' || c.type === 'pet');
     const currentCombatant = sorted.find(c => c.id === data.currentTurnId);
-    UI.renderRound(data.round ?? 1, currentCombatant?.name ?? null);
+    UI.renderRound(data.round ?? 1, currentCombatant?.name ?? null, nextInTurnOrder(sorted, data.currentTurnId)?.name ?? null);
     const callbacks = makeCallbacks();
     const progressionData = {
       mode:           data.progressionMode ?? 'xp',

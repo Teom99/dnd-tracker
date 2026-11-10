@@ -286,7 +286,14 @@ export function renderSessionCode(code) {
   if (el) el.textContent = code;
 }
 
-export function renderRound(round, currentCombatantName = null) {
+export function renderRound(round, currentCombatantName = null, nextName = null) {
+  // Striscia del turno (telefono): "Tocca a X · poi Y"
+  const pillName = document.getElementById('turn-pill-name');
+  if (pillName) pillName.textContent = currentCombatantName ? `Tocca a ${currentCombatantName}` : 'Nessun turno in corso';
+  const pillNext = document.getElementById('turn-pill-next');
+  if (pillNext) pillNext.textContent = nextName ? `poi ${nextName}` : '';
+  const pillAv = document.getElementById('turn-pill-av');
+  if (pillAv) pillAv.textContent = currentCombatantName ? currentCombatantName.trim().charAt(0).toUpperCase() : '';
   const el = document.getElementById('round-display');
   if (el) el.textContent = `Round ${round}`;
   const banner = document.getElementById('turn-banner');
@@ -884,10 +891,11 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
     <div class="dock-actions">
       ${isActive ? `<button class="btn btn--sm" data-action="dock-attack">${icon('sword')}<span class="lbl">Attacca</span></button>` : ''}
       ${isActive ? `<button class="btn btn--sm" data-action="dock-heal">${icon('heal')}<span class="lbl">Cura</span></button>` : ''}
-      <button class="btn btn--sm" data-action="dock-spells" aria-haspopup="dialog">${icon('spellbook')}<span class="lbl">Incantesimi</span></button>
-      <button class="btn btn--sm" data-action="dock-conditions">${icon('star')}<span class="lbl">Condizioni</span></button>
-      <button class="btn btn--sm" data-action="dock-sheet">${icon('scroll')}<span class="lbl">Scheda</span></button>
-      ${isActive ? `<button class="btn btn--primary btn--sm" data-action="dock-end-turn"><span class="lbl">Fine turno</span></button>` : ''}
+      <button class="btn btn--sm dock-extra" data-action="dock-spells" aria-haspopup="dialog">${icon('spellbook')}<span class="lbl">Incantesimi</span></button>
+      <button class="btn btn--sm dock-extra" data-action="dock-conditions">${icon('star')}<span class="lbl">Condizioni</span></button>
+      <button class="btn btn--sm dock-extra" data-action="dock-sheet">${icon('scroll')}<span class="lbl">Scheda</span></button>
+      <button class="btn btn--sm dock-more-btn" data-action="dock-more" aria-haspopup="true">${icon('plus')}<span class="lbl">Altro</span></button>
+      ${isActive ? `<button class="btn btn--primary btn--sm dock-end" data-action="dock-end-turn"><span class="lbl">Fine turno</span></button>` : ''}
     </div>`;
 }
 
