@@ -25,7 +25,7 @@
 }
 
 .ship-name {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 1.1rem;
   font-weight: 700;
   color: var(--gold, #c9a84c);

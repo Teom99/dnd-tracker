@@ -34,7 +34,7 @@
   border: 1px solid #dadce0;
   border-radius: var(--radius);
   cursor: pointer;
-  font-family: 'Crimson Text', Georgia, serif;
+  font-family: var(--f-body);
   font-size: 1rem;
   font-weight: 600;
   min-height: 48px;
@@ -130,7 +130,7 @@
 }
 
 .subtitle {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.82rem;
   color: var(--text-muted);
   letter-spacing: 0.18em;
@@ -203,7 +203,7 @@
 }
 
 .session-entry-code {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.95rem;
   color: var(--gold);
   letter-spacing: 0.08em;
@@ -239,7 +239,7 @@
 .character-preview { display: flex; flex-direction: column; gap: 0.4rem; }
 
 .char-preview-name {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 1.1rem;
   color: var(--gold-light);
 }
@@ -312,7 +312,7 @@ form { display: flex; flex-direction: column; gap: 0.6rem; }
 
 .char-lib-badge {
   font-size: 0.72rem;
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   padding: 0.1rem 0.4rem;
   border-radius: 3px;
   letter-spacing: 0.04em;
@@ -362,7 +362,7 @@ form { display: flex; flex-direction: column; gap: 0.6rem; }
 .char-picker-label {
   font-size: 0.78rem;
   color: var(--text-muted);
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -427,7 +427,7 @@ form { display: flex; flex-direction: column; gap: 0.6rem; }
   margin-bottom: 0.4rem;
 }
 
-.archive-note-title { font-family: 'Cinzel', serif; font-size: 0.9rem; color: var(--gold-light); }
+.archive-note-title { font-family: var(--f-display); font-size: 0.9rem; color: var(--gold-light); }
 .archive-note-date  { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; flex-shrink: 0; }
 
 .archive-note-content {

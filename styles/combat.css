@@ -26,7 +26,7 @@
 .session-label { color: var(--text-muted); font-size: 0.85rem; }
 
 .session-code {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 1rem;
   color: var(--gold);
   letter-spacing: 0.1em;
@@ -47,7 +47,7 @@
 .btn-copy:hover { color: var(--gold); border-color: var(--gold); }
 
 .round-display {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.95rem;
   color: var(--gold-light);
   white-space: nowrap;
@@ -66,7 +66,7 @@
 }
 
 .master-panel form { display: flex; flex-direction: column; gap: 0.6rem; }
-.master-panel-title { font-family: 'Cinzel', serif; font-size: 0.95rem; margin-bottom: 0.4rem; }
+.master-panel-title { font-family: var(--f-display); font-size: 0.95rem; margin-bottom: 0.4rem; }
 
 /* ═══════════════════════════════════════════
    LAYOUT 3 COLONNE COMBAT
@@ -127,7 +127,7 @@ body.sheet-only:not(.in-combat) #master-controls { display: none; }
 }
 
 .col-title {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.8rem;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -222,7 +222,7 @@ body.sheet-only .sheet-back-btn {
 }
 
 .turn-number {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.85rem;
   color: var(--text-muted);
   min-width: 1.2rem;
@@ -252,7 +252,7 @@ body.sheet-only .sheet-back-btn {
 
 .type-badge {
   font-size: 0.7rem;
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   padding: 0.1rem 0.4rem;
   border-radius: 3px;
   letter-spacing: 0.05em;
@@ -285,7 +285,7 @@ body.sheet-only .sheet-back-btn {
   align-items: center;
   justify-content: center;
   font-size: 0.65rem;
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   text-transform: uppercase;
   cursor: pointer;
   opacity: 0.5;
@@ -310,7 +310,7 @@ body.sheet-only .sheet-back-btn {
 .initiative-block { display: flex; align-items: center; }
 
 .initiative-value {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.9rem;
   color: var(--text-muted);
   padding: 0.2rem 0.35rem;
@@ -331,7 +331,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   width: 3.5rem;
   min-height: 32px;
   padding: 0.2rem 0.35rem;
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.9rem;
   text-align: center;
 }
@@ -354,7 +354,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   border-radius: 4px;
   color: var(--text-muted);
   font-size: 0.68rem;
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   cursor: pointer;
   padding: 0.05rem 0.35rem;
   white-space: nowrap;
@@ -379,7 +379,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 .temp-hp-label {
   font-size: 0.68rem;
   color: #7ae0a0;
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
 }
 
 .hp-max-edit-input {
@@ -424,7 +424,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .hp-label {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.75rem;
   color: var(--text-muted);
   letter-spacing: 0.08em;
@@ -592,7 +592,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.95rem;
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-weight: 700;
   letter-spacing: 0.03em;
   min-height: 52px;
@@ -774,7 +774,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 
 .notification {
   pointer-events: auto;
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.82rem;
   max-width: 280px;
   padding: 0.75rem 1rem;
@@ -856,7 +856,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .session-notes-title {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.95rem;
   color: var(--gold-light);
 }
@@ -923,7 +923,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   border: none;
   border-bottom: 1px solid transparent;
   color: var(--text);
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.9rem;
   cursor: pointer;
   min-height: unset;
@@ -966,7 +966,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   border: 1px solid var(--border-warm);
   border-radius: 6px;
   color: var(--text);
-  font-family: 'EB Garamond', Georgia, serif;
+  font-family: var(--f-body);
   font-size: 1rem;
   line-height: 1.6;
   padding: 0.6rem 0.75rem;
@@ -992,7 +992,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .monster-sb-name {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 1.3rem;
   color: var(--gold);
   text-shadow: 0 0 16px var(--gold-glow);
@@ -1034,7 +1034,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .sb-label {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.82rem;
   color: var(--gold-light);
   flex-shrink: 0;
@@ -1056,7 +1056,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .sb-ab-name {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.68rem;
   color: var(--gold-light);
   letter-spacing: 0.04em;
@@ -1074,7 +1074,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
 }
 
 .sb-section-title {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.9rem;
   color: var(--gold);
   border-bottom: 1px solid var(--gold);

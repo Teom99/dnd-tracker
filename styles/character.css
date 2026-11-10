@@ -61,7 +61,7 @@
 }
 
 .sheet-section > summary {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.95rem;
   color: var(--gold-light);
   padding: 0.8rem 1rem;
@@ -103,7 +103,7 @@
 .field-row label {
   font-size: 0.78rem;
   color: var(--text-muted);
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -215,7 +215,7 @@
 }
 
 .ability-label {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.75rem;
   color: var(--text-muted);
   letter-spacing: 0.08em;
@@ -231,7 +231,7 @@
 }
 
 .ability-mod {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 1rem;
   font-weight: 700;
   color: var(--gold);
@@ -239,7 +239,7 @@
 
 /* ─── Computed big display ─── */
 .computed-big {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--gold);
@@ -280,7 +280,7 @@
 .save-check.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.15); }
 
 .save-name { flex: 1; font-size: 0.95rem; }
-.save-value { font-family: 'Cinzel', serif; font-size: 0.9rem; color: var(--gold-light); min-width: 2.5rem; text-align: right; }
+.save-value { font-family: var(--f-display); font-size: 0.9rem; color: var(--gold-light); min-width: 2.5rem; text-align: right; }
 
 /* ─── Skills ─── */
 .skill-list {
@@ -316,8 +316,8 @@
 .skill-prof.expertise { border-color: var(--gold-light); color: var(--gold-light); background: rgba(229,201,122,0.18); }
 
 .skill-name    { flex: 1; font-size: 0.9rem; }
-.skill-ability { font-size: 0.75rem; color: var(--text-muted); font-family: 'Cinzel', serif; min-width: 2.2rem; text-align: center; }
-.skill-total   { font-family: 'Cinzel', serif; font-size: 0.9rem; color: var(--gold-light); min-width: 2.5rem; text-align: right; }
+.skill-ability { font-size: 0.75rem; color: var(--text-muted); font-family: var(--f-display); min-width: 2.2rem; text-align: center; }
+.skill-total   { font-family: var(--f-display); font-size: 0.9rem; color: var(--gold-light); min-width: 2.5rem; text-align: right; }
 
 .passive-perception-row {
   display: flex;
@@ -331,7 +331,7 @@
 }
 
 .passive-label { font-size: 0.85rem; color: var(--text-muted); }
-.passive-value { font-family: 'Cinzel', serif; font-size: 1rem; color: var(--gold); }
+.passive-value { font-family: var(--f-display); font-size: 1rem; color: var(--gold); }
 
 /* ─── Death saves ─── */
 .death-saves-section {
@@ -345,7 +345,7 @@
 }
 
 .death-saves-label {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.8rem;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -362,7 +362,7 @@
 .death-save-type {
   font-size: 0.82rem;
   min-width: 72px;
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
 }
 
 .death-save-type.success { color: var(--green); }
@@ -407,7 +407,7 @@
 }
 
 .attack-entry-name { flex: 1; font-size: 0.95rem; font-weight: 600; min-width: 0; }
-.attack-stat       { font-family: 'Cinzel', serif; font-size: 0.85rem; color: var(--gold); background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.3); border-radius: 4px; padding: 0.1rem 0.4rem; white-space: nowrap; }
+.attack-stat       { font-family: var(--f-display); font-size: 0.85rem; color: var(--gold); background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.3); border-radius: 4px; padding: 0.1rem 0.4rem; white-space: nowrap; }
 .attack-damage     { font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; }
 
 /* ─── Small remove button ─── */
@@ -488,7 +488,7 @@
 }
 
 .add-form h4 {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.8rem;
   color: var(--text-muted);
   letter-spacing: 0.06em;
@@ -536,7 +536,7 @@
 /* ─── Magic stats ─── */
 .magic-stats { margin-bottom: 0.25rem; }
 .subsection-title {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.82rem;
   color: var(--text-muted);
   letter-spacing: 0.08em;
@@ -560,7 +560,7 @@
 }
 
 .slot-level {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.85rem;
   color: var(--text-muted);
   min-width: 1.6rem;
@@ -584,7 +584,7 @@
 .slot-count {
   min-width: 1.4rem;
   text-align: center;
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.95rem;
   font-weight: 700;
 }
@@ -649,7 +649,7 @@
 }
 
 .spell-level-header {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.8rem;
   color: var(--text-muted);
   letter-spacing: 0.06em;
@@ -721,11 +721,11 @@
 
 .inventory-entry.editing .edit-qty {
   width: 60px;
-  font-family: 'Cinzel', serif !important;
+  font-family: var(--f-display) !important;
   text-align: center;
 }
 
-.item-qty   { font-family: 'Cinzel', serif; font-size: 0.8rem; color: var(--text-muted); min-width: 2rem; padding-top: 0.1rem; }
+.item-qty   { font-family: var(--f-display); font-size: 0.8rem; color: var(--text-muted); min-width: 2rem; padding-top: 0.1rem; }
 .item-qty.clickable { cursor: pointer; transition: color 0.15s; }
 .item-qty.clickable:hover { color: var(--gold); }
 .item-main-content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
@@ -751,7 +751,7 @@
 }
 
 .currency-block label {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.72rem;
   color: var(--gold-light);
   letter-spacing: 0.06em;
@@ -784,7 +784,7 @@
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.82rem;
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   min-height: 34px;
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
@@ -800,7 +800,7 @@
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.82rem;
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   min-height: 34px;
   transition: background 0.15s, color 0.15s;
 }
@@ -851,7 +851,7 @@
   border: 1px solid rgba(78,160,100,0.4);
   color: #80d09a;
   border-radius: 8px;
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.85rem;
   cursor: pointer;
   min-height: 38px;
@@ -879,7 +879,7 @@
 /* ─── CA badge on combat card ─── */
 .ac-badge {
   font-size: 0.78rem;
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   color: #7ab4e0;
   background: rgba(26,58,92,0.5);
   border: 1px solid #2a5a8c;
@@ -902,7 +902,7 @@
   border-radius: 6px;
   padding: 0.25rem 0.6rem;
   font-size: 0.75rem;
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   cursor: pointer;
   margin-left: 0.5rem;
   transition: opacity 0.2s;
@@ -930,7 +930,7 @@
 }
 
 .lu-section-title {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.85rem;
   color: var(--gold);
   margin: 0 0 0.5rem;
@@ -1014,7 +1014,7 @@
   padding: 0.3rem 0.4rem;
   font-size: 0.82rem;
   resize: vertical;
-  font-family: 'Crimson Text', serif;
+  font-family: var(--f-body);
   line-height: 1.4;
 }
 
@@ -1050,7 +1050,7 @@
 .class-feature-name {
   flex: 1;
   font-weight: 600;
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.85rem;
 }
 
@@ -1084,7 +1084,7 @@
 }
 .cf-desc-input {
   resize: vertical;
-  font-family: 'Crimson Text', serif;
+  font-family: var(--f-body);
   font-size: 0.9rem;
   line-height: 1.4;
 }
@@ -1130,7 +1130,7 @@
   gap: 0.2rem;
 }
 .lu-ability-label {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.72rem;
   color: var(--gold-light);
 }
@@ -1147,7 +1147,7 @@
 }
 
 .level-badge {
-  font-family: 'Cinzel', serif;
+  font-family: var(--f-display);
   font-size: 0.7rem;
   background: rgba(124,58,237,0.25);
   border: 1px solid var(--purple-main, #7c3aed);
