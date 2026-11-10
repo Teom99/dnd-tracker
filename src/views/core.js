@@ -1,3 +1,4 @@
+import * as CombatChrome from '../ui/CombatChrome.js';
 import { Combatant }    from '../data/Combatant.js';
 import { CombatTracker } from '../logic/CombatTracker.js';
 import * as UI           from '../ui/UI.js';
@@ -42,6 +43,8 @@ export function exitToHome(errorMessage) {
   state.selectedDockId         = null;
   state.templatePlacingShape   = null;
   state.templateOrigin         = null;
+  state.trajectoryFrom         = null;
+  CombatChrome.reset();
   const gridContainer = document.getElementById('grid-container');
   if (gridContainer) gridContainer.innerHTML = '';
   GridUI.clearCursors();

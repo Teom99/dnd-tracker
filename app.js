@@ -20,6 +20,7 @@ import { captureFocusState, restoreFocusState } from './src/utils/domPreserve.js
 import { playerColor } from './src/utils/presence.js';
 import { initTheme, toggleTheme } from './src/utils/theme.js';
 import { icon } from './src/ui/icons.js';
+import * as CombatChrome from './src/ui/CombatChrome.js';
 import { updateHomeAuthUI, loadCharacterLibrary, populateJoinPicker, populateCreaturePicker, saveUserSession, loadUserSessions } from './src/views/home.js';
 
 // --- Tema chiaro/notte ---
@@ -31,12 +32,13 @@ function _syncThemeButtons() {
   const home   = document.getElementById('btn-theme-toggle-home');
   const combat = document.getElementById('btn-theme-toggle-combat');
   home.innerHTML   = ico;
-  combat.innerHTML = `${ico} <span class="more-lbl">Tema</span>`;
+  combat.innerHTML = `${ico}<span class="lbl">${label}</span>`;
   for (const b of [home, combat]) { b.setAttribute('aria-label', label); b.title = label; }
 }
 document.getElementById('btn-theme-toggle-home').addEventListener('click', toggleTheme);
 document.getElementById('btn-theme-toggle-combat').addEventListener('click', toggleTheme);
 initTheme();
+CombatChrome.init();
 // data-theme cambia anche senza click (cambio tema di sistema): si osserva l'attributo
 new MutationObserver(_syncThemeButtons).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 _syncThemeButtons();
@@ -280,6 +282,15 @@ document.getElementById('form-add-creature').addEventListener('submit', async (e
 
 // ─── COMBAT: Aggiungi compagno (player only) ──────────────────────────────────
 
+const _addPetModal = document.getElementById('add-pet-modal');
+function _closeAddPetModal() { _addPetModal.classList.add('hidden'); }
+document.getElementById('btn-open-add-pet').addEventListener('click', () => {
+  _addPetModal.classList.remove('hidden');
+  setTimeout(() => document.getElementById('input-pet-name')?.focus(), 50);
+});
+document.getElementById('btn-add-pet-cancel').addEventListener('click', _closeAddPetModal);
+_addPetModal.addEventListener('click', (e) => { if (e.target === _addPetModal) _closeAddPetModal(); });
+
 document.getElementById('form-add-pet').addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -292,7 +303,7 @@ document.getElementById('form-add-pet').addEventListener('submit', async (e) => 
 
   await state.combatantManager.add(name, initiative, hp, 'pet', state.myUid, null, ac, null);
   e.target.reset();
-  document.getElementById('input-pet-name').focus();
+  _closeAddPetModal();
 });
 
 // ─── D&D API: Monster Search + Stat Block ─────────────────────────────────────
@@ -662,9 +673,10 @@ document.getElementById('btn-rest-long').addEventListener('click', async () => {
 
 document.getElementById('btn-copy-code').addEventListener('click', () => {
   navigator.clipboard.writeText(state.session.code).then(() => {
-    const btn = document.getElementById('btn-copy-code');
-    btn.textContent = '✓ Copiato';
-    setTimeout(() => (btn.textContent = '📋 Copia'), 2000);
+    const lbl = document.querySelector('#btn-copy-code .lbl');
+    if (!lbl) return;
+    lbl.textContent = 'Codice copiato';
+    setTimeout(() => (lbl.textContent = 'Copia codice'), 2000);
   });
 });
 
@@ -1093,6 +1105,7 @@ function _enterCombatView(code, isMaster) {
   const _btnGridReset = document.getElementById('btn-grid-reset');
   if (_btnGridReset) _btnGridReset.style.display = isMaster ? '' : 'none';
   _initGridMasterControls(isMaster);
+  CombatChrome.apply();
   UI.showView('view-combat');
 }
 
@@ -1147,7 +1160,8 @@ function _applyGridEditUI() {
   const editBtn  = document.getElementById('btn-grid-edit');
   if (editCtrl) editCtrl.style.display = on ? 'flex' : 'none';
   if (editBtn) {
-    editBtn.textContent = on ? '✓ Fine modifica' : '✏️ Modifica griglia';
+    const lbl = editBtn.querySelector('.lbl');
+    if (lbl) lbl.textContent = on ? 'Fine modifica mappa' : 'Muri e dimensioni mappa';
     editBtn.classList.toggle('active', on);
   }
   // Il testo di #grid-hint è gestito da GridUI.renderGrid (contestuale a modifica/selezione)
@@ -1437,6 +1451,7 @@ function _startListening() {
     if (state.shipPanelOpen) _renderShipPanel();
 
     _renderSessionNotes();
+    CombatChrome.apply();
   }));
 }
 

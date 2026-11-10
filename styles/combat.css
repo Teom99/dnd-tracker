@@ -1118,3 +1118,48 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   opacity: 0;
   transition: opacity 0.2s;
 }
+
+
+/* ═══════════════════════════════════════════
+   TESTATA E MENU — schermata di combattimento
+═══════════════════════════════════════════ */
+.combat-topbar { gap: 12px; }
+.topbar-brand { color: var(--c-heading); display: inline-flex; flex: none; }
+.menu-anchor { position: relative; flex: none; }
+.master-only { display: none; }
+body.is-master .master-only { display: inline-flex; }
+.player-only { display: inline-flex; }
+body.is-master .player-only { display: none; }
+
+.topbar-more {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
+  display: none; flex-direction: column; gap: 1px;
+  width: 270px; max-height: calc(100dvh - 90px); overflow-y: auto;
+  padding: 10px;
+  background: var(--c-paper) var(--paper-grain);
+  border: 1px solid var(--c-rule); border-radius: var(--r);
+  box-shadow: 0 10px 28px var(--c-shadow);
+}
+#view-combat[data-menu="open"] .topbar-more { display: flex; }
+#master-controls { display: flex; flex-direction: column; gap: 1px; }
+#master-controls.hidden { display: none !important; }
+
+.menu-group {
+  font: 700 11px/1 var(--f-display); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--c-mute); margin: 10px 0 3px; padding: 0 4px;
+}
+.topbar-more > .menu-group:first-child { margin-top: 0; }
+.menu-item {
+  width: 100%; justify-content: flex-start; gap: 10px;
+  min-height: 38px; padding: 6px 8px; font-size: 15px; white-space: normal; text-align: left;
+}
+.menu-item .lbl { flex: 1; }
+.menu-danger, .menu-danger:hover { color: var(--c-foe); }
+.menu-select { display: flex; align-items: center; cursor: default; }
+.menu-select .select { width: auto; min-height: 32px; flex: none; padding: 4px 28px 4px 8px; font-size: 14px; }
+
+@media (max-width: 600px) {
+  .topbar-more { position: fixed; top: 56px; left: 10px; right: 10px; width: auto; }
+  #btn-menu .lbl { display: none; }
+  #btn-next-turn .lbl { display: inline; }
+}
