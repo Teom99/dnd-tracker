@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Test — interfaccia combattimento</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background:#0a0c0b; color:#e8e2d2;
+         margin:0; padding:24px 20px 60px; }
+  h1 { font-size:16px; margin:0 0 4px; letter-spacing:.04em; }
+  p.sub { color:#8f8f82; margin:0 0 20px; font-size:12.5px; }
+  h2 { font-size:13px; color:#c9a24a; margin:22px 0 6px; letter-spacing:.08em; text-transform:uppercase; }
+  .t { padding:2px 0 2px 22px; position:relative; }
+  .t::before { position:absolute; left:0; width:16px; }
+  .ok::before  { content:"PASS"; color:#7cc78a; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko::before  { content:"FAIL"; color:#e0685c; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko { color:#e0685c; }
+  .detail { color:#8f8f82; font-size:12px; padding-left:22px; white-space:pre; }
+  #summary { position:fixed; left:0; right:0; bottom:0; padding:12px 20px;
+             background:#161b19; border-top:1px solid #2b3631; font-weight:700; }
+</style>
+</head>
+<body>
+<h1>combatChrome.js — logica pura dell'interfaccia</h1>
+<p class="sub">Aprila con un server statico: <code>python3 -m http.server</code> → <code>/test/combatChrome.html</code></p>
+<div id="out"></div>
+<div id="summary">✗ modulo non caricato</div>
+
+<script type="module">
+import { toolTransition, toolFromState, detailStillValid, readDensity, saveDensity } from '../src/logic/combatChrome.js';
+
+const out = document.getElementById('out');
+let pass = 0, fail = 0;
+const group = (name) => { const h = document.createElement('h2'); h.textContent = name; out.append(h); };
+function check(label, got, want) {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  ok ? pass++ : fail++;
+  const d = document.createElement('div');
+  d.className = 't ' + (ok ? 'ok' : 'ko');
+  d.textContent = label;
+  out.append(d);
+  if (!ok) {
+    const e = document.createElement('div');
+    e.className = 'detail';
+    e.textContent = `atteso ${JSON.stringify(want)} · ottenuto ${JSON.stringify(got)}`;
+    out.append(e);
+  }
+}
+
+group('toolTransition');
+check('muovi → disegna', toolTransition('move', 'draw'), { tool: 'draw', reset: [] });
+check('riclic sullo strumento attivo → torna a muovi e annulla il disegno', toolTransition('draw', 'draw'), { tool: 'move', reset: ['drawMode'] });
+check('riclic su muovi resta muovi', toolTransition('move', 'move'), { tool: 'move', reset: [] });
+check('da area: annulla forma e origine', toolTransition('area', 'traj'), { tool: 'traj', reset: ['templatePlacingShape', 'templateOrigin'] });
+check('da traiettoria: annulla il primo punto', toolTransition('traj', 'move'), { tool: 'move', reset: ['trajectoryFrom'] });
+check('da muri: esce dalla modifica griglia', toolTransition('walls', 'draw'), { tool: 'draw', reset: ['gridEditMode'] });
+
+group('toolFromState');
+check('muri vince su tutto', toolFromState({ gridEditMode: true, drawMode: true }), 'walls');
+check('disegno vince sull\'area', toolFromState({ drawMode: true, templatePlacingShape: 'cone' }), 'draw');
+check('forma in piazzamento → area', toolFromState({ templatePlacingShape: 'cone' }), 'area');
+check('area già scelta ma senza forma → resta area', toolFromState({ currentTool: 'area' }), 'area');
+check('strumento traiettoria → traj', toolFromState({ trajTool: true }), 'traj');
+check('niente → muovi', toolFromState({}), 'move');
+
+group('detailStillValid');
+check('combattente presente', detailStillValid('a', { a: {} }), true);
+check('combattente rimosso', detailStillValid('a', { b: {} }), false);
+check('nessun id', detailStillValid(null, { a: {} }), false);
+check('nessun combattente', detailStillValid('a', null), false);
+
+group('densità dell\'iniziativa');
+localStorage.removeItem('dnd-init-density');
+check('default compatta', readDensity(), 'compact');
+saveDensity('details');
+check('salva e rilegge', readDensity(), 'details');
+localStorage.setItem('dnd-init-density', 'boh');
+check('valore non valido → compatta', readDensity(), 'compact');
+saveDensity('invalida');
+check('saveDensity ignora valori non validi', localStorage.getItem('dnd-init-density'), 'boh');
+localStorage.removeItem('dnd-init-density');
+const real = Object.getOwnPropertyDescriptor(window, 'localStorage');
+Object.defineProperty(window, 'localStorage', { get() { throw new Error('blocked'); }, configurable: true });
+let threw = false;
+try { check('storage bloccato: legge compatta', readDensity(), 'compact'); saveDensity('details'); } catch { threw = true; }
+check('storage bloccato: non lancia', threw, false);
+if (real) Object.defineProperty(window, 'localStorage', real); else delete window.localStorage;
+
+document.getElementById('summary').textContent =
+  fail === 0 ? `✓ ${pass} test passati` : `✗ ${fail} falliti · ${pass} passati`;
+document.getElementById('summary').style.color = fail === 0 ? '#7cc78a' : '#e0685c';
+</script>
+</body>
+</html>
