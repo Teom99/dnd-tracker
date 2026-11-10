@@ -2,6 +2,8 @@ import * as GridUI from '../ui/GridUI.js';
 import { state }   from '../utils/state.js';
 import { playerColor } from '../utils/presence.js';
 import { esc }     from '../views/core.js';
+import * as CombatChrome from '../ui/CombatChrome.js';
+import { readDensity } from './combatChrome.js';
 
 // ─── Undo/redo del disegno sulla mappa (locale a questo client, non condiviso
 // e non persistito — si perde al reload, come il resto dello stato locale
@@ -89,10 +91,22 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
     isMaster ? state.selectedDockId : state.selectedGridTokenId,
     currentTurnId,
     isMaster,
-    isMaster
-      ? (id) => document.dispatchEvent(new CustomEvent('dnd:dock-select', { detail: { id } }))
-      : selectToken,
-    comb
+    (id) => {
+      // Comportamento di sempre (master: soggetto del dock; giocatore: selezione/movimento)...
+      if (isMaster) document.dispatchEvent(new CustomEvent('dnd:dock-select', { detail: { id } }));
+      else selectToken(id);
+      // ...e in più si apre (o si chiude) il dettaglio del combattente
+      if (id) CombatChrome.set({ drawer: 'detail', detailId: id });
+      else CombatChrome.set({ drawer: state.ui.drawer === 'detail' ? null : state.ui.drawer, detailId: null });
+    },
+    comb,
+    {
+      density:      readDensity(),
+      myUid:        state.myUid,
+      masterUid:    state.session.masterUid,
+      acMap:        state.acMap,
+      myDeathSaves: state.sheetData?.deathSaves ?? null,
+    }
   );
 
   GridUI.renderGrid(

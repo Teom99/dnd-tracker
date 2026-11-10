@@ -1,3 +1,6 @@
+import { icon } from './icons.js';
+import { combatantView, healthHintText } from '../logic/visibility.js';
+import { captureFocusState, restoreFocusState } from '../utils/domPreserve.js';
 // Griglia quadrata. 1 cella = 1 m. Dimensioni guidate da gridConfig.
 // Zoom via viewBox: _zoom scala il viewBox, _panX/_panY traslano l'origine.
 // Distanza a diagonali alternate (variante DMG 5-10-5: la 1ª diagonale costa 1,
@@ -952,19 +955,31 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   });
 }
 
-export function renderInitiativeList(container, sortedCombatants, gridPos, myCombatantId, selectedId, currentTurnId, isMaster, onSelect, combatants) {
+// Editor inline dell'iniziativa: lo stato sta qui (non nel DOM) così sopravvive
+// al rebuild della lista che ogni snapshot di sessione innesca.
+let _initEdit = null;          // { id, value }
+let _initRendering = false;    // true mentre si ricostruisce: il blur dell'input rimosso va ignorato
+
+const INIT_TYPE_CLASS = (c) => c.hpCurrent === 0 ? 'dead' : (c.type === 'creature' ? (c.faction === 'good' ? 'ally' : 'foe') : 'pc');
+
+// opts = { density: 'compact'|'details', myUid, masterUid, acMap, myDeathSaves, conditionColor }
+export function renderInitiativeList(container, sortedCombatants, gridPos, myCombatantId, selectedId, currentTurnId, isMaster, onSelect, combatants, opts = {}) {
   if (!container) return;
 
+  const { density = 'compact', myUid = null, masterUid = null, acMap = {}, myDeathSaves = null } = opts;
   const pos = gridPos || {};
   const comb = combatants || {};
   const referenceId = selectedId || myCombatantId;
   const refPos  = referenceId ? pos[referenceId] : null;
   const refSide = referenceId ? footprintOf(comb[referenceId]?.size) : 1;
 
+  const snap = captureFocusState(container);
   let html = '';
   for (const c of sortedCombatants) {
+    const v = combatantView(c, myUid, masterUid, acMap);
     const isActive = c.id === currentTurnId;
     const cPos = pos[c.id];
+    const ko = c.hpCurrent === 0;
 
     let distText = '';
     if (refPos && cPos && c.id !== referenceId) {
@@ -972,33 +987,101 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
       distText = `<span class="grid-initiative-dist">${fmtM(d)}</span>`;
     }
 
-    const isSelected = c.id === selectedId;
     let cls = 'grid-initiative-item';
     if (isActive)          cls += ' active-turn';
-    if (isSelected)        cls += ' selected';
-    if (c.hpCurrent === 0) cls += ' ko';
+    if (c.id === selectedId) cls += ' selected';
+    if (ko)                cls += ' ko';
 
-    const koIcon = c.hpCurrent === 0
-      ? `<span class="grid-initiative-ko">💀</span>`
-      : '<span class="grid-initiative-ko"></span>';
+    // Numero di iniziativa: modificabile al volo da chi può (proprietario o master)
+    const initNum = (_initEdit && _initEdit.id === c.id)
+      ? `<input type="number" class="init-num-input" data-id="${c.id}" data-init-edit min="-10" max="30" value="${esc(String(_initEdit.value))}">`
+      : (v.canEdit
+        ? `<button type="button" class="init-num" data-id="${c.id}" data-init-open title="Modifica iniziativa">${c.initiative}</button>`
+        : `<span class="init-num">${c.initiative}</span>`);
 
-    const factionDot = c.type === 'creature'
-      ? `<i class="init-faction-dot ${c.faction === 'good' ? 'ally' : 'enemy'}"></i>`
-      : '';
+    const thumb = typeof c.avatarThumb === 'string' && c.avatarThumb.startsWith('data:image/') ? c.avatarThumb : null;
+    const letter = esc((c.name || '?').trim().charAt(0).toUpperCase());
+    const avatar = `<span class="init-av ${INIT_TYPE_CLASS(c)}">${ko ? icon('skull', { size: 15 }) : (thumb ? `<img src="${esc(thumb)}" alt="">` : letter)}</span>`;
+
+    // Vita: barra e valore solo se l'utente può vederli; altrimenti l'accenno del master, se c'è
+    const hpPct = c.hpMax > 0 ? Math.min(100, Math.max(0, (c.hpCurrent / c.hpMax) * 100)) : 0;
+    let bar = '', val = '';
+    if (v.showFullHp) {
+      bar = `<span class="init-bar ${INIT_TYPE_CLASS(c)}"><i style="width:${hpPct.toFixed(1)}%"></i></span>`;
+      val = `<span class="init-val">${c.hpCurrent}/${c.hpMax}</span>`;
+    } else if (v.showHint) {
+      val = `<span class="init-val">${healthHintText(hpPct)}</span>`;
+    }
+    // Creatura con vita nascosta e nessun accenno del master: niente (stesse regole della card)
+
+    let extra = '';
+    if (density === 'details') {
+      const parts = [];
+      parts.push(v.acVisible && v.ac !== null ? `<span>CA <b>${v.ac}</b></span>` : (v.isCreature ? '<span>CA nascosta</span>' : ''));
+      if (v.showFullHp && (c.tempHp ?? 0) > 0) parts.push(`<span>HP temp. <b>+${c.tempHp}</b></span>`);
+      if (v.isOwnCard && ko && myDeathSaves) parts.push(`<span>TS morte: <b>${myDeathSaves.successes ?? 0}\u2713 ${myDeathSaves.failures ?? 0}\u2717</b></span>`);
+      for (const cond of Object.keys(c.conditions || {})) parts.push(`<span class="chip">${esc(cond)}</span>`);
+      const insp = (c.type === 'player' || c.type === 'pet')
+        ? `<button type="button" class="init-insp${c.inspiration ? ' on' : ''}" data-id="${c.id}" data-insp-toggle ${v.canEdit ? '' : 'disabled'} title="${c.inspiration ? 'Ispirazione' : 'Nessuna ispirazione'}" aria-label="Ispirazione" aria-pressed="${c.inspiration ? 'true' : 'false'}">${icon('star', { size: 16 })}</button>`
+        : '';
+      extra = `<div class="init-extra">${parts.filter(Boolean).join('')}${insp}</div>`;
+    }
 
     html += `
-      <li class="${cls}" style="cursor:pointer" data-id="${c.id}">
-        <span class="grid-initiative-init">${c.initiative}</span>
-        <span class="grid-initiative-name">${esc(c.name)}</span>
-        <div class="grid-initiative-meta">${koIcon}${factionDot}${distText}</div>
+      <li class="${cls}" data-id="${c.id}">
+        ${initNum}${avatar}
+        <span class="init-who"><span class="grid-initiative-name">${esc(c.name)}</span>${bar}</span>
+        <span class="grid-initiative-meta">${val}${distText}</span>
+        ${extra}
       </li>`;
   }
 
+  _initRendering = true;
   container.innerHTML = html;
+  _initRendering = false;
+  restoreFocusState(container, snap);
+
+  const commit = (input) => {
+    const id = input.dataset.id;
+    const n = input.value === '' ? NaN : parseInt(input.value, 10);
+    _initEdit = null;
+    if (!isNaN(n) && n !== comb[id]?.initiative) document.dispatchEvent(new CustomEvent('dnd:initiative-change', { detail: { id, value: n } }));
+    _reRenderCallback?.();
+  };
+
   container.onclick = (e) => {
+    const openBtn = e.target.closest('[data-init-open]');
+    if (openBtn) {
+      e.stopPropagation();
+      _initEdit = { id: openBtn.dataset.id, value: comb[openBtn.dataset.id]?.initiative ?? 0 };
+      _reRenderCallback?.();
+      const input = container.querySelector('.init-num-input');
+      if (input) { input.focus(); input.select(); }
+      return;
+    }
+    if (e.target.closest('.init-num-input')) return;
+    const insp = e.target.closest('[data-insp-toggle]');
+    if (insp) {
+      if (!insp.disabled) document.dispatchEvent(new CustomEvent('dnd:toggle-inspiration', { detail: { id: insp.dataset.id, current: insp.classList.contains('on') } }));
+      return;
+    }
     const li = e.target.closest('li[data-id]');
     if (!li) return;
     onSelect(li.dataset.id === selectedId ? null : li.dataset.id);
+  };
+  container.oninput = (e) => {
+    if (e.target.matches('.init-num-input') && _initEdit) _initEdit.value = e.target.value;
+  };
+  container.onkeydown = (e) => {
+    const input = e.target.closest?.('.init-num-input');
+    if (!input) return;
+    if (e.key === 'Enter')  { e.preventDefault(); commit(input); }
+    if (e.key === 'Escape') { e.preventDefault(); _initEdit = null; _reRenderCallback?.(); }
+  };
+  container.onfocusout = (e) => {
+    if (_initRendering) return;
+    const input = e.target.closest?.('.init-num-input');
+    if (input && _initEdit && _initEdit.id === input.dataset.id) commit(input);
   };
 }
 

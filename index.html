@@ -525,7 +525,13 @@
 
       <!-- Rail iniziativa (sinistra) -->
       <aside class="panel rail-init" id="panel-init">
-        <div class="ds-heading" style="margin-bottom:8px;"><span>Iniziativa</span></div>
+        <div class="init-head">
+          <h3 class="rule-head">Iniziativa</h3>
+          <div class="seg" id="init-density" role="group" aria-label="Densità dell'iniziativa">
+            <button type="button" data-density="compact">Compatta</button>
+            <button type="button" data-density="details">Dettagli</button>
+          </div>
+        </div>
         <div class="panel-scroll">
           <div id="grid-initiative-list-container">
             <ol id="grid-initiative-list" class="grid-initiative-list"></ol>

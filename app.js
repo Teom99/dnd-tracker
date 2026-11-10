@@ -469,6 +469,15 @@ function _setDockSubject(id) {
 
 document.addEventListener('dnd:dock-select', (e) => _setDockSubject(e.detail?.id ?? null));
 
+// Dalla riga dell'iniziativa: modifica rapida del numero e stella dell'ispirazione
+document.addEventListener('dnd:initiative-change', (e) => {
+  makeCallbacks().onInitiativeChange?.(e.detail.id, e.detail.value);
+});
+document.addEventListener('dnd:toggle-inspiration', (e) => {
+  makeCallbacks().onToggleInspiration?.(e.detail.id, e.detail.current);
+});
+document.addEventListener('dnd:rerender-grid', () => _rerenderGridFromSnapshot());
+
 // Bottone "📖 Visualizza Dati" nelle card creature (master-only, riapre il stat block)
 document.getElementById('creature-list').addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-action="view-stat-block"]');

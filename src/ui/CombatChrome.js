@@ -4,7 +4,7 @@
 // i nodi di ogni comando sono quelli di index.html, spostati di posto.
 import { state } from '../utils/state.js';
 import { icon } from './icons.js';
-import { detailStillValid, readDensity } from '../logic/combatChrome.js';
+import { detailStillValid, readDensity, saveDensity } from '../logic/combatChrome.js';
 
 const view = () => document.getElementById('view-combat');
 
@@ -50,7 +50,13 @@ export function apply() {
   v.dataset.drawer = ui.drawer ?? '';
   v.dataset.spells = ui.spellsOpen ? 'open' : '';
   v.dataset.initSheet = ui.initSheetOpen ? 'open' : '';
-  v.dataset.density = readDensity();
+  const density = readDensity();
+  v.dataset.density = density;
+  document.querySelectorAll('#init-density [data-density]').forEach(b => {
+    const on = b.dataset.density === density;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', String(on));
+  });
   document.getElementById('btn-menu')?.setAttribute('aria-expanded', String(ui.menuOpen));
   const title = document.getElementById('drawer-title');
   const wanted = DRAWER_TITLES[ui.drawer] ?? '';
@@ -79,6 +85,14 @@ export function init() {
       // Una voce (bottone) chiude il menu; il select della progressione e l'esterno no/sì
       if (e.target.closest('#topbar-more button')) set({ menuOpen: false });
       else if (!menu.contains(e.target)) set({ menuOpen: false });
+    }
+    const dens = e.target.closest('#init-density [data-density]');
+    if (dens) {
+      saveDensity(dens.dataset.density);
+      apply();
+      // La lista dell'iniziativa si ridisegna con la nuova densità
+      document.dispatchEvent(new CustomEvent('dnd:rerender-grid'));
+      return;
     }
     if (e.target.closest('#btn-drawer-close')) { set({ drawer: null, detailId: null }); return; }
     if (e.target.closest('#btn-open-notes')) set({ drawer: 'notes', menuOpen: false });

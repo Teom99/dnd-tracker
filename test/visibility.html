@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Test — visibilità dei combattenti</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background:#0a0c0b; color:#e8e2d2;
+         margin:0; padding:24px 20px 60px; }
+  h1 { font-size:16px; margin:0 0 4px; letter-spacing:.04em; }
+  p.sub { color:#8f8f82; margin:0 0 20px; font-size:12.5px; }
+  h2 { font-size:13px; color:#c9a24a; margin:22px 0 6px; letter-spacing:.08em; text-transform:uppercase; }
+  .t { padding:2px 0 2px 22px; position:relative; }
+  .t::before { position:absolute; left:0; width:16px; }
+  .ok::before  { content:"PASS"; color:#7cc78a; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko::before  { content:"FAIL"; color:#e0685c; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko { color:#e0685c; }
+  .detail { color:#8f8f82; font-size:12px; padding-left:22px; white-space:pre; }
+  #summary { position:fixed; left:0; right:0; bottom:0; padding:12px 20px;
+             background:#161b19; border-top:1px solid #2b3631; font-weight:700; }
+</style>
+</head>
+<body>
+<h1>visibility.js — cosa vede ciascun utente</h1>
+<p class="sub">Aprila con un server statico: <code>python3 -m http.server</code> → <code>/test/visibility.html</code></p>
+<div id="out"></div>
+<div id="summary">✗ modulo non caricato</div>
+
+<script type="module">
+import { combatantView, healthHintKey, healthHintText } from '../src/logic/visibility.js';
+
+const out = document.getElementById('out');
+let pass = 0, fail = 0;
+const group = (name) => { const h = document.createElement('h2'); h.textContent = name; out.append(h); };
+function check(label, got, want) {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  ok ? pass++ : fail++;
+  const d = document.createElement('div');
+  d.className = 't ' + (ok ? 'ok' : 'ko');
+  d.textContent = label;
+  out.append(d);
+  if (!ok) {
+    const e = document.createElement('div');
+    e.className = 'detail';
+    e.textContent = `atteso ${JSON.stringify(want)} · ottenuto ${JSON.stringify(got)}`;
+    out.append(e);
+  }
+}
+
+const M = 'master', P1 = 'p1', P2 = 'p2';
+const goblin = { type: 'creature', ownerUid: M, hpCurrent: 7, hpMax: 12 };
+const lyra   = { type: 'player',   ownerUid: P1, hpCurrent: 24, hpMax: 31, armorClass: 15 };
+const fiuto  = { type: 'pet',      ownerUid: P1, hpCurrent: 11, hpMax: 11, armorClass: 13 };
+
+group('vita visibile');
+check('il master vede la vita esatta di una creatura', combatantView(goblin, M, M).showFullHp, true);
+check('un giocatore NON vede la vita esatta di una creatura', combatantView(goblin, P1, M).showFullHp, false);
+check('senza "mostra vita" nessun accenno', combatantView(goblin, P1, M).showHint, false);
+check('con "mostra vita" vede l\'accenno', combatantView({ ...goblin, showHealthHint: true }, P1, M).showHint, true);
+check('il master non vede l\'accenno (vede già tutto)', combatantView({ ...goblin, showHealthHint: true }, M, M).showHint, false);
+check('un giocatore vede la vita di un altro giocatore', combatantView(lyra, P2, M).showFullHp, true);
+check('un giocatore vede la vita di un famiglio altrui', combatantView(fiuto, P2, M).showFullHp, true);
+
+group('classe armatura');
+check('CA di una creatura nascosta ai giocatori', combatantView({ ...goblin, armorClass: 13 }, P1, M).acVisible, false);
+check('CA di una creatura mostrata dal master', combatantView({ ...goblin, armorClass: 13, showAC: true }, P1, M).acVisible, true);
+check('il master vede sempre la CA', combatantView({ ...goblin, armorClass: 13 }, M, M).acVisible, true);
+check('CA di un giocatore sempre visibile', combatantView(lyra, P2, M).acVisible, true);
+check('la CA del giocatore viene da acMap se presente', combatantView(lyra, P1, M, { [P1]: 17 }).ac, 17);
+check('altrimenti dal combattente', combatantView(lyra, P1, M, {}).ac, 15);
+check('il famiglio usa sempre la propria CA', combatantView(fiuto, P1, M, { [P1]: 99 }).ac, 13);
+check('CA assente → null', combatantView({ type: 'creature', ownerUid: M }, M, M).ac, null);
+
+group('chi può modificare');
+check('il proprietario modifica il proprio PG', combatantView(lyra, P1, M).canEdit, true);
+check('un altro giocatore non lo modifica', combatantView(lyra, P2, M).canEdit, false);
+check('il master modifica tutto', combatantView(lyra, M, M).canEdit, true);
+check('HP max: il proprietario del PG', combatantView(lyra, P1, M).canEditMaxHp, true);
+check('HP max: il master di un PG no (lo fa la scheda)', combatantView(lyra, M, M).canEditMaxHp, false);
+check('HP max: il master di una creatura sì', combatantView(goblin, M, M).canEditMaxHp, true);
+check('HP max: il proprietario del famiglio', combatantView(fiuto, P1, M).canEditMaxHp, true);
+check('CA: il master di una creatura sì', combatantView(goblin, M, M).canEditAc, true);
+check('CA: il proprietario di un PG no (viene dalla scheda)', combatantView(lyra, P1, M).canEditAc, false);
+check('CA: il proprietario del famiglio sì', combatantView(fiuto, P1, M).canEditAc, true);
+
+group('accenni sulla salute');
+check('100% → full', healthHintKey(100), 'full');
+check('80% → good', healthHintKey(80), 'good');
+check('60% → hurt', healthHintKey(60), 'hurt');
+check('30% → bad', healthHintKey(30), 'bad');
+check('10% → critical', healthHintKey(10), 'critical');
+check('0% → ko', healthHintKey(0), 'ko');
+check('testo a 100%', healthHintText(100), 'Nel pieno delle forze');
+check('testo a 0%', healthHintText(0), 'A terra');
+check('i testi non contengono emoji', ['100','80','60','30','10','0'].map(p => healthHintText(Number(p))).some(t => /[\u2600-\u27BF\u{1F300}-\u{1FAFF}]/u.test(t)), false);
+
+document.getElementById('summary').textContent =
+  fail === 0 ? `✓ ${pass} test passati` : `✗ ${fail} falliti · ${pass} passati`;
+document.getElementById('summary').style.color = fail === 0 ? '#7cc78a' : '#e0685c';
+</script>
+</body>
+</html>

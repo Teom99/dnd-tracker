@@ -1,4 +1,5 @@
 import { captureFocusState, restoreFocusState } from '../utils/domPreserve.js';
+import { combatantView, healthHintKey, healthHintText } from '../logic/visibility.js';
 
 const XP_THRESHOLDS = [0,300,900,2700,6500,14000,23000,34000,48000,64000,
                         85000,100000,120000,140000,165000,195000,225000,265000,305000,355000];
@@ -357,21 +358,12 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
   combatants.forEach((c) => {
     const isActive      = c.id === currentTurnId;
     const isKO          = c.hpCurrent === 0;
-    const canEdit       = myUid === c.ownerUid || myUid === masterUid;
-    const isMaster      = myUid === masterUid;
-    const isCreature    = c.type === 'creature';
-    const isPet         = c.type === 'pet';
-    const isOwnCard     = myUid === c.ownerUid && c.type === 'player';
-    const isOwnPet      = myUid === c.ownerUid && isPet;
+    // Cosa può vedere/modificare questo utente: stesse regole della riga dell'iniziativa
+    const { isMaster, isCreature, isPet, isOwnCard, isOwnPet, canEdit,
+            showFullHp, showHint, canEditMaxHp, canEditAc, ac, acVisible } = combatantView(c, myUid, masterUid, acMap);
     const hpPercent     = c.hpMax > 0 ? (c.hpCurrent / c.hpMax) * 100 : 0;
     const conditions    = c.conditions ? Object.keys(c.conditions) : [];
     const hpClass       = hpPercent <= 25 ? 'hp-critical' : hpPercent <= 50 ? 'hp-low' : '';
-    const showFullHp    = isMaster || isOwnCard || !isCreature;
-    const showHint      = !isOwnCard && !isMaster && isCreature && c.showHealthHint;
-    const canEditMaxHp  = isOwnCard || isOwnPet || (isMaster && (isCreature || isPet));
-    const canEditAc     = isOwnPet || (isMaster && isCreature);
-    const ac            = isPet ? (c.armorClass ?? null) : (acMap[c.ownerUid] ?? c.armorClass ?? null);
-    const acVisible     = !isCreature || isMaster || (c.showAC === true);
     const tempHp        = c.tempHp ?? 0;
     const tempHpPercent = c.hpMax > 0 ? Math.min(100, (tempHp / c.hpMax) * 100) : 0;
     const successes     = isOwnCard && isKO ? (myDeathSaves?.successes ?? 0) : 0;
@@ -610,7 +602,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         const card = e.target.closest('.fight-card');
         if (card?.dataset.combatantId) {
           const cid = card.dataset.combatantId;
-          document.dispatchEvent(new CustomEvent('dnd:dock-select', { detail: { id: cid === selectedDockId ? null : cid } }));
+          document.dispatchEvent(new CustomEvent('dnd:dock-select', { detail: { id: cid } }));
         }
       }
       return;
@@ -801,24 +793,6 @@ export function renderConditionModal(combatantId, activeConditions, onToggle) {
   };
 
   modal.classList.remove('hidden');
-}
-
-function healthHintKey(percent) {
-  if (percent === 100) return 'full';
-  if (percent >= 75)   return 'good';
-  if (percent >= 50)   return 'hurt';
-  if (percent >= 25)   return 'bad';
-  if (percent > 0)     return 'critical';
-  return 'ko';
-}
-
-function healthHintText(percent) {
-  if (percent === 100) return '⚔ Nel pieno delle forze';
-  if (percent >= 75)   return '⚔ Leggermente ferito';
-  if (percent >= 50)   return '⚔ Ferito';
-  if (percent >= 20)   return '⚔ Gravemente ferito';
-  if (percent > 0)     return '⚔ In fin di vita';
-  return '☠ A terra';
 }
 
 function hpBarColor(percent) {
