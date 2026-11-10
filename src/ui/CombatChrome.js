@@ -80,6 +80,12 @@ export function reset() {
   apply();
 }
 
+// L'evento può aver già fatto ridisegnare il suo bersaglio (es. un rombo del popover: la scrittura
+// su Firebase scatta i listener in modo sincrono e il popover viene ricostruito prima che questo
+// gestore giri): e.target è allora staccato dal DOM e closest() fallirebbe, scambiando un clic
+// dentro per un clic fuori. Il percorso dell'evento è fissato alla partenza e resta valido.
+const inPath = (e, selector) => e.composedPath().some(n => n.matches?.(selector));
+
 export function init() {
   hydrateIcons();
 
@@ -89,8 +95,8 @@ export function init() {
     if (e.target.closest('#btn-menu')) { set({ menuOpen: !state.ui.menuOpen }); return; }
     if (state.ui.menuOpen) {
       // Una voce (bottone) chiude il menu; il select della progressione e l'esterno no/sì
-      if (e.target.closest('#topbar-more button')) set({ menuOpen: false });
-      else if (!menu.contains(e.target)) set({ menuOpen: false });
+      if (inPath(e, '#topbar-more button')) set({ menuOpen: false });
+      else if (!inPath(e, '#topbar-more')) set({ menuOpen: false });
     }
     const dens = e.target.closest('#init-density [data-density]');
     if (dens) {
@@ -101,9 +107,9 @@ export function init() {
       return;
     }
     // Clic fuori dal popover incantesimi lo chiude (il bottone del dock lo alterna da sé)
-    if (state.ui.spellsOpen && !e.target.closest('#spells-pop, [data-action="dock-spells"]')) set({ spellsOpen: false });
+    if (state.ui.spellsOpen && !inPath(e, '#spells-pop, [data-action="dock-spells"]')) set({ spellsOpen: false });
     // "Altro" del dock (telefono): stesso comportamento del popover incantesimi
-    if (state.ui.moreOpen && !e.target.closest('#dock-more, [data-action="dock-more"]')) set({ moreOpen: false });
+    if (state.ui.moreOpen && !inPath(e, '#dock-more, [data-action="dock-more"]')) set({ moreOpen: false });
     // Foglio dell'iniziativa (telefono): si apre dalla striscia del turno, si chiude da X o toccando fuori
     if (e.target.closest('#turn-pill')) { set({ initSheetOpen: true }); return; }
     if (e.target.closest('#btn-init-close, #sheet-dim')) { set({ initSheetOpen: false }); return; }

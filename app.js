@@ -510,18 +510,18 @@ document.addEventListener('dnd:toggle-inspiration', (e) => {
 document.addEventListener('dnd:rerender-grid', () => _rerenderGridFromSnapshot());
 document.addEventListener('dnd:grid-mode-changed', () => _syncGridModeUI());
 
-// Bottone "📖 Visualizza Dati" nelle card creature (master-only, riapre il stat block)
+// Bottone "Scheda mostro" nelle card creature (master-only, riapre il stat block)
 document.getElementById('creature-list').addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-action="view-stat-block"]');
   if (!btn) return;
   const idx = btn.dataset.apiIndex;
   if (!idx) return;
-  btn.textContent = '⏳';
+  btn.disabled = true;   // in attesa della risposta dell'API
   try {
     const data = await getMonster(idx);
     _renderMonsterStatBlock(data);
   } catch { /* API non raggiungibile */ }
-  finally { btn.textContent = '📖 Visualizza Dati'; }
+  finally { btn.disabled = false; }
 });
 
 {
@@ -547,7 +547,7 @@ document.getElementById('creature-list').addEventListener('click', async (e) => 
         ev.preventDefault();
         suggestionBox.classList.add('hidden');
         searchInput.value  = '';
-        li.textContent     = '⏳ Caricamento...';
+        li.textContent     = 'Caricamento…';
         try {
           const data = await getMonster(m.index);
           _renderMonsterStatBlock(data);
@@ -577,10 +577,10 @@ document.getElementById('creature-list').addEventListener('click', async (e) => 
   _spellBox.id = 'spell-suggestions';
   _spellBox.style.cssText = [
     'position:fixed', 'z-index:200', 'list-style:none', 'display:none',
-    `background:var(--bg-card)`, `border:1px solid var(--border-warm)`,
-    `border-radius:0 0 var(--radius) var(--radius)`,
+    `background:var(--c-paper)`, `border:1px solid var(--c-rule)`,
+    `border-radius:0 0 var(--r) var(--r)`,
     'max-height:220px', 'overflow-y:auto',
-    `box-shadow:var(--shadow)`, 'margin:0', 'padding:0',
+    `box-shadow:0 4px 14px var(--c-shadow)`, 'margin:0', 'padding:0',
   ].join(';');
   document.body.appendChild(_spellBox);
 
@@ -703,13 +703,13 @@ document.getElementById('btn-reset').addEventListener('click', async () => {
 document.getElementById('btn-rest-short').addEventListener('click', async () => {
   if (!confirm('Riposo breve: tutti i giocatori (e famigli) recuperano metà della loro vita massima. Procedere?')) return;
   await state.combatantManager.restParty('short');
-  await state.session.addLogEvent('🌙 Riposo breve — il gruppo recupera metà della vita massima', 'heal');
+  await state.session.addLogEvent('Riposo breve — il gruppo recupera metà della vita massima', 'heal');
 });
 
 document.getElementById('btn-rest-long').addEventListener('click', async () => {
   if (!confirm('Riposo lungo: tutti i giocatori (e famigli) recuperano tutta la vita. Procedere?')) return;
   await state.combatantManager.restParty('long');
-  await state.session.addLogEvent('☀️ Riposo lungo — il gruppo recupera tutta la vita', 'heal');
+  await state.session.addLogEvent('Riposo lungo — il gruppo recupera tutta la vita', 'heal');
 });
 
 document.getElementById('btn-copy-code').addEventListener('click', () => {
@@ -784,7 +784,7 @@ _sceneUploadModal.addEventListener('click', (e) => { if (e.target === _sceneUplo
 async function _handleSceneFile(file, name) {
   if (!state.session) return;
   _sceneDropZone.classList.add('uploading');
-  _sceneDropText.textContent = '⏳ Caricamento...';
+  _sceneDropText.textContent = 'Caricamento…';
   try {
     const url = await _uploadToDiscord(file);
     await state.session.setSceneImage(url, name ?? file.name);
@@ -838,7 +838,7 @@ document.getElementById('btn-expand-scene').addEventListener('click', () => {
   const panel = document.getElementById('scene-section');
   const btn   = document.getElementById('btn-expand-scene');
   const expanded = panel.classList.toggle('scene-expanded');
-  btn.textContent = expanded ? '⤡' : '⤢';
+  btn.innerHTML = icon(expanded ? 'zoom-out' : 'zoom-in', { size: 14 });
   btn.title       = expanded ? 'Riduci' : 'Ingrandisci';
 });
 
@@ -986,7 +986,7 @@ function _openXpAwardModal() {
     const lvl = c.level ?? 1;
     return `<div class="xp-target sel" data-id="${c.id}">
       <span class="box"></span>
-      <span class="grow">${esc(c.name)} <span class="t-mono" style="color:var(--faint);font-size:11px;">Lv.${lvl}</span></span>
+      <span class="grow">${esc(c.name)} <span class="t-mono" style="color:var(--c-mute);font-size:11px;">Lv.${lvl}</span></span>
       <span class="t-mono">${xp.toLocaleString('it')} xp</span>
     </div>`;
   }).join('');
@@ -1268,6 +1268,14 @@ document.getElementById('grid-tools')?.addEventListener('click', (e) => {
   const btn = e.target.closest('[data-tool]');
   if (btn) _selectTool(btn.dataset.tool);
 });
+// "Adatta allo spazio": tiene le righe e sceglie le colonne in modo che la mappa riempia il rettangolo
+document.getElementById('btn-grid-fit')?.addEventListener('click', () => {
+  const box = document.getElementById('grid-container')?.getBoundingClientRect();
+  if (!box || !box.width || !box.height) return;
+  const rows = Math.max(1, Math.min(60, state.snapshot?.gridConfig?.rows ?? 20));
+  const cols = Math.max(1, Math.min(60, Math.round(rows * box.width / box.height)));
+  state.session.setGridConfig(cols, rows);
+});
 document.getElementById('btn-walls-done')?.addEventListener('click', () => document.getElementById('btn-grid-edit')?.click());
 
 // ─── TEMPLATE AD AREA (cerchio/cono/linea) ───────────────────────────────────
@@ -1437,6 +1445,29 @@ document.getElementById('select-draw-size')?.addEventListener('change', (e) => {
   _applyDrawControlsUI();
 });
 
+// Il dock (proprio personaggio o soggetto del master). Va ridisegnato anche quando cambia la
+// scheda, non solo a ogni snapshot di sessione: i tiri salvezza contro la morte vivono nella scheda.
+function _renderMyDock() {
+  const data = state.snapshot;
+  if (!data) return;
+  if (state.session.isMaster) { _refreshMasterDock(); return; }
+  if (!state.myCombatantId) { UI.renderPlayerDock(null, false); return; }
+  const progressionData = {
+    mode:           data.progressionMode ?? 'xp',
+    xp:             data.xp ?? {},
+    levelUpGranted: data.levelUpGranted ?? {},
+  };
+  const myRaw = data.combatants?.[state.myCombatantId];
+  const myC   = myRaw ? { ...myRaw, id: state.myCombatantId } : null;
+  UI.renderPlayerDock(myC, state.myCombatantId === data.currentTurnId, progressionData, state.sheetData?.deathSaves ?? null);
+}
+// Dalla scheda (src/views/sheet.js): ridisegna dock e riga dell'iniziativa con i dati nuovi
+document.addEventListener('dnd:sheet-changed', () => {
+  if (!state.snapshot) return;
+  _renderMyDock();
+  _rerenderGridFromSnapshot();
+});
+
 function _renderCombatLists() {
   const data = state.snapshot;
   if (!data) return;
@@ -1487,8 +1518,7 @@ function _startListening() {
         if (state.seenLogIds.has(logId)) continue;
         state.seenLogIds.add(logId);
         if ((entry.type === 'damage' || entry.type === 'heal') && entry.actor && entry.target) {
-          const icon = entry.type === 'damage' ? '🗡 ' : '✚ ';
-          UI.showNotification(icon + entry.message, entry.type);
+          UI.showNotification(entry.message, entry.type, entry.type === 'damage' ? 'sword' : 'heal');
         }
       }
     }
@@ -1505,9 +1535,9 @@ function _startListening() {
         const delta  = currentHp - state.lastKnownHp;
         const amount = Math.abs(delta);
         if (delta < 0) {
-          UI.showNotification(`🗡 Hai ricevuto ${amount} danni!`, 'damage');
+          UI.showNotification(`Hai ricevuto ${amount} danni!`, 'damage', 'sword');
         } else if (delta > 0) {
-          UI.showNotification(`✚ Hai ricevuto ${amount} punti vita!`, 'heal');
+          UI.showNotification(`Hai ricevuto ${amount} punti vita!`, 'heal', 'heal');
         }
       }
       state.lastKnownHp = currentHp;
@@ -1526,15 +1556,7 @@ function _startListening() {
     };
     _renderCombatLists();
 
-    if (state.session.isMaster) {
-      _refreshMasterDock();
-    } else if (state.myCombatantId) {
-      const myRaw = data.combatants?.[state.myCombatantId];
-      const myC   = myRaw ? { ...myRaw, id: state.myCombatantId } : null;
-      UI.renderPlayerDock(myC, state.myCombatantId === data.currentTurnId, progressionData, state.sheetData?.deathSaves ?? null);
-    } else {
-      UI.renderPlayerDock(null, false);
-    }
+    _renderMyDock();
 
     renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null, sorted, data.gridConfig || null, data.walls || {});
     _syncGridModeUI();

@@ -675,9 +675,9 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
       inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 6}" fill="none" stroke="${TEMPLATE_COLOR}" stroke-width="2" stroke-dasharray="3 3" pointer-events="none"/>`;
     }
     if (isActive) {
-      inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 2}" fill="none" stroke="var(--gold-bright)" stroke-width="1.5" pointer-events="none"/>`;
+      inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 2}" fill="none" stroke="var(--c-heading)" stroke-width="1.5" pointer-events="none"/>`;
     } else if (isSelected) {
-      inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 2}" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="4 4" pointer-events="none"/>`;
+      inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 2}" fill="none" stroke="var(--c-heading)" stroke-width="1.5" stroke-dasharray="4 4" pointer-events="none"/>`;
     }
 
     // HP esatti: master vede tutto, i player solo PG/famigli — per le creature il bordo resta pieno

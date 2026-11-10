@@ -3,6 +3,14 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import { applyMaxHp, applyFields } from '../logic/combatantRules.js';
 
+// Queste transazioni partono dalla sincronizzazione della scheda, spesso PRIMA che il
+// listener di sessione abbia il combattente in cache: la prima esecuzione vede null e
+// restituisce null (= "non esiste, non toccare"). Con l'applicazione locale di default
+// quel null viene mostrato subito ai listener come "combattente rimosso" (il rientro in
+// sessione lo scambiava per una rimozione vera e tornava alla home). Senza applicazione
+// locale gli eventi scattano solo a transazione conclusa, con i dati veri.
+const NO_OPTIMISTIC = { applyLocally: false };
+
 export class Combatant {
   constructor(db, sessionCode) {
     this._db   = db;
@@ -18,7 +26,8 @@ export class Combatant {
   async _patch(id, fields) {
     await runTransaction(
       ref(this._db, `sessions/${this._code}/combatants/${id}`),
-      (current) => applyFields(current, fields)
+      (current) => applyFields(current, fields),
+      NO_OPTIMISTIC
     );
   }
 
@@ -137,7 +146,8 @@ export class Combatant {
     const hp = Math.max(1, parseInt(val) || 1);
     await runTransaction(
       ref(this._db, `sessions/${this._code}/combatants/${id}`),
-      (current) => applyMaxHp(current, hp)
+      (current) => applyMaxHp(current, hp),
+      NO_OPTIMISTIC
     );
   }
 

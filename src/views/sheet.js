@@ -109,6 +109,7 @@ export function setupSheetListener() {
     const combatView = document.getElementById('view-combat');
     if (combatView && !combatView.classList.contains('hidden') && state.snapshot) {
       _renderCombatantLists();
+      document.dispatchEvent(new CustomEvent('dnd:sheet-changed'));
     }
 
     if (!populated) {

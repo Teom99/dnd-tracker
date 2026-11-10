@@ -1251,7 +1251,7 @@ body.is-master .fight-card { cursor: pointer; }
 .fc-portrait { width: 36px; height: 36px; border-radius: 2px; flex: none; font-size: 7px; overflow: hidden; position: relative; }
 .fc-avatar { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
 .fc-portrait--upload { cursor: pointer; }
-.fc-portrait--upload:hover::after { content: '📷'; position: absolute; inset: 0; display: grid; place-items: center; background: var(--c-veil); font-size: 10px; border-radius: 50%; }
+.fc-portrait--upload:hover::after { content: ''; background: var(--c-veil) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512' fill='none' stroke='white' stroke-width='40' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M96 416l32-112 208-208 80 80-208 208zM288 144l80 80'/%3E%3C/svg%3E") center / 55% no-repeat; position: absolute; inset: 0; border-radius: 50%; }
 
 /* Cornice ritratto = barra XP (solo player) */
 .fc-pframe {
@@ -1404,15 +1404,15 @@ body.is-master .fight-card { cursor: pointer; }
 ═══════════════════════════════════════════ */
 .combat-shell {
   flex: 1; min-height: 0; overflow: hidden;
-  display: grid; grid-template-columns: 215px minmax(0, 1fr);
+  display: grid; grid-template-columns: minmax(0, 1fr) 215px;
   gap: 14px; padding: 10px 14px;
 }
-#view-combat[data-density="details"] .combat-shell { grid-template-columns: 300px minmax(0, 1fr); }
+#view-combat[data-density="details"] .combat-shell { grid-template-columns: minmax(0, 1fr) 300px; }
 #view-combat:is([data-drawer="detail"], [data-drawer="log"], [data-drawer="notes"]) .combat-shell {
-  grid-template-columns: 215px minmax(0, 1fr) minmax(280px, 340px);
+  grid-template-columns: minmax(0, 1fr) 215px minmax(280px, 340px);
 }
 #view-combat[data-density="details"]:is([data-drawer="detail"], [data-drawer="log"], [data-drawer="notes"]) .combat-shell {
-  grid-template-columns: 300px minmax(0, 1fr) minmax(280px, 340px);
+  grid-template-columns: minmax(0, 1fr) 300px minmax(280px, 340px);
 }
 #panel-side { display: none; }
 #view-combat:is([data-drawer="detail"], [data-drawer="log"], [data-drawer="notes"]) #panel-side { display: flex; }
@@ -1580,10 +1580,10 @@ button.init-num { cursor: pointer; border-bottom: 1px dashed var(--c-rule); }
 
 /* 761–1100px: due colonne, il pannello laterale sta sopra la mappa invece che in una terza colonna */
 @media (max-width: 1100px) {
-  .combat-shell, #view-combat[data-density="details"] .combat-shell { grid-template-columns: 190px minmax(0, 1fr); }
-  #view-combat[data-density="details"] .combat-shell { grid-template-columns: 250px minmax(0, 1fr); }
-  #view-combat:is([data-drawer="detail"], [data-drawer="log"], [data-drawer="notes"]) .combat-shell { grid-template-columns: 190px minmax(0, 1fr); }
-  #view-combat[data-density="details"]:is([data-drawer="detail"], [data-drawer="log"], [data-drawer="notes"]) .combat-shell { grid-template-columns: 250px minmax(0, 1fr); }
+  .combat-shell, #view-combat[data-density="details"] .combat-shell { grid-template-columns: minmax(0, 1fr) 190px; }
+  #view-combat[data-density="details"] .combat-shell { grid-template-columns: minmax(0, 1fr) 250px; }
+  #view-combat:is([data-drawer="detail"], [data-drawer="log"], [data-drawer="notes"]) .combat-shell { grid-template-columns: minmax(0, 1fr) 190px; }
+  #view-combat[data-density="details"]:is([data-drawer="detail"], [data-drawer="log"], [data-drawer="notes"]) .combat-shell { grid-template-columns: minmax(0, 1fr) 250px; }
   #panel-side { position: fixed; top: 56px; right: 0; bottom: 0; width: min(360px, 92vw); z-index: 50; padding: 12px; background: var(--c-paper) var(--paper-grain); border-left: 3px double var(--c-rule); box-shadow: -8px 0 24px var(--c-shadow); }
 }
 
@@ -1634,3 +1634,20 @@ button.init-num { cursor: pointer; border-bottom: 1px dashed var(--c-rule); }
   .my-dock .dock-actions .dock-end { flex: 1 1 100%; }
 }
 @media (min-width: 761px) { .dock-more { display: none !important; } }
+
+
+/* Iniziativa a destra della mappa; il pannello laterale (dettaglio, diario, cronache) ancora più a destra */
+.turn-pill { order: 0; }
+#panel-grid { order: 1; }
+#panel-init { order: 2; }
+#panel-side { order: 3; }
+
+/* La mappa riempie tutto il rettangolo disponibile: il fondo continua il colore delle caselle */
+#grid-container { background: var(--c-map); }
+.stage-grid { background: var(--c-paper); }
+
+.note-chevron { display: inline-flex; align-items: center; }
+.note-chevron svg { transition: transform .15s; }
+.note-chevron[data-state="open"] svg { transform: rotate(90deg); }
+.fight-card .btn .lbl { font-size: 11px; }
+.notification .ico { vertical-align: -.2em; margin-right: 2px; }

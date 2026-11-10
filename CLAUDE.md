@@ -39,8 +39,13 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | `src/utils/domPreserve.js` | `captureFocusState`/`restoreFocusState` — preserva focus, valore, cursore e scroll di un input durante un rebuild `innerHTML` |
 | `src/utils/theme.js` | Tema chiaro/notte: `resolveTheme`, `initTheme`, `toggleTheme` — `<html data-theme>` + `localStorage['dnd-theme']` |
 | `src/ui/icons.js` | `icon(name, {size, title})` — icone SVG in tinta unita (`currentColor`); a tema da game-icons.net (crediti in `CREDITS.md`), di servizio disegnate a tratto |
+| `src/logic/combatChrome.js` | Logica pura dell'interfaccia di combattimento: `toolTransition`, `toolFromState`, `detailStillValid`, densità iniziativa, `nextInTurnOrder` |
+| `src/logic/visibility.js` | `combatantView` (cosa vede/modifica ciascun utente di ciascun combattente), `healthHintKey/Text` — usata da card e riga iniziativa |
+| `src/logic/gridMath.js` | `footprintOf`, `squareDistance` (puri; GridUI li ri-esporta) |
+| `src/logic/trajectory.js` | `trajectoryEndpoints`, `trajectoryDistance` — freccia di attacco |
+| `src/ui/CombatChrome.js` | Applica `state.ui` a `#view-combat` (attributi `data-*`), menu, pannello laterale, popover; `hydrateIcons` per `data-icon` nel markup statico |
 | `src/logic/combatantRules.js` | Updater puri delle transazioni sul combattente (`applyMaxHp`, `applyFields`) |
-| `test/*.html` | Test in pagina (niente Node): `shapes`, `theme`, `icons`, `combatantRules` + campionario `componenti.html`; servire con `python3 -m http.server` |
+| `test/*.html` | Test in pagina (niente Node): `shapes`, `theme`, `icons`, `combatantRules`, `combatChrome`, `visibility`, `trajectory` + campionario `componenti.html`; servire con `python3 -m http.server` |
 | `src/utils/presence.js` | `playerColor(uid)` — colore deterministico per giocatore (hash su palette fissa), usato per lock note e cursori live |
 | `src/views/home.js` | Auth UI, libreria personaggi, picker join/creature, sessioni utente salvate |
 | `src/views/sheet.js` | Sheet listener, `makeCallbacks`, `initSheet`, `openCharacterSheet`, `openLibrarySheet`, `bindSheetEvents` |
@@ -171,10 +176,25 @@ Note: `.indexOn: ["ownerUid"]` serve a `Combatant.findByOwner`. `.read`/`.write`
 - Rework "Manuale", tappa 1 (fondamenta): identità carta/inchiostro in due temi (chiaro e notte, interruttore sole/luna in topbar), nuovo vocabolario di variabili, componenti di base rifatti, modulo icone. Layout e logica invariati. Design in `docs/superpowers/specs/2026-11-10-rework-manuale-design.md`; le tappe 2-5 (combattimento, scheda, home, resto) rifanno le schermate una alla volta
 - Fix rientro in sessione: un combattente rimosso non viene più ricreato (a 0 HP) dalla sincronizzazione della scheda di chi rientra con il vecchio id, e chi entra col segnaposto 1/1 parte a piena vita quando la scheda porta l'HP max al valore vero
 
+- Rework "Manuale", tappa 2 (schermata di combattimento): iniziativa a destra della mappa (compatta o con dettagli, per client), mappa che riempie il rettangolo (pulsante "Adatta allo spazio" nel menu muri), quattro strumenti con nome (Muovi · Area · Traiettoria · Disegna) e una riga di opzioni per strumento, area incantesimo guidata a passi, Traiettoria (nuova), dock con Incantesimi (popover con slot e preparati), tutto il resto nel menu, layout telefono (striscia del turno, foglio iniziativa, "Altro" del dock)
+
 ### Bug noti non ancora risolti
 Nessuno al momento.
 
 ---
+
+## Schermata di combattimento (rework "Manuale", tappa 2)
+
+- **Stato di interfaccia locale** in `state.ui` (`tool`, `menuOpen`, `drawer`, `detailId`, `spellsOpen`, `moreOpen`, `initSheetOpen`): mai su Firebase. `CombatChrome.apply()` lo scrive su `#view-combat` come `data-tool/menu/drawer/spells/more/init-sheet/density` e il CSS decide cosa si vede. `apply()` non fa `innerHTML`; va chiamata dopo ogni modifica (usa `CombatChrome.set(patch)`) e in coda al listener di sessione.
+- **I nodi si spostano, gli handler no**: ogni comando ha lo stesso `id` e lo stesso handler di prima, cambia dove sta nel markup e quando è visibile. Non rinominare un `id`/`data-action` senza aggiornare il JS.
+- **Aggiungere una voce al menu**: un `<button class="btn btn--ghost menu-item" data-icon="nome"><span class="lbl">Etichetta</span></button>` dentro `#topbar-more` nel gruppo giusto; `CombatChrome.hydrateIcons` mette l'icona. Una voce solo-master va dentro `#master-controls`.
+- **Aggiungere uno strumento alla mappa**: bottone `[data-tool]` in `#grid-tools`, riga `.opt-<nome>` in `#grid-options` (visibile con `#view-combat[data-tool="nome"]`), nome in `TOOLS` e nelle tabelle di `src/logic/combatChrome.js` (`RESET_ON_EXIT`, `toolFromState`), clic gestito da `_selectTool` in `app.js`. Cambiando strumento si annulla ciò che il precedente aveva a metà (`toolTransition`).
+- **Pannello laterale** (`#panel-side`): dettaglio, diario o cronache secondo `data-drawer`. Il dettaglio mostra una sola card tramite una regola CSS generata (`#detail-style`) sul `data-combatant-id`; si chiude da solo se il combattente sparisce.
+- **Clic dentro un popover che si ridisegna**: i controlli "clic fuori" usano `e.composedPath()` (helper `inPath` in `CombatChrome.js`), mai `e.target.closest`: la scrittura su Firebase scatta i listener in modo sincrono e il bersaglio del clic può essere già stato ricostruito.
+- **Eventi tra moduli** (come `dnd:dock-select`): `dnd:initiative-change`, `dnd:toggle-inspiration`, `dnd:rerender-grid`, `dnd:grid-mode-changed`, `dnd:sheet-changed` — evitano import circolari tra `GridUI`/`logic/grid.js`/`app.js`.
+- **Dock**: `_renderMyDock()` in `app.js`; si ridisegna a ogni snapshot di sessione **e** a ogni cambio della scheda (i tiri salvezza contro la morte stanno nella scheda).
+- **Visibilità**: una sola fonte, `combatantView` in `src/logic/visibility.js` (ha test). Dei nemici i giocatori non vedono vita né CA a meno che il master non attivi "Mostra HP" / "Mostra CA".
+- **Transazioni sul combattente avviate dalla scheda** usano `{ applyLocally: false }` (`NO_OPTIMISTIC` in `Combatant.js`): senza, la prima esecuzione su un nodo non ancora in cache applicava un `null` locale e i listener vedevano "combattente rimosso" (il rientro tornava alla home).
 
 ## Tema e variabili (rework "Manuale")
 
@@ -187,7 +207,7 @@ Nessuno al momento.
 
 ## Pattern ricorrenti da rispettare
 
-**Aggiungere un'azione a una card combattente:**
+**Aggiungere un'azione a una card combattente** (la card è il *dettaglio* nel pannello laterale; il dock ha le azioni del turno):
 1. Aggiungere `data-action="nome"` al bottone in `src/ui/UI.js` -> `renderCombatantList` (template HTML)
 2. Aggiungere handler in `list.onclick` delegation nello stesso file
 3. Aggiungere callback `onNome` in `makeCallbacks()` dentro `src/views/sheet.js`

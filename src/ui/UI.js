@@ -10,7 +10,7 @@ let _sceneHidden  = false;
 let _prevSceneUrl = null;
 
 export const CONDITIONS = [
-  { name: 'Avvelenato',   color: 'var(--gold)' },
+  { name: 'Avvelenato',   color: 'var(--c-heading)' },
   { name: 'Stordito',     color: '#d97706' },
   { name: 'Spaventato',   color: '#dc2626' },
   { name: 'Bloccato',     color: '#ea580c' },
@@ -19,8 +19,8 @@ export const CONDITIONS = [
   { name: 'Prono',        color: '#9ca3af' },
   { name: 'Invisibile',   color: '#0891b2' },
   { name: 'Incapacitato', color: '#d97706' },
-  { name: 'Paralizzato',  color: 'var(--gold)' },
-  { name: 'Pietrificato', color: 'var(--gold)' },
+  { name: 'Paralizzato',  color: 'var(--c-heading)' },
+  { name: 'Pietrificato', color: 'var(--c-heading)' },
   { name: 'Affascinato',  color: '#ec4899' },
   { name: 'Esausto',      color: '#dc2626' },
   { name: 'Nascosto',     color: '#0891b2' },
@@ -52,11 +52,16 @@ function _getNotificationStack() {
   return _notificationStack;
 }
 
-export function showNotification(message, type = 'info') {
+export function showNotification(message, type = 'info', iconName = null) {
   const stack = _getNotificationStack();
   const notification = document.createElement('div');
   notification.className = `notification notification-${type}`;
-  notification.textContent = message;
+  if (iconName) {
+    notification.innerHTML = `${icon(iconName, { size: 16 })} `;
+    notification.append(document.createTextNode(message));   // il messaggio resta testo: nessun HTML dai dati
+  } else {
+    notification.textContent = message;
+  }
   stack.appendChild(notification);
 
   // Rimuovi dopo 3 secondi
@@ -139,13 +144,15 @@ export function renderSessionNotes(notesObj, canEdit, expandedIds, noteLocks = {
     // Presence tag ("✏️ Nome" di chi sta editando)
     let tagEl = el.querySelector('.note-presence-tag');
     if (lock) {
-      const tagText = `✏️ ${escapeHtml(lock.name)}`;
       if (!tagEl) {
         tagEl = document.createElement('div');
         tagEl.className = 'note-presence-tag';
         el.insertAdjacentElement('afterbegin', tagEl);
       }
-      if (tagEl.innerHTML !== tagText) tagEl.innerHTML = tagText;
+      if (tagEl.dataset.who !== lock.name) {   // confronto sul nome, non sull'HTML serializzato
+        tagEl.dataset.who = lock.name;
+        tagEl.innerHTML = `${icon('edit', { size: 12 })} ${escapeHtml(lock.name)}`;
+      }
     } else if (tagEl) {
       tagEl.remove();
     }
@@ -168,8 +175,8 @@ export function renderSessionNotes(notesObj, canEdit, expandedIds, noteLocks = {
       chevronEl.className = 'note-chevron';
       headerEl.appendChild(chevronEl);
     }
-    const chevronText = isExpanded ? '▼' : '▶';
-    if (chevronEl.textContent !== chevronText) chevronEl.textContent = chevronText;
+    if (!chevronEl.firstChild) chevronEl.innerHTML = icon('chevron', { size: 14 });
+    chevronEl.dataset.state = isExpanded ? 'open' : 'closed';   // la rotazione la fa il CSS
 
     let titleEl = headerEl.querySelector('.note-title-input');
     if (!titleEl) {
@@ -386,12 +393,12 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const isSel = (targetId) => _selectedTargets.get(c.id)?.has(targetId) ?? false;
 
     const targetChips = [
-      `<button class="target-chip${isSel(c.id) ? ' selected' : ''}" data-action="toggle-target" data-target-id="${c.id}">👤 Sé stesso</button>`,
+      `<button class="target-chip${isSel(c.id) ? ' selected' : ''}" data-action="toggle-target" data-target-id="${c.id}"><i class="chip-dot ${isCreature ? (c.faction === 'good' ? 'ally' : 'foe') : 'pc'}"></i>Sé stesso</button>`,
       ...fullList
         .filter(x => x.id !== c.id && (x.hpCurrent > 0 || x.type === 'player' || x.type === 'pet'))
         .map(x => {
-          const prefix = x.type === 'player' ? '👤' : x.type === 'pet' ? '🐾' : '👹';
-          return `<button class="target-chip${isSel(x.id) ? ' selected' : ''}" data-action="toggle-target" data-target-id="${x.id}">${prefix} ${escapeHtml(x.name)}</button>`;
+          const dotCls = x.type === 'creature' ? (x.faction === 'good' ? 'ally' : 'foe') : 'pc';
+          return `<button class="target-chip${isSel(x.id) ? ' selected' : ''}" data-action="toggle-target" data-target-id="${x.id}"><i class="chip-dot ${dotCls}"></i>${escapeHtml(x.name)}</button>`;
         })
     ].join('');
 
@@ -439,11 +446,11 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       }
 
       if (levelUpReady && isOwnCard) {
-        xpSectionHtml += `<button class="btn btn--primary btn--sm" data-id="${c.id}" data-action="levelup">⬆ Sali di livello</button>`;
+        xpSectionHtml += `<button class="btn btn--primary btn--sm" data-id="${c.id}" data-action="levelup">${icon('crown')}<span class="lbl">Sali di livello</span></button>`;
       }
 
       if (isMaster && mode === 'milestone' && !levelUpGranted[c.id]) {
-        xpSectionHtml += `<button class="btn btn--sm" data-id="${c.id}" data-action="grant-levelup">🎖 Concedi Level-up</button>`;
+        xpSectionHtml += `<button class="btn btn--sm" data-id="${c.id}" data-action="grant-levelup">${icon('crown')}<span class="lbl">Concedi level-up</span></button>`;
       }
     }
 
@@ -456,7 +463,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         : null,
     ].filter(Boolean).join(' · ');
 
-    const portraitIcon     = isCreature ? '👹' : isPet ? '🐾' : '⚔';
+    const portraitIcon     = isCreature ? icon('monster', { size: 20 }) : isPet ? icon('paw', { size: 20 }) : escapeHtml((c.name || '?').trim().charAt(0).toUpperCase());
     const canUploadAvatar  = canEdit && c.charId;
     const rawThumb         = c.avatarThumb;
     const avatarSrc        = typeof rawThumb === 'string' && rawThumb.startsWith('data:image/') ? rawThumb : null;
@@ -466,9 +473,9 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
 
     const portraitHtml  = c.type === 'player'
       ? `<div class="fc-pframe${levelUpReady ? ' lvlup' : ''}" style="--xp:${(levelUpReady ? 1 : xpPct).toFixed(3)};"${xpTitle ? ` title="${xpTitle}"` : ''}>
-           <div class="fc-portrait${uploadClass}" style="display:flex;align-items:center;justify-content:center;color:var(--accent);"${uploadAttrs}>${portraitContent}</div>
+           <div class="fc-portrait${uploadClass}" style="display:flex;align-items:center;justify-content:center;color:var(--c-gold);"${uploadAttrs}>${portraitContent}</div>
          </div>`
-      : `<div class="fc-portrait${uploadClass}" style="display:flex;align-items:center;justify-content:center;border:1px solid ${isAlly ? 'var(--c-pc)' : 'var(--c-foe)'};color:${isAlly ? 'var(--accent)' : '#c25b50'};"${uploadAttrs}>${portraitContent}</div>`;
+      : `<div class="fc-portrait${uploadClass}" style="display:flex;align-items:center;justify-content:center;border:1px solid ${isAlly ? 'var(--c-pc)' : 'var(--c-foe)'};color:${isAlly ? 'var(--c-gold)' : '#c25b50'};"${uploadAttrs}>${portraitContent}</div>`;
 
     li.innerHTML = `
       <div class="fc-top">
@@ -484,7 +491,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
           <span>init</span>
         </div>
         ${canEdit
-          ? `<button class="btn btn--ghost btn--sm btn--icon" data-id="${c.id}" data-action="remove" aria-label="Rimuovi">✕</button>`
+          ? `<button class="btn btn--ghost btn--sm btn--icon" data-id="${c.id}" data-action="remove" aria-label="Rimuovi" title="Rimuovi">${icon('close', { size: 16 })}</button>`
           : `<span></span>`}
       </div>
 
@@ -502,8 +509,8 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         </div>
         ${isMaster && isCreature ? `
           <div class="fc-controls" style="gap:5px;margin-top:1px;">
-            <button class="btn btn--ghost btn--sm ${c.showHealthHint ? 'hint-active' : ''}" data-id="${c.id}" data-action="toggle-health-hint" style="font-size:9px;">👁 Mostra HP</button>
-            ${ac !== null ? `<button class="btn btn--ghost btn--sm ${c.showAC === true ? 'hint-active' : ''}" data-id="${c.id}" data-action="toggle-show-ac" style="font-size:9px;">🛡 Mostra CA</button>` : ''}
+            <button class="btn btn--ghost btn--sm ${c.showHealthHint ? 'hint-active' : ''}" data-id="${c.id}" data-action="toggle-health-hint" style="font-size:9px;">${icon('eye', { size: 14 })}<span class="lbl">Mostra HP</span></button>
+            ${ac !== null ? `<button class="btn btn--ghost btn--sm ${c.showAC === true ? 'hint-active' : ''}" data-id="${c.id}" data-action="toggle-show-ac" style="font-size:9px;">${icon('shield', { size: 14 })}<span class="lbl">Mostra CA</span></button>` : ''}
           </div>
         ` : ''}
       ` : showHint ? `
@@ -514,7 +521,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         <div class="fc-conds">
           ${conditions.map(cond => {
             const meta = CONDITIONS.find(x => x.name === cond);
-            return `<span class="chip" style="--c:${meta?.color ?? 'var(--mut)'};">${cond}</span>`;
+            return `<span class="chip" style="--c:${meta?.color ?? 'var(--c-mute)'};">${cond}</span>`;
           }).join('')}
         </div>
       ` : ''}
@@ -530,12 +537,12 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         ${isActive ? `
         <div class="fc-controls">
           <input type="number" class="attack-amount input input--num" data-id="${c.id}" placeholder="0" min="1" max="9999">
-          <button class="btn btn--danger btn--sm" data-id="${c.id}" data-action="apply-damage">🗡 Danno</button>
-          <button class="btn btn--sm" data-id="${c.id}" data-action="apply-heal" style="color:var(--heal);">✚ Cura</button>
+          <button class="btn btn--danger btn--sm" data-id="${c.id}" data-action="apply-damage">${icon('sword')}<span class="lbl">Danno</span></button>
+          <button class="btn btn--sm" data-id="${c.id}" data-action="apply-heal" style="color:var(--c-heal);">${icon('heal')}<span class="lbl">Cura</span></button>
         </div>
         ` : ''}
       ` : c.currentAction ? `
-        <p class="fc-action-note">⚔ ${escapeHtml(c.currentAction)}</p>
+        <p class="fc-action-note">${icon('sword', { size: 13 })} ${escapeHtml(c.currentAction)}</p>
       ` : ''}
 
       ${isOwnCard && isKO ? `
@@ -548,17 +555,17 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       ` : ''}
 
       <div class="fc-controls">
-        <button class="btn btn--ghost btn--sm insp-btn${c.inspiration ? ' active' : ''}" data-id="${c.id}" data-action="toggle-inspiration" title="${canEdit ? (c.inspiration ? 'Rimuovi ispirazione' : 'Concedi ispirazione') : (c.inspiration ? 'Ha ispirazione' : 'Nessuna ispirazione')}"${canEdit ? '' : ' disabled'}>✦ Ispirazione</button>
-        ${canEdit ? `<button class="btn btn--ghost btn--sm" data-id="${c.id}" data-action="open-conditions" style="font-size:9.5px;">${conditions.length > 0 ? '✎ Condizioni' : '+ Condizioni'}</button>` : ''}
+        <button class="btn btn--ghost btn--sm insp-btn${c.inspiration ? ' active' : ''}" data-id="${c.id}" data-action="toggle-inspiration" title="${canEdit ? (c.inspiration ? 'Rimuovi ispirazione' : 'Concedi ispirazione') : (c.inspiration ? 'Ha ispirazione' : 'Nessuna ispirazione')}"${canEdit ? '' : ' disabled'}>${icon('star', { size: 14 })}<span class="lbl">Ispirazione</span></button>
+        ${canEdit ? `<button class="btn btn--ghost btn--sm" data-id="${c.id}" data-action="open-conditions" style="font-size:9.5px;">${icon(conditions.length > 0 ? 'edit' : 'plus', { size: 14 })}<span class="lbl">Condizioni</span></button>` : ''}
         ${isMaster && isCreature ? `
           <div class="faction-switch">
             <button class="faction-btn evil ${(c.faction || 'evil') === 'evil' ? 'active' : ''}" data-id="${c.id}" data-action="set-faction" data-faction="evil">Avv.</button>
             <button class="faction-btn good ${c.faction === 'good' ? 'active' : ''}" data-id="${c.id}" data-action="set-faction" data-faction="good">Alleato</button>
           </div>
         ` : ''}
-        ${isMaster && isCreature && c.monsterApiIndex ? `<button class="btn btn--ghost btn--sm" data-id="${c.id}" data-api-index="${c.monsterApiIndex}" data-action="view-stat-block" style="font-size:9.5px;">📖 Dati</button>` : ''}
-        ${isOwnCard ? `<button class="btn btn--ghost btn--sm" data-id="${c.id}" data-action="open-sheet" style="font-size:9.5px;">📜 Scheda</button>` : ''}
-        ${isActive && (isOwnCard || isOwnPet) ? `<button class="btn btn--primary btn--sm" data-id="${c.id}" data-action="end-turn" style="margin-left:auto;">✓ Fine Turno</button>` : ''}
+        ${isMaster && isCreature && c.monsterApiIndex ? `<button class="btn btn--ghost btn--sm" data-id="${c.id}" data-api-index="${c.monsterApiIndex}" data-action="view-stat-block" style="font-size:9.5px;">${icon('monster', { size: 14 })}<span class="lbl">Scheda mostro</span></button>` : ''}
+        ${isOwnCard ? `<button class="btn btn--ghost btn--sm" data-id="${c.id}" data-action="open-sheet" style="font-size:9.5px;">${icon('scroll', { size: 14 })}<span class="lbl">Scheda</span></button>` : ''}
+        ${isActive && (isOwnCard || isOwnPet) ? `<button class="btn btn--primary btn--sm" data-id="${c.id}" data-action="end-turn" style="margin-left:auto;"><span class="lbl">Fine turno</span></button>` : ''}
       </div>
     `;
 
@@ -804,9 +811,9 @@ export function renderConditionModal(combatantId, activeConditions, onToggle) {
 }
 
 function hpBarColor(percent) {
-  if (percent > 50) return 'var(--green)';
-  if (percent > 25) return 'var(--hp-low)';
-  return 'var(--red-bright)';
+  if (percent > 50) return 'var(--c-pc)';
+  if (percent > 25) return 'var(--c-gold)';
+  return 'var(--c-foe)';
 }
 
 function escapeHtml(str) {
@@ -829,7 +836,7 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
   const conditions = c.conditions ? Object.keys(c.conditions) : [];
   const condChips  = conditions.map(cond => {
     const meta = CONDITIONS.find(x => x.name === cond);
-    return `<span class="chip" style="--c:${meta?.color ?? 'var(--mut)'};">${cond}</span>`;
+    return `<span class="chip" style="--c:${meta?.color ?? 'var(--c-mute)'};">${cond}</span>`;
   }).join('');
 
   const { mode = 'xp', xp = {}, levelUpGranted = {} } = progressionData;
@@ -875,7 +882,7 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
           <i class="trail" style="transform:scaleX(${hpPct.toFixed(4)});"></i>
           <i class="fill"  style="transform:scaleX(${hpPct.toFixed(4)});"></i>
         </div>
-        <span style="font-size:12px;font-weight:700;color:var(--bone);font-variant-numeric:tabular-nums;">${c.hpCurrent}<span style="color:var(--mut);font-weight:400">/${c.hpMax}</span></span>
+        <span style="font-size:12px;font-weight:700;color:var(--c-text);font-variant-numeric:tabular-nums;">${c.hpCurrent}<span style="color:var(--c-mute);font-weight:400">/${c.hpMax}</span></span>
         ${tempHp > 0 ? `<span class="chip chip--iron" style="font-size:9px;padding:1px 5px;">+${tempHp}</span>` : ''}
       </div>
       ${mode === 'xp' && level < 20 ? `<div class="xp-bar-track" style="margin-top:2px;"><div class="xp-bar-fill" style="width:${Math.round(xpPct * 100)}%"></div></div>` : ''}
@@ -914,7 +921,7 @@ export function renderMasterDock(combatant) {
   const conditions = c.conditions ? Object.keys(c.conditions) : [];
   const condChips  = conditions.map(cond => {
     const meta = CONDITIONS.find(x => x.name === cond);
-    return `<span class="chip" style="--c:${meta?.color ?? 'var(--mut)'};">${cond}</span>`;
+    return `<span class="chip" style="--c:${meta?.color ?? 'var(--c-mute)'};">${cond}</span>`;
   }).join('');
 
   const portraitFallback = c.type === 'pet' ? icon('paw', { size: 20 }) : c.type === 'creature' ? icon('monster', { size: 22 }) : escapeHtml((c.name || '?').trim().charAt(0).toUpperCase());
@@ -938,7 +945,7 @@ export function renderMasterDock(combatant) {
           <i class="trail" style="transform:scaleX(${hpPct.toFixed(4)});"></i>
           <i class="fill"  style="transform:scaleX(${hpPct.toFixed(4)});"></i>
         </div>
-        <span style="font-size:12px;font-weight:700;color:var(--bone);font-variant-numeric:tabular-nums;">${c.hpCurrent}<span style="color:var(--mut);font-weight:400">/${c.hpMax}</span></span>
+        <span style="font-size:12px;font-weight:700;color:var(--c-text);font-variant-numeric:tabular-nums;">${c.hpCurrent}<span style="color:var(--c-mute);font-weight:400">/${c.hpMax}</span></span>
         ${tempHp > 0 ? `<span class="chip chip--iron" style="font-size:9px;padding:1px 5px;">+${tempHp}</span>` : ''}
       </div>
       ${conditions.length ? `<div class="dock-conds">${condChips}</div>` : ''}
