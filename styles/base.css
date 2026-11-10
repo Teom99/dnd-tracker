@@ -31,6 +31,7 @@
   --c-wall:     #4a3826;
   --c-reach:    rgba(107,29,16,.14);
   --c-veil:     rgba(0,0,0,.45);
+  --c-shadow:   rgba(60,40,20,.28);
   --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.035' numOctaves='4'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .32 0 0 0 0 .15 0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
 
   --f-display: "Alegreya SC", Georgia, serif;
@@ -62,7 +63,8 @@
   --c-wall:     #8a7758;
   --c-reach:    rgba(217,138,106,.18);
   --c-veil:     rgba(0,0,0,.6);
-  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.035' numOctaves='4'/%3E%3CfeColorMatrix values='0 0 0 0 .9 0 0 0 0 .75 0 0 0 0 .5 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  --c-shadow:   rgba(0,0,0,.5);
+  --paper-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.035' numOctaves='4'/%3E%3CfeColorMatrix values='0 0 0 0 .9 0 0 0 0 .75 0 0 0 0 .5 0 0 0 .045 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
 
   color-scheme: dark;
 }
@@ -450,7 +452,7 @@ img { max-width: 100%; display: block; }
   padding: 3px 9px;
   border: 1px solid color-mix(in oklab, var(--c) 55%, transparent);
   border-radius: var(--r);
-  color: color-mix(in oklab, var(--c) 80%, var(--c-text));
+  color: color-mix(in oklab, var(--c) 55%, var(--c-text));
   font-size: 11px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase;
   background: color-mix(in oklab, var(--c) 12%, transparent);
   white-space: nowrap;

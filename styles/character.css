@@ -49,7 +49,7 @@
 .sheet-section {
   background: var(--bg-card);
   border: 1px solid var(--border-warm);
-  border-top: 1px solid rgba(255,255,255,0.05);
+  border-top: 1px solid color-mix(in srgb, var(--c-text) 5%, transparent);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   overflow: hidden;
@@ -57,7 +57,7 @@
 }
 
 .sheet-section[open] {
-  border-color: rgba(255,255,255,0.08);
+  border-color: color-mix(in srgb, var(--c-text) 8%, transparent);
 }
 
 .sheet-section > summary {
@@ -83,7 +83,7 @@
   flex-shrink: 0;
 }
 .sheet-section[open] > summary::before { transform: rotate(90deg); color: var(--gold); }
-.sheet-section > summary:hover { background: rgba(255,255,255,0.03); color: var(--gold); }
+.sheet-section > summary:hover { background: color-mix(in srgb, var(--c-text) 3%, transparent); color: var(--gold); }
 
 .sheet-section-body {
   padding: 0.8rem 1rem 1rem;
@@ -179,7 +179,7 @@
 }
 .input-select:focus {
   border-color: var(--gold);
-  box-shadow: 0 0 0 2px var(--gold-glow), 0 2px 8px rgba(0,0,0,0.3);
+  box-shadow: 0 0 0 2px var(--gold-glow), 0 2px 8px var(--c-shadow);
 }
 
 .hint-text {
@@ -203,7 +203,7 @@
   gap: 0.25rem;
   background: var(--bg-card-alt);
   border: 1px solid var(--border-warm);
-  border-top: 1px solid rgba(255,255,255,0.05);
+  border-top: 1px solid color-mix(in srgb, var(--c-text) 5%, transparent);
   border-radius: var(--radius);
   padding: 0.6rem 0.35rem;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -277,7 +277,7 @@
   padding: 0;
 }
 
-.save-check.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.15); }
+.save-check.active { border-color: var(--gold); color: var(--gold); background: color-mix(in srgb, var(--c-gold) 15%, transparent); }
 
 .save-name { flex: 1; font-size: 0.95rem; }
 .save-value { font-family: var(--f-display); font-size: 0.9rem; color: var(--gold-light); min-width: 2.5rem; text-align: right; }
@@ -312,8 +312,8 @@
   padding: 0;
 }
 
-.skill-prof.active    { border-color: var(--gold); color: var(--gold); background: rgba(124,58,237,0.14); }
-.skill-prof.expertise { border-color: var(--gold-light); color: var(--gold-light); background: rgba(229,201,122,0.18); }
+.skill-prof.active    { border-color: var(--gold); color: var(--gold); background: color-mix(in srgb, var(--c-heading) 14%, transparent); }
+.skill-prof.expertise { border-color: var(--gold-light); color: var(--gold-light); background: color-mix(in srgb, var(--c-gold) 18%, transparent); }
 
 .skill-name    { flex: 1; font-size: 0.9rem; }
 .skill-ability { font-size: 0.75rem; color: var(--text-muted); font-family: var(--f-display); min-width: 2.2rem; text-align: center; }
@@ -386,8 +386,8 @@
   padding: 0;
 }
 
-.death-pip[data-type="successes"].filled { border-color: var(--green); color: var(--green); background: rgba(74,124,89,0.2); }
-.death-pip[data-type="failures"].filled  { border-color: var(--red-bright); color: var(--red-bright); background: rgba(139,32,32,0.2); }
+.death-pip[data-type="successes"].filled { border-color: var(--green); color: var(--green); background: color-mix(in srgb, var(--c-pc) 20%, transparent); }
+.death-pip[data-type="failures"].filled  { border-color: var(--red-bright); color: var(--red-bright); background: color-mix(in srgb, var(--c-foe) 20%, transparent); }
 
 /* ─── Attacks ─── */
 .attacks-list { display: flex; flex-direction: column; gap: 0.4rem; }
@@ -407,14 +407,14 @@
 }
 
 .attack-entry-name { flex: 1; font-size: 0.95rem; font-weight: 600; min-width: 0; }
-.attack-stat       { font-family: var(--f-display); font-size: 0.85rem; color: var(--gold); background: rgba(124,58,237,0.1); border: 1px solid rgba(124,58,237,0.3); border-radius: 4px; padding: 0.1rem 0.4rem; white-space: nowrap; }
+.attack-stat       { font-family: var(--f-display); font-size: 0.85rem; color: var(--gold); background: color-mix(in srgb, var(--c-heading) 10%, transparent); border: 1px solid color-mix(in srgb, var(--c-heading) 30%, transparent); border-radius: 4px; padding: 0.1rem 0.4rem; white-space: nowrap; }
 .attack-damage     { font-size: 0.85rem; color: var(--text-muted); white-space: nowrap; }
 
 /* ─── Small remove button ─── */
 .btn-remove-sm {
   background: transparent;
   border: none;
-  color: #664444;
+  color: var(--c-foe);
   font-size: 1rem;
   cursor: pointer;
   padding: 0.15rem 0.35rem;
@@ -428,7 +428,7 @@
   transition: color 0.15s, background 0.15s;
 }
 
-.btn-remove-sm:hover { color: var(--red-bright); background: rgba(139,32,32,0.2); }
+.btn-remove-sm:hover { color: var(--red-bright); background: color-mix(in srgb, var(--c-foe) 20%, transparent); }
 
 .btn-edit-sm {
   background: transparent;
@@ -447,7 +447,7 @@
   transition: color 0.15s, background 0.15s;
 }
 
-.btn-edit-sm:hover { color: var(--gold); background: rgba(255,215,0,0.1); }
+.btn-edit-sm:hover { color: var(--gold); background: color-mix(in srgb, var(--c-gold) 10%, transparent); }
 
 .btn-save-sm, .btn-cancel-sm {
   background: transparent;
@@ -465,9 +465,9 @@
   transition: color 0.15s, background 0.15s;
 }
 .btn-save-sm   { color: var(--green-bright); }
-.btn-save-sm:hover   { background: rgba(34,197,94,0.15); }
+.btn-save-sm:hover   { background: color-mix(in srgb, var(--c-pc) 15%, transparent); }
 .btn-cancel-sm { color: var(--text-muted); }
-.btn-cancel-sm:hover { color: var(--red-bright); background: rgba(239,68,68,0.1); }
+.btn-cancel-sm:hover { color: var(--red-bright); background: color-mix(in srgb, var(--c-foe) 10%, transparent); }
 
 .item-actions {
   display: flex;
@@ -477,7 +477,7 @@
 
 /* ─── Add forms ─── */
 .add-form {
-  background: rgba(0,0,0,0.2);
+  background: color-mix(in srgb, var(--c-text) 5%, transparent);
   border: 1px dashed var(--border-warm);
   border-radius: 6px;
   padding: 0.65rem;
@@ -687,7 +687,7 @@
   padding: 0;
 }
 
-.spell-prepared.prepared { border-color: var(--gold); color: var(--gold); background: rgba(124,58,237,0.14); }
+.spell-prepared.prepared { border-color: var(--gold); color: var(--gold); background: color-mix(in srgb, var(--c-heading) 14%, transparent); }
 
 .spell-name { flex: 1; font-size: 0.9rem; }
 
@@ -705,12 +705,12 @@
 }
 
 .inventory-entry.editing {
-  background: rgba(0,0,0,0.3);
+  background: color-mix(in srgb, var(--c-text) 8%, transparent);
   border-color: var(--gold-muted);
 }
 
 .inventory-entry.editing input {
-  background: rgba(255,255,255,0.05);
+  background: color-mix(in srgb, var(--c-text) 5%, transparent);
   border: 1px solid var(--border-warm);
   border-radius: 4px;
   color: var(--text-bright);
@@ -779,7 +779,7 @@
   width: 100%;
   padding: 0.3rem 0.6rem;
   background: transparent;
-  border: 1px dashed rgba(255,255,255,0.2);
+  border: 1px dashed color-mix(in srgb, var(--c-text) 20%, transparent);
   color: var(--text-muted);
   border-radius: 4px;
   cursor: pointer;
@@ -789,7 +789,7 @@
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
-.btn-stat-block:hover { background: rgba(255,255,255,0.04); border-color: var(--gold); color: var(--gold-light); }
+.btn-stat-block:hover { background: color-mix(in srgb, var(--c-text) 4%, transparent); border-color: var(--gold); color: var(--gold-light); }
 
 .btn-sheet {
   width: 100%;
@@ -805,7 +805,7 @@
   transition: background 0.15s, color 0.15s;
 }
 
-.btn-sheet:hover { background: rgba(124,58,237,0.14); }
+.btn-sheet:hover { background: color-mix(in srgb, var(--c-heading) 14%, transparent); }
 
 /* ─── Death saves inline nella card KO ─── */
 .death-saves-inline {
@@ -813,8 +813,8 @@
   flex-direction: column;
   gap: 0.35rem;
   padding: 0.5rem 0.6rem;
-  background: rgba(139, 32, 32, 0.15);
-  border: 1px solid rgba(139, 32, 32, 0.4);
+  background: color-mix(in srgb, var(--c-foe) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c-foe) 40%, transparent);
   border-radius: 6px;
 }
 
@@ -842,34 +842,34 @@
   transition: color 0.15s;
 }
 .ds-pip:hover { color: var(--text); }
-.ds-pip.filled { color: #dc2626; }
+.ds-pip.filled { color: var(--c-foe); }
 
 .btn-end-turn {
   width: 100%;
   padding: 0.4rem 0.6rem;
-  background: linear-gradient(160deg, #1a4020 0%, #0e2810 100%);
-  border: 1px solid rgba(78,160,100,0.4);
-  color: #80d09a;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--c-pc) 16%, var(--c-paper)) 0%, var(--c-paper-lo) 100%);
+  border: 1px solid color-mix(in srgb, var(--c-pc) 40%, transparent);
+  color: var(--c-pc);
   border-radius: 8px;
   font-family: var(--f-display);
   font-size: 0.85rem;
   cursor: pointer;
   min-height: 38px;
   transition: background 0.18s, border-color 0.18s, box-shadow 0.18s;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  text-shadow: 0 1px 3px var(--c-shadow);
 }
 .btn-end-turn:hover {
-  background: linear-gradient(160deg, #1f4a25 0%, #122e14 100%);
-  border-color: rgba(100,200,120,0.5);
-  box-shadow: 0 0 12px rgba(78,160,100,0.3);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--c-pc) 16%, var(--c-paper)) 0%, color-mix(in srgb, var(--c-pc) 16%, var(--c-paper)) 100%);
+  border-color: color-mix(in srgb, var(--c-pc) 50%, transparent);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--c-pc) 30%, transparent);
 }
 
 /* ─── XP / Progressione ─── */
 .xp-section     { padding: 4px 12px 6px; }
 .xp-label       { font-size: 0.78rem; color: var(--text-muted); display: block; }
-.xp-bar-track   { height: 5px; background: rgba(255,255,255,0.08); border-radius: 3px; margin-top: 4px; overflow: hidden; }
-.xp-bar-fill    { height: 100%; background: #45b7d1; border-radius: 3px; }
-.levelup-badge  { font-size: 0.78rem; color: #ffd93d; padding: 2px 12px 4px; font-weight: 700; display: block; }
+.xp-bar-track   { height: 5px; background: color-mix(in srgb, var(--c-text) 8%, transparent); border-radius: 3px; margin-top: 4px; overflow: hidden; }
+.xp-bar-fill    { height: 100%; background: var(--c-ally); border-radius: 3px; }
+.levelup-badge  { font-size: 0.78rem; color: var(--c-gold); padding: 2px 12px 4px; font-weight: 700; display: block; }
 .btn-levelup    { margin: 2px 12px 6px; }
 .btn-grant-levelup { margin: 2px 12px 6px; }
 .xp-award-players { padding: 4px 0 4px; }
@@ -880,9 +880,9 @@
 .ac-badge {
   font-size: 0.78rem;
   font-family: var(--f-display);
-  color: #7ab4e0;
-  background: rgba(26,58,92,0.5);
-  border: 1px solid #2a5a8c;
+  color: var(--c-ally);
+  background: color-mix(in srgb, var(--c-ally) 20%, transparent);
+  border: 1px solid var(--c-ally);
   border-radius: 4px;
   padding: 0.1rem 0.35rem;
   white-space: nowrap;
@@ -896,8 +896,8 @@
 /* ─── Level Up / Class Features ─────────────────────────────────────── */
 
 .btn-levelup {
-  background: linear-gradient(135deg, #16a34a, #22c55e);
-  color: #fff;
+  background: linear-gradient(135deg, var(--c-pc), var(--c-pc));
+  color: var(--c-text);
   border: none;
   border-radius: 6px;
   padding: 0.25rem 0.6rem;
@@ -944,7 +944,7 @@
   align-items: center;
   padding: 0.2rem 0;
   font-size: 0.9rem;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  border-bottom: 1px solid color-mix(in srgb, var(--c-text) 5%, transparent);
 }
 .lu-stat-row:last-child { border-bottom: none; }
 
@@ -998,7 +998,7 @@
 .lu-feature-level {
   font-size: 0.75rem;
   background: var(--purple-main);
-  color: #fff;
+  color: var(--c-text);
   border-radius: 4px;
   padding: 0.1rem 0.4rem;
   white-space: nowrap;
@@ -1056,7 +1056,7 @@
 
 .class-feature-level-badge {
   font-size: 0.72rem;
-  background: rgba(124,58,237,0.3);
+  background: color-mix(in srgb, var(--c-heading) 30%, transparent);
   border: 1px solid var(--purple-main);
   color: var(--gold-light);
   border-radius: 4px;
@@ -1100,7 +1100,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  background: rgba(124,58,237,0.2);
+  background: color-mix(in srgb, var(--c-heading) 20%, transparent);
   border: 1px solid var(--purple-main);
   border-radius: 20px;
   padding: 0.15rem 0.5rem;
@@ -1149,8 +1149,8 @@
 .level-badge {
   font-family: var(--f-display);
   font-size: 0.7rem;
-  background: rgba(124,58,237,0.25);
-  border: 1px solid var(--purple-main, #7c3aed);
+  background: color-mix(in srgb, var(--c-heading) 25%, transparent);
+  border: 1px solid var(--purple-main, var(--c-heading));
   color: var(--gold-light);
   border-radius: 4px;
   padding: 0.1rem 0.35rem;

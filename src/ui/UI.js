@@ -468,7 +468,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       ? `<div class="fc-pframe${levelUpReady ? ' lvlup' : ''}" style="--xp:${(levelUpReady ? 1 : xpPct).toFixed(3)};"${xpTitle ? ` title="${xpTitle}"` : ''}>
            <div class="fc-portrait${uploadClass}" style="display:flex;align-items:center;justify-content:center;color:var(--accent);"${uploadAttrs}>${portraitContent}</div>
          </div>`
-      : `<div class="fc-portrait${uploadClass}" style="display:flex;align-items:center;justify-content:center;border:1px solid ${isAlly ? 'rgba(76,165,122,.3)' : 'rgba(168,66,58,.3)'};color:${isAlly ? 'var(--accent)' : '#c25b50'};"${uploadAttrs}>${portraitContent}</div>`;
+      : `<div class="fc-portrait${uploadClass}" style="display:flex;align-items:center;justify-content:center;border:1px solid ${isAlly ? 'var(--c-pc)' : 'var(--c-foe)'};color:${isAlly ? 'var(--accent)' : '#c25b50'};"${uploadAttrs}>${portraitContent}</div>`;
 
     li.innerHTML = `
       <div class="fc-top">

@@ -198,7 +198,7 @@ function _renderShapeGhost() {
   const d = _shapeDrag;
   const keys = shapeCellKeys(d.tool, d.sc, d.sr, d.ec, d.er, _ctx.drawFill === 'filled', _ctx.drawSize, _ctx.cols, _ctx.rows);
   const isErase = !_ctx.drawColor;
-  const col_    = isErase ? '#ffffff' : _ctx.drawColor;
+  const col_    = isErase ? 'var(--c-text)' : _ctx.drawColor;
   let html = '';
   for (const key of keys) {
     const [c, r] = key.split('_').map(Number);
@@ -367,7 +367,7 @@ const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
 // ─── Template ad area (cerchio/cono/linea) ───────────────────────────────────
 const TEMPLATE_LABEL     = { circle: 'Cerchio', cone: 'Cono', line: 'Linea' };
-const TEMPLATE_COLOR     = '#c084fc'; // viola neutro, distinto da muri/reach/selezione
+const TEMPLATE_COLOR     = 'var(--c-foe)'; // rosso inchiostro, come nel mockup delle aree
 const CONE_HALF_ANGLE    = 45;        // cono 5e: larghezza = distanza dall'origine (angolo totale 90°)
 const LINE_HALF_WIDTH_M  = 0.75;      // linea larga 1.5m
 const TEMPLATE_MIN_M     = { circle: 3, cone: 9, line: 9 }; // default se origine e conferma coincidono
@@ -484,7 +484,7 @@ function _renderCursorOverlay() {
     }
     el.style.left = `${x}px`;
     el.style.top  = `${y}px`;
-    const color = typeof c.color === 'string' ? c.color : '#888';
+    const color = typeof c.color === 'string' ? c.color : 'var(--c-mute)';
     el.querySelector('.dot').style.background   = color;
     const label = el.querySelector('.label');
     label.style.background = color;
@@ -588,10 +588,10 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
 
   // I token grandi si ancorano (circa) al centro: la cella cliccata non è il top-left ma il centro del footprint
   const selOff  = Math.floor((selSide - 1) / 2);
-  const selRing = !selComb ? '#8a8a8a'
-    : (selComb.type === 'player' || selectedId === myCombatantId) ? '#4aba4a'
-    : selComb.faction === 'good' ? '#4aa8d8'
-    : '#bf4a4a';
+  const selRing = !selComb ? 'var(--c-dead)'
+    : (selComb.type === 'player' || selectedId === myCombatantId) ? 'var(--c-pc)'
+    : selComb.faction === 'good' ? 'var(--c-ally)'
+    : 'var(--c-foe)';
 
   const vbW = (PAD * 2 + cols * CELL).toFixed(0);
   const vbH = (PAD * 2 + rows * CELL).toFixed(0);
@@ -642,12 +642,12 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     const isPlayer   = occ.type === 'player';
     const isDead     = occ.hpCurrent <= 0;
 
-    // Colore del bordo per tipo di token; sfondo opaco in tinta scura
-    let fill, ring;
-    if (isPlayer || isMyToken)       { fill = '#0d2d0d'; ring = '#4aba4a'; }   // giocatori: verde
-    else if (occ.faction === 'good') { fill = '#10293c'; ring = '#4aa8d8'; }   // creature alleate: azzurro
-    else                             { fill = '#2d1010'; ring = '#bf4a4a'; }   // nemici: rosso
-    if (isDead) { fill = '#2e2e2e'; ring = '#8a8a8a'; }
+    // Colore del bordo per tipo di token; sfondo opaco color carta
+    let fill = 'var(--c-paper-hi)', ring;
+    if (isPlayer || isMyToken)       ring = 'var(--c-pc)';     // giocatori: verde
+    else if (occ.faction === 'good') ring = 'var(--c-ally)';   // creature alleate: azzurro
+    else                             ring = 'var(--c-foe)';    // nemici: rosso
+    if (isDead) { fill = 'var(--c-track)'; ring = 'var(--c-dead)'; }
 
     const inset  = 3;
     const letter = esc((occ.name || '?').trim().charAt(0).toUpperCase());
@@ -780,7 +780,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     const ok = canPlace(ac, ar, selSide, selectedId);
     const { x: gx, y: gy } = cellXY(ac, ar);
     const gw    = selSide * CELL;
-    const color = ok ? selRing : '#8a8a8a';
+    const color = ok ? selRing : 'var(--c-dead)';
     if (!ghost) {
       ghost = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       ghost.setAttribute('pointer-events', 'none');
@@ -825,7 +825,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     const offset  = Math.floor((size - 1) / 2);
     const round   = !shape && drawShape === 'round';
     const isErase = !drawColor;
-    const col_    = isErase ? '#ffffff' : drawColor;
+    const col_    = isErase ? 'var(--c-text)' : drawColor;
     let rects = '';
     for (let dc = 0; dc < size; dc++) {
       for (let dr = 0; dr < size; dr++) {
