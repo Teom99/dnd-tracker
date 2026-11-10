@@ -112,6 +112,7 @@ body {
   flex-direction: column;
   align-items: center;
   font-size: 17px;
+  font-weight: 500;
 }
 
 /* ═══════════════════════════════════════════
@@ -244,7 +245,7 @@ html, body { margin: 0; padding: 0; }
 body {
   background: var(--c-paper) var(--paper-grain);
   color: var(--c-text);
-  font: 400 16px/1.5 var(--f-body);
+  font: 500 16px/1.5 var(--f-body);
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
   min-height: 100dvh;
@@ -360,7 +361,7 @@ img { max-width: 100%; display: block; }
   background: transparent;
   border: 1px solid var(--c-rule); border-radius: var(--r);
   color: var(--c-text);
-  font: 500 15px/1 var(--f-body);
+  font: 600 15px/1 var(--f-body);
   cursor: pointer; user-select: none;
   white-space: nowrap;
   transition: border-color .18s, color .18s, background .18s;
@@ -404,7 +405,7 @@ img { max-width: 100%; display: block; }
   border: 1px solid var(--c-rule);
   border-radius: var(--r);
   color: var(--c-text);
-  font: 400 16px/1.4 var(--f-body);
+  font: 500 16px/1.4 var(--f-body);
   padding: 10px 13px;
   transition: border-color .18s, box-shadow .18s;
 }
