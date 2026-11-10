@@ -182,10 +182,10 @@ async function _doJoinSessionAsCharacter(code, name, charId, initiative = '0') {
       charId = existing.charId ?? charId;
     } else {
       await state.combatantManager.remove(existing.id);
-      state.myCombatantId = await state.combatantManager.add(name, initiative, 1, 'player', state.myUid, charId);
+      state.myCombatantId = await state.combatantManager.add(name, initiative, null, 'player', state.myUid, charId);
     }
   } else {
-    state.myCombatantId = await state.combatantManager.add(name, initiative, 1, 'player', state.myUid, charId);
+    state.myCombatantId = await state.combatantManager.add(name, initiative, null, 'player', state.myUid, charId);
   }
 
   // Avviato solo ora che myCombatantId e charId sono definitivi: la primissima

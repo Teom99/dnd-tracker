@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Test — regole combattente</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background:#0a0c0b; color:#e8e2d2;
+         margin:0; padding:24px 20px 60px; }
+  h1 { font-size:16px; margin:0 0 4px; letter-spacing:.04em; }
+  p.sub { color:#8f8f82; margin:0 0 20px; font-size:12.5px; }
+  h2 { font-size:13px; color:#c9a24a; margin:22px 0 6px; letter-spacing:.08em; text-transform:uppercase; }
+  .t { padding:2px 0 2px 22px; position:relative; }
+  .t::before { position:absolute; left:0; width:16px; }
+  .ok::before  { content:"PASS"; color:#7cc78a; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko::before  { content:"FAIL"; color:#e0685c; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko { color:#e0685c; }
+  .detail { color:#8f8f82; font-size:12px; padding-left:22px; white-space:pre; }
+  #summary { position:fixed; left:0; right:0; bottom:0; padding:12px 20px;
+             background:#161b19; border-top:1px solid #2b3631; font-weight:700; }
+</style>
+</head>
+<body>
+<h1>combatantRules.js — updater delle transazioni</h1>
+<p class="sub">Aprila con un server statico: <code>python3 -m http.server</code> → <code>/test/combatantRules.html</code></p>
+<div id="out"></div>
+<div id="summary">✗ modulo non caricato</div>
+
+<script type="module">
+import { applyMaxHp, applyFields } from '../src/logic/combatantRules.js';
+
+const out = document.getElementById('out');
+let pass = 0, fail = 0;
+const group = (name) => { const h = document.createElement('h2'); h.textContent = name; out.append(h); };
+function check(label, got, want) {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  ok ? pass++ : fail++;
+  const d = document.createElement('div');
+  d.className = 't ' + (ok ? 'ok' : 'ko');
+  d.textContent = label;
+  out.append(d);
+  if (!ok) {
+    const e = document.createElement('div');
+    e.className = 'detail';
+    e.textContent = `atteso ${JSON.stringify(want)} · ottenuto ${JSON.stringify(got)}`;
+    out.append(e);
+  }
+}
+const hp = (c) => c && [c.hpCurrent, c.hpMax];
+
+group('combattente rimosso: non deve rinascere');
+check('applyMaxHp(null) resta null', applyMaxHp(null, 30), null);
+check('applyFields(null) resta null', applyFields(null, { name: 'X' }), null);
+
+group('primo ingresso: segnaposto in attesa della scheda');
+const joined = applyMaxHp({ hpMax: 1, hpCurrent: 1, hpPending: true }, 30);
+check('segnaposto 1/1 → piena vita al valore della scheda', hp(joined), [30, 30]);
+check('il segnaposto si consuma (hpPending non resta true)', joined.hpPending === true, false);
+check('la seconda sincronizzazione non cura più', hp(applyMaxHp({ ...joined, hpCurrent: 10 }, 40)), [10, 40]);
+
+group('cambio di HP max su un combattente vero');
+check('ferito resta ferito quando il max sale', hp(applyMaxHp({ hpMax: 30, hpCurrent: 12 }, 40)), [12, 40]);
+check('max sceso sotto gli HP correnti: limitati al nuovo max', hp(applyMaxHp({ hpMax: 30, hpCurrent: 25 }, 20)), [20, 20]);
+check('KO resta KO', hp(applyMaxHp({ hpMax: 30, hpCurrent: 0 }, 40)), [0, 40]);
+check('rientro senza cambi: invariato', hp(applyMaxHp({ hpMax: 30, hpCurrent: 7 }, 30)), [7, 30]);
+check('a piena vita, max alzato: gli HP correnti non salgono da soli', hp(applyMaxHp({ hpMax: 20, hpCurrent: 20 }, 30)), [20, 30]);
+const lowered = applyMaxHp({ hpMax: 30, hpCurrent: 12 }, 12);
+check('abbassare e rialzare il max non cura (12/30 → 12/12 → 12/30)', hp(applyMaxHp(lowered, 30)), [12, 30]);
+check('nodo vecchio senza hpMax: non viene curato', hp(applyMaxHp({ hpCurrent: 5 }, 30)), [5, 30]);
+check('hpCurrent mancante: parte dal nuovo max', hp(applyMaxHp({ hpMax: 30 }, 30)), [30, 30]);
+check('gli HP temporanei non vengono toccati', applyMaxHp({ hpMax: 30, hpCurrent: 12, tempHp: 5 }, 40).tempHp, 5);
+
+group('applyFields');
+check('aggiorna solo i campi passati', applyFields({ name: 'A', hpCurrent: 5 }, { name: 'B' }), { name: 'B', hpCurrent: 5 });
+
+document.getElementById('summary').textContent =
+  fail === 0 ? `✓ ${pass} test passati` : `✗ ${fail} falliti · ${pass} passati`;
+document.getElementById('summary').style.color = fail === 0 ? '#7cc78a' : '#e0685c';
+</script>
+</body>
+</html>

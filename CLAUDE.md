@@ -40,7 +40,7 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | `src/utils/theme.js` | Tema chiaro/notte: `resolveTheme`, `initTheme`, `toggleTheme` — `<html data-theme>` + `localStorage['dnd-theme']` |
 | `src/ui/icons.js` | `icon(name, {size, title})` — icone SVG in tinta unita (`currentColor`); a tema da game-icons.net (crediti in `CREDITS.md`), di servizio disegnate a tratto |
 | `src/logic/combatantRules.js` | Updater puri delle transazioni sul combattente (`applyMaxHp`, `applyFields`) |
-| `test/*.html` | Test in pagina (niente Node): `shapes`, `theme`, `icons` + campionario `componenti.html`; servire con `python3 -m http.server` |
+| `test/*.html` | Test in pagina (niente Node): `shapes`, `theme`, `icons`, `combatantRules` + campionario `componenti.html`; servire con `python3 -m http.server` |
 | `src/utils/presence.js` | `playerColor(uid)` — colore deterministico per giocatore (hash su palette fissa), usato per lock note e cursori live |
 | `src/views/home.js` | Auth UI, libreria personaggi, picker join/creature, sessioni utente salvate |
 | `src/views/sheet.js` | Sheet listener, `makeCallbacks`, `initSheet`, `openCharacterSheet`, `openLibrarySheet`, `bindSheetEvents` |
@@ -54,7 +54,7 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 sessions/{code}/
   masterUid, round, currentTurnId
   gridConfig/  cols, rows                  (dimensioni decise dal master, default 20x20)
-  combatants/{id}/  name, type (player|creature), initiative, hpMax, hpCurrent,
+  combatants/{id}/  name, type (player|creature), initiative, hpMax, hpCurrent, hpPending (true finché la scheda non ha dato l'HP max),
                     conditions/{name: true}, ownerUid, charId, armorClass,
                     currentAction, showHealthHint, inspiration (bool),
                     size (tiny|small|medium|large|huge|gargantuan)
@@ -271,7 +271,7 @@ Nessuno al momento.
 
 **Invarianti:**
 - `updateHp` è atomico: legge `hpMax` e aggiorna `hpCurrent` in un solo `runTransaction`
-- `setMaxHp` e i campi sincronizzati dalla scheda (CA, taglia, livello, velocità, nome, avatar) scrivono con una transazione sul nodo combattente che **non fa nulla se il combattente non esiste** (`applyMaxHp`/`applyFields` in `src/logic/combatantRules.js`): una `set` su un path figlio ricreerebbe a pezzi un combattente rimosso. `setMaxHp` lascia a piena vita chi era a piena vita, altrimenti limita gli HP correnti al nuovo massimo
+- `setMaxHp` e i campi sincronizzati dalla scheda (CA, taglia, livello, velocità, nome, avatar) scrivono con una transazione sul nodo combattente che **non fa nulla se il combattente non esiste** (`applyMaxHp`/`applyFields` in `src/logic/combatantRules.js`): una `set` su un path figlio ricreerebbe a pezzi un combattente rimosso. Chi entra prima che la scheda abbia comunicato l'HP max viene creato col segnaposto 1/1 e `hpPending: true` (`Combatant.add` con `hpMax` null): la prima `setMaxHp` lo porta a piena vita e consuma il segnaposto; in ogni altro caso `setMaxHp` limita soltanto gli HP correnti al nuovo massimo (alzare il massimo non cura)
 - Il rientro (`_rejoinSession` e restore all'avvio in `app.js`) verifica che il combattente salvato esista ancora prima di adottarne l'id
 - Player KO restano nel turno per death saves; creature KO vengono saltate
 - Visibilità HP: master vede tutto · player vede tutti i PG · creature mostrano solo hint opzionale

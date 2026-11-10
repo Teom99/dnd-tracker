@@ -1,18 +1,20 @@
 // Updater puri per le runTransaction sul nodo combattente (vedi Combatant.js).
 // Stanno qui, senza import Firebase, per poterli testare da soli.
 
-// Applica un nuovo HP massimo. Se il combattente era a piena vita ci resta
-// (altrimenti chi entra col placeholder 1/1 e poi riceve l'HP max dalla scheda
-// si ritrovava a 1 HP su N); se era ferito, gli HP correnti vengono solo
-// limitati al nuovo massimo.
+// Applica un nuovo HP massimo.
+// - Chi entra in sessione prima che la scheda abbia detto il suo HP max viene
+//   creato col segnaposto 1/1 e hpPending: alla prima sincronizzazione parte a
+//   piena vita (altrimenti restava a 1 HP su N). Il segnaposto vale una volta.
+// - In ogni altro caso gli HP correnti vengono solo limitati al nuovo massimo:
+//   alzare il massimo non cura mai (né abbassarlo e rialzarlo).
 // Un combattente inesistente (null) resta inesistente: un `?? 0` qui faceva
 // rinascere a 0 HP — cioè morto — un combattente già rimosso dalla sessione.
 export function applyMaxHp(current, hp) {
   if (current == null) return current;
-  const oldMax  = current.hpMax ?? 1;
-  const wasFull = current.hpCurrent == null || current.hpCurrent >= oldMax;
+  const fresh = current.hpPending === true || current.hpCurrent == null;
   current.hpMax     = hp;
-  current.hpCurrent = wasFull ? hp : Math.min(current.hpCurrent, hp);
+  current.hpCurrent = fresh ? hp : Math.min(current.hpCurrent, hp);
+  current.hpPending = null;
   return current;
 }
 

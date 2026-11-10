@@ -36,6 +36,8 @@ export class Combatant {
       charId: charId ?? null,
       size: size || 'medium',
     };
+    // hpMax null = non ancora noto (lo dirà la scheda): segnaposto 1/1, vedi applyMaxHp
+    if (hpMax == null) data.hpPending = true;
     if (armorClass !== null && armorClass !== '') data.armorClass = parseInt(armorClass) || 0;
     if (monsterApiIndex) data.monsterApiIndex = monsterApiIndex;
     await set(newRef, data);

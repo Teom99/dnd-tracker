@@ -897,7 +897,7 @@
 
 .btn-levelup {
   background: linear-gradient(135deg, var(--c-pc), var(--c-pc));
-  color: var(--c-text);
+  color: var(--c-on-accent);
   border: none;
   border-radius: 6px;
   padding: 0.25rem 0.6rem;
@@ -998,7 +998,7 @@
 .lu-feature-level {
   font-size: 0.75rem;
   background: var(--purple-main);
-  color: var(--c-text);
+  color: var(--c-on-accent);
   border-radius: 4px;
   padding: 0.1rem 0.4rem;
   white-space: nowrap;

@@ -875,7 +875,7 @@ button.initiative-value.editable:hover { border-color: var(--gold); color: var(-
   font-size: 0.72rem;
   font-weight: 700;
   background: var(--lock-color, var(--c-mute));
-  color: var(--c-paper-lo);
+  color: var(--c-on-player);
   letter-spacing: 0.03em;
 }
 
