@@ -4,12 +4,12 @@
    GRIGLIA DI BATTAGLIA (esagonale)
 ═══════════════════════════════════════════ */
 .grid-section {
-  background: var(--bg-card);
-  border: 1px solid var(--border-warm);
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule);
   border-top: 1px solid color-mix(in srgb, var(--c-text) 5%, transparent);
-  border-radius: var(--radius);
+  border-radius: var(--r);
   padding: 0.85rem 1rem;
-  box-shadow: var(--shadow), inset 0 1px 0 color-mix(in srgb, var(--c-text) 3%, transparent);
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -29,13 +29,13 @@
 .grid-title {
   font-family: var(--f-display);
   font-size: 0.95rem;
-  color: var(--gold-light);
+  color: var(--c-heading);
   text-align: center;
 }
 
 .grid-hint {
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: var(--c-mute);
   font-style: italic;
   text-align: center;
 }
@@ -52,14 +52,14 @@
   background: var(--c-paper-lo);
   border: 1px solid color-mix(in srgb, var(--c-ally) 16%, var(--c-paper));
   border-radius: 4px;
-  color: var(--text-muted);
+  color: var(--c-mute);
   font-family: var(--f-display);
   font-size: 0.78rem;
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
 }
-.grid-token-chip:hover { border-color: var(--border-warm); color: var(--text); }
-.grid-token-chip.selected { border-color: var(--gold); color: var(--gold); background: color-mix(in srgb, var(--c-heading) 10%, transparent); }
+.grid-token-chip:hover { border-color: var(--c-rule); color: var(--c-text); }
+.grid-token-chip.selected { border-color: var(--c-heading); color: var(--c-heading); background: color-mix(in srgb, var(--c-heading) 10%, transparent); }
 .grid-token-chip.ko { opacity: 0.4; }
 .grid-token-chip.is-player { border-left: 3px solid var(--c-pc); } /* verde = giocatori, come i token */
 
@@ -82,10 +82,10 @@
 }
 
 .grid-zoom-btn {
-  background: var(--bg-card-alt);
-  border: 1px solid var(--border-warm);
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
+  background: var(--c-paper-lo);
+  border: 1px solid var(--c-rule);
+  border-radius: var(--r);
+  color: var(--c-mute);
   cursor: pointer;
   font-size: 0.75rem;
   padding: 0.15rem 0.4rem;
@@ -93,9 +93,9 @@
 }
 
 .grid-zoom-btn:hover {
-  background: var(--bg-hover);
-  color: var(--gold-light);
-  border-color: var(--gold);
+  background: var(--c-paper-lo);
+  color: var(--c-heading);
+  border-color: var(--c-heading);
 }
 
 .grid-layout {
@@ -107,9 +107,9 @@
 
 .grid-initiative-list-container {
   width: 250px;
-  background: var(--bg-card-alt);
-  border: 1px solid var(--border-warm);
-  border-radius: var(--radius);
+  background: var(--c-paper-lo);
+  border: 1px solid var(--c-rule);
+  border-radius: var(--r);
   padding: 0.5rem;
   display: flex;
   flex-direction: column;
@@ -120,11 +120,11 @@
 .grid-initiative-list-title {
   font-family: var(--f-display);
   font-size: 0.85rem;
-  color: var(--gold-light);
+  color: var(--c-heading);
   text-align: center;
   margin: 0;
   padding-bottom: 0.3rem;
-  border-bottom: 1px solid var(--border-warm);
+  border-bottom: 1px solid var(--c-rule);
 }
 
 .grid-initiative-list {
@@ -141,16 +141,16 @@
   justify-content: space-between;
   align-items: center;
   padding: 0.3rem 0.5rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border-warm);
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule);
   border-radius: 4px;
   font-size: 0.85rem;
 }
 
 .grid-initiative-item.active-turn {
-  border-color: var(--gold);
-  background: var(--active-turn-bg);
-  box-shadow: 0 0 8px var(--gold-glow);
+  border-color: var(--c-heading);
+  background: var(--c-paper-lo);
+  box-shadow: 0 0 8px var(--c-reach);
 }
 
 .grid-initiative-name {
@@ -160,12 +160,12 @@
   flex: 1;
 }
 .grid-initiative-item.active-turn .grid-initiative-name {
-  color: var(--gold-light);
+  color: var(--c-heading);
 }
 
 .grid-initiative-dist {
   font-family: var(--f-display);
-  color: var(--text-muted);
+  color: var(--c-mute);
   font-size: 0.75rem;
   white-space: nowrap;
   width: 2.8rem;
@@ -202,13 +202,13 @@
    MODAL UPLOAD SCENA
 ═══════════════════════════════════════════ */
 .scene-upload-content {
-  border-radius: var(--radius);
+  border-radius: var(--r);
   gap: 1rem;
 }
 
 .scene-drop-zone {
-  border: 2px dashed var(--border-warm);
-  border-radius: var(--radius);
+  border: 2px dashed var(--c-rule);
+  border-radius: var(--r);
   padding: 2rem 1.5rem;
   display: flex;
   flex-direction: column;
@@ -222,9 +222,9 @@
 }
 
 .scene-drop-zone.drag-over {
-  border-color: var(--gold);
+  border-color: var(--c-heading);
   border-style: solid;
-  background: var(--gold-glow);
+  background: var(--c-reach);
 }
 
 .scene-drop-zone.uploading {
@@ -235,41 +235,41 @@
 .scene-drop-icon { font-size: 2.4rem; line-height: 1; }
 
 .scene-drop-text {
-  color: var(--text-muted);
+  color: var(--c-mute);
   font-size: 1rem;
 }
 
 .scene-drop-or {
   font-size: 0.82rem;
-  color: var(--text-muted);
+  color: var(--c-mute);
   opacity: 0.7;
 }
 
 .scene-paste-hint {
   font-size: 0.82rem;
-  color: var(--text-muted);
+  color: var(--c-mute);
   margin-top: 0.1rem;
 }
 
 .scene-paste-hint kbd {
-  background: var(--bg-card-alt);
-  border: 1px solid var(--border-warm);
+  background: var(--c-paper-lo);
+  border: 1px solid var(--c-rule);
   border-radius: 4px;
   padding: 0.1rem 0.4rem;
   font-size: 0.8rem;
-  color: var(--text);
+  color: var(--c-text);
 }
 
 /* ═══════════════════════════════════════════
    PANNELLO SCENA
 ═══════════════════════════════════════════ */
 .scene-section {
-  background: var(--bg-card);
-  border: 1px solid var(--border-warm);
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule);
   border-top: 1px solid color-mix(in srgb, var(--c-text) 5%, transparent);
-  border-radius: var(--radius);
+  border-radius: var(--r);
   padding: 0.85rem 1rem;
-  box-shadow: var(--shadow), inset 0 1px 0 color-mix(in srgb, var(--c-text) 3%, transparent);
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -287,19 +287,19 @@
 .scene-title {
   font-family: var(--f-display);
   font-size: 0.95rem;
-  color: var(--gold-light);
+  color: var(--c-heading);
 }
 
 .scene-header-actions { display: flex; gap: 0.4rem; align-items: center; }
 
 .scene-btn { font-size: 0.78rem; min-height: 28px; padding: 0.2rem 0.5rem; }
-.scene-btn-remove:hover { color: var(--red-bright); border-color: var(--red-bright); }
+.scene-btn-remove:hover { color: var(--c-foe); border-color: var(--c-foe); }
 
 #scene-image-link { display: block; }
 
 .scene-image {
   width: 100%;
-  border-radius: var(--radius);
+  border-radius: var(--r);
   max-height: 420px;
   object-fit: contain;
   background: color-mix(in srgb, var(--c-text) 8%, transparent);
@@ -330,12 +330,12 @@
    LOG EVENTI
 ═══════════════════════════════════════════ */
 .event-log-section {
-  background: var(--bg-card);
-  border: 1px solid var(--border-warm);
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule);
   border-top: 1px solid color-mix(in srgb, var(--c-text) 5%, transparent);
-  border-radius: var(--radius);
+  border-radius: var(--r);
   padding: 0.85rem 1rem;
-  box-shadow: var(--shadow), inset 0 1px 0 color-mix(in srgb, var(--c-text) 3%, transparent);
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -353,21 +353,21 @@
 .event-log-title {
   font-family: var(--f-display);
   font-size: 0.95rem;
-  color: var(--gold-light);
+  color: var(--c-heading);
 }
 
 .btn-clear-log {
   background: transparent;
-  border: 1px solid var(--border-warm);
+  border: 1px solid var(--c-rule);
   border-radius: 4px;
-  color: var(--text-muted);
+  color: var(--c-mute);
   font-size: 0.8rem;
   cursor: pointer;
   padding: 0.2rem 0.4rem;
   transition: color 0.15s, border-color 0.15s;
 }
 
-.btn-clear-log:hover { color: var(--red-bright); border-color: var(--red-bright); }
+.btn-clear-log:hover { color: var(--c-foe); border-color: var(--c-foe); }
 
 .event-log {
   display: flex;
@@ -376,16 +376,16 @@
   max-height: 400px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: var(--border-warm) transparent;
+  scrollbar-color: var(--c-rule) transparent;
 }
 
 .event-log::-webkit-scrollbar       { width: 4px; }
 .event-log::-webkit-scrollbar-track { background: transparent; }
-.event-log::-webkit-scrollbar-thumb { background: var(--border-warm); border-radius: 2px; }
+.event-log::-webkit-scrollbar-thumb { background: var(--c-rule); border-radius: 2px; }
 
 .event-entry {
   font-size: 0.85rem;
-  color: var(--text);
+  color: var(--c-text);
   padding: 0.45rem 0.7rem;
   border-radius: 6px;
   border-left: 3px solid;
@@ -411,14 +411,14 @@
 
 .event-entry.damage { border-color: var(--c-foe); background: color-mix(in srgb, var(--c-foe) 10%, transparent); }
 .event-entry.heal   { border-color: var(--c-pc); background: color-mix(in srgb, var(--c-pc) 10%, transparent); }
-.event-entry.turn   { border-color: var(--gold); background: color-mix(in srgb, var(--c-heading) 10%, transparent); }
+.event-entry.turn   { border-color: var(--c-heading); background: color-mix(in srgb, var(--c-heading) 10%, transparent); }
 .event-entry.ko     { border-color: var(--c-mute); background: color-mix(in srgb, var(--c-mute) 10%, transparent); }
 .event-entry.revive { border-color: var(--c-pc); background: color-mix(in srgb, var(--c-pc) 10%, transparent); }
 .event-entry.condition { border-color: var(--c-heading); background: color-mix(in srgb, var(--c-heading) 10%, transparent); }
 
 .event-timestamp {
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: var(--c-mute);
   margin-bottom: 0.2rem;
   font-style: italic;
 }
@@ -546,48 +546,48 @@
   box-shadow: 0 0 0 1px var(--c-shadow);
 }
 .draw-eraser {
-  background: var(--bg2);
-  color: var(--faint);
+  background: var(--c-paper-lo);
+  color: var(--c-mute);
   font-size: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-color: var(--line-strong);
+  border-color: var(--c-rule);
 }
 .draw-eraser.active {
   border-color: var(--c-text);
   box-shadow: 0 0 0 1px var(--c-shadow);
 }
 #btn-draw-toggle.active {
-  color: var(--gold-bright);
-  border-color: var(--gold);
+  color: var(--c-heading);
+  border-color: var(--c-heading);
   border-style: solid;
-  background: var(--gold-faint);
+  background: var(--c-reach);
 }
 #btn-draw-bucket.active {
-  color: var(--gold-bright);
-  border-color: var(--gold);
+  color: var(--c-heading);
+  border-color: var(--c-heading);
   border-style: solid;
-  background: var(--gold-faint);
+  background: var(--c-reach);
 }
 .bucket-color-dot {
   display: inline-block;
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid var(--line-strong);
+  border: 2px solid var(--c-rule);
   background: transparent;
   flex-shrink: 0;
 }
 .bucket-color-dot.is-eraser {
-  background: repeating-linear-gradient(45deg, var(--bg2) 0 2px, transparent 2px 4px);
+  background: repeating-linear-gradient(45deg, var(--c-paper-lo) 0 2px, transparent 2px 4px);
 }
 #btn-draw-shape-square.active,
 #btn-draw-shape-round.active {
-  color: var(--gold-bright);
-  border-color: var(--gold);
+  color: var(--c-heading);
+  border-color: var(--c-heading);
   border-style: solid;
-  background: var(--gold-faint);
+  background: var(--c-reach);
 }
 #btn-draw-shape-square:disabled,
 #btn-draw-shape-round:disabled {
@@ -606,11 +606,11 @@
   align-items: center;
   gap: 0.35rem;
   font-size: 0.72rem;
-  color: var(--text-muted);
+  color: var(--c-mute);
   justify-content: center;
   margin-top: 0.15rem;
 }
-.grid-master-controls label { color: var(--text-muted); }
+.grid-master-controls label { color: var(--c-mute); }
 .grid-edit-controls {
   display: flex;
   flex-wrap: wrap;
@@ -618,9 +618,9 @@
   gap: 0.35rem;
 }
 .grid-zoom-btn.active {
-  background: var(--gold);
+  background: var(--c-heading);
   color: color-mix(in srgb, var(--c-ally) 16%, var(--c-paper));
-  border-color: var(--gold);
+  border-color: var(--c-heading);
 }
 #grid-template-controls button.active {
   background: var(--c-heading);
@@ -629,19 +629,19 @@
 }
 .grid-dim-input {
   width: 3.2rem;
-  background: var(--bg-card-alt);
-  border: 1px solid var(--border-warm);
-  border-radius: var(--radius-sm);
-  color: var(--text);
+  background: var(--c-paper-lo);
+  border: 1px solid var(--c-rule);
+  border-radius: var(--r);
+  color: var(--c-text);
   padding: 0.1rem 0.3rem;
   font-size: 0.72rem;
 }
 .grid-size-label { margin-left: 0.5rem; }
 .grid-dim-select {
-  background: var(--bg-card-alt);
-  border: 1px solid var(--border-warm);
-  border-radius: var(--radius-sm);
-  color: var(--text);
+  background: var(--c-paper-lo);
+  border: 1px solid var(--c-rule);
+  border-radius: var(--r);
+  color: var(--c-text);
   padding: 0.1rem 0.3rem;
   font-size: 0.72rem;
 }

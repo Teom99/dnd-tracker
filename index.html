@@ -86,191 +86,10 @@
       #btn-upgrade-google .upg-lbl { display: none; }
     }
 
-    /* ── COMBAT STAGE ─────────────────────────── */
-    body.in-combat { overflow: hidden; }
-    .combat-stage { height: 100vh; height: 100dvh; min-height: 0; }
-    #view-combat.view { height: 100vh; height: 100dvh; overflow: hidden; }
-    .combat-topbar { gap: 10px; }
-    .session-tag { display: flex; align-items: baseline; gap: 8px; flex: none; }
-    .session-tag .code { font-family: var(--font-display); font-size: 19px; font-weight: 700; letter-spacing: .16em; color: var(--gold-bright); }
-    .turn-banner { flex: 1; text-align: center; min-width: 0; font-family: var(--font-display); font-size: 17px; font-weight: 600; letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .turn-banner .rnd { color: var(--mut); font-family: var(--font-ui); font-size: 10.5px; letter-spacing: .2em; text-transform: uppercase; margin-right: 8px; }
-    .turn-banner b { color: var(--gold-bright); }
-
-    /* 3-column shell */
-    .combat-shell {
-      flex: 1; min-height: 0; overflow: hidden;
-      display: grid;
-      grid-template-columns: clamp(196px, 18vw, 256px) minmax(0, 1fr) clamp(284px, 27vw, 352px);
-      gap: 10px;
-      padding: 10px 12px;
-    }
-    .panel { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
-    .panel-scroll { overflow-y: auto; min-height: 0; flex: 1; display: flex; flex-direction: column; gap: 8px; padding-right: 2px; }
-
-    /* Rail iniziativa */
-    .rail-init .ds-heading { margin-bottom: 8px; flex-shrink: 0; }
-    .rail-init-foot { display: flex; gap: 5px; margin-top: 8px; flex-shrink: 0; }
-    .rail-init-foot .btn { flex: 1; }
-
-    /* Init list (override grid-initiative old style) */
-    #grid-initiative-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
-    #grid-initiative-list-container h3 { display: none; }
-    .grid-initiative-item {
-      position: relative;
-      display: grid; grid-template-columns: 28px 1fr auto;
-      gap: 8px; align-items: center;
-      min-height: 40px; padding: 5px 8px 5px 12px;
-      background: var(--bg1); border: 1px solid var(--line); border-radius: var(--r);
-      cursor: pointer; transition: border-color .18s, background .18s; font-size: 13px; color: var(--bone);
-    }
-    .grid-initiative-item:hover { background: var(--bg2); border-color: var(--line-strong); }
-    .grid-initiative-item.active-turn {
-      border-color: var(--gold-dim);
-      background: linear-gradient(90deg, var(--gold-faint), var(--bg2) 65%);
-    }
-    .grid-initiative-item.active-turn::before { content: ""; position: absolute; left: -1px; top: -1px; bottom: -1px; width: 3px; background: linear-gradient(180deg, var(--gold-bright), var(--gold)); box-shadow: 0 0 10px color-mix(in srgb, var(--c-gold) 50%, transparent); }
-    .grid-initiative-item.ko { opacity: .45; text-decoration: line-through; text-decoration-color: var(--blood); }
-    .grid-initiative-item.selected { border-color: var(--accent-dim); }
-    .grid-initiative-init { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--mut); text-align: center; font-variant-numeric: tabular-nums; }
-    .grid-initiative-item.active-turn .grid-initiative-init { color: var(--gold-bright); }
-    .grid-initiative-name { font-family: var(--font-display); font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .grid-initiative-meta { display: flex; align-items: center; gap: 5px; }
-    .grid-initiative-ko { font-size: 12px; }
-    .grid-initiative-dist { font-family: var(--font-mono); font-size: 10px; color: var(--gold); }
-    .init-faction-dot { width: 5px; height: 5px; transform: rotate(45deg); flex: none; }
-    .init-faction-dot.ally  { background: var(--accent); }
-    .init-faction-dot.enemy { background: var(--blood); }
-
-    /* Grid panel */
-    .stage-grid { position: relative; background: var(--bg1); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
-    .grid-toolbar { position: absolute; top: 0; left: 0; right: 0; z-index: 3; display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: linear-gradient(180deg, color-mix(in oklab, var(--bg0) 82%, transparent), transparent); flex-wrap: wrap; }
-    .grid-hint { font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--faint); }
-    #grid-token-bar { display: flex; gap: 5px; flex-wrap: wrap; }
-    #grid-container { position: absolute; inset: 44px 0 0 0; cursor: grab; touch-action: none; z-index: 2; }
-    #grid-container:active { cursor: grabbing; }
-    #grid-container svg { width: 100%; height: 100%; display: block; }
-    .grid-zoom { position: absolute; right: 8px; bottom: 8px; z-index: 4; display: flex; flex-direction: column; gap: 4px; }
-    .grid-zoom .btn { min-height: 36px; min-width: 36px; padding: 4px; font-size: 14px; background: color-mix(in oklab, var(--bg1) 88%, transparent); }
-
-    /* Side panel tabs */
-    .side-tabs { display: flex; gap: 4px; margin-bottom: 8px; flex-shrink: 0; }
-    .side-tabs button { flex: 1; appearance: none; cursor: pointer; min-height: 34px; padding: 4px; background: transparent; border: 1px solid var(--line); border-radius: var(--r); color: var(--faint); font: 500 10.5px var(--font-ui); letter-spacing: .14em; text-transform: uppercase; transition: color .15s, border-color .15s; }
-    .side-tabs button:hover { color: var(--mut); border-color: var(--line-strong); }
-    .side-tabs button.is-on { color: var(--gold-bright); border-color: var(--gold-dim); background: var(--gold-faint); }
-    .side-pane { display: none; min-height: 0; flex: 1; flex-direction: column; overflow: hidden; }
-    .side-pane.is-on { display: flex; }
-    .log-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-shrink: 0; }
-
-    /* Fight card */
-    ol.combatant-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-    .fight-card {
-      background: linear-gradient(180deg, var(--bg2), var(--bg1) 70%);
-      border: 1px solid var(--line-strong); border-radius: 3px;
-      padding: 10px 11px; display: flex; flex-direction: column; gap: 7px;
-      transition: border-color .2s, box-shadow .2s;
-    }
-    .fight-card.is-active { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold-faint), 0 0 22px color-mix(in srgb, var(--c-gold) 12%, transparent); }
-    .fight-card.is-active::before { content: ""; position: absolute; inset: -1px; pointer-events: none; border-radius: 3px; box-shadow: inset 0 0 24px color-mix(in srgb, var(--c-gold) 7%, transparent); }
-    .fight-card { position: relative; }
-    .fight-card.is-down { filter: saturate(.3) brightness(.8); }
-    .fight-card.dock-selected { border-color: var(--gold-bright); box-shadow: 0 0 0 1px var(--gold); }
-    body.is-master .fight-card { cursor: pointer; }
-    .fight-card .btn.hint-active { color: var(--gold-bright); border-color: var(--gold); border-style: solid; background: var(--gold-faint); }
-    .insp-btn.active { color: var(--gold-bright); border-color: var(--gold); border-style: solid; background: var(--gold-faint); text-shadow: 0 0 8px var(--gold-glow); box-shadow: 0 0 10px var(--gold-glow); }
-    .insp-btn:disabled { cursor: default; opacity: 1; }
-    .fc-top { display: grid; grid-template-columns: 36px 1fr auto auto; gap: 8px; align-items: center; }
-    .fc-portrait { width: 36px; height: 36px; border-radius: 2px; flex: none; font-size: 7px; overflow: hidden; position: relative; }
-    .fc-avatar { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
-    .fc-portrait--upload { cursor: pointer; }
-    .fc-portrait--upload:hover::after { content: '📷'; position: absolute; inset: 0; display: grid; place-items: center; background: var(--c-veil); font-size: 10px; border-radius: 50%; }
-
-    /* Cornice ritratto = barra XP (solo player) */
-    .fc-pframe {
-      width: 36px; height: 36px; padding: 2px; border-radius: 50%; flex: none;
-      background: conic-gradient(var(--gold) calc(var(--xp, 0) * 1turn), var(--line-strong) 0);
-    }
-    .fc-pframe .fc-portrait { width: 100%; height: 100%; border-radius: 50%; background: var(--bg2); }
-    .fc-pframe.lvlup { animation: fc-lvlup-pulse 1.6s ease-in-out infinite; }
-    @keyframes fc-lvlup-pulse {
-      0%, 100% { box-shadow: 0 0 4px color-mix(in srgb, var(--c-gold) 35%, transparent); filter: brightness(.95); }
-      50%      { box-shadow: 0 0 16px color-mix(in srgb, var(--c-gold) 85%, transparent); filter: brightness(1.35); }
-    }
-    @media (prefers-reduced-motion: reduce) { .fc-pframe.lvlup { animation: none; box-shadow: 0 0 10px color-mix(in srgb, var(--c-gold) 60%, transparent); } }
-    .fc-name { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-    .fc-name b { font-family: var(--font-display); font-size: 16px; font-weight: 600; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--bone); }
-    .fc-name span { font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
-    .fc-init { text-align: center; flex: none; min-width: 28px; }
-    .fc-init b { font-family: var(--font-display); font-size: 17px; font-weight: 700; color: var(--mut); display: block; line-height: 1; }
-    .fc-init span { font-size: 7.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); display: block; }
-    .fc-init-b { font-family: var(--font-display); font-size: 17px; font-weight: 700; color: var(--mut); background: none; border: none; border-bottom: 1px dashed var(--line-strong); cursor: pointer; padding: 0; display: block; width: 100%; text-align: center; line-height: 1; }
-    .fc-hp { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-variant-numeric: tabular-nums; margin-top: -5px; }
-    .fc-hp .hp-text { font-weight: 700; font-size: 13px; color: var(--bone); }
-    .fc-conds { display: flex; flex-wrap: wrap; gap: 4px; }
-    .fc-conds:empty { display: none; }
-    .fc-action-note { font-size: 11px; color: var(--mut); font-style: italic; }
-    .fc-action-note.hint-full     { color: var(--accent); }
-    .fc-action-note.hint-good     { color: var(--c-pc); }
-    .fc-action-note.hint-hurt     { color: var(--gold); }
-    .fc-action-note.hint-bad      { color: var(--hp-low); }
-    .fc-action-note.hint-critical { color: var(--red-bright); }
-    .fc-controls { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
-    .fc-controls .attack-amount { width: 64px; flex: none; min-height: 34px; padding: 4px 8px; font-size: 13px; }
-    .hp-max-btn { font: inherit; background: none; border: none; border-radius: 0; border-bottom: 1px dashed var(--line-strong); cursor: pointer; color: inherit; padding: 0; }
-    .ac-edit-btn { font: inherit; background: none; border: none; cursor: pointer; color: inherit; padding: 0; }
-    /* Radius uniforme con i bottoni del tema (override del legacy a 4px) */
-    .fight-card .faction-btn { border-radius: var(--r); }
-    .fight-card .faction-btn.good.active, .fight-card .faction-btn.evil.active { border-radius: var(--r); }
-
-    /* Target chips */
-    .target-chips { display: flex; flex-wrap: wrap; gap: 3px; width: 100%; max-height: 72px; overflow-y: auto; }
-    .target-chip { appearance: none; cursor: pointer; display: inline-flex; align-items: center; padding: 2px 7px; background: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--r); color: var(--faint); font: 500 10px var(--font-ui); letter-spacing: .06em; white-space: nowrap; transition: border-color .12s, color .12s; }
-    .target-chip:hover { border-color: var(--gold-dim); color: var(--bone); }
-    .target-chip.selected { border-color: var(--gold); color: var(--gold-bright); background: var(--gold-faint); }
-
-    /* XP section */
-    .xp-section { display: flex; flex-direction: column; gap: 4px; }
-    .xp-label { font-family: var(--font-mono); font-size: 10.5px; color: var(--faint); }
-    .xp-bar-track { height: 5px; background: color-mix(in srgb, var(--c-text) 11%, transparent); border-radius: 2px; overflow: hidden; }
-    .xp-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; }
-    .btn-levelup { font-size: 10px; }
-    .btn-grant-levelup { font-size: 10px; }
-
-    /* Death saves (fight card) */
-    .death-pips { display: flex; gap: 8px; align-items: center; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--mut); flex-wrap: wrap; }
-    .death-pips .pips { display: flex; gap: 4px; }
-    .death-pips button { appearance: none; cursor: pointer; width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--line-strong); background: transparent; padding: 0; }
-    .death-pips .ok button.on { background: var(--accent); border-color: var(--accent); }
-    .death-pips .ko button.on { background: var(--blood); border-color: var(--blood); }
-
-    /* Log entries */
-    #event-log { display: flex; flex-direction: column; }
-    .log-entry { display: grid; grid-template-columns: 40px 1fr; gap: 8px; padding: 6px 4px; border-bottom: 1px solid var(--line); font-size: 12.5px; color: var(--mut); }
-    .log-entry time { font-family: var(--font-mono); font-size: 9.5px; color: var(--faint); padding-top: 2px; }
-    .log-entry b { color: var(--bone); font-weight: 500; }
-    .log-entry .amt-dmg  { color: var(--c-foe); font-weight: 700; }
-    .log-entry .amt-heal { color: var(--heal); font-weight: 700; }
-    .log-entry--turn { color: var(--gold-bright); }
-
-    /* Note entries */
-    .note-entry { background: var(--bg1); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; }
-    .note-entry h4 { margin: 0 0 2px; font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--bone); }
-    .note-entry .nd { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
-    .note-entry p { margin: 6px 0 0; font-size: 12.5px; color: var(--mut); }
-
-    /* Scene overlay */
-    #scene-section { position: absolute; top: 50px; right: 10px; z-index: 10; width: 300px; max-width: calc(100vw - 20px); border-radius: var(--r); overflow: hidden; box-shadow: 0 4px 20px var(--c-shadow); transition: width .2s ease; }
-    #scene-section.scene-expanded { width: clamp(400px, 55vw, 900px); }
-    #scene-section .scene-image { max-height: 200px; object-fit: cover; }
-    #scene-section.scene-expanded .scene-image { max-height: 75vh; object-fit: contain; background: var(--c-paper-lo); }
-    .scene-header { cursor: grab; user-select: none; }
-    .scene-header:active { cursor: grabbing; }
-
     /* Sheet overlay */
     #view-character { display: none; position: absolute; inset: 56px 0 0 0; z-index: 20; background: var(--bg0); overflow-y: auto; flex-direction: column; }
     body.sheet-only #view-character { display: flex; }
     body.sheet-only .combat-shell { visibility: hidden; }
-    body.sheet-only .tabbar { display: none !important; }
     body.sheet-only:not(.in-combat) .combat-topbar { display: none; }
     .sheet-overlay-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--bg1); position: sticky; top: 0; z-index: 5; flex-shrink: 0; }
     .sheet-back-btn { display: none; }
@@ -501,108 +320,6 @@
 
     /* Menu e controlli master: vedi styles/combat.css */
 
-    /* ── Player dock ── */
-    .my-dock { display: grid; grid-template-columns: 40px minmax(120px,200px) minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 8px 14px; border-top: 1px solid var(--line-strong); background: linear-gradient(180deg, var(--bg1), var(--bg0)); flex-shrink: 0; height: 72px; overflow: hidden; }
-    .my-dock:empty { display: none; }
-    .dock-hint { grid-column: 1 / -1; text-align: center; font-size: 12px; color: var(--faint); font-style: italic; }
-    .dock-portrait { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; border: 1px solid var(--line-strong); overflow: hidden; }
-    .dock-pframe { width: 40px; height: 40px; border-radius: 50%; }
-    .dock-pframe .dock-portrait { width: 100%; height: 100%; border: 0; border-radius: 50%; background: var(--bg2); }
-    .dock-xp { font-family: var(--font-mono); font-size: 10px; color: var(--faint); letter-spacing: .04em; }
-    .dock-id { min-width: 0; }
-    .dock-id b { font-family: var(--font-display); font-size: 16px; font-weight: 700; display: block; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--bone); }
-    .dock-id span { font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--faint); }
-    .dock-vitals { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-    .dock-conds { display: flex; flex-wrap: nowrap; overflow: hidden; gap: 3px; }
-    .dock-actions { display: flex; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
-
-
-    /* Mobile tabbar */
-    .tabbar { display: none; grid-auto-flow: column; grid-auto-columns: 1fr; background: color-mix(in oklab, var(--bg1) 94%, transparent); backdrop-filter: blur(10px); border-top: 1px solid var(--line-strong); padding-bottom: env(safe-area-inset-bottom); flex-shrink: 0; }
-    .tabbar button { appearance: none; background: none; border: 0; cursor: pointer; min-height: 50px; padding: 6px 4px 5px; display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--faint); font: 500 9.5px/1 var(--font-ui); letter-spacing: .12em; text-transform: uppercase; }
-    .tabbar button .ico { font-size: 16px; line-height: 1; }
-    .tabbar button.is-on { color: var(--gold-bright); }
-
-    /* Creature/pet add form */
-    #master-add-form, #player-pet-form { background: var(--bg1); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; }
-    #master-add-form h3, #player-pet-form h3 { font-family: var(--font-display); font-size: 15px; font-weight: 600; color: var(--bone); margin: 0 0 10px; letter-spacing: .06em; }
-    #master-add-form form, #player-pet-form form { display: flex; flex-direction: column; gap: 8px; }
-    #master-add-form input, #player-pet-form input { width: 100%; }
-    .master-panel-title { font-family: var(--font-display); font-size: 14px; font-weight: 600; color: var(--bone); }
-    .empty-msg { font-size: 12.5px; color: var(--faint); text-align: center; padding: 16px 8px; font-style: italic; }
-    .input-row { display: flex; gap: 6px; }
-    .input-row input { flex: 1; min-width: 0; }
-
-    /* Monster search */
-    .monster-api-search { position: relative; }
-    .api-suggestions { position: absolute; top: 100%; left: 0; right: 0; z-index: 50; background: var(--bg2); border: 1px solid var(--line-strong); border-radius: var(--r); max-height: 200px; overflow-y: auto; list-style: none; margin: 2px 0 0; padding: 4px; }
-    .api-suggestions li { padding: 7px 10px; cursor: pointer; font-size: 13px; border-radius: 1px; }
-    .api-suggestions li:hover { background: var(--bg3); color: var(--gold-bright); }
-
-    /* Creature library picker */
-    #creature-library-picker .char-picker-list,
-    #join-char-list { display: flex; flex-wrap: wrap; gap: 6px; }
-
-    /* XP award */
-    .xp-award-targets { max-height: 260px; overflow-y: auto; }
-    .xp-target { display: flex; align-items: center; gap: 10px; padding: 9px 12px; cursor: pointer; background: var(--ink); border: 1px solid var(--line-strong); border-radius: var(--r); transition: border-color .12s; }
-    .xp-target:hover { border-color: var(--gold-dim); }
-    .xp-target.sel { border-color: var(--gold); }
-    .xp-target .box { width: 14px; height: 14px; border: 1px solid var(--line-strong); border-radius: 3px; flex: none; transition: background .12s, border-color .12s; }
-    .xp-target.sel .box { background: var(--gold); border-color: var(--gold-bright); }
-    .xp-target .grow { font-size: 13.5px; color: var(--bone); }
-
-    /* Utility */
-    .or-divider, .char-picker-label { font-size: 11px; color: var(--faint); letter-spacing: .1em; text-transform: uppercase; margin: 4px 0 2px; }
-    #error-message, #error-message-combat, #error-message-sheet { background: color-mix(in srgb, var(--c-foe) 18%, transparent); border: 1px solid var(--blood); border-radius: var(--r); padding: 10px 14px; color: var(--c-foe); font-size: 13px; margin-bottom: 8px; }
-
-    /* Condition modal chips */
-    .condition-option { cursor: pointer; display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border: 1px solid color-mix(in oklab, var(--c,var(--mut)) 55%, transparent); border-radius: 1px; color: color-mix(in oklab, var(--c,var(--mut)) 80%, var(--bone)); font-size: 11px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; background: color-mix(in oklab, var(--c,var(--mut)) 10%, transparent); min-height: 34px; transition: box-shadow .15s, background .15s; }
-    .condition-option:hover { box-shadow: 0 0 12px color-mix(in oklab, var(--c,var(--mut)) 28%, transparent); }
-    .condition-option.active { background: color-mix(in oklab, var(--c,var(--mut)) 24%, transparent); box-shadow: inset 0 0 0 1px var(--c,var(--mut)); }
-
-    /* Faction switch (compact) */
-    .faction-switch { display: flex; gap: 4px; }
-    .faction-btn { appearance: none; cursor: pointer; padding: 2px 8px; border-radius: 1px; font: 500 10px var(--font-ui); letter-spacing: .08em; text-transform: uppercase; border: 1px solid transparent; background: var(--ink); color: var(--faint); }
-    .faction-btn.evil.active { border-color: var(--blood); color: var(--c-foe); background: color-mix(in srgb, var(--c-foe) 14%, transparent); }
-    .faction-btn.good.active { border-color: var(--accent); color: var(--accent); background: color-mix(in srgb, var(--c-pc) 12%, transparent); }
-
-    /* Mobile: 1 column */
-    @media (max-width: 860px) {
-      .combat-shell { display: block; padding: 8px 8px 0; height: calc(100dvh - 56px - 54px); overflow: hidden; }
-      .panel { display: none; height: 100%; }
-      .panel.is-mobile-on { display: flex; }
-      /* La griglia usa block (figli in posizione assoluta) ma SOLO quando è il pannello attivo */
-      #panel-grid.is-mobile-on { display: block; }
-      /* Tabbar in flusso (non fixed) così riserva spazio e non copre il dock */
-      .tabbar { display: grid; position: static; }
-      body.sheet-only .combat-shell { visibility: visible; }
-
-      /* Topbar compatta */
-      .combat-topbar { gap: 8px; padding: 8px 10px; }
-      .session-tag .t-label { display: none; }
-
-      /* Navigazione unica: la tabbar in basso. Niente doppia barra di tab nel pannello destro */
-      .side-tabs { display: none; }
-
-      /* Toolbar griglia: niente testo hint lungo che copre la griglia */
-      .grid-hint { display: none; }
-
-      /* Target touch più comodi */
-      .my-dock .btn { min-height: 40px; }
-      .combat-topbar .btn { min-height: 38px; }
-      .grid-token-chip { min-height: 34px; }
-      .fc-controls .btn { min-height: 36px; }
-    }
-    @media (max-width: 860px) and (min-width: 1px) {
-      body.in-combat .combat-shell { height: auto; flex: 1; overflow: hidden; }
-    }
-    @media (max-width: 600px) {
-      .combat-topbar .turn-banner { display: none; }
-      .my-dock { grid-template-columns: 36px minmax(0,1fr); row-gap: 6px; padding: 8px 10px; height: auto; overflow: visible; }
-      .my-dock .dock-vitals, .my-dock .dock-actions { grid-column: 1 / -1; }
-      .my-dock .dock-actions .btn { flex: 1; }
-    }
   </style>
 </head>
 <body>
@@ -814,12 +531,16 @@
             <ol id="grid-initiative-list" class="grid-initiative-list"></ol>
           </div>
         </div>
+        <p id="empty-creatures-msg" class="empty-msg hidden">Nessuna creatura.</p>
+        <p id="empty-players-msg" class="empty-msg hidden">
+          In attesa dei giocatori…<br><small style="font-size:11px;">Usa il codice sessione per entrare.</small>
+        </p>
         <!-- Piè di pagina master -->
         <div id="master-controls-rail" class="rail-init-foot hidden"></div>
       </aside>
 
       <!-- Griglia (centro) -->
-      <main class="panel stage-grid is-mobile-on" id="panel-grid">
+      <main class="panel stage-grid" id="panel-grid">
         <div class="grid-toolbar">
           <div id="grid-token-bar" class="grid-token-bar"></div>
           <div id="grid-template-controls" style="display:flex; align-items:center; gap:2px;">
@@ -887,25 +608,20 @@
 
       <!-- Rail destra con tab -->
       <aside class="panel rail-right" id="panel-side">
-        <div class="side-tabs" role="tablist">
-          <button data-pane="cards" class="is-on">Carte</button>
-          <button data-pane="log">Diario</button>
-          <button data-pane="notes">Cronache</button>
+        <div class="drawer-head">
+          <h3 class="rule-head" id="drawer-title"></h3>
+          <button id="btn-drawer-close" class="btn btn--ghost btn--sm btn--icon" aria-label="Chiudi pannello" title="Chiudi" data-icon="close"></button>
         </div>
 
         <!-- Tab: Carte combattenti -->
-        <div class="side-pane is-on" data-pane="cards" style="overflow:hidden;">
+        <div class="side-pane" data-pane="cards" style="overflow:hidden;">
           <div class="panel-scroll" id="cards-scroll">
 
             <!-- Lista creature -->
             <ol id="creature-list" class="combatant-list"></ol>
-            <p id="empty-creatures-msg" class="empty-msg hidden">Nessuna creatura.</p>
 
             <!-- Lista giocatori -->
             <ol id="player-list" class="combatant-list"></ol>
-            <p id="empty-players-msg" class="empty-msg hidden">
-              In attesa dei giocatori…<br><small style="font-size:11px;">Usa il codice sessione per entrare.</small>
-            </p>
 
           </div>
         </div>
@@ -913,8 +629,7 @@
         <!-- Tab: Diario eventi -->
         <div class="side-pane" data-pane="log" style="overflow:hidden;">
           <div class="log-head">
-            <span class="t-label">Log eventi</span>
-            <button id="btn-clear-log" class="btn btn--ghost btn--sm">svuota</button>
+            <button id="btn-clear-log" class="btn btn--ghost btn--sm" data-icon="trash"><span class="lbl">Svuota diario</span></button>
           </div>
           <div class="panel-scroll">
             <div id="event-log"></div>
@@ -924,8 +639,7 @@
         <!-- Tab: Cronache campagna -->
         <div class="side-pane" data-pane="notes" style="overflow:hidden;">
           <div class="log-head">
-            <span class="t-label">Cronache</span>
-            <button id="btn-add-session-note" class="btn btn--ghost btn--sm">+ nota</button>
+            <button id="btn-add-session-note" class="btn btn--ghost btn--sm" data-icon="plus"><span class="lbl">Nuova nota</span></button>
           </div>
           <div class="panel-scroll">
             <div id="session-notes-list"></div>
@@ -956,15 +670,6 @@
         <img id="scene-image" class="scene-image" src="" alt="" style="width:100%;display:block;">
       </a>
     </section>
-
-    <!-- Mobile tabbar -->
-    <nav class="tabbar" id="tabbar" aria-label="Sezioni">
-      <button data-tab="grid"  class="is-on"><span class="ico">⬡</span>Battaglia</button>
-      <button data-tab="init"><span class="ico">♜</span>Ordine</button>
-      <button data-tab="cards"><span class="ico">▤</span>Carte</button>
-      <button data-tab="log"><span class="ico">✎</span>Diario</button>
-      <button data-tab="notes"><span class="ico">📖</span>Cronache</button>
-    </nav>
 
     <!-- ── SCHEDA PERSONAGGIO (overlay) ── -->
     <div id="view-character">
@@ -1378,43 +1083,6 @@
   </div>
 
   <script type="module" src="app.js"></script>
-
-  <!-- Tab switching per combat + mobile tabbar -->
-  <script>
-    // Side panel tabs
-    document.addEventListener('click', function(e) {
-      const tabBtn = e.target.closest('.side-tabs button[data-pane]');
-      if (tabBtn) {
-        const pane = tabBtn.dataset.pane;
-        const tabs = tabBtn.closest('.side-tabs');
-        const rail = tabs?.closest('.rail-right') || tabs?.closest('.panel');
-        tabs.querySelectorAll('button').forEach(b => b.classList.toggle('is-on', b.dataset.pane === pane));
-        rail?.querySelectorAll('.side-pane').forEach(p => p.classList.toggle('is-on', p.dataset.pane === pane));
-      }
-    });
-    // Mobile tabbar
-    document.addEventListener('click', function(e) {
-      const tabBtn = e.target.closest('#tabbar button[data-tab]');
-      if (!tabBtn) return;
-      const tab = tabBtn.dataset.tab;
-      document.querySelectorAll('#tabbar button').forEach(b => b.classList.toggle('is-on', b.dataset.tab === tab));
-      // map tab to panel
-      const grid  = document.getElementById('panel-grid');
-      const init  = document.getElementById('panel-init');
-      const side  = document.getElementById('panel-side');
-      if (grid) grid.classList.toggle('is-mobile-on', tab === 'grid');
-      if (init) init.classList.toggle('is-mobile-on', tab === 'init');
-      if (side) {
-        const showSide = (tab === 'cards' || tab === 'log' || tab === 'notes');
-        side.classList.toggle('is-mobile-on', showSide);
-        if (showSide) {
-          const pane = tab === 'log' ? 'log' : tab === 'notes' ? 'notes' : 'cards';
-          side.querySelectorAll('.side-pane').forEach(p => p.classList.toggle('is-on', p.dataset.pane === pane));
-          side.querySelectorAll('.side-tabs button').forEach(b => b.classList.toggle('is-on', b.dataset.pane === pane));
-        }
-      }
-    });
-  </script>
 
   <input type="file" id="avatar-file-input" accept="image/*" style="display:none">
 </body>

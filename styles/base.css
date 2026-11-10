@@ -70,6 +70,7 @@
   color-scheme: dark;
 }
 :root {
+  --c-rule-soft: color-mix(in srgb, var(--c-rule) 55%, transparent);
   --c-dead: var(--c-mute);
   --c-heal: var(--c-pc);
   --c-dmg:  var(--c-foe);

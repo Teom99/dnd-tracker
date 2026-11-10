@@ -8,6 +8,21 @@ import { detailStillValid, readDensity } from '../logic/combatChrome.js';
 
 const view = () => document.getElementById('view-combat');
 
+const DRAWER_TITLES = { detail: 'Dettaglio', log: 'Diario eventi', notes: 'Cronache' };
+
+// Il pannello "Dettaglio" mostra una sola card: tutte le altre si nascondono
+// con una regola CSS generata qui. Funziona anche dopo che la lista viene
+// ricostruita da un render (le card sono ricreate ma il selettore resta valido).
+function _applyDetailStyle() {
+  let el = document.getElementById('detail-style');
+  if (!el) { el = document.createElement('style'); el.id = 'detail-style'; document.head.appendChild(el); }
+  const id = state.ui.detailId;
+  // gli id sono push-key Firebase: si interpola solo se hanno forma sicura
+  el.textContent = (state.ui.drawer === 'detail' && id && /^[-\w]+$/.test(id))
+    ? `#view-combat[data-drawer="detail"] .fight-card:not([data-combatant-id="${id}"]) { display: none; }`
+    : '';
+}
+
 const DEFAULT_UI = () => ({ tool: 'move', menuOpen: false, drawer: null, detailId: null, spellsOpen: false, initSheetOpen: false });
 
 // <el data-icon="nome" [data-icon-size="24"]> → SVG inserito in testa al contenuto
@@ -37,6 +52,10 @@ export function apply() {
   v.dataset.initSheet = ui.initSheetOpen ? 'open' : '';
   v.dataset.density = readDensity();
   document.getElementById('btn-menu')?.setAttribute('aria-expanded', String(ui.menuOpen));
+  const title = document.getElementById('drawer-title');
+  const wanted = DRAWER_TITLES[ui.drawer] ?? '';
+  if (title && title.textContent !== wanted) title.textContent = wanted;
+  _applyDetailStyle();
 }
 
 export function set(patch) {
@@ -61,6 +80,7 @@ export function init() {
       if (e.target.closest('#topbar-more button')) set({ menuOpen: false });
       else if (!menu.contains(e.target)) set({ menuOpen: false });
     }
+    if (e.target.closest('#btn-drawer-close')) { set({ drawer: null, detailId: null }); return; }
     if (e.target.closest('#btn-open-notes')) set({ drawer: 'notes', menuOpen: false });
     else if (e.target.closest('#btn-open-log')) set({ drawer: 'log', menuOpen: false });
   });
@@ -68,6 +88,7 @@ export function init() {
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     if (state.ui.menuOpen) set({ menuOpen: false });
+    else if (state.ui.drawer) set({ drawer: null, detailId: null });
   });
 
   apply();
