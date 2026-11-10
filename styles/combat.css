@@ -1537,3 +1537,51 @@ button.init-num { cursor: pointer; border-bottom: 1px dashed var(--c-rule); }
 .steps[data-step="3"] span[data-step="2"] { text-decoration: line-through; }
 .area-hit { flex-basis: 100%; font-size: 14px; color: var(--c-text); }
 .area-hit:empty { display: none; }
+
+
+/* ═══════════════════════════════════════════
+   DOCK — il proprio personaggio in basso
+═══════════════════════════════════════════ */
+.my-dock {
+  grid-template-columns: 44px minmax(110px, 190px) minmax(150px, 1fr) auto auto;
+  height: auto; min-height: 72px; overflow: visible;
+  border-top: 3px double var(--c-rule);
+  background: var(--c-paper) var(--paper-grain);
+}
+.dock-id b { font-size: 18px; }
+.dock-id span { font: 500 13px var(--f-body); letter-spacing: 0; text-transform: none; color: var(--c-mute); }
+.dock-stat { text-align: center; min-width: 34px; }
+.dock-stat b { display: block; font: 700 20px/1 var(--f-display); font-variant-numeric: tabular-nums; }
+.dock-stat span { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--c-mute); }
+.dock-stat:empty { display: none; }
+.dock-actions .btn { min-height: 36px; }
+.dock-portrait { font: 700 18px var(--f-display); color: var(--c-heading); }
+.chip-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 6px; background: var(--c-pc); border: 1.5px solid var(--c-pc); }
+.chip-dot.foe { background: var(--c-foe); border-color: var(--c-foe); }
+.chip-dot.ally { background: var(--c-ally); border-color: var(--c-ally); }
+
+/* Popover incantesimi */
+.spells-pop {
+  display: none; position: fixed; z-index: 55;
+  left: 14px; bottom: calc(env(safe-area-inset-bottom, 0px) + 86px);
+  width: min(330px, calc(100vw - 28px)); max-height: 60vh; overflow-y: auto;
+  padding: 12px 14px;
+  background: var(--c-paper) var(--paper-grain);
+  border: 1px solid var(--c-rule); border-radius: var(--r);
+  box-shadow: 0 10px 28px var(--c-shadow);
+}
+#view-combat[data-spells="open"] .spells-pop { display: block; }
+.spells-pop .pop-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.spells-pop .pop-head .rule-head { flex: 1; margin: 0; display: flex; align-items: center; gap: 6px; }
+.spells-pop .slot { display: flex; align-items: center; gap: 10px; padding: 4px 0; font-size: 15px; }
+.spells-pop .slot > span:first-child { min-width: 82px; }
+.spells-pop .slot small { margin-left: auto; color: var(--c-mute); font-size: 13px; font-variant-numeric: tabular-nums; }
+.spells-pop .dias { display: inline-flex; gap: 8px; flex-wrap: wrap; }
+.dia { width: 14px; height: 14px; transform: rotate(45deg); border: 2px solid var(--c-heading); background: var(--c-heading); cursor: pointer; padding: 0; }
+.dia.used { background: transparent; }
+.dia:focus-visible { outline: 2px solid var(--c-gold); outline-offset: 3px; }
+.spells-pop .sp-list { margin: 8px 0 10px; }
+.spells-pop .sp-it { display: flex; justify-content: space-between; gap: 8px; padding: 5px 0; border-top: 1px solid var(--c-rule-soft); font-size: 15px; }
+.spells-pop .sp-it small { color: var(--c-mute); }
+.spells-pop .empty-hint { color: var(--c-mute); font-style: italic; margin: 6px 0 10px; }
+@media (max-width: 600px) { .my-dock { grid-template-columns: 40px minmax(0, 1fr) auto; } .my-dock .dock-vitals, .my-dock .dock-actions { grid-column: 1 / -1; } .dock-stat { grid-column: 3; grid-row: 1; } }

@@ -122,6 +122,8 @@ export function setupSheetListener() {
     } else {
       SheetUI.populateSheet(state.sheetData);
     }
+    // Popover incantesimi del dock: si ridisegna se aperto (stessi dati della scheda)
+    if (state.ui?.spellsOpen) UI.renderSpellsPopover(state.sheetData);
     SheetUI.updateComputedValues(state.sheetData);
     SheetUI.renderSaveChecks(state.sheetData.savingThrows);
     SheetUI.renderSkillProfs(state.sheetData.skills);

@@ -435,6 +435,17 @@ document.getElementById('my-dock')?.addEventListener('click', (e) => {
   const subjectId = state.session?.isMaster ? state.selectedDockId : state.myCombatantId;
   if (!subjectId) return;
   if (action === 'dock-conditions') { cb.onOpenConditions?.(subjectId); return; }
+  if (action === 'dock-spells') {
+    const open = !state.ui.spellsOpen;
+    if (open) UI.renderSpellsPopover(state.sheet ? (state.sheetData || {}) : null);
+    CombatChrome.set({ spellsOpen: open });
+    return;
+  }
+  if (action === 'view-stat-block') {
+    const idx = btn.dataset.apiIndex;
+    if (idx) getMonster(idx).then(_renderMonsterStatBlock).catch(() => { /* API non raggiungibile */ });
+    return;
+  }
   if (action === 'dock-sheet')      { cb.onOpenSheet?.(); return; }
   if (action === 'dock-end-turn')   { cb.onEndTurn?.(); return; }
   if (action === 'dock-attack' || action === 'dock-heal') {
@@ -450,6 +461,21 @@ document.getElementById('my-dock')?.addEventListener('click', (e) => {
     cb.onDeathSave?.(type, on ? index : index + 1);
     return;
   }
+});
+
+// Popover incantesimi: i rombi degli slot (stessa scrittura della scheda) e i comandi del popover
+document.getElementById('spells-pop')?.addEventListener('click', (e) => {
+  const dia = e.target.closest('[data-slot-level]');
+  if (dia) {
+    const lvl  = dia.dataset.slotLevel;
+    const slot = state.sheetData?.spellSlots?.[lvl] || {};
+    const max  = slot.max ?? 0, used = slot.used ?? 0;
+    const next = dia.classList.contains('free') ? used + 1 : used - 1;   // rombo pieno = libero → lo uso
+    state.sheet?.setSpellSlotsUsed(lvl, Math.max(0, Math.min(max, next)));
+    return;
+  }
+  if (e.target.closest('#btn-spells-close')) { CombatChrome.set({ spellsOpen: false }); return; }
+  if (e.target.closest('#btn-spells-sheet')) { CombatChrome.set({ spellsOpen: false }); makeCallbacks().onOpenSheet?.(); }
 });
 
 // Dock master: mostra il combattente selezionato (da carte o tabella iniziativa)

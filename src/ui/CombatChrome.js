@@ -99,6 +99,8 @@ export function init() {
       document.dispatchEvent(new CustomEvent('dnd:rerender-grid'));
       return;
     }
+    // Clic fuori dal popover incantesimi lo chiude (il bottone del dock lo alterna da sé)
+    if (state.ui.spellsOpen && !e.target.closest('#spells-pop, [data-action="dock-spells"]')) set({ spellsOpen: false });
     if (e.target.closest('#btn-drawer-close')) { set({ drawer: null, detailId: null }); return; }
     if (e.target.closest('#btn-open-notes')) set({ drawer: 'notes', menuOpen: false });
     else if (e.target.closest('#btn-open-log')) set({ drawer: 'log', menuOpen: false });
@@ -107,6 +109,7 @@ export function init() {
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
     if (state.ui.menuOpen) set({ menuOpen: false });
+    else if (state.ui.spellsOpen) set({ spellsOpen: false });
     else if (state.ui.drawer) set({ drawer: null, detailId: null });
   });
 
