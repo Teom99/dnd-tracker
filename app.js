@@ -19,12 +19,27 @@ import * as ShipUI from './src/ui/ShipUI.js';
 import { captureFocusState, restoreFocusState } from './src/utils/domPreserve.js';
 import { playerColor } from './src/utils/presence.js';
 import { initTheme, toggleTheme } from './src/utils/theme.js';
+import { icon } from './src/ui/icons.js';
 import { updateHomeAuthUI, loadCharacterLibrary, populateJoinPicker, populateCreaturePicker, saveUserSession, loadUserSessions } from './src/views/home.js';
 
 // --- Tema chiaro/notte ---
+// Il bottone mostra il tema a cui si passa: sole in notte, luna in chiaro.
+function _syncThemeButtons() {
+  const night = document.documentElement.dataset.theme === 'night';
+  const label = night ? 'Tema chiaro' : 'Tema notte';
+  const ico   = icon(night ? 'sun' : 'crescent');
+  const home   = document.getElementById('btn-theme-toggle-home');
+  const combat = document.getElementById('btn-theme-toggle-combat');
+  home.innerHTML   = ico;
+  combat.innerHTML = `${ico} <span class="more-lbl">Tema</span>`;
+  for (const b of [home, combat]) { b.setAttribute('aria-label', label); b.title = label; }
+}
 document.getElementById('btn-theme-toggle-home').addEventListener('click', toggleTheme);
 document.getElementById('btn-theme-toggle-combat').addEventListener('click', toggleTheme);
 initTheme();
+// data-theme cambia anche senza click (cambio tema di sistema): si osserva l'attributo
+new MutationObserver(_syncThemeButtons).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+_syncThemeButtons();
 
 // --- Firebase init ---
 const firebaseApp = initializeApp(FIREBASE_CONFIG);

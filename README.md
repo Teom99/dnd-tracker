@@ -111,6 +111,10 @@ Un tracker di combattimento interattivo per Dungeons & Dragons 5e, progettato pe
 
 Vedi [TODO.txt](TODO.txt) per le funzionalità pianificate e i bug noti.
 
+## Crediti
+
+Icone da [game-icons.net](https://game-icons.net), licenza [CC BY 3.0](https://creativecommons.org/licenses/by/3.0/). Elenco e autori in [CREDITS.md](CREDITS.md).
+
 ## Licenza
 
 Vedi il file [LICENSE](LICENSE) per i dettagli.

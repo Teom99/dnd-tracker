@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Test — icone</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background:#0a0c0b; color:#e8e2d2;
+         margin:0; padding:24px 20px 60px; }
+  h1 { font-size:16px; margin:0 0 4px; letter-spacing:.04em; }
+  p.sub { color:#8f8f82; margin:0 0 20px; font-size:12.5px; }
+  h2 { font-size:13px; color:#c9a24a; margin:22px 0 6px; letter-spacing:.08em; text-transform:uppercase; }
+  .t { padding:2px 0 2px 22px; position:relative; }
+  .t::before { position:absolute; left:0; width:16px; }
+  .ok::before  { content:"PASS"; color:#7cc78a; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko::before  { content:"FAIL"; color:#e0685c; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko { color:#e0685c; }
+  .detail { color:#8f8f82; font-size:12px; padding-left:22px; white-space:pre; }
+  #summary { position:fixed; left:0; right:0; bottom:0; padding:12px 20px;
+             background:#161b19; border-top:1px solid #2b3631; font-weight:700; }
+</style>
+</head>
+<body>
+<h1>icons.js — modulo icone</h1>
+<p class="sub">Aprila con un server statico: <code>python3 -m http.server</code> → <code>/test/icons.html</code></p>
+<div id="out"></div>
+<h2>Tutte le icone</h2>
+<div id="gallery" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1px;margin-bottom:60px"></div>
+<div id="summary">✗ modulo non caricato</div>
+
+<script type="module">
+import { icon, ICON_NAMES } from '../src/ui/icons.js';
+
+const out = document.getElementById('out');
+let pass = 0, fail = 0;
+const group = (name) => { const h = document.createElement('h2'); h.textContent = name; out.append(h); };
+function check(label, got, want) {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  ok ? pass++ : fail++;
+  const d = document.createElement('div');
+  d.className = 't ' + (ok ? 'ok' : 'ko');
+  d.textContent = label;
+  out.append(d);
+  if (!ok) {
+    const e = document.createElement('div');
+    e.className = 'detail';
+    e.textContent = `atteso ${JSON.stringify(want)} · ottenuto ${JSON.stringify(got)}`;
+    out.append(e);
+  }
+}
+
+const EXPECTED = ['sword','heal','shield','skull','scroll','spellbook','potion','d20','campfire','moon','ship','picture',
+  'quill','footprints','blast','arrow-flight','brush','bucket','eraser','wall','monster','paw','star','crown','sun','crescent','dragon',
+  'undo','redo','trash','plus','minus','close','menu','more','copy','zoom-in','zoom-out','zoom-reset','chevron','back','check',
+  'edit','eye','eye-off','square','circle','rect','fill','outline'];
+
+group('elenco');
+check('ICON_NAMES contiene esattamente i 50 nomi previsti', [...ICON_NAMES].sort(), [...EXPECTED].sort());
+
+group('ogni icona');
+const bad = { svg: [], color: [], literal: [], draws: [] };
+for (const n of EXPECTED) {
+  const s = icon(n);
+  if (!s.startsWith('<svg')) bad.svg.push(n);
+  if (!/(fill|stroke)="currentColor"/.test(s)) bad.color.push(n);
+  if (/#000|#fff|black|white/i.test(s)) bad.literal.push(n);
+  if (!/<path d="[^"]{8,}"/.test(s)) bad.draws.push(n);
+}
+check('inizia con <svg', bad.svg, []);
+check('usa currentColor (segue il tema)', bad.color, []);
+check('nessun colore letterale (niente sfondo nero di game-icons)', bad.literal, []);
+check('contiene un tracciato', bad.draws, []);
+check('nessun tracciato di sfondo M0 0h512v512H0z', EXPECTED.filter(n => icon(n).includes('M0 0h512v512H0z')), []);
+
+group('opzioni');
+check('decorativa di default: aria-hidden', icon('sword').includes('aria-hidden="true"'), true);
+check('size di default 18', icon('sword').includes('width="18" height="18"'), true);
+check('size personalizzata', icon('sword', { size: 24 }).includes('width="24" height="24"'), true);
+const titled = icon('sword', { title: 'Attacca' });
+check('con title: <title> presente', titled.includes('<title>Attacca</title>'), true);
+check('con title: role="img" e niente aria-hidden', [titled.includes('role="img"'), titled.includes('aria-hidden')], [true, false]);
+check('title con caratteri HTML viene neutralizzato', icon('sword', { title: '<b>"x"' }).includes('<b>'), false);
+
+group('nome sconosciuto');
+const warn = console.warn; let warned = 0; console.warn = () => { warned++; };
+check('ritorna stringa vuota', icon('non-esiste'), '');
+check('nome undefined → stringa vuota', icon(undefined), '');
+console.warn = warn;
+check('avvisa in console', warned, 2);
+
+document.getElementById('gallery').innerHTML = EXPECTED.map(n =>
+  `<div style="padding:10px;text-align:center;background:#161b19">${icon(n, { size: 36 })}<div style="font-size:11px;color:#8f8f82">${n}</div></div>`).join('');
+
+document.getElementById('summary').textContent =
+  fail === 0 ? `✓ ${pass} test passati` : `✗ ${fail} falliti · ${pass} passati`;
+document.getElementById('summary').style.color = fail === 0 ? '#7cc78a' : '#e0685c';
+</script>
+</body>
+</html>
