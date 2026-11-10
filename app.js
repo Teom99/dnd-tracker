@@ -1448,6 +1448,15 @@ async function _rejoinSession(code, savedCombatantId, role, savedCharId = null) 
       UI.showError('Non è possibile recuperare il personaggio.');
       return;
     }
+    // Il combattente può essere stato rimosso mentre eravamo via (reset
+    // incontro, rimozione dal master): rientrare con quell'id lo farebbe
+    // ricreare a pezzi dalla sincronizzazione della scheda.
+    if (!isMaster && !(await get(ref(db, `sessions/${code}/combatants/${savedCombatantId}`))).exists()) {
+      UI.showError('Il tuo personaggio non è più in questa sessione. Rientra con il codice per ricrearlo.');
+      await remove(ref(db, `userSessions/${uid}/${code}`));
+      await loadUserSessions(uid);
+      return;
+    }
     state.myUid         = uid;
     state.myCombatantId = savedCombatantId || null;
     state.lastKnownHp   = null;
@@ -1484,6 +1493,13 @@ async function _rejoinSession(code, savedCombatantId, role, savedCharId = null) 
 
     if (!state.session.isMaster && !savedCombatantId) {
       localStorage.removeItem('dnd_session_code');
+      return;
+    }
+
+    if (!state.session.isMaster &&
+        !(await get(ref(db, `sessions/${savedCode}/combatants/${savedCombatantId}`))).exists()) {
+      localStorage.removeItem('dnd_session_code');
+      localStorage.removeItem('dnd_combatant_id');
       return;
     }
 
