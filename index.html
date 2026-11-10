@@ -589,7 +589,17 @@
             <div id="area-hit" class="area-hit"></div>
           </div>
 
-          <div class="opt opt-traj" id="traj-controls"></div>
+          <div class="opt opt-traj" id="traj-controls">
+            <div id="traj-steps" class="steps" data-step="1">
+              <span data-step="1">1. Tocca chi attacca</span>
+              <span data-step="2">2. Tocca il bersaglio</span>
+            </div>
+            <div class="grp">
+              <button id="btn-traj-cancel" type="button" class="btn btn--sm btn--ghost" style="display:none;"><span class="lbl">Annulla</span></button>
+              <button id="btn-traj-clear" type="button" class="btn btn--sm btn--ghost" style="display:none;" data-icon="trash"><span class="lbl">Rimuovi la mia traiettoria</span></button>
+              <button id="btn-traj-clear-all" type="button" class="btn btn--sm btn--ghost" style="display:none;" data-icon="trash"><span class="lbl">Rimuovi tutte</span></button>
+            </div>
+          </div>
 
           <div class="opt opt-draw">
             <span id="grid-draw-palette" class="draw-palette">

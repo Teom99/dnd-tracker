@@ -163,7 +163,27 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
     state.drawSize,
     state.drawShape,
     (changes) => recordPaintChange(changes),
-    state.drawFill
+    state.drawFill,
+    state.snapshot?.trajectories ?? {},
+    state.trajectoryFrom,
+    state.ui.tool === 'traj',
+    (pick) => {
+      // Primo tocco: chi attacca (serve un segnalino). Secondo: il bersaglio, segnalino o casella.
+      if (!state.trajectoryFrom) {
+        if (pick.tokenId) { state.trajectoryFrom = pick.tokenId; reRender(); document.dispatchEvent(new CustomEvent('dnd:grid-mode-changed')); }
+        return;
+      }
+      if (pick.tokenId === state.trajectoryFrom) {          // ritocco sul punto di partenza: annulla
+        state.trajectoryFrom = null; reRender(); document.dispatchEvent(new CustomEvent('dnd:grid-mode-changed'));
+        return;
+      }
+      const data = { fromId: state.trajectoryFrom };
+      if (pick.tokenId) data.toId = pick.tokenId; else { data.toCol = pick.col; data.toRow = pick.row; }
+      state.session.setTrajectory(state.myUid, data);
+      state.trajectoryFrom = null;
+      reRender();
+      document.dispatchEvent(new CustomEvent('dnd:grid-mode-changed'));
+    }
   );
   renderTokenBar(gridPos, combatants);
   updateTokenSizeControl(combatants);

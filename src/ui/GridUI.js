@@ -1,4 +1,6 @@
 import { icon, iconPath } from './icons.js';
+import { footprintOf, squareDistance } from '../logic/gridMath.js';
+import { trajectoryEndpoints, trajectoryDistance } from '../logic/trajectory.js';
 import { combatantView, healthHintText } from '../logic/visibility.js';
 import { captureFocusState, restoreFocusState } from '../utils/domPreserve.js';
 // Griglia quadrata. 1 cella = 1 m. Dimensioni guidate da gridConfig.
@@ -9,8 +11,7 @@ import { captureFocusState, restoreFocusState } from '../utils/domPreserve.js';
 const CELL = 40;        // lato cella nelle coordinate del viewBox
 const PAD  = 14;        // margine interno (coordinate viewBox) — spazio per etichette nome/distanza
 
-const SIZE_FOOTPRINT = { tiny: 1, small: 1, medium: 1, large: 2, huge: 3, gargantuan: 4 };
-export function footprintOf(size) { return SIZE_FOOTPRINT[size] || 1; }
+export { footprintOf, squareDistance } from '../logic/gridMath.js';
 
 // ─── Stato zoom e pan ─────────────────────────────────────────────────────────
 let _zoom     = 1;
@@ -344,19 +345,6 @@ function _gridToScreen(col, row, svg, container) {
   };
 }
 
-// Separazione su un asse tra due intervalli [a1,a2] e [b1,b2] (0 se si toccano/sovrappongono, +1 se adiacenti)
-function axisDist(a1, a2, b1, b2) {
-  return Math.max(0, Math.max(a1, b1) - Math.min(a2, b2));
-}
-
-// Distanza bordo-a-bordo tra due footprint quadrati, con diagonali alternate
-// (variante DMG: ogni seconda diagonale costa doppio) → max + floor(min/2).
-export function squareDistance(c1, r1, n1, c2, r2, n2) {
-  const dc = axisDist(c1, c1 + n1 - 1, c2, c2 + n2 - 1);
-  const dr = axisDist(r1, r1 + n1 - 1, r2, r2 + n2 - 1);
-  return Math.max(dc, dr) + Math.floor(Math.min(dc, dr) / 2);
-}
-
 function fmtM(d) {
   return d === Math.floor(d) ? `${d}m` : `${d.toFixed(1)}m`;
 }
@@ -541,7 +529,7 @@ export function setCursors(cursorsObj, myUid) {
  * @param onStrokeEnd (changes) => void        — fine di una modifica colore (pennellata, secchiello o forma); changes = [{key, before, after}], per l'undo/redo locale
  * @param drawFill 'outline' | 'filled'        — forme: solo contorno (spesso drawSize caselle) o piene
  */
-export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onSetWall, template, placingShape, templateOrigin, onSetTemplateOrigin, onCommitTemplate, paint, drawMode, drawColor, onSetPaint, onCursorMove, drawTool, onPaintCells, drawSize, drawShape, onStrokeEnd, drawFill) {
+export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onSetWall, template, placingShape, templateOrigin, onSetTemplateOrigin, onCommitTemplate, paint, drawMode, drawColor, onSetPaint, onCursorMove, drawTool, onPaintCells, drawSize, drawShape, onStrokeEnd, drawFill, trajectories, trajectoryFrom, trajTool, onTrajectoryPick) {
   const pos   = gridPos    || {};
   const comb  = combatants || {};
   const wall  = walls      || {};
@@ -610,7 +598,8 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   _totalW = PAD * 2 + cols * CELL;
   _totalH = PAD * 2 + rows * CELL;
 
-  let defs  = '<pattern id="tpl-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="var(--c-foe)" fill-opacity=".10"/><line x1="0" y1="0" x2="0" y2="7" stroke="var(--c-foe)" stroke-opacity=".45" stroke-width="1.5"/></pattern>';
+  let defs  = '<pattern id="tpl-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="var(--c-foe)" fill-opacity=".10"/><line x1="0" y1="0" x2="0" y2="7" stroke="var(--c-foe)" stroke-opacity=".45" stroke-width="1.5"/></pattern>'
+    + '<marker id="traj-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--c-ally)"/></marker>';
   let inner = '';
 
   // 1) Celle di sfondo + muri + raggio di movimento
@@ -679,6 +668,9 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     const rRing  = rOuter - ringW / 2;
     const rBody  = rRing - ringW / 2;
 
+    if (trajectoryFrom && id === trajectoryFrom) {
+      inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 6}" fill="none" stroke="var(--c-ally)" stroke-width="2.5" stroke-dasharray="5 3" pointer-events="none"/>`;
+    }
     if (templateHitIds.has(id)) {
       inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 6}" fill="none" stroke="${TEMPLATE_COLOR}" stroke-width="2" stroke-dasharray="3 3" pointer-events="none"/>`;
     }
@@ -720,6 +712,27 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
       inner += `<text x="${cx}" y="${(y - 3).toFixed(1)}" text-anchor="middle" font-size="11" class="sq-dist" pointer-events="none">${esc(fmtM(d))}</text>`;
     }
   });
+
+  // 2b) Traiettorie: freccia tratteggiata da chi attacca al bersaglio, con la distanza in metri
+  for (const traj of Object.values(trajectories || {})) {
+    const ep = trajectoryEndpoints(traj, pos, comb);
+    if (!ep) continue;   // attaccante/bersaglio rimosso o tolto dalla mappa: non si disegna
+    const a = cellXY(ep.from.col, ep.from.row), b = cellXY(ep.to.col, ep.to.row);
+    const ax = a.x + ep.from.n * CELL / 2, ay = a.y + ep.from.n * CELL / 2;
+    const bx = b.x + ep.to.n * CELL / 2,   by = b.y + ep.to.n * CELL / 2;
+    const len = Math.hypot(bx - ax, by - ay);
+    if (len < 1) continue;
+    const ux = (bx - ax) / len, uy = (by - ay) / len;
+    // la freccia parte dal bordo di chi attacca e si ferma al bordo del bersaglio (o a metà casella)
+    const r0 = ep.from.n * CELL / 2 - 2, r1 = (traj.toId != null) ? ep.to.n * CELL / 2 + 3 : 6;
+    if (len <= r0 + r1) continue;
+    const x1 = ax + ux * r0, y1 = ay + uy * r0, x2 = bx - ux * r1, y2 = by - uy * r1;
+    const label = fmtM(trajectoryDistance(ep));
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, lw = label.length * 7 + 12;
+    inner += `<g pointer-events="none"><line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="var(--c-ally)" stroke-width="2.5" stroke-dasharray="7 5" marker-end="url(#traj-arrow)"/>`
+           + `<rect x="${(mx - lw / 2).toFixed(1)}" y="${(my - 9).toFixed(1)}" width="${lw}" height="18" rx="3" fill="var(--c-paper-hi)" stroke="var(--c-ally)"/>`
+           + `<text x="${mx.toFixed(1)}" y="${(my + 4.5).toFixed(1)}" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--c-text)">${esc(label)}</text></g>`;
+  }
 
   // 3) Hit layer trasparente (intercetta i click su ogni cella)
   for (let row = 0; row < rows; row++) {
@@ -763,6 +776,8 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
       hintEl.textContent = `${TEMPLATE_LABEL[placingShape]}: tocca la cella di origine`;
     } else if (placingShape && templateOrigin) {
       hintEl.textContent = `${TEMPLATE_LABEL[placingShape]}: muovi per orientare, tocca per confermare`;
+    } else if (trajTool) {
+      hintEl.textContent = trajectoryFrom ? 'Tocca il bersaglio: un segnalino o una casella' : 'Tocca il segnalino di chi attacca';
     } else if (editMode && isMaster) {
       hintEl.textContent = 'Imposta le dimensioni e clicca le caselle vuote per i muri';
     } else if (showReach) {
@@ -807,7 +822,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   let ghost = null;
   const removeGhost = () => { ghost?.remove(); ghost = null; };
   function updateGhost(c, r) {
-    const canMoveSel = selectedId && !((editMode && isMaster)) && !drawMode && (isMaster || myOwnedIds.has(selectedId));
+    const canMoveSel = selectedId && !((editMode && isMaster)) && !drawMode && !trajTool && (isMaster || myOwnedIds.has(selectedId));
     if (!canMoveSel || occCell[`${c}_${r}`]) { removeGhost(); return; }   // sopra un token il click seleziona, niente preview
     const ac = c - selOff;
     const ar = r - selOff;
@@ -949,6 +964,12 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
         const size = distM < 0.5 ? TEMPLATE_MIN_M[placingShape] : distM;
         onCommitTemplate(placingShape, templateOrigin.col, templateOrigin.row, size, angleDeg);
       }
+      return;
+    }
+
+    // Traiettoria: il primo tocco sceglie chi attacca, il secondo il bersaglio (segnalino o casella)
+    if (trajTool) {
+      onTrajectoryPick?.({ col, row, tokenId: occupantId ?? null });
       return;
     }
 

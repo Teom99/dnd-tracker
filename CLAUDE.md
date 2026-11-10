@@ -60,6 +60,7 @@ sessions/{code}/
                     size (tiny|small|medium|large|huge|gargantuan)
   grid/{combatantId}/  col, row            (angolo top-left del footprint)
   walls/{col_row}: true
+  trajectories/{uid}/  fromId, toId | toCol+toRow, ownerUid   (una per giocatore: freccia con distanza dal segnalino di chi attacca al bersaglio; durano un turno — le cancella CombatTracker.nextTurn/reset, "Svuota mappa" e chi la rimuove; mai dal listener)
   paint/{col_row}: "#rrggbb"               (colore libero sulla mappa, disegnabile da chiunque)
   template/  shape (circle|cone|line), originCol, originRow, size (metri), angleDeg, ownerUid
              (un solo template attivo per sessione; null se nessuno)

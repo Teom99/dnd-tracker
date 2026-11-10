@@ -227,6 +227,28 @@ export class Session {
   async resetGrid() {
     await set(ref(this._db, `sessions/${this.code}/grid`), null);
     await set(ref(this._db, `sessions/${this.code}/walls`), null);
+    await this.clearAllTrajectories();
+  }
+
+  // Traiettorie: una per giocatore, { fromId, toId | toCol+toRow, ownerUid }.
+  // Si scrivono solo da azioni utente (tracciare, cambio turno, reset), mai dal listener.
+  async setTrajectory(uid, data) {
+    if (!this.code || !uid || !data?.fromId) return;
+    const clean = { fromId: String(data.fromId), ownerUid: uid };
+    if (data.toId != null) clean.toId = String(data.toId);
+    else if (Number.isInteger(data.toCol) && Number.isInteger(data.toRow)) { clean.toCol = data.toCol; clean.toRow = data.toRow; }
+    else return;
+    await set(ref(this._db, `sessions/${this.code}/trajectories/${uid}`), clean);
+  }
+
+  async clearTrajectory(uid) {
+    if (!this.code || !uid) return;
+    await set(ref(this._db, `sessions/${this.code}/trajectories/${uid}`), null);
+  }
+
+  async clearAllTrajectories() {
+    if (!this.code) return;
+    await set(ref(this._db, `sessions/${this.code}/trajectories`), null);
   }
 
   async setTemplate(shape, originCol, originRow, size, angleDeg, ownerUid) {

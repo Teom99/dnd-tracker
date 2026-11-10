@@ -16,10 +16,13 @@ export class CombatTracker {
   async nextTurn(combatants) {
     const active = combatants.filter(c => c.hpCurrent > 0 || c.type === 'player');
     await this._session.nextTurnAtomic(active.map(c => c.id));
+    // Le traiettorie durano un turno: si cancellano qui, da un'azione utente (mai dal listener)
+    await this._session.clearAllTrajectories();
   }
 
   async reset() {
     await this._session.setRound(1);
     await this._session.setCurrentTurnId(null);
+    await this._session.clearAllTrajectories();
   }
 }

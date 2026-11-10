@@ -1191,6 +1191,7 @@ function _syncGridModeUI() {
   _applyDrawControlsUI();
   // Una modalità può cambiare anche da codice esistente (es. area piazzata, modifica muri dal menu):
   // lo strumento mostrato segue sempre lo stato reale.
+  _applyTrajControlsUI();
   const tool = toolFromState({
     gridEditMode: state.gridEditMode, drawMode: state.drawMode,
     templatePlacingShape: state.templatePlacingShape, currentTool: state.ui.tool,
@@ -1198,6 +1199,21 @@ function _syncGridModeUI() {
   if (tool !== state.ui.tool) state.ui.tool = tool;
   CombatChrome.apply();
 }
+
+function _applyTrajControlsUI() {
+  const steps = document.getElementById('traj-steps');
+  if (steps) steps.dataset.step = state.trajectoryFrom ? '2' : '1';
+  const t = state.snapshot?.trajectories ?? {};
+  const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
+  show('btn-traj-cancel',    !!state.trajectoryFrom);
+  show('btn-traj-clear',     !!t[state.myUid]);
+  show('btn-traj-clear-all', !!state.session?.isMaster && Object.keys(t).length > 1);
+}
+document.getElementById('btn-traj-cancel')?.addEventListener('click', () => {
+  state.trajectoryFrom = null; _syncGridModeUI(); _rerenderGridFromSnapshot();
+});
+document.getElementById('btn-traj-clear')?.addEventListener('click', () => state.session.clearTrajectory(state.myUid));
+document.getElementById('btn-traj-clear-all')?.addEventListener('click', () => state.session.clearAllTrajectories());
 
 // Clic su uno dei quattro strumenti. Cambiando strumento si annulla ciò che
 // il precedente aveva a metà (origine area, primo punto della traiettoria, ecc.).
