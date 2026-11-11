@@ -74,30 +74,6 @@
   --c-dead: var(--c-mute);
   --c-heal: var(--c-pc);
   --c-dmg:  var(--c-foe);
-
-  /* ── Alias temporanei dei due vocabolari precedenti ──
-     Tengono in piedi il CSS delle schermate non ancora rifatte: ogni tappa
-     del rework sostituisce nella propria schermata le variabili vecchie con
-     le --c-*; a fine tappa 5 questo blocco va eliminato.
-     Se una schermata rende male si corregge l'alias, non il componente. */
-  --bg-deep: var(--c-paper); --bg0: var(--c-paper); --bg-card: var(--c-paper); --bg1: var(--c-paper);
-  --bg-card-alt: var(--c-paper-lo); --bg2: var(--c-paper-lo); --bg-hover: var(--c-paper-lo); --active-turn-bg: var(--c-paper-lo);
-  --bg3: var(--c-track); --hp-bar-bg: var(--c-track); --hp-bar-border: var(--c-track);
-  --ink: var(--c-paper-hi); --input-bg: var(--c-paper-hi);
-  --text: var(--c-text); --bone: var(--c-text); --text-primary: var(--c-text); --text-bright: var(--c-text);
-  --text-muted: var(--c-mute); --mut: var(--c-mute); --faint: var(--c-mute); --gold-muted: var(--c-mute);
-  --border-warm: var(--c-rule); --line-strong: var(--c-rule); --gold-dim: var(--c-rule);
-  --line: color-mix(in srgb, var(--c-rule) 55%, transparent);
-  --gold: var(--c-heading); --gold-bright: var(--c-heading); --gold-light: var(--c-heading); --purple-main: var(--c-heading);
-  --accent: var(--c-gold); --accent-dim: var(--c-gold);
-  --gold-glow: var(--c-reach); --gold-faint: var(--c-reach); --accent-faint: var(--c-reach);
-  --red: var(--c-foe); --red-bright: var(--c-foe); --blood: var(--c-foe); --danger: var(--c-foe);
-  --blood-deep: color-mix(in srgb, var(--c-foe) 60%, var(--c-text));
-  --green: var(--c-pc); --green-bright: var(--c-pc); --heal: var(--c-pc);
-  --hp-low: var(--c-gold); --hp-fill: var(--c-foe); --hp-trail: var(--c-gold);
-  --font-display: var(--f-display); --font-ui: var(--f-body);
-  --radius: var(--r); --radius-sm: var(--r);
-  --shadow: none;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -140,7 +116,7 @@ body {
 h1 {
   font-family: var(--f-display);
   font-size: 1.9rem;
-  color: var(--gold);
+  color: var(--c-heading);
   text-align: center;
   letter-spacing: 0.07em;
   line-height: 1.2;
@@ -149,7 +125,7 @@ h1 {
 h2 {
   font-family: var(--f-display);
   font-size: 1.1rem;
-  color: var(--gold-light);
+  color: var(--c-heading);
   margin-bottom: 0.5rem;
   letter-spacing: 0.03em;
 }
@@ -157,7 +133,7 @@ h2 {
 h3 {
   font-family: var(--f-display);
   font-size: 1rem;
-  color: var(--gold-light);
+  color: var(--c-heading);
   text-align: center;
   margin-bottom: 0.25rem;
 }
@@ -192,10 +168,10 @@ input[type="text"],
 input[type="number"] {
   width: 100%;
   padding: 0.65rem 0.85rem;
-  background: var(--input-bg);
-  color: var(--text);
-  border: 1px solid var(--border-warm);
-  border-radius: var(--radius);
+  background: var(--c-paper-hi);
+  color: var(--c-text);
+  border: 1px solid var(--c-rule);
+  border-radius: var(--r);
   outline: none;
   min-height: 48px;
   transition: border-color 0.18s, box-shadow 0.18s;
@@ -203,11 +179,11 @@ input[type="number"] {
 
 input[type="text"]:focus,
 input[type="number"]:focus {
-  border-color: var(--gold);
+  border-color: var(--c-heading);
   box-shadow: 0 0 0 2px var(--c-reach);
 }
 
-input::placeholder { color: var(--text-muted); }
+input::placeholder { color: var(--c-mute); }
 
 .input-row {
   display: flex;
@@ -224,7 +200,7 @@ input::placeholder { color: var(--text-muted); }
   border: 1px solid var(--c-foe);
   color: var(--c-foe);
   padding: 0.65rem 0.9rem;
-  border-radius: var(--radius);
+  border-radius: var(--r);
   font-size: 0.95rem;
   text-align: center;
 }
@@ -260,7 +236,7 @@ img { max-width: 100%; display: block; }
 
 /* ── 4. TIPOGRAFIA ─────────────────────────────────────────── */
 .t-display {
-  font-family: var(--font-display);
+  font-family: var(--f-display);
   font-weight: 600;
   letter-spacing: .04em;
   line-height: 1.12;
@@ -279,11 +255,11 @@ img { max-width: 100%; display: block; }
   font-weight: 500;
   letter-spacing: .16em;
   text-transform: uppercase;
-  color: var(--mut);
+  color: var(--c-mute);
 }
 .t-gold  { color: var(--c-heading); }
-.t-mut   { color: var(--mut); }
-.t-mono  { font-family: var(--font-mono); font-size: 12px; color: var(--faint); }
+.t-mut   { color: var(--c-mute); }
+.t-mono  { font-family: var(--font-mono); font-size: 12px; color: var(--c-mute); }
 
 /* ── 5. TITOLI E FILETTI ───────────────────────────────────── */
 /* titolo di sezione: maiuscoletto rosso con filetto oro sotto */
@@ -330,7 +306,6 @@ img { max-width: 100%; display: block; }
   border-radius: var(--r);
   padding: 20px;
 }
-.ds-panel--quiet { background: transparent; }
 
 /* angoli decorativi del vecchio tema: non più disegnati */
 .orn-c { display: none; }
@@ -347,7 +322,7 @@ img { max-width: 100%; display: block; }
 }
 .emblem::after {
   content: ""; position: absolute; inset: -7px;
-  border: 1px solid var(--line); border-radius: 50%;
+  border: 1px solid var(--c-rule-soft); border-radius: 50%;
 }
 .emblem--sm { width: 38px; height: 38px; }
 .emblem--sm::before { width: 14px; height: 14px; }
@@ -424,7 +399,7 @@ img { max-width: 100%; display: block; }
   padding-right: 34px;
 }
 .input--code {
-  font-family: var(--font-display); font-size: 22px; font-weight: 600;
+  font-family: var(--f-display); font-size: 22px; font-weight: 600;
   letter-spacing: .35em; text-transform: uppercase; text-align: center;
 }
 .input--num { text-align: center; font-variant-numeric: tabular-nums; }
@@ -482,64 +457,10 @@ button.chip[aria-pressed="true"] {
   background: var(--c-paper-lo);
   border: 1px solid var(--c-rule);
   display: grid; place-items: center;
-  color: var(--faint);
+  color: var(--c-mute);
   overflow: hidden;
 }
 .portrait > span { font-family: var(--font-mono); font-size: 10px; letter-spacing: .05em; text-align: center; padding: 4px; }
-
-/* ── 11. CARTA COMBATTENTE (stile carta da gioco) ──────────── */
-.cg-card {
-  position: relative;
-  width: 100%;
-  background: var(--c-paper-hi);
-  border: 1px solid var(--c-rule);
-  border-radius: 3px;
-  padding: 10px;
-  display: flex; flex-direction: column; gap: 9px;
-  transition: border-color .2s, box-shadow .2s, transform .2s;
-}
-.cg-card:hover { border-color: var(--c-heading); }
-.cg-card .portrait { aspect-ratio: 5 / 3.4; }
-.cg-card__name { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
-.cg-card__name .t-name { font-size: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cg-card__sub { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--mut); }
-
-/* card del turno attivo */
-.cg-card.is-active { border-color: var(--c-gold); box-shadow: 0 0 0 2px var(--c-gold); }
-.cg-card.is-down { filter: saturate(.25); opacity: .7; }
-
-/* statistiche in pie' di carta */
-.statline { display: flex; gap: 12px; align-items: center; }
-.statline .stat { display: flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--mut); font-variant-numeric: tabular-nums; }
-.statline .stat b { color: var(--bone); font-weight: 700; }
-
-/* ── 12. RIGA INIZIATIVA (rail laterale) ───────────────────── */
-.init-row {
-  position: relative;
-  display: grid; grid-template-columns: 30px 1fr auto; gap: 10px;
-  align-items: center;
-  min-height: var(--tap);
-  padding: 7px 10px 7px 14px;
-  background: var(--bg1);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  cursor: pointer;
-  transition: border-color .18s, background .18s;
-}
-.init-row:hover { background: var(--bg2); border-color: var(--line-strong); }
-.init-row .init-val {
-  font-family: var(--font-display); font-size: 19px; font-weight: 700;
-  color: var(--mut); text-align: center; font-variant-numeric: tabular-nums;
-}
-.init-row .who { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.init-row .who b { font-size: 14px; font-weight: 500; color: var(--bone); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-family: var(--font-display); font-size: 16px; }
-.init-row.is-active { border-color: var(--c-gold); background: var(--c-paper-lo); }
-.init-row.is-active .init-val { color: var(--c-heading); }
-.init-row.is-down { opacity: .45; }
-.init-row.is-down .who b { text-decoration: line-through; text-decoration-color: var(--blood); }
-.init-row .side { width: 5px; height: 5px; transform: rotate(45deg); flex: none; }
-.init-row .side--ally  { background: var(--c-ally); }
-.init-row .side--enemy { background: var(--blood); }
 
 /* ── 13. MODAL ─────────────────────────────────────────────── */
 .veil {
@@ -571,25 +492,6 @@ button.chip[aria-pressed="true"] {
 }
 .topbar .spacer { flex: 1; }
 
-/* tab bar mobile (fissa in basso) */
-.tabbar {
-  position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
-  display: none;
-  grid-auto-flow: column; grid-auto-columns: 1fr;
-  background: var(--c-paper) var(--paper-grain);
-  border-top: 3px double var(--c-rule);
-  padding-bottom: env(safe-area-inset-bottom);
-}
-.tabbar button {
-  appearance: none; background: none; border: 0; cursor: pointer;
-  min-height: 54px; padding: 7px 4px 6px;
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  color: var(--faint);
-  font: 500 11px/1 var(--f-body); letter-spacing: .08em; text-transform: uppercase;
-}
-.tabbar button .ico { font-size: 17px; line-height: 1; }
-.tabbar button.is-on { color: var(--c-heading); font-weight: 700; }
-
 /* ── 16. ANIMAZIONI ────────────────────────────────────────── */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes dmg-flash {
@@ -605,7 +507,6 @@ button.chip[aria-pressed="true"] {
   .anim-dmg  { animation: dmg-flash 2.5s ease-out; }
   .anim-heal { animation: heal-pulse 2.5s ease-out; }
   .anim-in   { animation: ember-in .45s ease-out both; }
-  .log-entry.is-new { animation: log-in .4s ease-out both; }
 }
 
 /* ── 17. UTILITÀ ───────────────────────────────────────────── */
@@ -617,8 +518,8 @@ button.chip[aria-pressed="true"] {
 
 .kbd {
   font-family: var(--font-mono); font-size: 11px;
-  border: 1px solid var(--line-strong); border-bottom-width: 2px;
-  border-radius: 3px; padding: 1px 6px; color: var(--mut);
+  border: 1px solid var(--c-rule); border-bottom-width: 2px;
+  border-radius: 3px; padding: 1px 6px; color: var(--c-mute);
 }
 
 /* scrollbar sottile */

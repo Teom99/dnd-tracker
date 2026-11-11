@@ -113,11 +113,6 @@ img.lib-avatar { object-fit: cover; }
   .lib-grid { grid-template-columns: 1fr; }
   .form-row-2 { grid-template-columns: 1fr; }
 }
-
-/* ═══════════════════════════════════════════
-   CRONACHE (archivio dalla home)
-═══════════════════════════════════════════ */
-.notes-archive-content { max-height: 75dvh; overflow-y: auto; }
 .notes-archive-list { display: flex; flex-direction: column; gap: 10px; }
 .archive-note-entry { background: var(--c-paper-hi); border: 1px solid var(--c-rule); border-radius: var(--r); padding: 10px 14px; }
 .archive-note-header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }

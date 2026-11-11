@@ -1,29 +1,4 @@
-/* ── combat.css — combat view, combatant list, modals, notifications, logs ── */
 
-/* ═══════════════════════════════════════════
-   COMBAT VIEW — header
-═══════════════════════════════════════════ */
-.combat-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--c-paper);
-  border: 1px solid var(--c-rule);
-  border-top: 1px solid color-mix(in srgb, var(--c-text) 6%, transparent);
-  border-radius: var(--r);
-  padding: 0.7rem 1rem;
-  box-shadow: none;
-  gap: 0.5rem;
-}
-
-.session-info {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-}
-
-.session-label { color: var(--c-mute); font-size: 0.85rem; }
 
 .session-code {
   font-family: var(--f-display);
@@ -53,36 +28,8 @@
   white-space: nowrap;
 }
 
-/* ═══════════════════════════════════════════
-   COMBAT VIEW — pannello master (aggiungi creatura)
-═══════════════════════════════════════════ */
-.master-panel {
-  background: var(--c-paper);
-  border: 1px solid var(--c-rule);
-  border-top: 1px solid color-mix(in srgb, var(--c-text) 5%, transparent);
-  border-radius: var(--r);
-  padding: 1rem 1.1rem;
-  box-shadow: none;
-}
-
-.master-panel form { display: flex; flex-direction: column; gap: 0.6rem; }
-.master-panel-title { font-family: var(--f-display); font-size: 0.95rem; margin-bottom: 0.4rem; }
-
-/* ═══════════════════════════════════════════
-   LAYOUT 3 COLONNE COMBAT
-═══════════════════════════════════════════ */
-.combat-cols {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  align-items: start;
-}
-
 /* 3 colonne su schermi larghi quando la scheda è disponibile */
 @media (min-width: 1100px) {
-  body.has-sheet .combat-cols {
-    grid-template-columns: 1fr 1fr 1fr;
-  }
   body.has-sheet #col-sheet {
     display: flex;
     flex-direction: column;
@@ -93,57 +40,20 @@
 #col-sheet {
   display: none;
 }
-
-/* Su mobile con scheda: mostra la scheda a tutta larghezza (sheet-only mode) */
-body.sheet-only .combat-cols > :not(#col-sheet) {
-  display: none;
-}
 body.sheet-only #col-sheet {
   display: flex;
   flex-direction: column;
   grid-column: 1 / -1;
 }
-
-/* Scheda aperta dalla home (non in sessione): nascondi chrome combat */
-body.sheet-only:not(.in-combat) .combat-header  { display: none; }
-body.sheet-only:not(.in-combat) .battle-area    { display: none; }
 body.sheet-only:not(.in-combat) #master-controls { display: none; }
 
 /* Su desktop dalla home: scheda a larghezza contenuta, centrata */
 @media (min-width: 1100px) {
-  body.sheet-only:not(.in-combat) .combat-cols {
-    display: flex;
-    justify-content: center;
-  }
   body.sheet-only:not(.in-combat) #col-sheet {
     grid-column: auto;
     max-width: 620px;
     width: 100%;
   }
-}
-
-@media (max-width: 700px) {
-  .combat-cols { grid-template-columns: 1fr; }
-}
-
-.col-title {
-  font-family: var(--f-display);
-  font-size: 0.8rem;
-  color: var(--c-mute);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding-bottom: 0.4rem;
-  margin-bottom: 0.5rem;
-  border-bottom: 1px solid var(--c-rule);
-}
-
-/* Header interno alla colonna scheda */
-.col-sheet-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
 }
 
 /* Bottone "← Indietro" visibile solo in mobile sheet-only mode */
@@ -152,11 +62,6 @@ body.sheet-only:not(.in-combat) #master-controls { display: none; }
 }
 body.sheet-only .sheet-back-btn {
   display: inline-flex;
-}
-
-/* Nascondi btn-sheet quando la scheda è già embedded nella colonna */
-@media (min-width: 1100px) {
-  body.has-sheet .btn-sheet { display: none; }
 }
 
 /* Scheda embedded: scroll indipendente nella colonna 3 */
@@ -186,84 +91,6 @@ body.sheet-only .sheet-back-btn {
   padding: 2rem 1rem;
   line-height: 1.7;
 }
-
-/* ─── Scheda combattente ─── */
-.combatant-card {
-  background: var(--c-paper);
-  border: 1px solid var(--c-rule);
-  border-left: 3px solid var(--c-rule);
-  border-top: 1px solid color-mix(in srgb, var(--c-text) 4%, transparent);
-  border-radius: var(--r);
-  padding: 0.85rem 0.95rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-  box-shadow: none;
-  transition: border-color 0.22s, box-shadow 0.25s, background 0.22s, opacity 0.22s;
-}
-
-.combatant-card.active-turn {
-  border-left-color: var(--c-heading);
-  background: linear-gradient(170deg, color-mix(in srgb, var(--c-text) 2%, transparent) 0%, var(--c-paper-lo) 100%);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--c-text) 4%, transparent), 0 0 30px var(--c-shadow), 0 0 18px var(--c-reach);
-}
-
-.combatant-card.knocked-out {
-  opacity: 0.4;
-  border-left-color: var(--c-paper-lo);
-  filter: saturate(0.3);
-}
-
-/* ─── Header scheda ─── */
-.card-header {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.turn-number {
-  font-family: var(--f-display);
-  font-size: 0.85rem;
-  color: var(--c-mute);
-  min-width: 1.2rem;
-  text-align: center;
-}
-
-.active-turn .turn-number { color: var(--c-heading); font-weight: bold; }
-
-.card-name-block {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-  min-width: 0;
-}
-
-.combatant-name {
-  font-size: 1.1rem;
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.active-turn .combatant-name { color: var(--c-heading); }
-
-.type-badge {
-  font-size: 0.7rem;
-  font-family: var(--f-display);
-  padding: 0.1rem 0.4rem;
-  border-radius: 3px;
-  letter-spacing: 0.05em;
-  flex-shrink: 0;
-}
-
-.type-badge.player   { background: color-mix(in srgb, var(--c-ally) 16%, var(--c-paper)); color: var(--c-ally); border: 1px solid var(--c-ally); }
-.type-badge.pet      { background: color-mix(in srgb, var(--c-pc) 16%, var(--c-paper)); color: var(--c-pc); border: 1px solid var(--c-pc); }
-.type-badge.creature      { background: color-mix(in srgb, var(--c-foe) 16%, var(--c-paper)); color: var(--c-foe); border: 1px solid var(--c-foe); }
-.type-badge.creature.evil { background: color-mix(in srgb, var(--c-foe) 16%, var(--c-paper)); color: var(--c-foe); border: 1px solid var(--c-foe); }
-.type-badge.creature.good { background: var(--c-paper-lo); color: var(--c-gold); border: 1px solid var(--c-gold); }
 
 .faction-switch {
   display: flex;
@@ -307,35 +134,6 @@ body.sheet-only .sheet-back-btn {
 .faction-btn:hover { opacity: 0.7; }
 .faction-btn.active:hover { opacity: 1; }
 
-.initiative-block { display: flex; align-items: center; }
-
-.initiative-value {
-  font-family: var(--f-display);
-  font-size: 0.9rem;
-  color: var(--c-mute);
-  padding: 0.2rem 0.35rem;
-  white-space: nowrap;
-}
-
-button.initiative-value.editable {
-  background: transparent;
-  border: 1px dashed var(--c-rule);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
-}
-
-button.initiative-value.editable:hover { border-color: var(--c-heading); color: var(--c-heading); }
-
-.initiative-edit-input {
-  width: 3.5rem;
-  min-height: 32px;
-  padding: 0.2rem 0.35rem;
-  font-family: var(--f-display);
-  font-size: 0.9rem;
-  text-align: center;
-}
-
 .hp-max-btn {
   background: transparent;
   border: 1px dashed var(--c-rule);
@@ -347,40 +145,6 @@ button.initiative-value.editable:hover { border-color: var(--c-heading); color: 
   transition: border-color 0.15s, color 0.15s;
 }
 .hp-max-btn:hover { border-color: var(--c-heading); color: var(--c-heading); }
-
-.btn-temp-hp {
-  background: transparent;
-  border: 1px dashed var(--c-rule);
-  border-radius: 4px;
-  color: var(--c-mute);
-  font-size: 0.68rem;
-  font-family: var(--f-display);
-  cursor: pointer;
-  padding: 0.05rem 0.35rem;
-  white-space: nowrap;
-  transition: border-color 0.15s, color 0.15s;
-}
-.btn-temp-hp:hover       { border-color: var(--c-pc); color: var(--c-pc); }
-.btn-temp-hp.active      { border-color: var(--c-pc); border-style: solid; color: var(--c-pc); }
-
-.temp-hp-bar-container {
-  height: 5px;
-  background: var(--c-track);
-  border-radius: 4px;
-  overflow: hidden;
-  border: 1px solid color-mix(in srgb, var(--c-pc) 20%, transparent);
-}
-.temp-hp-bar {
-  height: 100%;
-  border-radius: 4px;
-  background: var(--c-pc);
-  transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.temp-hp-label {
-  font-size: 0.68rem;
-  color: var(--c-pc);
-  font-family: var(--f-display);
-}
 
 .hp-max-edit-input {
   width: 3.5rem;
@@ -410,70 +174,12 @@ button.initiative-value.editable:hover { border-color: var(--c-heading); color: 
 
 .btn-remove:hover { color: var(--c-foe); background: color-mix(in srgb, var(--c-foe) 20%, transparent); }
 
-/* ─── Sezione HP ─── */
-.hp-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.hp-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-}
-
-.hp-label {
-  font-family: var(--f-display);
-  font-size: 0.75rem;
-  color: var(--c-mute);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.hp-numbers {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--c-text);
-}
-
-.hp-numbers.hp-low      { color: var(--c-gold); }
-.hp-numbers.hp-critical { color: var(--c-foe); }
-
-.hp-bar-container {
-  height: 8px;
-  background: var(--c-track);
-  border-radius: 4px;
-  overflow: hidden;
-  border: 1px solid var(--c-track);
-  box-shadow: inset 0 1px 2px var(--c-shadow);
-}
-
 .hp-bar {
   height: 100%;
   border-radius: 4px;
   transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1), background 0.4s ease;
   position: relative;
 }
-
-/* ─── Toggle visibilità salute (solo master, su creature) ─── */
-.btn-health-hint {
-  width: 100%;
-  padding: 0.3rem 0.6rem;
-  background: transparent;
-  border: 1px dashed var(--c-mute);
-  border-radius: 4px;
-  color: var(--c-mute);
-  font-size: 0.78rem;
-  font-family: inherit;
-  cursor: pointer;
-  text-align: left;
-  min-height: 32px;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
-}
-
-.btn-health-hint:hover       { color: var(--c-mute); border-color: var(--c-mute); }
-.btn-health-hint.hint-active { color: var(--c-heading); border-color: var(--c-heading); border-style: solid; background: color-mix(in srgb, var(--c-heading) 12%, transparent); }
 
 /* ─── Suggerimento salute creatura (visibile ai giocatori quando il master lo attiva) ─── */
 .health-hint {
@@ -491,29 +197,6 @@ button.initiative-value.editable:hover { border-color: var(--c-heading); color: 
 .health-hint.hint-critical { color: var(--c-foe); border-color: var(--c-foe); background: color-mix(in srgb, var(--c-foe) 10%, transparent); }
 .health-hint.hint-ko       { color: var(--c-mute);    border-color: var(--c-mute);    background: color-mix(in srgb, var(--c-mute) 10%, transparent); }
 
-/* ─── Pannello azione (arma/incantesimo + bersaglio + danno/cura) ─── */
-.action-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  background: color-mix(in srgb, var(--c-text) 6%, transparent);
-  border: 1px solid var(--c-rule);
-  border-radius: 6px;
-  padding: 0.65rem 0.7rem;
-}
-
-.action-input-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.action-icon-label {
-  font-size: 1rem;
-  flex-shrink: 0;
-  opacity: 0.7;
-}
-
 .action-input {
   flex: 1;
   padding: 0.45rem 0.65rem;
@@ -528,12 +211,6 @@ button.initiative-value.editable:hover { border-color: var(--c-heading); color: 
 
 .action-input:focus  { border-color: var(--c-heading); outline: none; box-shadow: 0 0 0 2px var(--c-reach); }
 .action-input::placeholder { color: var(--c-mute); font-style: italic; }
-
-.attack-row {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
 
 .target-chips {
   display: flex;
@@ -565,12 +242,6 @@ button.initiative-value.editable:hover { border-color: var(--c-heading); color: 
   font-weight: 600;
 }
 
-.attack-controls {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
-
 .attack-amount {
   width: 100%;
   min-height: 48px;
@@ -579,93 +250,6 @@ button.initiative-value.editable:hover { border-color: var(--c-heading); color: 
   font-size: 1.3rem;
   font-weight: 700;
 }
-
-.attack-buttons {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.btn-apply-damage,
-.btn-apply-heal {
-  flex: 1;
-  padding: 0.65rem 0.5rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.95rem;
-  font-family: var(--f-display);
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  min-height: 52px;
-  border: 2px solid transparent;
-  transition: filter 0.15s, transform 0.1s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.3rem;
-}
-
-.btn-apply-damage {
-  background: linear-gradient(160deg, color-mix(in srgb, var(--c-foe) 16%, var(--c-paper)) 0%, color-mix(in srgb, var(--c-foe) 16%, var(--c-paper)) 100%);
-  color: var(--c-foe);
-  border-color: var(--c-foe);
-  text-shadow: 0 1px 3px var(--c-shadow);
-  box-shadow: 0 2px 10px color-mix(in srgb, var(--c-foe) 16%, transparent);
-}
-
-.btn-apply-heal {
-  background: linear-gradient(160deg, color-mix(in srgb, var(--c-pc) 16%, var(--c-paper)) 0%, var(--c-paper-lo) 100%);
-  color: var(--c-pc);
-  border-color: var(--c-pc);
-  text-shadow: 0 1px 3px var(--c-shadow);
-  box-shadow: 0 2px 10px color-mix(in srgb, var(--c-pc) 16%, transparent);
-}
-
-.btn-apply-damage:hover { filter: brightness(1.25); transform: translateY(-2px); box-shadow: 0 5px 20px color-mix(in srgb, var(--c-foe) 50%, transparent); }
-.btn-apply-heal:hover   { filter: brightness(1.25); transform: translateY(-2px); box-shadow: 0 5px 20px color-mix(in srgb, var(--c-pc) 50%, transparent); }
-.btn-apply-damage:active, .btn-apply-heal:active { transform: translateY(0); filter: brightness(0.88); }
-
-/* Testo azione dichiarata (visibile agli altri, read-only) */
-.action-display {
-  font-style: italic;
-  color: var(--c-heading);
-  font-size: 0.9rem;
-  padding: 0.35rem 0.6rem;
-  border-left: 3px solid var(--c-heading);
-  background: color-mix(in srgb, var(--c-gold) 7%, transparent);
-  border-radius: 0 4px 4px 0;
-}
-
-/* ─── Badge condizioni attive ─── */
-.active-conditions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.condition-badge {
-  font-size: 0.75rem;
-  padding: 0.15rem 0.5rem;
-  border-radius: 99px;
-  color: var(--c-text);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-
-/* ─── Bottone apri modal condizioni ─── */
-.btn-conditions {
-  background: transparent;
-  border: 1px dashed var(--c-rule);
-  color: var(--c-mute);
-  border-radius: 4px;
-  padding: 0.3rem 0.6rem;
-  cursor: pointer;
-  font-size: 0.82rem;
-  min-height: 36px;
-  text-align: left;
-  transition: border-color 0.15s, color 0.15s;
-}
-
-.btn-conditions:hover { border-color: var(--c-heading); color: var(--c-heading); }
 
 /* ═══════════════════════════════════════════
    MASTER CONTROLS footer
@@ -691,35 +275,6 @@ button.initiative-value.editable:hover { border-color: var(--c-heading); color: 
   justify-content: center;
   z-index: 100;
   padding: 1rem;
-}
-
-.modal-content {
-  background: var(--c-paper);
-  border: 1px solid var(--c-rule);
-  border-top: 1px solid color-mix(in srgb, var(--c-text) 7%, transparent);
-  border-radius: var(--r) var(--r) 0 0;
-  padding: 1.5rem;
-  width: 100%;
-  max-width: 520px;
-  max-height: 80dvh;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  box-shadow: 0 -10px 50px var(--c-shadow), inset 0 1px 0 color-mix(in srgb, var(--c-text) 5%, transparent);
-}
-
-.modal-hint {
-  text-align: center;
-  font-size: 0.85rem;
-  color: var(--c-mute);
-  font-style: italic;
-}
-
-.condition-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
 }
 
 .condition-option {
@@ -795,17 +350,6 @@ button.initiative-value.editable:hover { border-color: var(--c-heading); color: 
 .notification-damage .ico { color: var(--c-foe); }
 .notification-heal .ico   { color: var(--c-pc); }
 
-/* ═══════════════════════════════════════════
-   COMBAT HEADER — aggiornamenti (exit + right)
-═══════════════════════════════════════════ */
-.combat-header-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.25rem;
-  flex-shrink: 0;
-}
-
 .btn-exit-session {
   padding: 0.25rem 0.55rem;
   background: transparent;
@@ -820,33 +364,6 @@ button.initiative-value.editable:hover { border-color: var(--c-heading); color: 
 }
 
 .btn-exit-session:hover { color: var(--c-foe); border-color: var(--c-foe); }
-
-/* ═══════════════════════════════════════════
-   CRONACHE — Note di sessione
-═══════════════════════════════════════════ */
-.session-notes-section {
-  background: var(--c-paper);
-  border: 1px solid var(--c-rule);
-  border-top: 1px solid color-mix(in srgb, var(--c-text) 5%, transparent);
-  border-radius: var(--r);
-  padding: 0.85rem 1rem;
-  box-shadow: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.session-notes-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.session-notes-title {
-  font-family: var(--f-display);
-  font-size: 0.95rem;
-  color: var(--c-heading);
-}
 
 .session-notes-list {
   display: flex;
@@ -967,15 +484,6 @@ button.initiative-value.editable:hover { border-color: var(--c-heading); color: 
   border-color: var(--c-heading);
   outline: none;
   box-shadow: 0 0 0 2px var(--c-reach);
-}
-
-/* ═══════════════════════════════════════════
-   MODAL — Stat Block Mostro
-═══════════════════════════════════════════ */
-.monster-sb-content {
-  max-width: 560px;
-  gap: 0.75rem;
-  border-radius: var(--r);
 }
 
 .monster-sb-name {
@@ -1208,15 +716,9 @@ body.in-combat { overflow: hidden; }
 .grid-initiative-item.active-turn::before { content: ""; position: absolute; left: -1px; top: -1px; bottom: -1px; width: 3px; background: linear-gradient(180deg, var(--c-heading), var(--c-heading)); box-shadow: 0 0 10px color-mix(in srgb, var(--c-gold) 50%, transparent); }
 .grid-initiative-item.ko { opacity: .45; text-decoration: line-through; text-decoration-color: var(--c-foe); }
 .grid-initiative-item.selected { border-color: var(--c-gold); }
-.grid-initiative-init { font-family: var(--f-display); font-size: 16px; font-weight: 700; color: var(--c-mute); text-align: center; font-variant-numeric: tabular-nums; }
-.grid-initiative-item.active-turn .grid-initiative-init { color: var(--c-heading); }
 .grid-initiative-name { font-family: var(--f-display); font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .grid-initiative-meta { display: flex; align-items: center; gap: 5px; }
-.grid-initiative-ko { font-size: 12px; }
 .grid-initiative-dist { font-family: var(--font-mono); font-size: 10px; color: var(--c-heading); }
-.init-faction-dot { width: 5px; height: 5px; transform: rotate(45deg); flex: none; }
-.init-faction-dot.ally  { background: var(--c-gold); }
-.init-faction-dot.enemy { background: var(--c-foe); }
 
 /* Grid panel */
 .stage-grid { position: relative; background: var(--c-paper); border: 1px solid var(--c-rule-soft); border-radius: var(--r); overflow: hidden; }
@@ -1231,7 +733,6 @@ body.in-combat { overflow: hidden; }
 
 /* Pannello laterale: quale .side-pane è visibile lo decide #view-combat[data-drawer] */
 .side-pane { display: none; min-height: 0; flex: 1; flex-direction: column; overflow: hidden; }
-.side-pane.is-on { display: flex; }
 .log-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; flex-shrink: 0; }
 
 /* Fight card */
@@ -1299,14 +800,9 @@ body.is-master .fight-card { cursor: pointer; }
 .target-chip { appearance: none; cursor: pointer; display: inline-flex; align-items: center; padding: 2px 7px; background: var(--c-paper-hi); border: 1px solid var(--c-rule); border-radius: var(--r); color: var(--c-mute); font: 500 10px var(--f-body); letter-spacing: .06em; white-space: nowrap; transition: border-color .12s, color .12s; }
 .target-chip:hover { border-color: var(--c-rule); color: var(--c-text); }
 .target-chip.selected { border-color: var(--c-heading); color: var(--c-heading); background: var(--c-reach); }
-
-/* XP section */
-.xp-section { display: flex; flex-direction: column; gap: 4px; }
-.xp-label { font-family: var(--font-mono); font-size: 10.5px; color: var(--c-mute); }
 .xp-bar-track { height: 5px; background: color-mix(in srgb, var(--c-text) 11%, transparent); border-radius: 2px; overflow: hidden; }
 .xp-bar-fill { height: 100%; background: var(--c-gold); border-radius: 2px; }
 .btn-levelup { font-size: 10px; }
-.btn-grant-levelup { font-size: 10px; }
 
 /* Death saves (fight card) */
 .death-pips { display: flex; gap: 8px; align-items: center; font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--c-mute); flex-wrap: wrap; }
@@ -1360,7 +856,6 @@ body.is-master .fight-card { cursor: pointer; }
 #master-add-form h3, #player-pet-form h3 { font-family: var(--f-display); font-size: 15px; font-weight: 600; color: var(--c-text); margin: 0 0 10px; letter-spacing: .06em; }
 #master-add-form form, #player-pet-form form { display: flex; flex-direction: column; gap: 8px; }
 #master-add-form input, #player-pet-form input { width: 100%; }
-.master-panel-title { font-family: var(--f-display); font-size: 14px; font-weight: 600; color: var(--c-text); }
 .empty-msg { font-size: 12.5px; color: var(--c-mute); text-align: center; padding: 16px 8px; font-style: italic; }
 .input-row { display: flex; gap: 6px; }
 .input-row input { flex: 1; min-width: 0; }
@@ -1372,7 +867,6 @@ body.is-master .fight-card { cursor: pointer; }
 .api-suggestions li:hover { background: var(--c-track); color: var(--c-heading); }
 
 /* Creature library picker */
-#creature-library-picker .char-picker-list,
 #join-char-list { display: flex; flex-wrap: wrap; gap: 6px; }
 
 /* XP award */

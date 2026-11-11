@@ -1,25 +1,4 @@
-/* ── character.css — character sheet, stat block, spells, inventory, level-up ── */
 
-/* ═══════════════════════════════════════════
-   SCHEDA PERSONAGGIO — header
-═══════════════════════════════════════════ */
-.sheet-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  background: var(--c-paper);
-  border: 1px solid var(--c-rule);
-  border-radius: var(--r);
-  padding: 0.65rem 0.9rem;
-  box-shadow: none;
-}
-
-.sheet-header h1 {
-  flex: 1;
-  font-size: 1.2rem;
-  text-align: left;
-  margin: 0;
-}
 
 .btn-back {
   padding: 0.35rem 0.65rem;
@@ -46,53 +25,6 @@
   gap: 0.6rem;
 }
 
-.sheet-section {
-  background: var(--c-paper);
-  border: 1px solid var(--c-rule);
-  border-top: 1px solid color-mix(in srgb, var(--c-text) 5%, transparent);
-  border-radius: var(--r);
-  box-shadow: none;
-  overflow: hidden;
-  transition: border-color 0.2s;
-}
-
-.sheet-section[open] {
-  border-color: color-mix(in srgb, var(--c-text) 8%, transparent);
-}
-
-.sheet-section > summary {
-  font-family: var(--f-display);
-  font-size: 0.95rem;
-  color: var(--c-heading);
-  padding: 0.8rem 1rem;
-  cursor: pointer;
-  list-style: none;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  user-select: none;
-  transition: background 0.15s, color 0.15s;
-}
-
-.sheet-section > summary::-webkit-details-marker { display: none; }
-.sheet-section > summary::before {
-  content: '▶';
-  font-size: 0.6rem;
-  color: var(--c-mute);
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), color 0.15s;
-  flex-shrink: 0;
-}
-.sheet-section[open] > summary::before { transform: rotate(90deg); color: var(--c-heading); }
-.sheet-section > summary:hover { background: color-mix(in srgb, var(--c-text) 3%, transparent); color: var(--c-heading); }
-
-.sheet-section-body {
-  padding: 0.8rem 1rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  border-top: 1px solid var(--c-rule);
-}
-
 /* ─── Field rows ─── */
 .field-row {
   display: flex;
@@ -107,62 +39,6 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
-
-.field-row-inline {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.field-row-center {
-  align-items: center;
-  text-align: center;
-}
-
-.field-grid-2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem;
-}
-
-.field-grid-3 {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 0.5rem;
-}
-
-.sheet-section-body input[type="text"],
-.sheet-section-body input[type="number"],
-.sheet-section-body textarea {
-  min-height: 40px;
-  padding: 0.45rem 0.6rem;
-  font-size: 0.95rem;
-}
-
-.sheet-section-body textarea {
-  resize: vertical;
-  min-height: 60px;
-  line-height: 1.5;
-}
-
-.sheet-section-body select {
-  width: 100%;
-  padding: 0.45rem 0.6rem;
-  background: var(--c-paper-hi);
-  color: var(--c-text);
-  border: 1px solid var(--c-rule);
-  border-radius: var(--r);
-  font-size: 0.9rem;
-  font-family: inherit;
-  min-height: 40px;
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-
-.sheet-section-body select:focus { border-color: var(--c-heading); outline: none; }
-
-.input-small { max-width: 80px; }
-.input-big   { font-size: 1.4rem; font-weight: 700; text-align: center; min-height: 52px; }
 
 .input-select {
   width: 100%;
@@ -228,23 +104,6 @@
   font-weight: 700;
   min-height: 44px;
   width: 100%;
-}
-
-.ability-mod {
-  font-family: var(--f-display);
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--c-heading);
-}
-
-/* ─── Computed big display ─── */
-.computed-big {
-  font-family: var(--f-display);
-  font-size: 1.4rem;
-  font-weight: 700;
-  color: var(--c-heading);
-  display: block;
-  text-align: center;
 }
 
 /* ─── Saving throws ─── */
@@ -319,56 +178,11 @@
 .skill-ability { font-size: 0.75rem; color: var(--c-mute); font-family: var(--f-display); min-width: 2.2rem; text-align: center; }
 .skill-total   { font-family: var(--f-display); font-size: 0.9rem; color: var(--c-heading); min-width: 2.5rem; text-align: right; }
 
-.passive-perception-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.4rem 0.5rem;
-  background: var(--c-paper-lo);
-  border-radius: 4px;
-  border: 1px solid var(--c-rule);
-  margin-top: 0.3rem;
-}
-
-.passive-label { font-size: 0.85rem; color: var(--c-mute); }
-.passive-value { font-family: var(--f-display); font-size: 1rem; color: var(--c-heading); }
-
-/* ─── Death saves ─── */
-.death-saves-section {
-  background: var(--c-paper-lo);
-  border: 1px solid var(--c-rule);
-  border-radius: var(--r);
-  padding: 0.65rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-}
-
-.death-saves-label {
-  font-family: var(--f-display);
-  font-size: 0.8rem;
-  color: var(--c-mute);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  text-align: center;
-}
-
 .death-saves-row {
   display: flex;
   align-items: center;
   gap: 0.6rem;
 }
-
-.death-save-type {
-  font-size: 0.82rem;
-  min-width: 72px;
-  font-family: var(--f-display);
-}
-
-.death-save-type.success { color: var(--c-pc); }
-.death-save-type.failure { color: var(--c-foe); }
-
-.death-save-pips { display: flex; gap: 0.5rem; }
 
 .death-pip {
   background: transparent;
@@ -392,24 +206,6 @@
 /* ─── Attacks ─── */
 .attacks-list { display: flex; flex-direction: column; gap: 0.4rem; }
 
-.attack-entry {
-  background: var(--c-paper-lo);
-  border: 1px solid var(--c-rule);
-  border-radius: 6px;
-  padding: 0.5rem 0.65rem;
-}
-
-.attack-row-main {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.attack-entry-name { flex: 1; font-size: 0.95rem; font-weight: 600; min-width: 0; }
-.attack-stat       { font-family: var(--f-display); font-size: 0.85rem; color: var(--c-heading); background: color-mix(in srgb, var(--c-heading) 10%, transparent); border: 1px solid color-mix(in srgb, var(--c-heading) 30%, transparent); border-radius: 4px; padding: 0.1rem 0.4rem; white-space: nowrap; }
-.attack-damage     { font-size: 0.85rem; color: var(--c-mute); white-space: nowrap; }
-
 /* ─── Small remove button ─── */
 .btn-remove-sm {
   background: transparent;
@@ -429,51 +225,6 @@
 }
 
 .btn-remove-sm:hover { color: var(--c-foe); background: color-mix(in srgb, var(--c-foe) 20%, transparent); }
-
-.btn-edit-sm {
-  background: transparent;
-  border: none;
-  color: var(--c-mute);
-  font-size: 0.9rem;
-  cursor: pointer;
-  padding: 0.15rem 0.35rem;
-  border-radius: 4px;
-  min-height: 28px;
-  min-width: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: color 0.15s, background 0.15s;
-}
-
-.btn-edit-sm:hover { color: var(--c-heading); background: color-mix(in srgb, var(--c-gold) 10%, transparent); }
-
-.btn-save-sm, .btn-cancel-sm {
-  background: transparent;
-  border: none;
-  font-size: 1rem;
-  cursor: pointer;
-  padding: 0.15rem 0.35rem;
-  border-radius: 4px;
-  min-height: 28px;
-  min-width: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: color 0.15s, background 0.15s;
-}
-.btn-save-sm   { color: var(--c-pc); }
-.btn-save-sm:hover   { background: color-mix(in srgb, var(--c-pc) 15%, transparent); }
-.btn-cancel-sm { color: var(--c-mute); }
-.btn-cancel-sm:hover { color: var(--c-foe); background: color-mix(in srgb, var(--c-foe) 10%, transparent); }
-
-.item-actions {
-  display: flex;
-  gap: 0.2rem;
-  align-items: center;
-}
 
 /* ─── Add forms ─── */
 .add-form {
@@ -504,13 +255,6 @@
 
 .add-form-inline input { flex: 1; }
 
-.btn-sm {
-  padding: 0.35rem 0.7rem;
-  min-height: 36px;
-  font-size: 0.85rem;
-  white-space: nowrap;
-}
-
 .checkbox-label {
   display: flex;
   align-items: center;
@@ -535,16 +279,6 @@
 
 /* ─── Magic stats ─── */
 .magic-stats { margin-bottom: 0.25rem; }
-.subsection-title {
-  font-family: var(--f-display);
-  font-size: 0.82rem;
-  color: var(--c-mute);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-top: 0.25rem;
-  border-bottom: 1px solid var(--c-rule);
-  padding-bottom: 0.2rem;
-}
 
 /* ─── Spell slots ─── */
 .spell-slots-list { display: flex; flex-direction: column; gap: 0.35rem; }
@@ -566,21 +300,6 @@
   min-width: 1.6rem;
 }
 
-.slot-pips {
-  flex: 1;
-  display: flex;
-  gap: 0.3rem;
-  flex-wrap: wrap;
-}
-
-.slot-none { font-size: 0.8rem; color: var(--c-mute); }
-
-.slot-counter {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
 .slot-count {
   min-width: 1.4rem;
   text-align: center;
@@ -590,18 +309,6 @@
 }
 .slot-count.used { color: var(--c-foe); }
 
-.slot-sep {
-  font-size: 0.7rem;
-  color: var(--c-mute);
-  white-space: nowrap;
-}
-
-.slot-slash {
-  font-size: 0.85rem;
-  color: var(--c-mute);
-  padding: 0 0.1rem;
-}
-
 .slot-max-input {
   width: 42px !important;
   min-height: 28px !important;
@@ -610,38 +317,8 @@
   font-size: 0.9rem;
 }
 
-.btn-slot-adj {
-  background: var(--c-paper);
-  border: 1px solid var(--c-rule);
-  border-radius: 4px;
-  color: var(--c-mute);
-  width: 24px;
-  height: 24px;
-  font-size: 1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  line-height: 1;
-  transition: color 0.15s, border-color 0.15s;
-}
-.btn-slot-adj:hover:not(:disabled) { color: var(--c-heading); border-color: var(--c-heading); }
-.btn-slot-adj:disabled { opacity: 0.3; cursor: default; }
-
 /* ─── Cantrips ─── */
 .cantrip-list { display: flex; flex-direction: column; gap: 0.3rem; }
-
-.cantrip-entry {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--c-paper-lo);
-  border: 1px solid var(--c-rule);
-  border-radius: 4px;
-  padding: 0.35rem 0.55rem;
-  font-size: 0.9rem;
-}
 
 /* ─── Spells by level ─── */
 .spell-level-block {
@@ -659,37 +336,6 @@
 }
 
 .spell-level-entries { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.3rem; }
-
-.spell-entry {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: var(--c-paper-lo);
-  border: 1px solid var(--c-rule);
-  border-radius: 4px;
-  padding: 0.3rem 0.5rem;
-}
-
-.spell-prepared {
-  background: transparent;
-  border: 1.5px solid var(--c-mute);
-  border-radius: 50%;
-  width: 26px;
-  height: 26px;
-  cursor: pointer;
-  font-size: 0.8rem;
-  color: var(--c-mute);
-  flex-shrink: 0;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-}
-
-.spell-prepared.prepared { border-color: var(--c-heading); color: var(--c-heading); background: color-mix(in srgb, var(--c-heading) 14%, transparent); }
-
-.spell-name { flex: 1; font-size: 0.9rem; }
 
 /* ─── Inventory ─── */
 .inventory-list { display: flex; flex-direction: column; gap: 0.3rem; }
@@ -726,9 +372,6 @@
 }
 
 .item-qty   { font-family: var(--f-display); font-size: 0.8rem; color: var(--c-mute); min-width: 2rem; padding-top: 0.1rem; }
-.item-qty.clickable { cursor: pointer; transition: color 0.15s; }
-.item-qty.clickable:hover { color: var(--c-heading); }
-.item-main-content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .item-name  { font-size: 0.9rem; font-weight: 500; }
 .item-notes { font-size: 0.8rem; color: var(--c-mute); font-style: italic; display: block; }
 
@@ -739,32 +382,6 @@
   gap: 0.4rem;
 }
 
-.currency-block {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.2rem;
-  background: var(--c-paper-lo);
-  border: 1px solid var(--c-rule);
-  border-radius: var(--r);
-  padding: 0.4rem 0.25rem;
-}
-
-.currency-block label {
-  font-family: var(--f-display);
-  font-size: 0.72rem;
-  color: var(--c-heading);
-  letter-spacing: 0.06em;
-}
-
-.currency-block input {
-  text-align: center;
-  padding: 0.2rem;
-  min-height: 36px;
-  font-size: 0.9rem;
-  width: 100%;
-}
-
 /* ─── Empty hints ─── */
 .empty-hint {
   font-size: 0.85rem;
@@ -773,124 +390,12 @@
   text-align: center;
   padding: 0.4rem;
 }
-
-/* ─── Sheet button on combat card ─── */
-.btn-stat-block {
-  width: 100%;
-  padding: 0.3rem 0.6rem;
-  background: transparent;
-  border: 1px dashed color-mix(in srgb, var(--c-text) 20%, transparent);
-  color: var(--c-mute);
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.82rem;
-  font-family: var(--f-display);
-  min-height: 34px;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-
-.btn-stat-block:hover { background: color-mix(in srgb, var(--c-text) 4%, transparent); border-color: var(--c-heading); color: var(--c-heading); }
-
-.btn-sheet {
-  width: 100%;
-  padding: 0.3rem 0.6rem;
-  background: transparent;
-  border: 1px dashed var(--c-heading);
-  color: var(--c-heading);
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.82rem;
-  font-family: var(--f-display);
-  min-height: 34px;
-  transition: background 0.15s, color 0.15s;
-}
-
-.btn-sheet:hover { background: color-mix(in srgb, var(--c-heading) 14%, transparent); }
-
-/* ─── Death saves inline nella card KO ─── */
-.death-saves-inline {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  padding: 0.5rem 0.6rem;
-  background: color-mix(in srgb, var(--c-foe) 15%, transparent);
-  border: 1px solid color-mix(in srgb, var(--c-foe) 40%, transparent);
-  border-radius: 6px;
-}
-
-.ds-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.ds-label {
-  font-size: 0.75rem;
-  color: var(--c-mute);
-  width: 5rem;
-  flex-shrink: 0;
-}
-
-.ds-pip {
-  background: transparent;
-  border: none;
-  font-size: 1.1rem;
-  cursor: pointer;
-  padding: 0 0.1rem;
-  line-height: 1;
-  color: var(--c-mute);
-  transition: color 0.15s;
-}
-.ds-pip:hover { color: var(--c-text); }
-.ds-pip.filled { color: var(--c-foe); }
-
-.btn-end-turn {
-  width: 100%;
-  padding: 0.4rem 0.6rem;
-  background: linear-gradient(160deg, color-mix(in srgb, var(--c-pc) 16%, var(--c-paper)) 0%, var(--c-paper-lo) 100%);
-  border: 1px solid color-mix(in srgb, var(--c-pc) 40%, transparent);
-  color: var(--c-pc);
-  border-radius: 8px;
-  font-family: var(--f-display);
-  font-size: 0.85rem;
-  cursor: pointer;
-  min-height: 38px;
-  transition: background 0.18s, border-color 0.18s, box-shadow 0.18s;
-  text-shadow: 0 1px 3px var(--c-shadow);
-}
-.btn-end-turn:hover {
-  background: linear-gradient(160deg, color-mix(in srgb, var(--c-pc) 16%, var(--c-paper)) 0%, color-mix(in srgb, var(--c-pc) 16%, var(--c-paper)) 100%);
-  border-color: color-mix(in srgb, var(--c-pc) 50%, transparent);
-  box-shadow: 0 0 12px color-mix(in srgb, var(--c-pc) 30%, transparent);
-}
-
-/* ─── XP / Progressione ─── */
-.xp-section     { padding: 4px 12px 6px; }
-.xp-label       { font-size: 0.78rem; color: var(--c-mute); display: block; }
 .xp-bar-track   { height: 5px; background: color-mix(in srgb, var(--c-text) 8%, transparent); border-radius: 3px; margin-top: 4px; overflow: hidden; }
 .xp-bar-fill    { height: 100%; background: var(--c-ally); border-radius: 3px; }
-.levelup-badge  { font-size: 0.78rem; color: var(--c-gold); padding: 2px 12px 4px; font-weight: 700; display: block; }
 .btn-levelup    { margin: 2px 12px 6px; }
-.btn-grant-levelup { margin: 2px 12px 6px; }
-.xp-award-players { padding: 4px 0 4px; }
-.xp-player-row  { display: flex; align-items: center; gap: 0.5rem; padding: 4px 0; font-size: 0.85rem; cursor: pointer; }
-.xp-player-meta { color: var(--c-mute); font-size: 0.75rem; margin-left: auto; }
-
-/* ─── CA badge on combat card ─── */
-.ac-badge {
-  font-size: 0.78rem;
-  font-family: var(--f-display);
-  color: var(--c-ally);
-  background: color-mix(in srgb, var(--c-ally) 20%, transparent);
-  border: 1px solid var(--c-ally);
-  border-radius: 4px;
-  padding: 0.1rem 0.35rem;
-  white-space: nowrap;
-}
 
 @media (min-width: 600px) {
   .ability-grid { grid-template-columns: repeat(6, 1fr); }
-  .field-grid-3 { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* ─── Level Up / Class Features ─────────────────────────────────────── */
@@ -908,16 +413,6 @@
   transition: opacity 0.2s;
 }
 .btn-levelup:hover { opacity: 0.85; }
-
-.field-row-levelup { align-items: center; }
-
-/* Modal level-up */
-.levelup-modal-content {
-  max-width: 560px;
-  max-height: 85vh;
-  overflow-y: auto;
-  border-radius: var(--r);
-}
 
 .levelup-modal-body { margin: 0.5rem 0 1rem; }
 
@@ -1016,16 +511,6 @@
   resize: vertical;
   font-family: var(--f-body);
   line-height: 1.4;
-}
-
-.lu-add-feature-form { margin-top: 0.5rem; }
-
-.modal-footer {
-  display: flex;
-  gap: 0.75rem;
-  justify-content: flex-end;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--c-rule);
 }
 
 /* Class features in sheet */
@@ -1192,7 +677,6 @@ body.sheet-only .sheet-back-btn { display: inline-flex; }
 .xp-line .hpbar .fill { background: linear-gradient(180deg, var(--c-heading), var(--c-heading)); box-shadow: none; }
 .sheet-head-actions { display: flex; flex-direction: column; gap: 8px; }
 .sheet-grid { display: grid; grid-template-columns: 5fr 7fr; gap: 18px; margin-top: 18px; align-items: start; }
-.sheet-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
 @media (max-width: 880px) {
   .sheet-grid { grid-template-columns: 1fr; }
   #view-character .sheet-head { grid-template-columns: 64px 1fr; }
@@ -1200,20 +684,6 @@ body.sheet-only .sheet-back-btn { display: inline-flex; }
   .sheet-head-actions { grid-column: 1 / -1; flex-direction: row; }
   .sheet-head-actions .btn { flex: 1; }
 }
-
-/* sezioni a soffietto */
-details.tome { background: linear-gradient(180deg, var(--c-paper-lo), var(--c-paper) 70%); border: 1px solid var(--c-rule-soft); border-radius: var(--r); }
-details.tome > summary {
-  list-style: none; cursor: pointer; user-select: none;
-  display: flex; align-items: center; gap: 12px;
-  padding: 13px 16px;
-  font-family: var(--f-display); font-size: 17px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--c-text);
-}
-details.tome > summary::-webkit-details-marker { display: none; }
-details.tome > summary::before { content: ""; width: 5px; height: 5px; transform: rotate(45deg); background: var(--c-rule); flex: none; transition: transform .2s; }
-details.tome[open] > summary::before { background: var(--c-heading); transform: rotate(45deg) scale(1.25); }
-details.tome > summary .sumnote { margin-left: auto; font: 500 11px var(--f-body); letter-spacing: .12em; color: var(--c-mute); }
-.tome-body { padding: 4px 16px 16px; display: flex; flex-direction: column; gap: 12px; }
 .id-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 @media (max-width: 560px) { .id-grid { grid-template-columns: 1fr; } }
 
@@ -1279,12 +749,6 @@ details.tome > summary .sumnote { margin-left: auto; font: 500 11px var(--f-body
 #view-character .slot-row:last-child { border-bottom: 0; }
 #view-character .slot-row.is-zero { opacity: .55; }
 .slot-lv { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--c-mute); }
-#view-character .slot-pips { display: flex; gap: 5px; flex-wrap: wrap; flex: unset; }
-.slot-pip { width: 14px; height: 14px; transform: rotate(45deg); border: 1px solid var(--c-gold); }
-.slot-pip.used { background: transparent; border-color: var(--c-rule); }
-.slot-pip.free { background: var(--c-reach); border-color: var(--c-gold); box-shadow: 0 0 8px var(--c-reach); }
-.slot-ctrl { display: flex; gap: 4px; align-items: center; }
-.slot-ctrl .btn { min-height: 30px; min-width: 30px; padding: 2px; }
 #view-character .slot-max-input { width: 46px; min-height: 30px; text-align: center; background: var(--c-paper-hi); border: 1px solid var(--c-rule-soft); border-radius: var(--r); color: var(--c-text); padding: 2px; font: inherit; }
 
 /* trucchetti + incantesimi */

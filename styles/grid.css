@@ -1,37 +1,4 @@
-/* ── grid.css — battle grid, tokens, walls, movement, scene panel, SVG ── */
 
-/* ═══════════════════════════════════════════
-   GRIGLIA DI BATTAGLIA (esagonale)
-═══════════════════════════════════════════ */
-.grid-section {
-  background: var(--c-paper);
-  border: 1px solid var(--c-rule);
-  border-top: 1px solid color-mix(in srgb, var(--c-text) 5%, transparent);
-  border-radius: var(--r);
-  padding: 0.85rem 1rem;
-  box-shadow: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  width: 100%;
-  box-sizing: border-box;
-  min-width: 0;
-}
-
-.grid-header {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  align-items: center;
-  text-align: center;
-}
-
-.grid-title {
-  font-family: var(--f-display);
-  font-size: 0.95rem;
-  color: var(--c-heading);
-  text-align: center;
-}
 
 .grid-hint {
   font-size: 0.75rem;
@@ -74,54 +41,12 @@
 #grid-container.grid-draw-active { user-select: none; }
 #grid-container.grid-draw-active .sq-hit { cursor: crosshair; }
 
-.grid-zoom-controls {
-  display: flex;
-  gap: 0.25rem;
-  margin-bottom: 0.25rem;
-  justify-content: center;
-}
-
-.grid-zoom-btn {
-  background: var(--c-paper-lo);
-  border: 1px solid var(--c-rule);
-  border-radius: var(--r);
-  color: var(--c-mute);
-  cursor: pointer;
-  font-size: 0.75rem;
-  padding: 0.15rem 0.4rem;
-  transition: all 0.15s;
-}
-
-.grid-zoom-btn:hover {
-  background: var(--c-paper-lo);
-  color: var(--c-heading);
-  border-color: var(--c-heading);
-}
-
-.grid-layout {
-  display: flex;
-  gap: 1rem;
-  width: 100%;
-  min-width: 0;
-}
-
 /* Nascondi container iniziativa su schermi piccoli per non rompere il layout,
    o fai wrappare. Facciamo wrappare. */
 @media (max-width: 800px) {
-  .grid-layout {
-    flex-direction: column;
-  }
   .grid-initiative-list-container {
     width: 100%;
   }
-}
-
-/* ═══════════════════════════════════════════
-   MODAL UPLOAD SCENA
-═══════════════════════════════════════════ */
-.scene-upload-content {
-  border-radius: var(--r);
-  gap: 1rem;
 }
 
 .scene-drop-zone {
@@ -178,52 +103,6 @@
   color: var(--c-text);
 }
 
-/* ═══════════════════════════════════════════
-   AREA BATTAGLIA (griglia + log)
-═══════════════════════════════════════════ */
-.battle-area {
-  display: grid;
-  grid-template-columns: 1fr 300px;
-  gap: 1rem;
-  align-items: start;
-}
-
-@media (max-width: 1000px) {
-  .battle-area {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ═══════════════════════════════════════════
-   LOG EVENTI
-═══════════════════════════════════════════ */
-.event-log-section {
-  background: var(--c-paper);
-  border: 1px solid var(--c-rule);
-  border-top: 1px solid color-mix(in srgb, var(--c-text) 5%, transparent);
-  border-radius: var(--r);
-  padding: 0.85rem 1rem;
-  box-shadow: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  height: fit-content;
-  max-height: calc(100vh - 200px);
-}
-
-.event-log-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.event-log-title {
-  font-family: var(--f-display);
-  font-size: 0.95rem;
-  color: var(--c-heading);
-}
-
 .btn-clear-log {
   background: transparent;
   border: 1px solid var(--c-rule);
@@ -251,21 +130,6 @@
 .event-log::-webkit-scrollbar-track { background: transparent; }
 .event-log::-webkit-scrollbar-thumb { background: var(--c-rule); border-radius: 2px; }
 
-.event-entry {
-  font-size: 0.85rem;
-  color: var(--c-text);
-  padding: 0.45rem 0.7rem;
-  border-radius: 6px;
-  border-left: 3px solid;
-  background: color-mix(in srgb, var(--c-text) 6%, transparent);
-  line-height: 1.45;
-  margin-bottom: 0.4rem;
-}
-
-.animate-new {
-  animation: slideInNew 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
 @keyframes slideInNew {
   from {
     opacity: 0;
@@ -275,20 +139,6 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.event-entry.damage { border-color: var(--c-foe); background: color-mix(in srgb, var(--c-foe) 10%, transparent); }
-.event-entry.heal   { border-color: var(--c-pc); background: color-mix(in srgb, var(--c-pc) 10%, transparent); }
-.event-entry.turn   { border-color: var(--c-heading); background: color-mix(in srgb, var(--c-heading) 10%, transparent); }
-.event-entry.ko     { border-color: var(--c-mute); background: color-mix(in srgb, var(--c-mute) 10%, transparent); }
-.event-entry.revive { border-color: var(--c-pc); background: color-mix(in srgb, var(--c-pc) 10%, transparent); }
-.event-entry.condition { border-color: var(--c-heading); background: color-mix(in srgb, var(--c-heading) 10%, transparent); }
-
-.event-timestamp {
-  font-size: 0.75rem;
-  color: var(--c-mute);
-  margin-bottom: 0.2rem;
-  font-style: italic;
 }
 
 /* ─── SVG elementi ─── */
@@ -479,27 +329,3 @@
   align-items: center;
   gap: 0.35rem;
 }
-.grid-zoom-btn.active {
-  background: var(--c-heading);
-  color: color-mix(in srgb, var(--c-ally) 16%, var(--c-paper));
-  border-color: var(--c-heading);
-}
-.grid-dim-input {
-  width: 3.2rem;
-  background: var(--c-paper-lo);
-  border: 1px solid var(--c-rule);
-  border-radius: var(--r);
-  color: var(--c-text);
-  padding: 0.1rem 0.3rem;
-  font-size: 0.72rem;
-}
-.grid-size-label { margin-left: 0.5rem; }
-.grid-dim-select {
-  background: var(--c-paper-lo);
-  border: 1px solid var(--c-rule);
-  border-radius: var(--r);
-  color: var(--c-text);
-  padding: 0.1rem 0.3rem;
-  font-size: 0.72rem;
-}
-.grid-dim-select:disabled { opacity: 0.4; }
