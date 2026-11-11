@@ -4,7 +4,7 @@ const DAMSELFLY_CONFIG = {
     cols: 12,
     rows: 4,
     rooms: [
-      { id: 'open_deck', label: 'Ponte', x: 0, y: 0, w: 12, h: 4, color: '#4a6741' },
+      { id: 'open_deck', label: 'Ponte', x: 0, y: 0, w: 12, h: 4, tone: 'pc' },
     ],
   },
   main: {
@@ -12,11 +12,11 @@ const DAMSELFLY_CONFIG = {
     cols: 12,
     rows: 7,
     rooms: [
-      { id: 'cargo',   label: 'Stiva',          x: 0, y: 0, w: 5, h: 4, color: '#5a4a3a' },
-      { id: 'kitchen', label: 'Cucina',          x: 5, y: 0, w: 3, h: 3, color: '#6b4c2a' },
-      { id: 'crew',    label: 'Alloggi',         x: 8, y: 0, w: 4, h: 3, color: '#3a4a5a' },
-      { id: 'common',  label: 'Zona Comune',     x: 5, y: 3, w: 4, h: 4, color: '#4a3a5a' },
-      { id: 'captain', label: 'Cabina Capitano', x: 9, y: 3, w: 3, h: 4, color: '#6b3a2a' },
+      { id: 'cargo',   label: 'Stiva',          x: 0, y: 0, w: 5, h: 4, tone: 'mute' },
+      { id: 'kitchen', label: 'Cucina',          x: 5, y: 0, w: 3, h: 3, tone: 'gold' },
+      { id: 'crew',    label: 'Alloggi',         x: 8, y: 0, w: 4, h: 3, tone: 'ally' },
+      { id: 'common',  label: 'Zona Comune',     x: 5, y: 3, w: 4, h: 4, tone: 'heading' },
+      { id: 'captain', label: 'Cabina Capitano', x: 9, y: 3, w: 3, h: 4, tone: 'foe' },
     ],
   },
   forward: {
@@ -25,7 +25,7 @@ const DAMSELFLY_CONFIG = {
     rows: 4,
     invertedGravity: true,
     rooms: [
-      { id: 'forward_hold', label: 'Prua', x: 0, y: 0, w: 6, h: 4, color: '#3a4a4a' },
+      { id: 'forward_hold', label: 'Prua', x: 0, y: 0, w: 6, h: 4, tone: 'ally' },
     ],
   },
 };
@@ -91,14 +91,14 @@ export function renderShipPanel(shipData, combatants, myUid, isMaster, selectedT
       return `<div class="room${selectedTokenId ? ' droppable' : ''}"
                    data-action="place-token" data-deck="${deckKey}"
                    data-col="${room.x + Math.floor(room.w / 2)}" data-row="${room.y + Math.floor(room.h / 2)}"
-                   style="--room:${room.color}; grid-column:${room.x + 1} / span ${room.w}; grid-row:${room.y + 1} / span ${room.h};">
+                   style="--rc:var(--c-${room.tone}); grid-column:${room.x + 1} / span ${room.w}; grid-row:${room.y + 1} / span ${room.h};">
         <span class="rl">${esc(label)}</span>
         <div class="crew">${crew}</div>
       </div>`;
     }).join('');
     const widthPct = Math.round((cfg.cols / 12) * 100);
     return `<div class="deck">
-      <span class="t-label">${esc(cfg.label)}${cfg.invertedGravity ? ' · gravità invertita' : ''}</span>
+      <h4 class="rule-head">${esc(cfg.label)}${cfg.invertedGravity ? ' · gravità invertita' : ''}</h4>
       <div class="deck-map" style="grid-template-columns:repeat(${cfg.cols},1fr); grid-auto-rows:24px; max-width:${widthPct}%;">${roomsHtml}</div>
     </div>`;
   }).join('');
@@ -111,7 +111,7 @@ export function renderShipPanel(shipData, combatants, myUid, isMaster, selectedT
     : `Tocca un membro dell'equipaggio, poi la stanza di destinazione.`;
 
   const reserveHtml = `<div class="deck">
-    <span class="t-label">Non a bordo</span>
+    <h4 class="rule-head">Non a bordo</h4>
     <div class="ship-reserve">${reserve.join('') || '<span class="ship-note">Nessuno — tutta la compagnia è a bordo.</span>'}</div>
   </div>`;
 
@@ -133,12 +133,12 @@ export function renderShipPanel(shipData, combatants, myUid, isMaster, selectedT
               </button>`;
     }).join('');
 
-    return `<div class="ds-panel ds-panel--quiet weapon-card" data-state="${esc(wState)}">
+    return `<div class="weapon-card" data-state="${esc(wState)}">
       <div class="wh">
         <b>${esc(w.label)}</b>
         <select class="select w-state" data-action="weapon-state" data-weapon="${esc(wId)}">${stateOptions}</select>
       </div>
-      <span class="t-mono">${esc(w.stats)}</span>
+      <span class="stats">${esc(w.stats)}</span>
       <div class="w-crew">${crewChips || '<span class="ship-note">Nessun personaggio in sessione.</span>'}</div>
     </div>`;
   }).join('');
@@ -152,16 +152,15 @@ export function renderShipPanel(shipData, combatants, myUid, isMaster, selectedT
 
   return `<div class="ship-main">
 
-    <section class="ds-panel ship-head">
-      <i class="orn-c tl"></i><i class="orn-c tr"></i><i class="orn-c bl"></i><i class="orn-c br"></i>
+    <section class="ship-panel-section ship-head">
       <div>
         <h2 class="t-display t-title">Damselfly</h2>
         <span class="sub">Veliero volante · classe libellula</span>
       </div>
       <div class="ship-hp">
-        <span class="t-label">Integrità dello scafo</span>
+        <h4 class="rule-head">Integrità dello scafo</h4>
         <div class="row">
-          <div class="hpbar hpbar--big grow">
+          <div class="hpbar hpbar--big grow" data-level="${pct > 0.5 ? 'ok' : pct > 0.25 ? 'mid' : 'low'}">
             <i class="trail" style="transform:scaleX(${pct});"></i>
             <i class="fill" style="transform:scaleX(${pct});"></i>
           </div>
@@ -173,17 +172,15 @@ export function renderShipPanel(shipData, combatants, myUid, isMaster, selectedT
 
     <div class="ship-grid">
 
-      <section class="ds-panel">
-        <i class="orn-c tl"></i><i class="orn-c tr"></i><i class="orn-c bl"></i><i class="orn-c br"></i>
-        <div class="ds-heading"><span>Ponti</span></div>
+      <section class="ship-panel-section">
+          <h3 class="rule-head">Ponti</h3>
         <p class="ship-note">${hint}</p>
         ${decksHtml}
         ${reserveHtml}
       </section>
 
-      <section class="ds-panel">
-        <i class="orn-c tl"></i><i class="orn-c tr"></i><i class="orn-c bl"></i><i class="orn-c br"></i>
-        <div class="ds-heading"><span>Armi</span></div>
+      <section class="ship-panel-section">
+          <h3 class="rule-head">Armi</h3>
         <div class="ship-weapons">${weaponCardsHtml}</div>
         <p class="ship-note" style="margin:14px 0 0;">Lo stato delle armi e l'equipaggio assegnato sono sincronizzati in tempo reale per tutta la compagnia. Solo il master e il proprietario del personaggio possono spostarlo.</p>
       </section>

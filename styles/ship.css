@@ -1,238 +1,61 @@
-/* ── ship.css — ship panel, decks, weapons, crew tokens ── */
+/* ── ship.css — pannello nave Damselfly: scafo, ponti a stanze, segnalini equipaggio, armi. Solo --c-*. ── */
 
-/* ═══════════════════════════════════════════════
-   SHIP PANEL
-═══════════════════════════════════════════════ */
+#ship-panel { position: absolute; inset: 56px 0 0 0; z-index: 15; background: var(--c-paper) var(--paper-grain); overflow-y: auto; }
+.ship-main { width: min(1100px, 100%); margin: 0 auto; padding: 24px 16px 90px; display: flex; flex-direction: column; gap: 18px; }
+.ship-panel-section { border: 1px solid var(--c-rule); border-radius: var(--r); padding: 16px; background: transparent; min-width: 0; }
 
-#ship-panel {
-  padding: 0.5rem 1rem 1rem;
-}
+.ship-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 18px; align-items: center; }
+.ship-head h2 { margin: 0; font: 700 30px/1 var(--f-display); }
+.ship-head .sub { font-size: 14px; color: var(--c-mute); }
+.ship-hp { display: flex; flex-direction: column; gap: 6px; min-width: 260px; }
+.ship-hp .row { gap: 10px; }
+.ship-hp-ctrl { display: flex; gap: 5px; justify-content: flex-end; }
+.ship-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(280px, 5fr); gap: 18px; align-items: start; }
+@media (max-width: 880px) { .ship-grid { grid-template-columns: 1fr; } .ship-head { grid-template-columns: 1fr; } .ship-hp { min-width: 0; } }
 
-.ship-panel-inner {
-  max-width: 700px;
-  margin: 0 auto;
+/* ponti */
+.deck { display: flex; flex-direction: column; gap: 8px; }
+.deck + .deck { margin-top: 16px; }
+.deck-map { position: relative; display: grid; gap: 3px; }
+.room {
+  position: relative; cursor: pointer; min-height: 52px; padding: 7px 9px; min-width: 0;
+  border: 1px solid var(--c-rule); border-radius: 3px;
+  background: color-mix(in srgb, var(--rc, var(--c-mute)) 22%, var(--c-paper-hi));
+  transition: border-color .15s, box-shadow .15s;
 }
+.room:hover { border-color: var(--c-heading); }
+.room.droppable { border: 1px dashed var(--c-gold); box-shadow: inset 0 0 0 1px var(--c-gold); }
+.room .rl { font: 700 11px var(--f-display); letter-spacing: .08em; text-transform: uppercase; color: var(--c-heading); }
+.room .crew { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.crew-tok {
+  width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center;
+  background: var(--c-paper); border: 2px solid var(--c-pc);
+  font: 700 11px var(--f-display); color: var(--c-text);
+  transition: box-shadow .15s, border-color .15s;
+}
+.crew-tok.is-enemy { border-color: var(--c-foe); }
+.crew-tok.is-locked { cursor: default; opacity: .75; }
+.crew-tok.sel { box-shadow: 0 0 0 2px var(--c-gold); }
+.ship-reserve { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 46px; padding: 10px; border: 1px dashed var(--c-rule); border-radius: var(--r); }
 
-/* Header: nome + HP */
-.ship-header {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid color-mix(in srgb, var(--c-text) 8%, transparent);
-  margin-bottom: 0.75rem;
-  flex-wrap: wrap;
-}
+/* armi */
+.ship-weapons { display: flex; flex-direction: column; gap: 12px; }
+.weapon-card { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--c-rule); border-left-width: 4px; border-radius: var(--r); background: var(--c-paper-hi); }
+.weapon-card .wh { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.weapon-card .wh b { font: 700 18px var(--f-display); }
+.weapon-card .stats { font-size: 14px; color: var(--c-mute); }
+.w-state { min-height: 36px; width: auto; padding: 6px 30px 6px 10px; font-size: 14px; }
+.weapon-card[data-state="ready"]     { border-left-color: var(--c-pc); }
+.weapon-card[data-state="loading"]   { border-left-color: var(--c-gold); }
+.weapon-card[data-state="fired"]     { border-left-color: var(--c-mute); }
+.weapon-card[data-state="destroyed"] { border-left-color: var(--c-foe); opacity: .8; }
+.w-crew { display: flex; flex-wrap: wrap; gap: 6px; }
+.w-chip[disabled] { cursor: default; opacity: .6; }
+.ship-note { margin: 0 0 14px; font-size: 14px; color: var(--c-mute); }
+.ship-note:last-child { margin-bottom: 0; }
 
-.ship-name {
-  font-family: var(--f-display);
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--gold, var(--c-gold));
-  white-space: nowrap;
-}
-
-.ship-hp-section {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex: 1;
-  flex-wrap: wrap;
-}
-
-.ship-hp-bar-track {
-  flex: 1;
-  min-width: 80px;
-  height: 8px;
-  background: color-mix(in srgb, var(--c-text) 8%, transparent);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.ship-hp-bar-fill {
-  height: 100%;
-  background: var(--hp-color, var(--c-foe));
-  border-radius: 4px;
-  transition: width 0.4s ease;
-}
-
-.ship-hp-label {
-  font-size: 0.82rem;
-  color: var(--text-muted, var(--c-mute));
-  white-space: nowrap;
-}
-
-.ship-hp-controls {
-  display: flex;
-  gap: 0.25rem;
-}
-
-/* Weapons */
-.ship-weapons {
-  display: flex;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
-  flex-wrap: wrap;
-}
-
-.ship-weapon-card {
-  flex: 1;
-  min-width: 200px;
-  background: color-mix(in srgb, var(--c-text) 4%, transparent);
-  border: 1px solid color-mix(in srgb, var(--c-text) 8%, transparent);
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
-}
-
-.ship-weapon-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.4rem;
-}
-
-.ship-weapon-name {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-primary, var(--c-gold));
-}
-
-.ship-weapon-state {
-  font-size: 0.78rem;
-  background: color-mix(in srgb, var(--c-text) 6%, transparent);
-  border: 1px solid color-mix(in srgb, var(--c-text) 12%, transparent);
-  border-radius: 4px;
-  color: var(--text-primary, var(--c-gold));
-  padding: 2px 6px;
-  cursor: pointer;
-}
-
-.ship-crew-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  min-height: 24px;
-}
-
-.ship-crew-chip {
-  font-size: 0.72rem;
-  padding: 2px 8px;
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--c-text) 6%, transparent);
-  border: 1px solid color-mix(in srgb, var(--c-text) 10%, transparent);
-  color: var(--text-muted, var(--c-mute));
-  transition: background 0.15s, color 0.15s;
-}
-
-.ship-crew-chip.in-crew {
-  background: color-mix(in srgb, var(--c-gold) 20%, transparent);
-  border-color: var(--gold, var(--c-gold));
-  color: var(--gold, var(--c-gold));
-}
-
-.ship-crew-chip.toggleable {
-  cursor: pointer;
-}
-
-.ship-crew-chip.toggleable:hover {
-  background: color-mix(in srgb, var(--c-text) 10%, transparent);
-}
-
-.ship-crew-empty {
-  font-size: 0.72rem;
-  color: var(--text-muted, var(--c-mute));
-  font-style: italic;
-}
-
-/* Deck tabs */
-.ship-deck-tabs {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 0.5rem;
-}
-
-.ship-deck-tab {
-  flex: 1;
-  padding: 5px 10px;
-  font-size: 0.78rem;
-  background: color-mix(in srgb, var(--c-text) 5%, transparent);
-  border: 1px solid color-mix(in srgb, var(--c-text) 10%, transparent);
-  border-radius: 4px;
-  color: var(--text-muted, var(--c-mute));
-  cursor: pointer;
-  transition: background 0.15s, color 0.15s;
-}
-
-.ship-deck-tab:hover {
-  background: color-mix(in srgb, var(--c-text) 10%, transparent);
-  color: var(--text-primary, var(--c-gold));
-}
-
-.ship-deck-tab.active {
-  background: color-mix(in srgb, var(--c-gold) 18%, transparent);
-  border-color: var(--gold, var(--c-gold));
-  color: var(--gold, var(--c-gold));
-  font-weight: 600;
-}
-
-/* SVG container */
-.ship-svg-container {
-  overflow-x: auto;
-  overflow-y: auto;
-  max-height: 420px;
-  border: 1px solid color-mix(in srgb, var(--c-text) 8%, transparent);
-  border-radius: 6px;
-  background: color-mix(in srgb, var(--c-ally) 16%, var(--c-paper));
-}
-
-/* ─── Ship token tray ─── */
-.ship-token-tray {
-  padding: 6px 12px 8px;
-  border-bottom: 1px solid color-mix(in srgb, var(--c-text) 7%, transparent);
-}
-.ship-tray-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 6px;
-}
-.ship-tray-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 8px 3px 6px;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--c-text) 15%, transparent);
-  background: color-mix(in srgb, var(--c-text) 5%, transparent);
-  font-size: 0.8rem;
-  cursor: pointer;
-  user-select: none;
-  transition: border-color 0.15s, background 0.15s;
-}
-.ship-tray-chip:hover { border-color: color-mix(in srgb, var(--c-text) 35%, transparent); background: color-mix(in srgb, var(--c-text) 10%, transparent); }
-.ship-tray-chip.selected {
-  border-color: var(--c-gold);
-  background: color-mix(in srgb, var(--c-gold) 12%, transparent);
-  color: var(--c-gold);
-}
-.ship-tray-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.ship-tray-badge {
-  font-size: 0.68rem;
-  padding: 1px 5px;
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--c-text) 10%, transparent);
-  color: var(--text-muted);
-  margin-left: 2px;
-}
-.ship-tray-badge.same-deck { background: color-mix(in srgb, var(--c-pc) 18%, transparent); color: var(--c-pc); }
-.ship-tray-hint {
-  font-size: 0.75rem;
-  color: var(--text);
-}
-.ship-tray-hint.muted { color: var(--text-muted); }
+/* scafo: verde finché è sano, oro a metà, rosso sotto il quarto */
+.ship-hp .hpbar[data-level="ok"] .fill  { background: var(--c-pc); }
+.ship-hp .hpbar[data-level="mid"] .fill { background: var(--c-gold); }
+.ship-hp .hpbar[data-level="low"] .fill { background: var(--c-foe); }

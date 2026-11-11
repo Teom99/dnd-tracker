@@ -44,62 +44,6 @@
       #btn-upgrade-google .upg-lbl { display: none; }
     }
 
-    /* ── Pannello nave (Damselfly) ── */
-    #ship-panel { position: absolute; inset: 56px 0 0 0; z-index: 15; background: var(--bg0); overflow-y: auto; }
-    .ship-main { width: min(1100px, 100%); margin: 0 auto; padding: 24px 16px 90px; display: flex; flex-direction: column; gap: 18px; }
-    .ship-head { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 18px; align-items: center; padding: 18px; }
-    .ship-head h2 { margin: 0; }
-    .ship-head .sub { font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: var(--mut); }
-    .ship-hp { display: flex; flex-direction: column; gap: 6px; min-width: 260px; }
-    .ship-hp .row { gap: 10px; }
-    .ship-hp-ctrl { display: flex; gap: 5px; justify-content: flex-end; }
-    .ship-grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(280px, 5fr); gap: 18px; align-items: start; }
-    @media (max-width: 880px) { .ship-grid { grid-template-columns: 1fr; } .ship-head { grid-template-columns: 1fr; } }
-
-    /* ponti */
-    .deck { display: flex; flex-direction: column; gap: 8px; }
-    .deck + .deck { margin-top: 16px; }
-    .deck-map { position: relative; display: grid; gap: 3px; }
-    .room {
-      position: relative; cursor: pointer;
-      border: 1px solid var(--line-strong); border-radius: 2px;
-      background:
-        repeating-linear-gradient(90deg, color-mix(in srgb, var(--c-text) 4%, transparent) 0 2px, transparent 2px 14px),
-        linear-gradient(180deg, color-mix(in oklab, var(--room, var(--c-mute)) 26%, var(--bg1)), color-mix(in oklab, var(--room, var(--c-mute)) 14%, var(--bg0)));
-      min-height: 52px;
-      padding: 7px 9px;
-      transition: border-color .15s, box-shadow .15s;
-    }
-    .room:hover { border-color: var(--gold-dim); }
-    .room.droppable { border-color: var(--gold); box-shadow: inset 0 0 18px color-mix(in srgb, var(--c-gold) 8%, transparent); }
-    .room .rl { font-size: 10px; letter-spacing: .16em; text-transform: uppercase; color: var(--mut); }
-    .room .crew { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
-    .crew-tok {
-      width: 26px; height: 26px; border-radius: 50%; cursor: pointer;
-      display: grid; place-items: center;
-      background: var(--bg3); border: 2px solid var(--accent);
-      font-family: var(--font-display); font-size: 11px; font-weight: 700; color: var(--bone);
-      transition: box-shadow .15s, border-color .15s;
-    }
-    .crew-tok.is-enemy { border-color: var(--blood); }
-    .crew-tok.is-locked { cursor: default; opacity: .75; }
-    .crew-tok.sel { border-color: var(--gold-bright); box-shadow: 0 0 12px color-mix(in srgb, var(--c-gold) 50%, transparent); }
-    .ship-reserve { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 46px; padding: 10px; border: 1px dashed var(--line-strong); border-radius: var(--r); }
-
-    /* armi */
-    .ship-weapons { display: flex; flex-direction: column; gap: 12px; }
-    .weapon-card { display: flex; flex-direction: column; gap: 10px; padding: 14px; }
-    .weapon-card .wh { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-    .weapon-card .wh b { font-family: var(--font-display); font-size: 18px; font-weight: 600; }
-    .w-state { min-height: 36px; width: auto; padding: 6px 30px 6px 10px; font-size: 12.5px; }
-    .weapon-card[data-state="ready"]     { border-color: var(--accent-dim); }
-    .weapon-card[data-state="loading"]   { border-color: var(--gold-dim); }
-    .weapon-card[data-state="fired"]     { border-color: var(--line-strong); }
-    .weapon-card[data-state="destroyed"] { border-color: color-mix(in srgb, var(--c-foe) 50%, transparent); filter: saturate(.5); }
-    .w-crew { display: flex; flex-wrap: wrap; gap: 6px; }
-    .w-chip[disabled] { cursor: default; opacity: .6; }
-    .ship-note { margin: 0 0 14px; font-size: 12.5px; color: var(--faint); }
-    .ship-note:last-child { margin-bottom: 0; }
 
     /* Menu e controlli master: vedi styles/combat.css */
 
