@@ -5,6 +5,7 @@ import { state }          from '../utils/state.js';
 import { openConditionModal, removeCombatant } from './core.js';
 import { LevelUp }   from '../logic/LevelUp.js';
 import { LevelUpUI } from '../ui/LevelUpUI.js';
+import { readSheetTab, saveSheetTab, SHEET_TABS } from '../logic/sheetView.js';
 
 let editingInventoryId = null;
 const inventoryCallbacks = {
@@ -319,6 +320,7 @@ export function openCharacterSheet() {
   SheetUI.renderSpellsByLevel(state.sheetData?.spells, (lvl, id) => state.sheet.removeSpell(lvl, id), (lvl, id) => state.sheet.toggleSpellPrepared(lvl, id), (lvl, name) => state.sheet.addSpell(lvl, name));
   SheetUI.renderInventory(state.sheetData?.inventory, editingInventoryId, inventoryCallbacks);
   bindSheetEvents();
+  applySheetTab(readSheetTab());
   if (!isSheetEmbedded()) {
     document.body.classList.add('sheet-only');
     UI.showView('view-combat');
@@ -342,14 +344,56 @@ export async function openLibrarySheet(charId) {
     SheetUI.renderSpellsByLevel(state.sheetData?.spells, (lvl, id) => state.sheet.removeSpell(lvl, id), (lvl, id) => state.sheet.toggleSpellPrepared(lvl, id), (lvl, name) => state.sheet.addSpell(lvl, name));
     SheetUI.renderInventory(state.sheetData?.inventory, editingInventoryId, inventoryCallbacks);
     bindSheetEvents();
+    applySheetTab(readSheetTab());
     UI.showView('view-combat');
   } catch (err) {
     UI.showError('Errore apertura scheda: ' + err.message);
   }
 }
 
+// ─── Schede della scheda (Combattimento · Incantesimi · Zaino · Capacità · Personaggio) ───
+// Sono solo pannelli: i campi restano tutti nel DOM (anche quelli nascosti) e restano agganciati
+// come prima. Lo stato è l'attributo data-tab su #view-character; la scelta è ricordata per client.
+export function applySheetTab(tab, { focus = false } = {}) {
+  const view = document.getElementById('view-character');
+  if (!view) return;
+  const t = SHEET_TABS.includes(tab) ? tab : 'combat';
+  view.dataset.tab = t;
+  view.querySelectorAll('.sheet-tab').forEach(b => {
+    const on = b.dataset.tab === t;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', String(on));
+    b.tabIndex = on ? 0 : -1;
+    if (on && focus) b.focus();
+    if (on) b.scrollIntoView?.({ inline: 'nearest', block: 'nearest' });
+  });
+}
+
+function _bindSheetTabs(view) {
+  const bar = view.querySelector('.sheet-tabs');
+  if (!bar || bar._sheetBound) return;
+  bar._sheetBound = true;
+  bar.addEventListener('click', (e) => {
+    const b = e.target.closest('.sheet-tab');
+    if (!b) return;
+    saveSheetTab(b.dataset.tab);
+    applySheetTab(b.dataset.tab);
+  });
+  bar.addEventListener('keydown', (e) => {
+    const i = SHEET_TABS.indexOf(view.dataset.tab);
+    const next = e.key === 'ArrowRight' ? (i + 1) % SHEET_TABS.length
+               : e.key === 'ArrowLeft'  ? (i - 1 + SHEET_TABS.length) % SHEET_TABS.length
+               : e.key === 'Home' ? 0 : e.key === 'End' ? SHEET_TABS.length - 1 : -1;
+    if (next < 0) return;
+    e.preventDefault();
+    saveSheetTab(SHEET_TABS[next]);
+    applySheetTab(SHEET_TABS[next], { focus: true });
+  });
+}
+
 export function bindSheetEvents() {
   const view = document.getElementById('view-character');
+  _bindSheetTabs(view);
 
   // Upload avatar dal ritratto nella scheda
   const portraitEl = view.querySelector('.portrait');
