@@ -49,6 +49,7 @@ export function exitToHome(errorMessage) {
   if (gridContainer) gridContainer.innerHTML = '';
   GridUI.clearCursors();
   setJoinBusy(false);
+  document.querySelectorAll('.btn-rejoin').forEach(b => { b.disabled = false; });
   document.body.classList.remove('in-combat', 'has-sheet', 'sheet-only');
   UI.showView('view-home');
   if (errorMessage) UI.showError(errorMessage);

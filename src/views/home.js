@@ -59,27 +59,27 @@ function _libCard(id, c) {
   const name = esc(c.name);
   const confirming = _libDeleting === id;
   return `
-  <div class="lib-card" data-id="${id}">
+  <div class="lib-card" data-id="${esc(id)}">
     ${avatar}
     <div>
       <div class="lib-name">${name}</div>
       <div class="lib-meta">${esc(libraryMeta(c))}</div>
     </div>
-    <button type="button" class="btn btn--ghost btn--sm btn--icon" data-action="ask-delete" data-id="${id}" aria-label="Elimina ${name}" title="Elimina">${icon('trash')}</button>
+    <button type="button" class="btn btn--ghost btn--sm btn--icon" data-action="ask-delete" data-id="${esc(id)}" aria-label="Elimina ${name}" title="Elimina">${icon('trash')}</button>
     ${confirming ? `
     <div class="lib-confirm">
       <span>Eliminare ${name}? I dati della scheda saranno persi.</span>
-      <button type="button" class="btn btn--sm" data-action="delete-char" data-id="${id}">Elimina</button>
-      <button type="button" class="btn btn--ghost btn--sm" data-action="cancel-delete" data-id="${id}">Annulla</button>
+      <button type="button" class="btn btn--sm" data-action="delete-char" data-id="${esc(id)}">Elimina</button>
+      <button type="button" class="btn btn--ghost btn--sm" data-action="cancel-delete" data-id="${esc(id)}">Annulla</button>
     </div>` : `
     <div class="lib-actions">
-      <button type="button" class="btn btn--sm" data-action="open-sheet" data-id="${id}">${icon('scroll')} Apri scheda</button>
-      ${isCreature ? '' : `<button type="button" class="btn btn--sm" data-action="open-join" data-id="${id}">${icon('footprints')} Entra</button>`}
+      <button type="button" class="btn btn--sm" data-action="open-sheet" data-id="${esc(id)}">${icon('scroll')} Apri scheda</button>
+      ${isCreature ? '' : `<button type="button" class="btn btn--sm" data-action="open-join" data-id="${esc(id)}">${icon('footprints')} Entra</button>`}
     </div>
     ${!isCreature && _libJoinOpen === id ? `
-    <form class="lib-join char-lib-join" data-id="${id}" data-name="${name}">
+    <form class="lib-join char-lib-join" data-id="${esc(id)}" data-name="${name}">
       <input type="text" class="input" placeholder="Codice sessione" maxlength="8" aria-label="Codice sessione" autocomplete="off" autocapitalize="characters">
-      <button type="submit" class="btn btn--primary btn--sm">Entra</button>
+      <button type="submit" class="btn btn--sm">Entra</button>
       <button type="button" class="btn btn--ghost btn--sm btn--icon" data-action="close-join" aria-label="Chiudi" title="Chiudi">${icon('close')}</button>
     </form>` : ''}`}
   </div>`;
@@ -171,6 +171,7 @@ function _bindLibrary(list) {
 // La conferma sta nella carta (niente confirm() del browser): arriva qui solo dopo "Elimina".
 export async function deleteLibraryChar(charId) {
   await state.library.delete(charId);
+  if (state.selectedJoinCharId === charId) state.selectedJoinCharId = null;
   loadCharacterLibrary();
   populateJoinPicker();
 }
@@ -192,7 +193,7 @@ export async function populateJoinPicker() {
   }
 
   list.innerHTML = players.map(([id, c]) => `
-    <button type="button" class="pick-chip" data-id="${id}" data-name="${esc(c.name)}">${icon('shield')} ${esc(c.name)}</button>
+    <button type="button" class="pick-chip" data-id="${esc(id)}" data-name="${esc(c.name)}">${icon('shield')} ${esc(c.name)}</button>
   `).join('') + `<button type="button" class="pick-chip" data-new="1">${icon('plus')} Nuovo personaggio</button>`;
 
   list.onclick = (e) => {
@@ -229,7 +230,7 @@ export async function populateCreaturePicker() {
   }
 
   list.innerHTML = creatures.map(([id, c]) => `
-    <button class="char-pick-btn" data-id="${id}" data-name="${esc(c.name)}">${esc(c.name)}</button>
+    <button type="button" class="char-pick-btn" data-id="${esc(id)}" data-name="${esc(c.name)}">${esc(c.name)}</button>
   `).join('');
 
   list.onclick = (e) => {
@@ -335,6 +336,14 @@ export async function loadUserSessions(uid) {
     }
     const rejoinBtn = e.target.closest('.btn-rejoin');
     if (rejoinBtn) {
+      // Un solo rientro alla volta: un doppio clic lanciava due restore/initSheet in parallelo.
+      if (rejoinBtn.disabled) return;
+      document.querySelectorAll('.btn-rejoin').forEach(b => { b.disabled = true; });
+      // Se il rientro fallisce si resta in home: i bottoni tornano attivi (exitToHome li riattiva negli altri casi).
+      setTimeout(() => {
+        if (!document.getElementById('view-home')?.classList.contains('hidden'))
+          document.querySelectorAll('.btn-rejoin').forEach(b => { b.disabled = false; });
+      }, 8000);
       document.dispatchEvent(new CustomEvent('dnd:rejoin', { detail: {
         code:        rejoinBtn.dataset.code,
         combatantId: rejoinBtn.dataset.combatantId || null,
