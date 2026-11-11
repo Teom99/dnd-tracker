@@ -32,6 +32,8 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | `src/ui/ShipUI.js` | Render pannello nave Damselfly: ponti/stanze CSS grid, token equipaggio, carte armi |
 | `src/ui/LevelUpUI.js` | Render pannello level-up: feature di classe, modal conferma |
 | `src/logic/CombatTracker.js` | `nextTurn(combatants)`, `sortedCombatants()`, `reset()` |
+| `src/logic/sheetView.js` | Logica pura della scheda: `XP_THRESHOLDS`, `xpProgress`, `levelUpReady`, `sheetSubtitle`, `effectiveXp`, `xpSyncAction`, schede (`SHEET_TABS`, `readSheetTab`/`saveSheetTab`) — test in `test/sheetView.html` |
+| `test/run.sh` | Esegue le pagine di test in Chrome headless (senza argomenti: tutte tranne componenti) |
 | `src/logic/LevelUp.js` | Logica XP/milestone, calcolo livello, feature di classe disponibili |
 | `src/logic/grid.js` | `renderGrid`, `renderTokenBar` — orchestrazione render griglia |
 | `src/utils/DndApi.js` | Fetch mostri/incantesimi/condizioni da api.open5e.com |
@@ -302,6 +304,12 @@ Nessuno al momento.
 ---
 
 ### Scheda personaggio
+
+**Rework "Manuale" (tappa 3):** testata con ritratto incorniciato dalla barra XP (`.pframe`, `--xp`; oro e pulsante quando il level-up è pronto), fascia vitale (`.vitals`: HP attuali/max/temp, CA, velocità, iniziativa, competenza, ispirazione), colonna sinistra (caratteristiche, tiri salvezza, abilità ripiegabili) e cinque schede a destra (Combattimento, Incantesimi, Zaino, Capacità, Personaggio; scelta ricordata in `localStorage['dnd-sheet-tab']`). Slot incantesimo a rombi cliccabili (`.dia`: libero → usato, usato → recuperato).
+
+**XP unica (regola):** in sessione la fonte è `sessions/{code}/xp/{combatantId}` (assegnata dal master); la scheda la mostra in sola lettura (`effectiveXp`) e la rispecchia su `characters/.../xp` (`syncXpWithSession`, con guardie `_seededFor`/`_lastMirroredXp` contro i cicli). Se la sessione non ha XP si semina quello della scheda con `Session.seedXpIfAbsent` (transazione `applyLocally:false`, mai sovrascrive). Scheda e schermata combattimento devono sempre mostrare lo stesso valore.
+
+**Aggiungere un campo alla scheda:** nuovo `data-path` in `#view-character` dentro la scheda giusta (`section.sheet-pane[data-pane]`); gli id esistenti (mod-*, save-*, skill-*, spell-slots-list…) non vanno rinominati.
 
 **Cosa fa:** Stat block D&D 5e completo — abilità, skill, tiri salvezza, attacchi, slot magia, incantesimi, inventario, death saves. Sincronizza AC, HP max e velocità al combattente in sessione in real-time.
 
