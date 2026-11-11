@@ -179,56 +179,6 @@
 }
 
 /* ═══════════════════════════════════════════
-   PANNELLO SCENA
-═══════════════════════════════════════════ */
-.scene-section {
-  background: var(--c-paper);
-  border: 1px solid var(--c-rule);
-  border-top: 1px solid color-mix(in srgb, var(--c-text) 5%, transparent);
-  border-radius: var(--r);
-  padding: 0.85rem 1rem;
-  box-shadow: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-  width: 100%;
-  grid-column: 1 / -1;
-}
-
-.scene-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-}
-
-.scene-title {
-  font-family: var(--f-display);
-  font-size: 0.95rem;
-  color: var(--c-heading);
-}
-
-.scene-header-actions { display: flex; gap: 0.4rem; align-items: center; }
-
-.scene-btn { font-size: 0.78rem; min-height: 28px; padding: 0.2rem 0.5rem; }
-.scene-btn-remove:hover { color: var(--c-foe); border-color: var(--c-foe); }
-
-#scene-image-link { display: block; }
-
-.scene-image {
-  width: 100%;
-  border-radius: var(--r);
-  max-height: 420px;
-  object-fit: contain;
-  background: color-mix(in srgb, var(--c-text) 8%, transparent);
-  display: block;
-  cursor: zoom-in;
-  transition: opacity 0.2s;
-}
-
-.scene-image:hover { opacity: 0.9; }
-
-/* ═══════════════════════════════════════════
    AREA BATTAGLIA (griglia + log)
 ═══════════════════════════════════════════ */
 .battle-area {

@@ -259,7 +259,8 @@
           <button id="btn-copy-code" class="btn btn--ghost menu-item" data-icon="copy"><span class="lbl">Copia codice</span></button>
           <button id="btn-open-notes" class="btn btn--ghost menu-item" data-icon="quill"><span class="lbl">Cronache</span></button>
           <button id="btn-open-log" class="btn btn--ghost menu-item" data-icon="scroll"><span class="lbl">Diario eventi</span></button>
-          <button id="btn-upload-scene" class="btn btn--ghost menu-item" title="Carica immagine scena" data-icon="picture"><span class="lbl">Scena</span></button>
+          <button id="btn-upload-scene" class="btn btn--ghost menu-item" title="Carica immagine scena" data-icon="picture"><span class="lbl">Carica scena</span></button>
+          <button id="btn-view-scene" class="btn btn--ghost menu-item hidden" title="Rivedi l'ultima scena caricata" data-icon="picture"><span class="lbl">Rivedi scena</span></button>
           <button id="btn-toggle-ship" class="btn btn--ghost menu-item" title="Pannello nave" data-icon="ship"><span class="lbl">Nave</span></button>
 
           <div class="menu-group">Gruppo</div>
@@ -509,22 +510,6 @@
 
     <!-- Pannello nave (overlay full) -->
     <div id="ship-panel" class="hidden"></div>
-
-    <!-- Scena immagine (overlay floating) -->
-    <section id="scene-section" class="scene-section hidden" style="border:1px solid var(--c-rule);background:var(--c-paper);">
-      <div class="scene-header" style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--c-paper-lo);">
-        <span class="t-label" style="font-size:10px;">Scena</span>
-        <div class="scene-header-actions" style="display:flex;gap:4px;">
-          <button id="btn-change-scene" class="btn btn--ghost btn--sm hidden" style="font-size:10px;min-height:24px;padding:2px 6px;">Cambia</button>
-          <button id="btn-clear-scene"  class="btn btn--ghost btn--sm hidden" style="font-size:10px;min-height:24px;padding:2px 6px;" title="Elimina scena" aria-label="Elimina scena" data-icon="close" data-icon-size="14"></button>
-          <button id="btn-expand-scene" class="btn btn--ghost btn--sm"        style="font-size:10px;min-height:24px;padding:2px 6px;" title="Ingrandisci" aria-label="Ingrandisci" data-icon="zoom-in" data-icon-size="14"></button>
-          <button id="btn-hide-scene"   class="btn btn--ghost btn--sm"        style="font-size:10px;min-height:24px;padding:2px 6px;" title="Nascondi" aria-label="Nascondi" data-icon="minus" data-icon-size="14"></button>
-        </div>
-      </div>
-      <a id="scene-image-link" href="#" target="_blank" rel="noopener">
-        <img id="scene-image" class="scene-image" src="" alt="" style="width:100%;display:block;">
-      </a>
-    </section>
 
     <!-- ── SCHEDA PERSONAGGIO (overlay) ── -->
     <div id="view-character" data-tab="combat">
@@ -820,6 +805,18 @@
   <!-- ═══════════════════════════════════════════════
        MODAL — Carica immagine scena
   ═══════════════════════════════════════════════ -->
+  <div id="scene-modal" class="veil hidden" role="dialog" aria-modal="true" aria-labelledby="scene-modal-title">
+    <div class="modal-frame scene-frame">
+      <div class="scene-bar rule-double">
+        <h2 id="scene-modal-title" class="rule-head">Scena</h2>
+        <button id="btn-change-scene" type="button" class="btn btn--ghost btn--sm" data-icon="picture"><span class="lbl">Cambia</span></button>
+        <button id="btn-clear-scene" type="button" class="btn btn--ghost btn--sm btn--icon" aria-label="Elimina scena" title="Elimina scena" data-icon="trash"></button>
+        <button id="btn-close-scene" type="button" class="btn btn--ghost btn--sm btn--icon" aria-label="Chiudi" title="Chiudi" data-icon="close"></button>
+      </div>
+      <a id="scene-image-link" href="#" target="_blank" rel="noopener"><img id="scene-image" class="scene-image" src="" alt=""></a>
+    </div>
+  </div>
+
   <div id="scene-upload-modal" class="veil hidden" role="dialog" aria-modal="true" aria-label="Carica immagine scena">
     <div class="modal-frame">
       <div class="ds-heading"><span>Carica Immagine Scena</span></div>

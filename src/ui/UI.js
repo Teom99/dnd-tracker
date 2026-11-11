@@ -4,10 +4,9 @@ import { icon } from './icons.js';
 import { num, attr } from '../utils/sanitize.js';
 
 import { XP_THRESHOLDS } from '../logic/sheetView.js';
+import { safeSceneUrl, sceneAction } from '../logic/sceneView.js';
 
-// Scene panel: hide localmente senza cancellare la scena Firebase
-let _sceneHidden  = false;
-let _prevSceneUrl = null;
+let _prevSceneUrl = null;   // ultima scena vista da questo client (vedi renderScene)
 
 export const CONDITIONS = [
   { name: 'Avvelenato',   color: 'var(--c-heading)' },
@@ -71,38 +70,43 @@ export function showNotification(message, type = 'info', iconName = null) {
   }, 3000);
 }
 
-export function renderScenePanel(sceneImageUrl, sceneImageName, isMaster) {
-  const section   = document.getElementById('scene-section');
-  const img       = document.getElementById('scene-image');
-  const imgLink   = document.getElementById('scene-image-link');
-  const clearBtn  = document.getElementById('btn-clear-scene');
-  const changeBtn = document.getElementById('btn-change-scene');
-  if (!section) return;
+// Scena in finestra: si apre da sola quando qualcuno carica una scena nuova (mai al primo snapshot,
+// così entrando in una sessione non compare una finestra a sorpresa); "Rivedi scena" la riapre.
+let _sceneFirst = true;
 
-  // Nuova scena → resetta la visibilità locale
-  if (sceneImageUrl !== _prevSceneUrl) {
-    _sceneHidden  = false;
-    _prevSceneUrl = sceneImageUrl;
-  }
-
-  if (!sceneImageUrl || _sceneHidden) {
-    section.classList.add('hidden');
-    return;
-  }
-
-  section.classList.remove('hidden');
-  img.src  = sceneImageUrl;
-  img.alt  = sceneImageName || 'Scena';
-  imgLink.href = sceneImageUrl;
-
-  clearBtn.classList.toggle('hidden', !isMaster);
-  changeBtn.classList.remove('hidden');
+export function resetScene() {
+  _sceneFirst = true;
+  _prevSceneUrl = null;
+  document.getElementById('scene-modal')?.classList.add('hidden');
+  document.getElementById('btn-view-scene')?.classList.add('hidden');
 }
 
-export function hideSceneLocally() {
-  _sceneHidden = true;
-  document.getElementById('scene-section')?.classList.add('hidden');
+export function renderScene(sceneImageUrl, sceneImageName) {
+  const modal = document.getElementById('scene-modal');
+  const img   = document.getElementById('scene-image');
+  const link  = document.getElementById('scene-image-link');
+  const title = document.getElementById('scene-modal-title');
+  const view  = document.getElementById('btn-view-scene');
+  if (!modal || !img) return;
+
+  const url    = safeSceneUrl(sceneImageUrl);
+  const action = sceneAction({ prevUrl: _prevSceneUrl, nextUrl: sceneImageUrl, firstSnapshot: _sceneFirst });
+  _sceneFirst = false;
+  _prevSceneUrl = url;
+
+  view?.classList.toggle('hidden', !url);
+  if (!url) { modal.classList.add('hidden'); return; }
+
+  if (img.getAttribute('src') !== url) img.src = url;
+  img.alt = sceneImageName || 'Scena';
+  link.href = url;
+  if (title) title.textContent = sceneImageName ? `Scena · ${sceneImageName}` : 'Scena';
+  if (action === 'open') modal.classList.remove('hidden');
 }
+
+export function openSceneLocally()  { if (_prevSceneUrl) document.getElementById('scene-modal')?.classList.remove('hidden'); }
+export function closeSceneLocally() { document.getElementById('scene-modal')?.classList.add('hidden'); }
+
 
 export function renderSessionNotes(notesObj, canEdit, expandedIds, noteLocks = {}, myUid = null) {
   const container = document.getElementById('session-notes-list');
