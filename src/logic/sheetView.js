@@ -41,13 +41,15 @@ export function effectiveXp({ inSession, sessionXp, sheetXp } = {}) {
 
 // Come tenere allineata la scheda alla sessione (lo fa il client del proprietario: le rules non
 // permettono al master di scrivere sul personaggio di un altro).
-//  'seed'   → la sessione non ha XP per questo combattente ma la scheda sì: si semina (continuità tra sessioni)
-//  'mirror' → la sessione ha un XP diverso da quello della scheda: si riporta sulla scheda
+// Vince sempre il valore più alto: l'XP non scende mai, né sulla scheda né in sessione.
+//  'seed'   → la sessione non ha XP, o ne ha meno della scheda: si alza la sessione (Session.raiseXpTo)
+//  'mirror' → la sessione ha più XP della scheda: si riporta sulla scheda
 //  null     → niente da fare (anche con dati sporchi: nessuna scrittura)
 export function xpSyncAction({ sessionXp, sheetXp } = {}) {
   if (sessionXp == null) return clampXp(sheetXp) > 0 ? 'seed' : null;
   if (typeof sessionXp !== 'number' || !Number.isFinite(sessionXp)) return null;
-  return clampXp(sessionXp) !== clampXp(sheetXp) ? 'mirror' : null;
+  const s = clampXp(sessionXp), c = clampXp(sheetXp);
+  return s > c ? 'mirror' : s < c ? 'seed' : null;
 }
 
 // Scheda scelta (combattimento, incantesimi, zaino, capacità, personaggio): per client, ricordata.

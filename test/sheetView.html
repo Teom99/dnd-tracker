@@ -86,9 +86,10 @@ check('niente → 0', effectiveXp({}), 0);
 check('seed: sessione senza XP, scheda con XP', xpSyncAction({ sessionXp: undefined, sheetXp: 5000 }), 'seed');
 check('seed anche con null', xpSyncAction({ sessionXp: null, sheetXp: 5000 }), 'seed');
 check('niente da seminare', xpSyncAction({ sessionXp: undefined, sheetXp: 0 }), null);
-check('mirror: sessione diversa dalla scheda', xpSyncAction({ sessionXp: 900, sheetXp: 5000 }), 'mirror');
+check('mirror: sessione più alta della scheda', xpSyncAction({ sessionXp: 5000, sheetXp: 900 }), 'mirror');
+check('sessione più bassa della scheda: si alza la sessione, la scheda non perde XP', xpSyncAction({ sessionXp: 300, sheetXp: 2000 }), 'seed');
 check('già allineati: nessuna scrittura (niente cicli)', xpSyncAction({ sessionXp: 900, sheetXp: 900 }), null);
-check('sessione a 0 e scheda con XP: mirror', xpSyncAction({ sessionXp: 0, sheetXp: 700 }), 'mirror');
+check('sessione a 0 e scheda con XP: si alza la sessione', xpSyncAction({ sessionXp: 0, sheetXp: 700 }), 'seed');
 check('dato sporco in sessione: non si scrive', xpSyncAction({ sessionXp: 'x', sheetXp: 5 }), null);
 
 group('scheda scelta');

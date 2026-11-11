@@ -203,8 +203,8 @@ export function refreshSessionDerived() {
 
 // XP UNICA tra scheda e combattimento (vedi xpSyncAction in src/logic/sheetView.js). Lo fa il client
 // del proprietario: le rules non permettono al master di scrivere sul personaggio di un altro.
-// 'seed': la sessione non ha XP per questo combattente → si semina quello della scheda (mai sovrascrive).
-// 'mirror': la sessione ha un XP diverso → si riporta sulla scheda. Guardie contro i cicli: si ricorda
+// 'seed': la sessione non ha XP o ne ha meno della scheda → si alza la sessione (mai abbassa).
+// 'mirror': la sessione ha più XP della scheda → si riporta sulla scheda. Guardie contro i cicli: si ricorda
 // l'ultimo valore scritto e si scrive solo se diverso. Non si fa nulla in modalità milestone.
 let _seededFor = null;
 let _lastMirroredXp = null;
@@ -213,10 +213,13 @@ export function syncXpWithSession() {
   if (!state.sheet || !state.sheetData || !snap || !id || state.sheetReturnView === 'view-home') return;
   if ((snap.progressionMode ?? 'xp') !== 'xp') return;
   const action = xpSyncAction({ sessionXp: snap.xp?.[id], sheetXp: state.sheetData.xp });
+  if (action !== 'mirror') _lastMirroredXp = null;   // allineati o in salita: la prossima discesa si riscrive
+  if (action !== 'seed') _seededFor = null;
   if (action === 'seed') {
-    if (_seededFor === id) return;
-    _seededFor = id;
-    state.session.seedXpIfAbsent(id, state.sheetData.xp).catch(() => { _seededFor = null; });
+    const key = `${id}:${state.sheetData.xp}`;
+    if (_seededFor === key) return;
+    _seededFor = key;
+    state.session.raiseXpTo(id, state.sheetData.xp).catch(() => { _seededFor = null; });
   } else if (action === 'mirror') {
     const v = snap.xp[id], key = `${id}:${v}`;   // per combattente: lo stesso valore in un'altra sessione si riscrive
     if (_lastMirroredXp === key) return;

@@ -352,13 +352,13 @@ export class Session {
     );
   }
 
-  // Semina l'XP di un combattente SOLO se la sessione non ne ha ancora: mai sovrascrive un valore
-  // assegnato dal master. Serve a non perdere l'XP della scheda quando si entra in una sessione nuova.
-  async seedXpIfAbsent(combatantId, xp) {
+  // Alza l'XP di sessione di un combattente fino a `xp` se è assente o più basso: non lo abbassa mai.
+  // Serve a non perdere l'XP della scheda (entrata in una sessione nuova o con meno XP).
+  async raiseXpTo(combatantId, xp) {
     if (!this.code || !combatantId || !Number.isFinite(xp) || xp <= 0) return;
     await runTransaction(
       ref(this._db, `sessions/${this.code}/xp/${combatantId}`),
-      (current) => (current == null ? xp : current),
+      (current) => (typeof current === 'number' && current >= xp ? current : xp),
       { applyLocally: false }
     );
   }

@@ -46,7 +46,7 @@ export class LevelUpUI {
          </div>` : '';
 
     document.getElementById('levelup-modal-title').innerHTML =
-      `${icon('crown',{size:18})} Level Up: ${esc(className)} ${fromLevel} → ${toLevel}`;
+      `${icon('crown',{size:18})} Level Up: ${esc(className)} ${esc(fromLevel)} → ${esc(toLevel)}`;
 
     document.getElementById('levelup-modal-body').innerHTML = `
       ${statsHtml}

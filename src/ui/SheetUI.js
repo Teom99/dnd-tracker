@@ -269,8 +269,8 @@ export function renderSpellSlots(slots, onSetUsed, onSetMax) {
   // popover del dock. Il massimo per livello resta un campo accanto.
   container.innerHTML = SPELL_LEVELS.map(lvl => {
     const s    = slots?.[lvl] || {};
-    const max  = s.max  ?? 0;
-    const used = Math.min(max, s.used ?? 0);
+    const max  = Math.min(9, Math.max(0, Math.floor(num(s.max))));
+    const used = Math.min(max, Math.max(0, Math.floor(num(s.used))));
     const free = Math.max(0, max - used);
     const dias = Array.from({ length: max }, (_, i) =>
       `<button type="button" class="dia ${i < free ? 'free' : 'used'}" data-slot-level="${lvl}" aria-label="${i < free ? 'Usa uno slot' : 'Recupera uno slot'} di livello ${ROMAN[lvl - 1]}"></button>`).join('');
