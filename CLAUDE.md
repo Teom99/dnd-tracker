@@ -304,6 +304,7 @@ Nessuno al momento.
 
 **Invarianti:**
 - `updateHp` è atomico: legge `hpMax` e aggiorna `hpCurrent` in un solo `runTransaction`
+- **Fine turno non avanza due volte**: `Session.nextTurnAtomic(aliveIds, expectedTurnId)` usa l'updater `applyNextTurn` (`combatantRules.js`) e annulla la transazione se il turno corrente non è più quello che chi clicca vedeva (doppio clic, due client); `CombatTracker.nextTurn` ritorna `false` e non cancella le traiettorie né scrive il log. Ogni chiamante passa `state.snapshot.currentTurnId ?? null`
 - `setMaxHp` e i campi sincronizzati dalla scheda (CA, taglia, livello, velocità, nome, avatar) scrivono con una transazione sul nodo combattente che **non fa nulla se il combattente non esiste** (`applyMaxHp`/`applyFields` in `src/logic/combatantRules.js`): una `set` su un path figlio ricreerebbe a pezzi un combattente rimosso. Chi entra prima che la scheda abbia comunicato l'HP max viene creato col segnaposto 1/1 e `hpPending: true` (`Combatant.add` con `hpMax` null): la prima `setMaxHp` lo porta a piena vita e consuma il segnaposto; in ogni altro caso `setMaxHp` limita soltanto gli HP correnti al nuovo massimo (alzare il massimo non cura)
 - Il rientro (`_rejoinSession` e restore all'avvio in `app.js`) verifica che il combattente salvato esista ancora prima di adottarne l'id
 - Player KO restano nel turno per death saves; creature KO vengono saltate

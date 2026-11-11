@@ -1,3 +1,4 @@
+import { applyNextTurn } from '../logic/combatantRules.js';
 import { ref, set, get, update, remove, onValue, onDisconnect, runTransaction, push, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import {
   signInAnonymously, signInWithPopup, GoogleAuthProvider
@@ -125,21 +126,13 @@ export class Session {
 
   // Avanza turno in modo atomico: legge currentTurnId e round dal nodo Firebase
   // e li aggiorna in un'unica transazione, evitando race condition.
-  async nextTurnAtomic(aliveIds) {
-    if (aliveIds.length === 0) return;
-    await runTransaction(ref(this._db, `sessions/${this.code}`), (session) => {
-      if (session == null) return session;
-      const currentId    = session.currentTurnId ?? null;
-      const currentIndex = aliveIds.indexOf(currentId);
-      if (currentIndex === -1) {
-        session.currentTurnId = aliveIds[0];
-        return session;
-      }
-      const nextIndex = (currentIndex + 1) % aliveIds.length;
-      if (nextIndex === 0) session.round = (session.round ?? 1) + 1;
-      session.currentTurnId = aliveIds[nextIndex];
-      return session;
-    });
+  async nextTurnAtomic(aliveIds, expectedTurnId) {
+    if (aliveIds.length === 0) return false;
+    const { committed } = await runTransaction(
+      ref(this._db, `sessions/${this.code}`),
+      (session) => applyNextTurn(session, aliveIds, expectedTurnId)
+    );
+    return committed;   // false = il turno era già avanzato (doppio clic): non si è fatto nulla
   }
 
   async setGridPosition(combatantId, col, row) {

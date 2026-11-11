@@ -26,7 +26,7 @@
 <div id="summary">✗ modulo non caricato</div>
 
 <script type="module">
-import { applyMaxHp, applyFields } from '../src/logic/combatantRules.js';
+import { applyMaxHp, applyFields, applyNextTurn } from '../src/logic/combatantRules.js';
 
 const out = document.getElementById('out');
 let pass = 0, fail = 0;
@@ -71,6 +71,19 @@ check('gli HP temporanei non vengono toccati', applyMaxHp({ hpMax: 30, hpCurrent
 
 group('applyFields');
 check('aggiorna solo i campi passati', applyFields({ name: 'A', hpCurrent: 5 }, { name: 'B' }), { name: 'B', hpCurrent: 5 });
+
+group('applyNextTurn (Fine turno non avanza due volte)');
+const alive = ['a', 'b', 'c'];
+let r = applyNextTurn({ currentTurnId: 'a', round: 1 }, alive, 'a');
+check('turno atteso = corrente: avanza', [r.currentTurnId, r.round], ['b', 1]);
+r = applyNextTurn({ currentTurnId: 'c', round: 1 }, alive, 'c');
+check('ultimo → primo: round +1', [r.currentTurnId, r.round], ['a', 2]);
+check('turno già avanzato da un altro (doppio clic): nessuna modifica', applyNextTurn({ currentTurnId: 'b', round: 1 }, alive, 'a'), undefined);
+check('nessun turno corrente e atteso null: parte dal primo', applyNextTurn({ round: 1 }, alive, null).currentTurnId, 'a');
+check('corrente null ma atteso "a": annullata', applyNextTurn({ round: 1 }, alive, 'a'), undefined);
+check('senza expectedTurnId (undefined) il vecchio comportamento resta', applyNextTurn({ currentTurnId: 'a', round: 1 }, alive, undefined).currentTurnId, 'b');
+check('corrente non più tra i vivi: riparte dal primo', applyNextTurn({ currentTurnId: 'z', round: 4 }, alive, 'z').currentTurnId, 'a');
+check('sessione nulla: invariata', applyNextTurn(null, alive, 'a'), null);
 
 document.getElementById('summary').textContent =
   fail === 0 ? `✓ ${pass} test passati` : `✗ ${fail} falliti · ${pass} passati`;

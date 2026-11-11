@@ -3,7 +3,8 @@
 /* ═══════════════════════════════════════════
    ACCESSO (utente non autenticato)
 ═══════════════════════════════════════════ */
-#auth-panel { display: flex; justify-content: center; padding: 48px 20px; }
+#auth-panel { position: relative; display: flex; justify-content: center; padding: 48px 20px; }
+.auth-theme-toggle { position: absolute; top: 12px; right: 12px; }
 .login-box  { width: min(400px, 100%); display: flex; flex-direction: column; align-items: center; text-align: center; }
 .login-box .emblem { margin-bottom: 28px; }
 .login-panel { width: 100%; margin-top: 32px; display: flex; flex-direction: column; gap: 12px; padding: 26px 24px 22px; }

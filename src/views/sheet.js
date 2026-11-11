@@ -301,7 +301,7 @@ function _renderCombatantLists() {
 
 function _makeCallbacks() {
   return {
-    onEndTurn:          async ()                          => { const s = state.tracker.sortedCombatants(state.snapshot.combatants); await state.tracker.nextTurn(s); },
+    onEndTurn:          async ()                          => { const s = state.tracker.sortedCombatants(state.snapshot.combatants); await state.tracker.nextTurn(s, state.snapshot.currentTurnId ?? null); },
     onRemove: async (id) => {
       await removeCombatant(id);
       await state.ship?.removeToken(id);
@@ -368,10 +368,6 @@ export function initSheet(uid, charId) {
   setupSheetListener();
 }
 
-export function isSheetEmbedded() {
-  return false;
-}
-
 export function openCharacterSheet() {
   if (!state.sheet) return;
   state.sheetReturnView = 'view-combat';
@@ -384,10 +380,8 @@ export function openCharacterSheet() {
   bindSheetEvents();
   applySheetTab(readSheetTab());
   refreshSessionDerived();
-  if (!isSheetEmbedded()) {
-    document.body.classList.add('sheet-only');
-    UI.showView('view-combat');
-  }
+  document.body.classList.add('sheet-only');
+  UI.showView('view-combat');
 }
 
 export async function openLibrarySheet(charId) {

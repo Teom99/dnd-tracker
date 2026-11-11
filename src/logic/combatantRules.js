@@ -25,3 +25,21 @@ export function applyFields(current, fields) {
   if (current == null) return current;
   return Object.assign(current, fields);
 }
+
+// Updater della transazione "Fine turno". `expectedTurnId` è il turno che chi clicca vedeva: se nel frattempo è
+// già cambiato (doppio clic, due client) la transazione si annulla restituendo undefined, invece di avanzare di due.
+// Con expectedTurnId === undefined si avanza comunque (compatibilità).
+export function applyNextTurn(session, aliveIds, expectedTurnId) {
+  if (session == null) return session;
+  const currentId = session.currentTurnId ?? null;
+  if (expectedTurnId !== undefined && currentId !== expectedTurnId) return undefined;
+  const currentIndex = aliveIds.indexOf(currentId);
+  if (currentIndex === -1) {
+    session.currentTurnId = aliveIds[0];
+    return session;
+  }
+  const nextIndex = (currentIndex + 1) % aliveIds.length;
+  if (nextIndex === 0) session.round = (session.round ?? 1) + 1;
+  session.currentTurnId = aliveIds[nextIndex];
+  return session;
+}

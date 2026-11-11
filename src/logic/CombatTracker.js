@@ -18,11 +18,14 @@ export class CombatTracker {
 
   // Avanza al turno successivo in modo atomico (runTransaction).
   // I player KO restano nel turno per i tiri salvezza; le creature KO vengono saltate.
-  async nextTurn(combatants) {
+  // `expectedTurnId`: il turno che chi clicca vedeva. Se è già cambiato non si avanza (ritorna false).
+  async nextTurn(combatants, expectedTurnId) {
     const active = combatants.filter(c => c.hpCurrent > 0 || c.type === 'player');
-    await this._session.nextTurnAtomic(active.map(c => c.id));
+    const advanced = await this._session.nextTurnAtomic(active.map(c => c.id), expectedTurnId);
+    if (!advanced) return false;
     // Le traiettorie durano un turno: si cancellano qui, da un'azione utente (mai dal listener)
     await this._session.clearAllTrajectories();
+    return true;
   }
 
   async reset() {

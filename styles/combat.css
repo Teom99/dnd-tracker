@@ -28,33 +28,7 @@
   white-space: nowrap;
 }
 
-/* 3 colonne su schermi larghi quando la scheda è disponibile */
-@media (min-width: 1100px) {
-  body.has-sheet #col-sheet {
-    display: flex;
-    flex-direction: column;
-  }
-}
-
-/* Nasconde la colonna scheda di default (mobile / senza scheda) */
-#col-sheet {
-  display: none;
-}
-body.sheet-only #col-sheet {
-  display: flex;
-  flex-direction: column;
-  grid-column: 1 / -1;
-}
 body.sheet-only:not(.in-combat) #master-controls { display: none; }
-
-/* Su desktop dalla home: scheda a larghezza contenuta, centrata */
-@media (min-width: 1100px) {
-  body.sheet-only:not(.in-combat) #col-sheet {
-    grid-column: auto;
-    max-width: 620px;
-    width: 100%;
-  }
-}
 
 /* Bottone "← Indietro" visibile solo in mobile sheet-only mode */
 .sheet-back-btn {
@@ -64,15 +38,6 @@ body.sheet-only .sheet-back-btn {
   display: inline-flex;
 }
 
-/* Scheda embedded: scroll indipendente nella colonna 3 */
-@media (min-width: 1100px) {
-  body.has-sheet:not(.sheet-only) #col-sheet {
-    max-height: calc(100vh - 80px);
-    overflow-y: auto;
-    position: sticky;
-    top: 0;
-  }
-}
 
 /* ═══════════════════════════════════════════
    COMBATANT LIST
@@ -823,10 +788,10 @@ body.is-master .fight-card { cursor: pointer; }
 
 
 /* Creature/pet add form */
-#master-add-form, #player-pet-form { background: var(--c-paper); border: 1px solid var(--c-rule-soft); border-radius: var(--r); padding: 14px; }
-#master-add-form h3, #player-pet-form h3 { font-family: var(--f-display); font-size: 15px; font-weight: 600; color: var(--c-text); margin: 0 0 10px; letter-spacing: .06em; }
-#master-add-form form, #player-pet-form form { display: flex; flex-direction: column; gap: 8px; }
-#master-add-form input, #player-pet-form input { width: 100%; }
+#player-pet-form { background: var(--c-paper); border: 1px solid var(--c-rule-soft); border-radius: var(--r); padding: 14px; }
+#player-pet-form h3 { font-family: var(--f-display); font-size: 15px; font-weight: 600; color: var(--c-text); margin: 0 0 10px; letter-spacing: .06em; }
+#player-pet-form form { display: flex; flex-direction: column; gap: 8px; }
+#player-pet-form input { width: 100%; }
 .empty-msg { font-size: 12.5px; color: var(--c-mute); text-align: center; padding: 16px 8px; font-style: italic; }
 .input-row { display: flex; gap: 6px; }
 .input-row input { flex: 1; min-width: 0; }

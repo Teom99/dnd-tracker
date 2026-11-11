@@ -334,7 +334,6 @@ export function renderRound(round, currentCombatantName = null, nextName = null)
 }
 
 export function renderMasterPanel(isMaster) {
-  document.getElementById('master-add-form')?.classList.toggle('hidden', !isMaster);
   document.getElementById('master-controls')?.classList.toggle('hidden', !isMaster);
   document.getElementById('player-pet-form')?.classList.toggle('hidden', isMaster);
 }

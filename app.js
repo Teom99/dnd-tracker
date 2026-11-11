@@ -34,12 +34,15 @@ function _syncThemeButtons() {
   const label = night ? 'Tema chiaro' : 'Tema notte';
   const ico   = icon(night ? 'sun' : 'crescent');
   const home   = document.getElementById('btn-theme-toggle-home');
+  const auth   = document.getElementById('btn-theme-toggle-auth');   // schermata di accesso (la topbar della home ha il suo, ma nascosto finché non si è dentro)
   const combat = document.getElementById('btn-theme-toggle-combat');
   home.innerHTML   = ico;
+  auth.innerHTML   = ico;
   combat.innerHTML = `${ico}<span class="lbl">${label}</span>`;
-  for (const b of [home, combat]) { b.setAttribute('aria-label', label); b.title = label; }
+  for (const b of [home, auth, combat]) { b.setAttribute('aria-label', label); b.title = label; }
 }
 document.getElementById('btn-theme-toggle-home').addEventListener('click', toggleTheme);
+document.getElementById('btn-theme-toggle-auth').addEventListener('click', toggleTheme);
 document.getElementById('btn-theme-toggle-combat').addEventListener('click', toggleTheme);
 initTheme();
 CombatChrome.init();
@@ -703,8 +706,8 @@ document.getElementById('btn-next-turn').addEventListener('click', async () => {
   const currentId  = state.snapshot.currentTurnId ?? null;
   const currentIdx = active.findIndex(c => c.id === currentId);
   const nextActive = currentIdx === -1 ? active[0] : active[(currentIdx + 1) % active.length];
-  await state.tracker.nextTurn(sorted);
-  if (nextActive) {
+  const advanced = await state.tracker.nextTurn(sorted, currentId);
+  if (advanced && nextActive) {
     await state.session.addLogEvent(`È il turno di ${nextActive.name}!`, 'turn', { actor: nextActive.name });
   }
 });
@@ -1548,16 +1551,8 @@ function _startListening() {
     }
 
     const sorted   = state.tracker.sortedCombatants(data.combatants);
-    const creatures = sorted.filter(c => c.type === 'creature');
-    const players   = sorted.filter(c => c.type === 'player' || c.type === 'pet');
     const currentCombatant = sorted.find(c => c.id === data.currentTurnId);
     UI.renderRound(data.round ?? 1, currentCombatant?.name ?? null, nextInTurnOrder(sorted, data.currentTurnId)?.name ?? null);
-    const callbacks = makeCallbacks();
-    const progressionData = {
-      mode:           data.progressionMode ?? 'xp',
-      xp:             data.xp ?? {},
-      levelUpGranted: data.levelUpGranted ?? {},
-    };
     _renderCombatLists();
 
     _renderMyDock();
