@@ -303,8 +303,8 @@ export class Session {
 
   async setSceneImage(url, name) {
     if (!this.code) return;
-    await set(ref(this._db, `sessions/${this.code}/sceneImageUrl`), url);
-    await set(ref(this._db, `sessions/${this.code}/sceneImageName`), name || '');
+    // un solo update: gli altri client non vedono mai la scena nuova col titolo della vecchia
+    await update(ref(this._db, `sessions/${this.code}`), { sceneImageUrl: url, sceneImageName: name || '' });
   }
 
   async clearSceneImage() {

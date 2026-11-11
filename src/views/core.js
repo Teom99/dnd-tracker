@@ -2,6 +2,7 @@ import * as CombatChrome from '../ui/CombatChrome.js';
 import { Combatant }    from '../data/Combatant.js';
 import { CombatTracker } from '../logic/CombatTracker.js';
 import * as UI           from '../ui/UI.js';
+import { closeAllSheets } from '../ui/dialogs.js';
 import * as GridUI       from '../ui/GridUI.js';
 import { state }         from '../utils/state.js';
 
@@ -23,6 +24,7 @@ export function detachSessionListeners() {
 }
 
 export function exitToHome(errorMessage) {
+  closeAllSheets();
   detachSessionListeners();
   localStorage.removeItem('dnd_session_code');
   localStorage.removeItem('dnd_combatant_id');

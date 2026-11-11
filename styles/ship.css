@@ -57,5 +57,5 @@
 
 /* scafo: verde finché è sano, oro a metà, rosso sotto il quarto */
 .ship-hp .hpbar[data-level="ok"] .fill  { background: var(--c-pc); }
-.ship-hp .hpbar[data-level="mid"] .fill { background: var(--c-gold); }
+.ship-hp .hpbar[data-level="mid"] .fill { background: var(--c-heading); }   /* la scia (--c-gold) resta distinguibile */
 .ship-hp .hpbar[data-level="low"] .fill { background: var(--c-foe); }

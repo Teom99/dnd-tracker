@@ -163,6 +163,8 @@ async function _joinSessionAsCharacter(code, name, charId, initiative = '0') {
 }
 
 async function _doJoinSessionAsCharacter(code, name, charId, initiative = '0') {
+  // join() sovrascrive il rientro automatico: se l'ingresso viene annullato si rimette com'era
+  const prev = { code: localStorage.getItem('dnd_session_code'), combatant: localStorage.getItem('dnd_combatant_id') };
   state.myUid = await state.session.join(code);
   initCombatManagers(code);
 
@@ -184,6 +186,10 @@ async function _doJoinSessionAsCharacter(code, name, charId, initiative = '0') {
     });
     if (choice === null) {
       if (createdCharId) { try { await state.library.delete(createdCharId); } catch { /* resta una scheda in più */ } }
+      for (const [key, v] of [['dnd_session_code', prev.code], ['dnd_combatant_id', prev.combatant]]) {
+        if (v == null) localStorage.removeItem(key); else localStorage.setItem(key, v);
+      }
+      state.session.code = null;
       const cancelled = new Error('Ingresso annullato.');
       cancelled.cancelled = true;
       throw cancelled;
@@ -846,8 +852,8 @@ document.getElementById('btn-view-scene').addEventListener('click', UI.openScene
 document.getElementById('scene-modal').addEventListener('click', (e) => { if (e.target.id === 'scene-modal') UI.closeSceneLocally(); });
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  if (document.querySelector('.sheet-dialog')) return;                                   // il foglio di dialogo ha la precedenza
-  if (!document.getElementById('scene-upload-modal').classList.contains('hidden')) return; // chiude prima il caricamento
+  const upload = document.getElementById('scene-upload-modal');
+  if (!upload.classList.contains('hidden')) { _closeSceneModal(); return; }   // prima il caricamento, poi la scena
   UI.closeSceneLocally();
 });
 

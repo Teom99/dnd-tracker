@@ -1,3 +1,5 @@
+import { num } from '../utils/sanitize.js';
+
 const DAMSELFLY_CONFIG = {
   top: {
     label: 'Top Deck',
@@ -53,8 +55,8 @@ function findRoom(deckKey, col, row) {
 }
 
 export function renderShipPanel(shipData, combatants, myUid, isMaster, selectedTokenId) {
-  const hp     = shipData?.hp    ?? 200;
-  const hpMax  = shipData?.hpMax ?? 200;
+  const hp     = num(shipData?.hp,    200);   // i dati della sessione non sono fidati: mai HTML
+  const hpMax  = num(shipData?.hpMax, 200);
   const pct    = hpMax > 0 ? Math.max(0, Math.min(1, hp / hpMax)) : 0;
   const weapons   = shipData?.weapons ?? {};
   const tokens    = shipData?.tokens  ?? {};

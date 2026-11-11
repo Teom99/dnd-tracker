@@ -26,7 +26,7 @@
 <div id="summary">✗ modulo non caricato</div>
 
 <script type="module">
-import { openSheet, askConfirm, askText, askChoice } from '../src/ui/dialogs.js';
+import { openSheet, askConfirm, askText, askChoice, closeAllSheets } from '../src/ui/dialogs.js';
 
 const out = document.getElementById('out');
 let pass = 0, fail = 0;
@@ -119,6 +119,18 @@ group('openSheet generico');
 p = openSheet({ title: 'T', buttons: [{ id: 'a', label: 'A', kind: 'primary' }, { id: 'b', label: 'B', kind: 'danger' }, { id: 'c', label: 'C', kind: 'plain' }] }); await tick();
 btn('B').click();
 check('restituisce id e valore', await p, { id: 'b', value: null });
+
+group('closeAllSheets');
+const q1 = askConfirm({ title: 'uno', confirmLabel: 'Sì' });
+const q2 = askConfirm({ title: 'due', confirmLabel: 'Sì' });
+await tick();
+closeAllSheets();
+check('il foglio aperto e quello in coda si risolvono a false', [await q1, await q2], [false, false]);
+await tick();
+check('nessun foglio rimasto nel DOM', document.querySelectorAll('.sheet-dialog').length, 0);
+const q3 = askConfirm({ title: 'dopo', confirmLabel: 'Sì' }); await tick();
+check('una conferma successiva funziona di nuovo', dlg()?.textContent.includes('dopo'), true);
+btn('Sì').click(); check('e si risolve', await q3, true);
 
 document.getElementById('summary').textContent =
   fail === 0 ? `✓ ${pass} test passati` : `✗ ${fail} falliti · ${pass} passati`;

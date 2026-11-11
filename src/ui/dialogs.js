@@ -4,9 +4,19 @@
 import { icon } from './icons.js';
 
 let _queue = Promise.resolve();
+let _epoch = 0;          // closeAllSheets() lo incrementa: i fogli già in coda si risolvono a null senza aprirsi
+let _current = null;     // finish() del foglio aperto, se c'è
+
+// Chiude il foglio aperto e scarta quelli in coda (tutti risolti a null): serve quando la sessione finisce
+// sotto un foglio ancora aperto (es. espulsione del giocatore mentre conferma un riposo).
+export function closeAllSheets() {
+  _epoch++;
+  _current?.(null);
+}
 
 export function openSheet(opts) {
-  const run = () => _show(opts);
+  const epoch = _epoch;
+  const run = () => (epoch === _epoch ? _show(opts) : Promise.resolve(null));
   const p = _queue.then(run, run);
   _queue = p.catch(() => {});
   return p;
@@ -66,6 +76,7 @@ function _show({ title, text = '', field = null, buttons = [], cancelId = null }
     const finish = (result) => {
       if (done) return;
       done = true;
+      if (_current === finish) _current = null;
       document.removeEventListener('keydown', onKey, true);
       veil.remove();
       try { previous?.focus?.(); } catch { /* l'elemento può non esistere più */ }
@@ -104,6 +115,7 @@ function _show({ title, text = '', field = null, buttons = [], cancelId = null }
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
       }
     }
+    _current = finish;
     document.addEventListener('keydown', onKey, true);
     veil.addEventListener('click', (e) => { if (e.target === veil) finish(null); });
 
