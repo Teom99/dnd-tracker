@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Test — logica della home</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background:#0a0c0b; color:#e8e2d2;
+         margin:0; padding:24px 20px 60px; }
+  h1 { font-size:16px; margin:0 0 4px; letter-spacing:.04em; }
+  p.sub { color:#8f8f82; margin:0 0 20px; font-size:12.5px; }
+  h2 { font-size:13px; color:#c9a24a; margin:22px 0 6px; letter-spacing:.08em; text-transform:uppercase; }
+  .t { padding:2px 0 2px 22px; position:relative; }
+  .t::before { position:absolute; left:0; width:16px; }
+  .ok::before  { content:"PASS"; color:#7cc78a; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko::before  { content:"FAIL"; color:#e0685c; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko { color:#e0685c; }
+  .detail { color:#8f8f82; font-size:12px; padding-left:22px; white-space:pre; }
+  #summary { position:fixed; left:0; right:0; bottom:0; padding:12px 20px;
+             background:#161b19; border-top:1px solid #2b3631; font-weight:700; }
+</style>
+</head>
+<body>
+<h1>homeView.js — sessioni, libreria</h1>
+<p class="sub">Aprila con un server statico: <code>python3 -m http.server</code> → <code>/test/homeView.html</code></p>
+<div id="out"></div>
+<div id="summary">✗ modulo non caricato</div>
+
+<script type="module">
+import { splitSessions, filterLibrary, libraryMeta, lastSeenLabel } from '../src/logic/homeView.js';
+
+const out = document.getElementById('out');
+let pass = 0, fail = 0;
+const group = (name) => { const h = document.createElement('h2'); h.textContent = name; out.append(h); };
+function check(label, got, want) {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  ok ? pass++ : fail++;
+  const d = document.createElement('div');
+  d.className = 't ' + (ok ? 'ok' : 'ko');
+  d.textContent = label;
+  out.append(d);
+  if (!ok) {
+    const e = document.createElement('div');
+    e.className = 'detail';
+    e.textContent = `atteso ${JSON.stringify(want)} · ottenuto ${JSON.stringify(got)}`;
+    out.append(e);
+  }
+}
+
+group('splitSessions');
+check('vuoto', splitSessions([]), { resume: null, others: [] });
+check('non array', splitSessions(null), { resume: null, others: [] });
+const A = { code: 'A', lastSeen: 100 }, B = { code: 'B', lastSeen: 300 }, C = { code: 'C' }, D = { code: 'D', lastSeen: 200 };
+const r = splitSessions([A, C, B, D]);
+check('la più recente è resume', r.resume.code, 'B');
+check('le altre per lastSeen decrescente, senza lastSeen in coda', r.others.map(s => s.code), ['D', 'A', 'C']);
+check('lastSeen non numerico va in coda', splitSessions([{ code: 'X', lastSeen: 'boh' }, A]).resume.code, 'A');
+check('non muta l\'input', [A, C, B, D].map(s => s.code), ['A', 'C', 'B', 'D']);
+
+group('filterLibrary');
+const E = [['1', { type: 'player', name: 'Lyra' }], ['2', { type: 'creature', name: 'Orco' }], ['3', { name: 'Senza tipo' }]];
+check('all', filterLibrary(E, 'all').map(e => e[0]), ['1', '2', '3']);
+check('player include il tipo mancante', filterLibrary(E, 'player').map(e => e[0]), ['1', '3']);
+check('creature', filterLibrary(E, 'creature').map(e => e[0]), ['2']);
+check('filtro sconosciuto = all', filterLibrary(E, 'xyz').map(e => e[0]), ['1', '2', '3']);
+check('entries non array', filterLibrary(null, 'all'), []);
+
+group('libraryMeta');
+check('PG completo', libraryMeta({ type: 'player', class: 'Ladra', level: 4, race: 'Mezzelfo' }), 'Ladra · Livello 4 · Mezzelfo');
+check('PG solo razza', libraryMeta({ type: 'player', race: 'Nano' }), 'Nano');
+check('PG vuoto', libraryMeta({ type: 'player' }), 'Personaggio');
+check('creatura con taglia e CA', libraryMeta({ type: 'creature', size: 'large', armorClass: 13 }), 'Creatura · Grande · CA 13');
+check('creatura vuota', libraryMeta({ type: 'creature' }), 'Creatura');
+check('taglia sconosciuta ignorata', libraryMeta({ type: 'creature', size: 'zzz', armorClass: 12 }), 'Creatura · CA 12');
+check('oggetto nullo', libraryMeta(null), 'Personaggio');
+
+group('lastSeenLabel');
+const NOW = new Date(2026, 10, 11, 15, 0, 0).getTime();
+check('adesso', lastSeenLabel(NOW - 20000, NOW), 'adesso');
+check('oggi', lastSeenLabel(new Date(2026, 10, 11, 9, 0).getTime(), NOW), 'oggi');
+check('ieri (anche dopo mezzanotte)', lastSeenLabel(new Date(2026, 10, 10, 23, 50).getTime(), NOW), 'ieri');
+check('3 giorni fa', lastSeenLabel(new Date(2026, 10, 8, 12, 0).getTime(), NOW), '3 giorni fa');
+check('0 / NaN / stringa → vuoto', [lastSeenLabel(0, NOW), lastSeenLabel(NaN, NOW), lastSeenLabel('x', NOW)], ['', '', '']);
+check('futuro → adesso', lastSeenLabel(NOW + 5000, NOW), 'adesso');
+
+document.getElementById('summary').textContent =
+  fail === 0 ? `✓ ${pass} test passati` : `✗ ${fail} falliti · ${pass} passati`;
+document.getElementById('summary').style.color = fail === 0 ? '#7cc78a' : '#e0685c';
+</script>
+</body>
+</html>

@@ -1,14 +1,15 @@
 import { captureFocusState, restoreFocusState } from '../utils/domPreserve.js';
+import { combatantView, healthHintKey, healthHintText } from '../logic/visibility.js';
+import { icon } from './icons.js';
+import { num, attr, safeImageUrl } from '../utils/sanitize.js';
 
-const XP_THRESHOLDS = [0,300,900,2700,6500,14000,23000,34000,48000,64000,
-                        85000,100000,120000,140000,165000,195000,225000,265000,305000,355000];
+import { XP_THRESHOLDS } from '../logic/sheetView.js';
+import { safeSceneUrl, sceneAction } from '../logic/sceneView.js';
 
-// Scene panel: hide localmente senza cancellare la scena Firebase
-let _sceneHidden  = false;
-let _prevSceneUrl = null;
+let _prevSceneUrl = null;   // ultima scena vista da questo client (vedi renderScene)
 
 export const CONDITIONS = [
-  { name: 'Avvelenato',   color: 'var(--gold)' },
+  { name: 'Avvelenato',   color: 'var(--c-heading)' },
   { name: 'Stordito',     color: '#d97706' },
   { name: 'Spaventato',   color: '#dc2626' },
   { name: 'Bloccato',     color: '#ea580c' },
@@ -17,8 +18,8 @@ export const CONDITIONS = [
   { name: 'Prono',        color: '#9ca3af' },
   { name: 'Invisibile',   color: '#0891b2' },
   { name: 'Incapacitato', color: '#d97706' },
-  { name: 'Paralizzato',  color: 'var(--gold)' },
-  { name: 'Pietrificato', color: 'var(--gold)' },
+  { name: 'Paralizzato',  color: 'var(--c-heading)' },
+  { name: 'Pietrificato', color: 'var(--c-heading)' },
   { name: 'Affascinato',  color: '#ec4899' },
   { name: 'Esausto',      color: '#dc2626' },
   { name: 'Nascosto',     color: '#0891b2' },
@@ -50,11 +51,16 @@ function _getNotificationStack() {
   return _notificationStack;
 }
 
-export function showNotification(message, type = 'info') {
+export function showNotification(message, type = 'info', iconName = null) {
   const stack = _getNotificationStack();
   const notification = document.createElement('div');
   notification.className = `notification notification-${type}`;
-  notification.textContent = message;
+  if (iconName) {
+    notification.innerHTML = `${icon(iconName, { size: 16 })} `;
+    notification.append(document.createTextNode(message));   // il messaggio resta testo: nessun HTML dai dati
+  } else {
+    notification.textContent = message;
+  }
   stack.appendChild(notification);
 
   // Rimuovi dopo 3 secondi
@@ -64,38 +70,48 @@ export function showNotification(message, type = 'info') {
   }, 3000);
 }
 
-export function renderScenePanel(sceneImageUrl, sceneImageName, isMaster) {
-  const section   = document.getElementById('scene-section');
-  const img       = document.getElementById('scene-image');
-  const imgLink   = document.getElementById('scene-image-link');
-  const clearBtn  = document.getElementById('btn-clear-scene');
-  const changeBtn = document.getElementById('btn-change-scene');
-  if (!section) return;
+// Scena in finestra: si apre da sola quando qualcuno carica una scena nuova (mai al primo snapshot,
+// così entrando in una sessione non compare una finestra a sorpresa); "Rivedi scena" la riapre.
+let _sceneFirst = true;
 
-  // Nuova scena → resetta la visibilità locale
-  if (sceneImageUrl !== _prevSceneUrl) {
-    _sceneHidden  = false;
-    _prevSceneUrl = sceneImageUrl;
-  }
-
-  if (!sceneImageUrl || _sceneHidden) {
-    section.classList.add('hidden');
-    return;
-  }
-
-  section.classList.remove('hidden');
-  img.src  = sceneImageUrl;
-  img.alt  = sceneImageName || 'Scena';
-  imgLink.href = sceneImageUrl;
-
-  clearBtn.classList.toggle('hidden', !isMaster);
-  changeBtn.classList.remove('hidden');
+export function resetScene() {
+  _sceneFirst = true;
+  _prevSceneUrl = null;
+  document.getElementById('scene-modal')?.classList.add('hidden');
+  document.getElementById('btn-view-scene')?.classList.add('hidden');
 }
 
-export function hideSceneLocally() {
-  _sceneHidden = true;
-  document.getElementById('scene-section')?.classList.add('hidden');
+export function renderScene(sceneImageUrl, sceneImageName) {
+  const modal = document.getElementById('scene-modal');
+  const img   = document.getElementById('scene-image');
+  const link  = document.getElementById('scene-image-link');
+  const title = document.getElementById('scene-modal-title');
+  const view  = document.getElementById('btn-view-scene');
+  if (!modal || !img) return;
+
+  const url    = safeSceneUrl(sceneImageUrl);
+  const action = sceneAction({ prevUrl: _prevSceneUrl, nextUrl: sceneImageUrl, firstSnapshot: _sceneFirst });
+  _sceneFirst = false;
+  _prevSceneUrl = url;
+
+  view?.classList.toggle('hidden', !url);
+  if (!url) { modal.classList.add('hidden'); return; }
+
+  if (img.getAttribute('src') !== url) img.src = url;
+  img.alt = sceneImageName || 'Scena';
+  if (url.startsWith('data:')) link.removeAttribute('href');   // Chrome blocca la navigazione verso data:
+  else link.href = url;
+  if (title) title.textContent = sceneImageName ? `Scena · ${sceneImageName}` : 'Scena';
+  if (action === 'open') { modal.classList.remove('hidden'); document.getElementById('btn-close-scene')?.focus(); }
 }
+
+export function openSceneLocally()  {
+  if (!_prevSceneUrl) return;
+  document.getElementById('scene-modal')?.classList.remove('hidden');
+  document.getElementById('btn-close-scene')?.focus();
+}
+export function closeSceneLocally() { document.getElementById('scene-modal')?.classList.add('hidden'); }
+
 
 export function renderSessionNotes(notesObj, canEdit, expandedIds, noteLocks = {}, myUid = null) {
   const container = document.getElementById('session-notes-list');
@@ -121,7 +137,7 @@ export function renderSessionNotes(notesObj, canEdit, expandedIds, noteLocks = {
     const isEditingByMe   = lock && lock.uid === myUid;
     const disabled        = Boolean(isLockedByOther);
 
-    let el = container.querySelector(`.note-entry[data-note-id="${note.id}"]`);
+    let el = [...container.querySelectorAll('.note-entry')].find(n => n.dataset.noteId === note.id);   // niente id dentro un selettore
     if (!el) {
       el = document.createElement('div');
       el.className = 'note-entry';
@@ -131,19 +147,21 @@ export function renderSessionNotes(notesObj, canEdit, expandedIds, noteLocks = {
 
     // Classe e colore del lock (non tocca mai gli input/textarea sottostanti)
     el.className = 'note-entry' + (isLockedByOther ? ' note-locked' : isEditingByMe ? ' note-editing-self' : '');
-    if (lock) el.style.setProperty('--lock-color', lock.color);
+    if (lock && /^#[0-9a-fA-F]{6}$/.test(lock.color)) el.style.setProperty('--lock-color', lock.color);
     else      el.style.removeProperty('--lock-color');
 
     // Presence tag ("✏️ Nome" di chi sta editando)
     let tagEl = el.querySelector('.note-presence-tag');
     if (lock) {
-      const tagText = `✏️ ${escapeHtml(lock.name)}`;
       if (!tagEl) {
         tagEl = document.createElement('div');
         tagEl.className = 'note-presence-tag';
         el.insertAdjacentElement('afterbegin', tagEl);
       }
-      if (tagEl.innerHTML !== tagText) tagEl.innerHTML = tagText;
+      if (tagEl.dataset.who !== lock.name) {   // confronto sul nome, non sull'HTML serializzato
+        tagEl.dataset.who = lock.name;
+        tagEl.innerHTML = `${icon('edit', { size: 12 })} ${escapeHtml(lock.name)}`;
+      }
     } else if (tagEl) {
       tagEl.remove();
     }
@@ -166,8 +184,8 @@ export function renderSessionNotes(notesObj, canEdit, expandedIds, noteLocks = {
       chevronEl.className = 'note-chevron';
       headerEl.appendChild(chevronEl);
     }
-    const chevronText = isExpanded ? '▼' : '▶';
-    if (chevronEl.textContent !== chevronText) chevronEl.textContent = chevronText;
+    if (!chevronEl.firstChild) chevronEl.innerHTML = icon('chevron', { size: 14 });
+    chevronEl.dataset.state = isExpanded ? 'open' : 'closed';   // la rotazione la fa il CSS
 
     let titleEl = headerEl.querySelector('.note-title-input');
     if (!titleEl) {
@@ -242,6 +260,14 @@ export function renderSessionNotes(notesObj, canEdit, expandedIds, noteLocks = {
 
 let lastLogId = null;
 
+// Tipo della voce di diario → icona e classe (danno, cura, turno; il resto è una voce generica)
+const LOG_KINDS = {
+  damage: { icon: 'sword',  cls: 'log-entry--dmg' },
+  heal:   { icon: 'heal',   cls: 'log-entry--heal' },
+  turn:   { icon: 'd20',    cls: 'log-entry--turn' },
+  other:  { icon: 'scroll', cls: '' },
+};
+
 export function renderLogs(logsObj) {
   const logContainer = document.getElementById('event-log');
   if (!logContainer) return;
@@ -267,12 +293,13 @@ export function renderLogs(logsObj) {
     // Animate only if it's the newest AND it's different from the last time we rendered
     const isNew = index === 0 && logId !== lastLogId;
     
-    entry.className = `log-entry${log.type === 'turn' ? ' log-entry--turn' : ''}${isNew ? ' anim-in' : ''}`;
+    const kind = LOG_KINDS[log.type] ?? LOG_KINDS.other;
+    entry.className = `log-entry ${kind.cls}${isNew ? ' anim-in' : ''}`;
 
     const d  = new Date(log.timestamp);
     const ts = d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 
-    entry.innerHTML = `<time>${ts}</time><div>${escapeHtml(log.message)}</div>`;
+    entry.innerHTML = `<time>${ts}</time><div><span class="log-ico">${icon(kind.icon, { size: 14 })}</span>${escapeHtml(log.message)}</div>`;
     logContainer.appendChild(entry);
   });
 
@@ -284,7 +311,14 @@ export function renderSessionCode(code) {
   if (el) el.textContent = code;
 }
 
-export function renderRound(round, currentCombatantName = null) {
+export function renderRound(round, currentCombatantName = null, nextName = null) {
+  // Striscia del turno (telefono): "Tocca a X · poi Y"
+  const pillName = document.getElementById('turn-pill-name');
+  if (pillName) pillName.textContent = currentCombatantName ? `Tocca a ${currentCombatantName}` : 'Nessun turno in corso';
+  const pillNext = document.getElementById('turn-pill-next');
+  if (pillNext) pillNext.textContent = nextName ? `poi ${nextName}` : '';
+  const pillAv = document.getElementById('turn-pill-av');
+  if (pillAv) pillAv.textContent = currentCombatantName ? currentCombatantName.trim().charAt(0).toUpperCase() : '';
   const el = document.getElementById('round-display');
   if (el) el.textContent = `Round ${round}`;
   const banner = document.getElementById('turn-banner');
@@ -300,7 +334,6 @@ export function renderRound(round, currentCombatantName = null) {
 }
 
 export function renderMasterPanel(isMaster) {
-  document.getElementById('master-add-form')?.classList.toggle('hidden', !isMaster);
   document.getElementById('master-controls')?.classList.toggle('hidden', !isMaster);
   document.getElementById('player-pet-form')?.classList.toggle('hidden', isMaster);
 }
@@ -357,21 +390,12 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
   combatants.forEach((c) => {
     const isActive      = c.id === currentTurnId;
     const isKO          = c.hpCurrent === 0;
-    const canEdit       = myUid === c.ownerUid || myUid === masterUid;
-    const isMaster      = myUid === masterUid;
-    const isCreature    = c.type === 'creature';
-    const isPet         = c.type === 'pet';
-    const isOwnCard     = myUid === c.ownerUid && c.type === 'player';
-    const isOwnPet      = myUid === c.ownerUid && isPet;
+    // Cosa può vedere/modificare questo utente: stesse regole della riga dell'iniziativa
+    const { isMaster, isCreature, isPet, isOwnCard, isOwnPet, canEdit,
+            showFullHp, showHint, canEditMaxHp, canEditAc, ac, acVisible } = combatantView(c, myUid, masterUid, acMap);
     const hpPercent     = c.hpMax > 0 ? (c.hpCurrent / c.hpMax) * 100 : 0;
     const conditions    = c.conditions ? Object.keys(c.conditions) : [];
     const hpClass       = hpPercent <= 25 ? 'hp-critical' : hpPercent <= 50 ? 'hp-low' : '';
-    const showFullHp    = isMaster || isOwnCard || !isCreature;
-    const showHint      = !isOwnCard && !isMaster && isCreature && c.showHealthHint;
-    const canEditMaxHp  = isOwnCard || isOwnPet || (isMaster && (isCreature || isPet));
-    const canEditAc     = isOwnPet || (isMaster && isCreature);
-    const ac            = isPet ? (c.armorClass ?? null) : (acMap[c.ownerUid] ?? c.armorClass ?? null);
-    const acVisible     = !isCreature || isMaster || (c.showAC === true);
     const tempHp        = c.tempHp ?? 0;
     const tempHpPercent = c.hpMax > 0 ? Math.min(100, (tempHp / c.hpMax) * 100) : 0;
     const successes     = isOwnCard && isKO ? (myDeathSaves?.successes ?? 0) : 0;
@@ -386,12 +410,12 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const isSel = (targetId) => _selectedTargets.get(c.id)?.has(targetId) ?? false;
 
     const targetChips = [
-      `<button class="target-chip${isSel(c.id) ? ' selected' : ''}" data-action="toggle-target" data-target-id="${c.id}">👤 Sé stesso</button>`,
+      `<button class="target-chip${isSel(c.id) ? ' selected' : ''}" data-action="toggle-target" data-target-id="${c.id}"><i class="chip-dot ${isCreature ? (c.faction === 'good' ? 'ally' : 'foe') : 'pc'}"></i>Sé stesso</button>`,
       ...fullList
         .filter(x => x.id !== c.id && (x.hpCurrent > 0 || x.type === 'player' || x.type === 'pet'))
         .map(x => {
-          const prefix = x.type === 'player' ? '👤' : x.type === 'pet' ? '🐾' : '👹';
-          return `<button class="target-chip${isSel(x.id) ? ' selected' : ''}" data-action="toggle-target" data-target-id="${x.id}">${prefix} ${escapeHtml(x.name)}</button>`;
+          const dotCls = x.type === 'creature' ? (x.faction === 'good' ? 'ally' : 'foe') : 'pc';
+          return `<button class="target-chip${isSel(x.id) ? ' selected' : ''}" data-action="toggle-target" data-target-id="${x.id}"><i class="chip-dot ${dotCls}"></i>${escapeHtml(x.name)}</button>`;
         })
     ].join('');
 
@@ -421,7 +445,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     let levelUpReady  = false;
     if (c.type === 'player') {
       const { mode = 'xp', xp = {}, levelUpGranted = {} } = progressionData;
-      const combXp = xp[c.id] ?? 0;
+      const combXp = num(xp[c.id]);
       const level  = c.level ?? 1;
       levelUpReady = mode === 'xp'
         ? (level < 20 && combXp >= XP_THRESHOLDS[level])
@@ -439,11 +463,11 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       }
 
       if (levelUpReady && isOwnCard) {
-        xpSectionHtml += `<button class="btn btn--primary btn--sm" data-id="${c.id}" data-action="levelup">⬆ Sali di livello</button>`;
+        xpSectionHtml += `<button class="btn btn--primary btn--sm" data-id="${c.id}" data-action="levelup">${icon('crown')}<span class="lbl">Sali di livello</span></button>`;
       }
 
       if (isMaster && mode === 'milestone' && !levelUpGranted[c.id]) {
-        xpSectionHtml += `<button class="btn btn--sm" data-id="${c.id}" data-action="grant-levelup">🎖 Concedi Level-up</button>`;
+        xpSectionHtml += `<button class="btn btn--sm" data-id="${c.id}" data-action="grant-levelup">${icon('crown')}<span class="lbl">Concedi level-up</span></button>`;
       }
     }
 
@@ -456,19 +480,19 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         : null,
     ].filter(Boolean).join(' · ');
 
-    const portraitIcon     = isCreature ? '👹' : isPet ? '🐾' : '⚔';
+    const portraitIcon     = isCreature ? icon('monster', { size: 20 }) : isPet ? icon('paw', { size: 20 }) : escapeHtml((c.name || '?').trim().charAt(0).toUpperCase());
     const canUploadAvatar  = canEdit && c.charId;
     const rawThumb         = c.avatarThumb;
-    const avatarSrc        = typeof rawThumb === 'string' && rawThumb.startsWith('data:image/') ? rawThumb : null;
+    const avatarSrc        = safeImageUrl(rawThumb);
     const portraitContent  = avatarSrc ? `<img src="${escapeHtml(avatarSrc)}" class="fc-avatar" alt="">` : portraitIcon;
-    const uploadAttrs      = canUploadAvatar ? ` data-action="upload-avatar" data-id="${c.id}" data-char-id="${c.charId}" data-owner-uid="${c.ownerUid}"` : '';
+    const uploadAttrs      = canUploadAvatar ? ` data-action="upload-avatar" data-id="${attr(c.id)}" data-char-id="${attr(c.charId)}" data-owner-uid="${attr(c.ownerUid)}"` : '';
     const uploadClass      = canUploadAvatar ? ' fc-portrait--upload' : '';
 
     const portraitHtml  = c.type === 'player'
       ? `<div class="fc-pframe${levelUpReady ? ' lvlup' : ''}" style="--xp:${(levelUpReady ? 1 : xpPct).toFixed(3)};"${xpTitle ? ` title="${xpTitle}"` : ''}>
-           <div class="fc-portrait${uploadClass}" style="display:flex;align-items:center;justify-content:center;color:var(--accent);"${uploadAttrs}>${portraitContent}</div>
+           <div class="fc-portrait${uploadClass}" style="display:flex;align-items:center;justify-content:center;color:var(--c-gold);"${uploadAttrs}>${portraitContent}</div>
          </div>`
-      : `<div class="fc-portrait${uploadClass}" style="display:flex;align-items:center;justify-content:center;border:1px solid ${isAlly ? 'rgba(76,165,122,.3)' : 'rgba(168,66,58,.3)'};color:${isAlly ? 'var(--accent)' : '#c25b50'};"${uploadAttrs}>${portraitContent}</div>`;
+      : `<div class="fc-portrait${uploadClass}" style="display:flex;align-items:center;justify-content:center;border:1px solid ${isAlly ? 'var(--c-pc)' : 'var(--c-foe)'};color:${isAlly ? 'var(--c-gold)' : 'var(--c-foe)'};"${uploadAttrs}>${portraitContent}</div>`;
 
     li.innerHTML = `
       <div class="fc-top">
@@ -484,7 +508,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
           <span>init</span>
         </div>
         ${canEdit
-          ? `<button class="btn btn--ghost btn--sm btn--icon" data-id="${c.id}" data-action="remove" aria-label="Rimuovi">✕</button>`
+          ? `<button class="btn btn--ghost btn--sm btn--icon" data-id="${c.id}" data-action="remove" aria-label="Rimuovi" title="Rimuovi">${icon('close', { size: 16 })}</button>`
           : `<span></span>`}
       </div>
 
@@ -502,8 +526,8 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         </div>
         ${isMaster && isCreature ? `
           <div class="fc-controls" style="gap:5px;margin-top:1px;">
-            <button class="btn btn--ghost btn--sm ${c.showHealthHint ? 'hint-active' : ''}" data-id="${c.id}" data-action="toggle-health-hint" style="font-size:9px;">👁 Mostra HP</button>
-            ${ac !== null ? `<button class="btn btn--ghost btn--sm ${c.showAC === true ? 'hint-active' : ''}" data-id="${c.id}" data-action="toggle-show-ac" style="font-size:9px;">🛡 Mostra CA</button>` : ''}
+            <button class="btn btn--ghost btn--sm ${c.showHealthHint ? 'hint-active' : ''}" data-id="${c.id}" data-action="toggle-health-hint" style="font-size:9px;">${icon('eye', { size: 14 })}<span class="lbl">Mostra HP</span></button>
+            ${ac !== null ? `<button class="btn btn--ghost btn--sm ${c.showAC === true ? 'hint-active' : ''}" data-id="${c.id}" data-action="toggle-show-ac" style="font-size:9px;">${icon('shield', { size: 14 })}<span class="lbl">Mostra CA</span></button>` : ''}
           </div>
         ` : ''}
       ` : showHint ? `
@@ -514,7 +538,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         <div class="fc-conds">
           ${conditions.map(cond => {
             const meta = CONDITIONS.find(x => x.name === cond);
-            return `<span class="chip" style="--c:${meta?.color ?? 'var(--mut)'};">${cond}</span>`;
+            return `<span class="chip" style="--c:${meta?.color ?? 'var(--c-mute)'};">${escapeHtml(cond)}</span>`;
           }).join('')}
         </div>
       ` : ''}
@@ -530,12 +554,12 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         ${isActive ? `
         <div class="fc-controls">
           <input type="number" class="attack-amount input input--num" data-id="${c.id}" placeholder="0" min="1" max="9999">
-          <button class="btn btn--danger btn--sm" data-id="${c.id}" data-action="apply-damage">🗡 Danno</button>
-          <button class="btn btn--sm" data-id="${c.id}" data-action="apply-heal" style="color:var(--heal);">✚ Cura</button>
+          <button class="btn btn--danger btn--sm" data-id="${c.id}" data-action="apply-damage">${icon('sword')}<span class="lbl">Danno</span></button>
+          <button class="btn btn--sm" data-id="${c.id}" data-action="apply-heal" style="color:var(--c-heal);">${icon('heal')}<span class="lbl">Cura</span></button>
         </div>
         ` : ''}
       ` : c.currentAction ? `
-        <p class="fc-action-note">⚔ ${escapeHtml(c.currentAction)}</p>
+        <p class="fc-action-note">${icon('sword', { size: 13 })} ${escapeHtml(c.currentAction)}</p>
       ` : ''}
 
       ${isOwnCard && isKO ? `
@@ -548,17 +572,17 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       ` : ''}
 
       <div class="fc-controls">
-        <button class="btn btn--ghost btn--sm insp-btn${c.inspiration ? ' active' : ''}" data-id="${c.id}" data-action="toggle-inspiration" title="${canEdit ? (c.inspiration ? 'Rimuovi ispirazione' : 'Concedi ispirazione') : (c.inspiration ? 'Ha ispirazione' : 'Nessuna ispirazione')}"${canEdit ? '' : ' disabled'}>✦ Ispirazione</button>
-        ${canEdit ? `<button class="btn btn--ghost btn--sm" data-id="${c.id}" data-action="open-conditions" style="font-size:9.5px;">${conditions.length > 0 ? '✎ Condizioni' : '+ Condizioni'}</button>` : ''}
+        <button class="btn btn--ghost btn--sm insp-btn${c.inspiration ? ' active' : ''}" data-id="${c.id}" data-action="toggle-inspiration" title="${canEdit ? (c.inspiration ? 'Rimuovi ispirazione' : 'Concedi ispirazione') : (c.inspiration ? 'Ha ispirazione' : 'Nessuna ispirazione')}"${canEdit ? '' : ' disabled'}>${icon('star', { size: 14 })}<span class="lbl">Ispirazione</span></button>
+        ${canEdit ? `<button class="btn btn--ghost btn--sm" data-id="${c.id}" data-action="open-conditions" style="font-size:9.5px;">${icon(conditions.length > 0 ? 'edit' : 'plus', { size: 14 })}<span class="lbl">Condizioni</span></button>` : ''}
         ${isMaster && isCreature ? `
           <div class="faction-switch">
             <button class="faction-btn evil ${(c.faction || 'evil') === 'evil' ? 'active' : ''}" data-id="${c.id}" data-action="set-faction" data-faction="evil">Avv.</button>
             <button class="faction-btn good ${c.faction === 'good' ? 'active' : ''}" data-id="${c.id}" data-action="set-faction" data-faction="good">Alleato</button>
           </div>
         ` : ''}
-        ${isMaster && isCreature && c.monsterApiIndex ? `<button class="btn btn--ghost btn--sm" data-id="${c.id}" data-api-index="${c.monsterApiIndex}" data-action="view-stat-block" style="font-size:9.5px;">📖 Dati</button>` : ''}
-        ${isOwnCard ? `<button class="btn btn--ghost btn--sm" data-id="${c.id}" data-action="open-sheet" style="font-size:9.5px;">📜 Scheda</button>` : ''}
-        ${isActive && (isOwnCard || isOwnPet) ? `<button class="btn btn--primary btn--sm" data-id="${c.id}" data-action="end-turn" style="margin-left:auto;">✓ Fine Turno</button>` : ''}
+        ${isMaster && isCreature && c.monsterApiIndex ? `<button class="btn btn--ghost btn--sm" data-id="${attr(c.id)}" data-api-index="${attr(c.monsterApiIndex)}" data-action="view-stat-block" style="font-size:9.5px;">${icon('monster', { size: 14 })}<span class="lbl">Scheda mostro</span></button>` : ''}
+        ${isOwnCard ? `<button class="btn btn--ghost btn--sm" data-id="${c.id}" data-action="open-sheet" style="font-size:9.5px;">${icon('scroll', { size: 14 })}<span class="lbl">Scheda</span></button>` : ''}
+        ${isActive && (isOwnCard || isOwnPet) ? `<button class="btn btn--primary btn--sm" data-id="${c.id}" data-action="end-turn" style="margin-left:auto;"><span class="lbl">Fine turno</span></button>` : ''}
       </div>
     `;
 
@@ -610,7 +634,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         const card = e.target.closest('.fight-card');
         if (card?.dataset.combatantId) {
           const cid = card.dataset.combatantId;
-          document.dispatchEvent(new CustomEvent('dnd:dock-select', { detail: { id: cid === selectedDockId ? null : cid } }));
+          document.dispatchEvent(new CustomEvent('dnd:dock-select', { detail: { id: cid } }));
         }
       }
       return;
@@ -803,28 +827,10 @@ export function renderConditionModal(combatantId, activeConditions, onToggle) {
   modal.classList.remove('hidden');
 }
 
-function healthHintKey(percent) {
-  if (percent === 100) return 'full';
-  if (percent >= 75)   return 'good';
-  if (percent >= 50)   return 'hurt';
-  if (percent >= 25)   return 'bad';
-  if (percent > 0)     return 'critical';
-  return 'ko';
-}
-
-function healthHintText(percent) {
-  if (percent === 100) return '⚔ Nel pieno delle forze';
-  if (percent >= 75)   return '⚔ Leggermente ferito';
-  if (percent >= 50)   return '⚔ Ferito';
-  if (percent >= 20)   return '⚔ Gravemente ferito';
-  if (percent > 0)     return '⚔ In fin di vita';
-  return '☠ A terra';
-}
-
 function hpBarColor(percent) {
-  if (percent > 50) return 'var(--green)';
-  if (percent > 25) return 'var(--hp-low)';
-  return 'var(--red-bright)';
+  if (percent > 50) return 'var(--c-pc)';
+  if (percent > 25) return 'var(--c-gold)';
+  return 'var(--c-foe)';
 }
 
 function escapeHtml(str) {
@@ -842,16 +848,16 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
 
   const c      = combatant;
   const isKO   = c.hpCurrent === 0;
-  const hpPct  = c.hpMax > 0 ? Math.min(1, Math.max(0, c.hpCurrent / c.hpMax)) : 0;
-  const tempHp = c.tempHp ?? 0;
+  const hpPct  = num(c.hpMax) > 0 ? Math.min(1, Math.max(0, num(c.hpCurrent) / num(c.hpMax))) : 0;
+  const tempHp = num(c.tempHp);
   const conditions = c.conditions ? Object.keys(c.conditions) : [];
   const condChips  = conditions.map(cond => {
     const meta = CONDITIONS.find(x => x.name === cond);
-    return `<span class="chip" style="--c:${meta?.color ?? 'var(--mut)'};">${cond}</span>`;
+    return `<span class="chip" style="--c:${meta?.color ?? 'var(--c-mute)'};">${escapeHtml(cond)}</span>`;
   }).join('');
 
   const { mode = 'xp', xp = {}, levelUpGranted = {} } = progressionData;
-  const combXp = xp[c.id] ?? 0;
+  const combXp = num(xp[c.id]);
   const level  = c.level ?? 1;
   const levelUpReady = mode === 'xp'
     ? (level < 20 && combXp >= XP_THRESHOLDS[level])
@@ -876,7 +882,8 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
   const dockAvatar   = typeof dockRawThumb === 'string' && dockRawThumb.startsWith('data:image/') ? dockRawThumb : null;
   const dockPortrait = dockAvatar
     ? `<img src="${escapeHtml(dockAvatar)}" class="fc-avatar" alt="">`
-    : (c.type === 'pet' ? '🐾' : '⚔');
+    : (c.type === 'pet' ? icon('paw', { size: 20 }) : escapeHtml((c.name || '?').trim().charAt(0).toUpperCase()));
+  const dockAc = c.armorClass == null ? null : num(c.armorClass, null);
 
   dock.innerHTML = `
     <div class="fc-pframe dock-pframe${levelUpReady ? ' lvlup' : ''}" style="--xp:${(levelUpReady ? 1 : xpPct).toFixed(3)};"${xpText ? ` title="${xpText}"` : ''}>
@@ -884,7 +891,7 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
     </div>
     <div class="dock-id">
       <b>${escapeHtml(c.name)}</b>
-      <span>${level ? `Lv.${level}` : ''}${c.armorClass ? ` · CA ${c.armorClass}` : ''}</span>
+      <span>${level ? `Livello ${num(level, 1)}` : (c.type === 'pet' ? 'Compagno' : '')}</span>
     </div>
     <div class="dock-vitals">
       <div style="display:flex;align-items:center;gap:6px;">
@@ -892,7 +899,7 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
           <i class="trail" style="transform:scaleX(${hpPct.toFixed(4)});"></i>
           <i class="fill"  style="transform:scaleX(${hpPct.toFixed(4)});"></i>
         </div>
-        <span style="font-size:12px;font-weight:700;color:var(--bone);font-variant-numeric:tabular-nums;">${c.hpCurrent}<span style="color:var(--mut);font-weight:400">/${c.hpMax}</span></span>
+        <span style="font-size:12px;font-weight:700;color:var(--c-text);font-variant-numeric:tabular-nums;">${num(c.hpCurrent)}<span style="color:var(--c-mute);font-weight:400">/${num(c.hpMax)}</span></span>
         ${tempHp > 0 ? `<span class="chip chip--iron" style="font-size:9px;padding:1px 5px;">+${tempHp}</span>` : ''}
       </div>
       ${mode === 'xp' && level < 20 ? `<div class="xp-bar-track" style="margin-top:2px;"><div class="xp-bar-fill" style="width:${Math.round(xpPct * 100)}%"></div></div>` : ''}
@@ -904,12 +911,15 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
         <div class="pips ko">${[0,1,2].map(i => `<button class="${i < failures ? 'on' : ''}" data-action="death-save" data-type="failures" data-index="${i}" data-dock="1"></button>`).join('')}</div>
       </div>` : (conditions.length ? `<div class="dock-conds">${condChips}</div>` : '')}
     </div>
+    <div class="dock-stat">${dockAc !== null ? `<b>${dockAc}</b><span>CA</span>` : ''}</div>
     <div class="dock-actions">
-      ${isActive ? `<button class="btn btn--danger btn--sm" data-action="dock-attack">⚔ Attacca</button>` : ''}
-      ${isActive ? `<button class="btn btn--sm" data-action="dock-heal" style="color:var(--heal);">✚ Cura</button>` : ''}
-      <button class="btn btn--ghost btn--sm" data-action="dock-conditions">✦ Cond.</button>
-      <button class="btn btn--ghost btn--sm" data-action="dock-sheet">📜 Scheda</button>
-      ${isActive ? `<button class="btn btn--primary btn--sm" data-action="dock-end-turn">✓ Fine</button>` : ''}
+      ${isActive ? `<button class="btn btn--sm" data-action="dock-attack">${icon('sword')}<span class="lbl">Attacca</span></button>` : ''}
+      ${isActive ? `<button class="btn btn--sm" data-action="dock-heal">${icon('heal')}<span class="lbl">Cura</span></button>` : ''}
+      <button class="btn btn--sm dock-extra" data-action="dock-spells" aria-haspopup="dialog">${icon('spellbook')}<span class="lbl">Incantesimi</span></button>
+      <button class="btn btn--sm dock-extra" data-action="dock-conditions">${icon('star')}<span class="lbl">Condizioni</span></button>
+      <button class="btn btn--sm dock-extra" data-action="dock-sheet">${icon('scroll')}<span class="lbl">Scheda</span></button>
+      <button class="btn btn--sm dock-more-btn" data-action="dock-more" aria-haspopup="true">${icon('plus')}<span class="lbl">Altro</span></button>
+      ${isActive ? `<button class="btn btn--primary btn--sm dock-end" data-action="dock-end-turn"><span class="lbl">Fine turno</span></button>` : ''}
     </div>`;
 }
 
@@ -923,25 +933,25 @@ export function renderMasterDock(combatant) {
 
   const c     = combatant;
   const isKO  = c.hpCurrent === 0;
-  const hpPct = c.hpMax > 0 ? Math.min(1, Math.max(0, c.hpCurrent / c.hpMax)) : 0;
-  const tempHp = c.tempHp ?? 0;
+  const hpPct = num(c.hpMax) > 0 ? Math.min(1, Math.max(0, num(c.hpCurrent) / num(c.hpMax))) : 0;
+  const tempHp = num(c.tempHp);
   const conditions = c.conditions ? Object.keys(c.conditions) : [];
   const condChips  = conditions.map(cond => {
     const meta = CONDITIONS.find(x => x.name === cond);
-    return `<span class="chip" style="--c:${meta?.color ?? 'var(--mut)'};">${cond}</span>`;
+    return `<span class="chip" style="--c:${meta?.color ?? 'var(--c-mute)'};">${escapeHtml(cond)}</span>`;
   }).join('');
 
-  const icon = c.type === 'pet' ? '🐾' : c.type === 'creature' ? '👹' : '⚔';
+  const portraitFallback = c.type === 'pet' ? icon('paw', { size: 20 }) : c.type === 'creature' ? icon('monster', { size: 22 }) : escapeHtml((c.name || '?').trim().charAt(0).toUpperCase());
   const kind = c.type === 'creature' ? 'Creatura' : c.type === 'pet' ? 'Famiglio' : 'PG';
-  const subtitle = [kind, c.armorClass ? `CA ${c.armorClass}` : null].filter(Boolean).join(' · ');
+  const subtitle = [kind, c.type === 'creature' && c.faction === 'good' ? 'alleato' : (c.type === 'creature' ? 'nemico' : null)].filter(Boolean).join(' · ');
   const masterRawThumb = c.avatarThumb;
   const masterAvatar   = typeof masterRawThumb === 'string' && masterRawThumb.startsWith('data:image/') ? masterRawThumb : null;
   const masterPortrait = masterAvatar
     ? `<img src="${escapeHtml(masterAvatar)}" class="fc-avatar" alt="">`
-    : icon;
+    : portraitFallback;
 
   dock.innerHTML = `
-    <div class="dock-portrait${isKO ? ' is-down' : ''}">${isKO ? '💀' : masterPortrait}</div>
+    <div class="dock-portrait${isKO ? ' is-down' : ''}">${isKO ? icon('skull', { size: 22 }) : masterPortrait}</div>
     <div class="dock-id">
       <b>${escapeHtml(c.name)}</b>
       <span>${subtitle}</span>
@@ -952,15 +962,17 @@ export function renderMasterDock(combatant) {
           <i class="trail" style="transform:scaleX(${hpPct.toFixed(4)});"></i>
           <i class="fill"  style="transform:scaleX(${hpPct.toFixed(4)});"></i>
         </div>
-        <span style="font-size:12px;font-weight:700;color:var(--bone);font-variant-numeric:tabular-nums;">${c.hpCurrent}<span style="color:var(--mut);font-weight:400">/${c.hpMax}</span></span>
+        <span style="font-size:12px;font-weight:700;color:var(--c-text);font-variant-numeric:tabular-nums;">${num(c.hpCurrent)}<span style="color:var(--c-mute);font-weight:400">/${num(c.hpMax)}</span></span>
         ${tempHp > 0 ? `<span class="chip chip--iron" style="font-size:9px;padding:1px 5px;">+${tempHp}</span>` : ''}
       </div>
       ${conditions.length ? `<div class="dock-conds">${condChips}</div>` : ''}
     </div>
+    <div class="dock-stat">${c.armorClass ? `<b>${num(c.armorClass)}</b><span>CA</span>` : ''}</div>
     <div class="dock-actions">
-      <button class="btn btn--danger btn--sm" data-action="dock-attack">⚔ Attacca</button>
-      <button class="btn btn--sm" data-action="dock-heal" style="color:var(--heal);">✚ Cura</button>
-      <button class="btn btn--ghost btn--sm" data-action="dock-conditions">✦ Cond.</button>
+      <button class="btn btn--sm" data-action="dock-attack">${icon('sword')}<span class="lbl">Attacca</span></button>
+      <button class="btn btn--sm" data-action="dock-heal">${icon('heal')}<span class="lbl">Cura</span></button>
+      <button class="btn btn--sm" data-action="dock-conditions">${icon('star')}<span class="lbl">Condizioni</span></button>
+      ${c.type === 'creature' && c.monsterApiIndex ? `<button class="btn btn--sm" data-action="view-stat-block" data-api-index="${escapeHtml(c.monsterApiIndex)}" data-id="${attr(c.id)}">${icon('monster')}<span class="lbl">Scheda mostro</span></button>` : ''}
     </div>`;
 }
 
@@ -981,17 +993,17 @@ export function openDockActionModal(mode, myId, combatants, callbacks) {
 
   const isDmg      = mode === 'damage';
   const confirmBtn = document.getElementById('btn-dock-action-confirm');
-  document.getElementById('dock-action-title').textContent = isDmg ? '⚔ Attacca' : '✚ Cura';
-  confirmBtn.textContent = isDmg ? '⚔ Conferma' : '✚ Conferma';
-  confirmBtn.className   = 'btn grow ' + (isDmg ? 'btn--danger' : 'btn--primary');
+  document.getElementById('dock-action-title').innerHTML = `${icon(isDmg ? 'sword' : 'heal')} ${isDmg ? 'Attacca' : 'Cura'}`;
+  confirmBtn.textContent = 'Conferma';
+  confirmBtn.className   = 'btn btn--primary grow';
 
   const me    = combatants.find(c => c.id === myId);
   const valid = combatants.filter(x => x.hpCurrent > 0 || x.type === 'player' || x.type === 'pet');
-  const chip  = (id, label) => `<button class="target-chip" data-target-id="${id}">${label}</button>`;
-  const chips = [chip(myId, '👤 Sé stesso')];
+  const chip  = (id, label) => `<button class="target-chip" data-target-id="${attr(id)}">${label}</button>`;
+  const dot = (x) => `<i class="chip-dot ${x.type === 'creature' ? (x.faction === 'good' ? 'ally' : 'foe') : 'pc'}"></i>`;
+  const chips = [chip(myId, `${me ? dot(me) : ''}Sé stesso`)];
   valid.filter(x => x.id !== myId).forEach(x => {
-    const prefix = x.type === 'player' ? '👤' : x.type === 'pet' ? '🐾' : '👹';
-    chips.push(chip(x.id, `${prefix} ${escapeHtml(x.name)}`));
+    chips.push(chip(x.id, `${dot(x)}${escapeHtml(x.name)}`));
   });
   document.getElementById('dock-action-targets').innerHTML = chips.join('');
   document.getElementById('dock-action-text').value   = me?.currentAction || '';
@@ -1021,4 +1033,44 @@ export function openDockActionModal(mode, myId, combatants, callbacks) {
 
   modal.classList.remove('hidden');
   setTimeout(() => document.getElementById('dock-action-amount')?.focus(), 50);
+}
+
+
+// ─── Popover Incantesimi (dal dock): slot e incantesimi preparati ─────────────
+// Sola lettura tranne i rombi degli slot, che riusano la stessa scrittura della scheda
+// (state.sheet.setSpellSlotsUsed, una runTransaction). Nessun campo di testo qui dentro:
+// si può ricostruire per intero a ogni cambio della scheda senza perdere focus.
+const ROMAN_LV = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
+
+export function renderSpellsPopover(sheetData) {
+  const pop = document.getElementById('spells-pop');
+  if (!pop) return;
+  const head = `<div class="pop-head"><h3 class="rule-head">${icon('spellbook')} Incantesimi</h3>
+    <button type="button" id="btn-spells-close" class="btn btn--ghost btn--sm btn--icon" aria-label="Chiudi">${icon('close')}</button></div>`;
+  if (!sheetData) {
+    pop.innerHTML = head + `<p class="empty-hint">Nessuna scheda collegata a questo personaggio.</p>`;
+    return;
+  }
+  const slots = sheetData.spellSlots || {};
+  const slotRows = ROMAN_LV.map((_, i) => i + 1).filter(lvl => (slots[lvl]?.max ?? 0) > 0).map(lvl => {
+    const max = slots[lvl].max, used = Math.min(max, slots[lvl].used ?? 0), free = max - used;
+    const dias = Array.from({ length: max }, (_, k) =>
+      `<button type="button" class="dia ${k < free ? 'free' : 'used'}" data-slot-level="${lvl}" aria-label="${k < free ? 'Usa uno slot' : 'Recupera uno slot'} di livello ${lvl}"></button>`).join('');
+    return `<div class="slot"><span>${ROMAN_LV[lvl - 1]} livello</span><span class="dias">${dias}</span><small>${free} su ${max}</small></div>`;
+  }).join('');
+
+  const cantrips = Object.values(sheetData.cantrips || {}).filter(n => typeof n === 'string' && n);
+  const spellsByLvl = ROMAN_LV.map((_, i) => i + 1).map(lvl => ({
+    lvl, items: Object.values(sheetData.spells?.[lvl] || {}).filter(sp => sp?.prepared && sp.name),
+  })).filter(g => g.items.length);
+
+  const list = [
+    ...cantrips.map(n => `<div class="sp-it"><span>${escapeHtml(n)}</span><small>trucchetto</small></div>`),
+    ...spellsByLvl.flatMap(g => g.items.map(sp => `<div class="sp-it"><span>${escapeHtml(sp.name)}</span><small>${ROMAN_LV[g.lvl - 1]}</small></div>`)),
+  ].join('');
+
+  pop.innerHTML = head
+    + (slotRows || '<p class="empty-hint">Nessuno slot incantesimo sulla scheda.</p>')
+    + (list ? `<div class="sp-list">${list}</div>` : '<p class="empty-hint">Nessun incantesimo preparato.</p>')
+    + `<button type="button" id="btn-spells-sheet" class="btn btn--sm btn--block">${icon('scroll')}<span class="lbl">Apri la scheda</span></button>`;
 }

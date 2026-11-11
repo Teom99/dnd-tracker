@@ -1,6 +1,15 @@
 import {
   ref, set, get, push, remove, update, runTransaction, query, orderByChild, equalTo
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { applyMaxHp, applyFields } from '../logic/combatantRules.js';
+
+// Queste transazioni partono dalla sincronizzazione della scheda, spesso PRIMA che il
+// listener di sessione abbia il combattente in cache: la prima esecuzione vede null e
+// restituisce null (= "non esiste, non toccare"). Con l'applicazione locale di default
+// quel null viene mostrato subito ai listener come "combattente rimosso" (il rientro in
+// sessione lo scambiava per una rimozione vera e tornava alla home). Senza applicazione
+// locale gli eventi scattano solo a transazione conclusa, con i dati veri.
+const NO_OPTIMISTIC = { applyLocally: false };
 
 export class Combatant {
   constructor(db, sessionCode) {
@@ -11,6 +20,15 @@ export class Combatant {
   _ref(path = '') {
     const base = `sessions/${this._code}/combatants`;
     return ref(this._db, path ? `${base}/${path}` : base);
+  }
+
+  // Scrive campi solo su un combattente che esiste ancora (vedi applyFields).
+  async _patch(id, fields) {
+    await runTransaction(
+      ref(this._db, `sessions/${this._code}/combatants/${id}`),
+      (current) => applyFields(current, fields),
+      NO_OPTIMISTIC
+    );
   }
 
   async add(name, initiative, hpMax, type, ownerUid, charId = null, armorClass = null, monsterApiIndex = null, size = 'medium') {
@@ -27,6 +45,8 @@ export class Combatant {
       charId: charId ?? null,
       size: size || 'medium',
     };
+    // hpMax null = non ancora noto (lo dirà la scheda): segnaposto 1/1, vedi applyMaxHp
+    if (hpMax == null) data.hpPending = true;
     if (armorClass !== null && armorClass !== '') data.armorClass = parseInt(armorClass) || 0;
     if (monsterApiIndex) data.monsterApiIndex = monsterApiIndex;
     await set(newRef, data);
@@ -77,25 +97,25 @@ export class Combatant {
   }
 
   async setArmorClass(id, ac) {
-    await set(ref(this._db, `sessions/${this._code}/combatants/${id}/armorClass`), parseInt(ac) || 0);
+    await this._patch(id, { armorClass: parseInt(ac) || 0 });
   }
 
   async setSize(id, size) {
     const valid = ['tiny', 'small', 'medium', 'large', 'huge', 'gargantuan'];
     const s = valid.includes(size) ? size : 'medium';
-    await set(ref(this._db, `sessions/${this._code}/combatants/${id}/size`), s);
+    await this._patch(id, { size: s });
   }
 
   async setLevel(id, level) {
-    await set(ref(this._db, `sessions/${this._code}/combatants/${id}/level`), parseInt(level) || 1);
+    await this._patch(id, { level: parseInt(level) || 1 });
   }
 
   async setSpeed(id, speed) {
-    await set(ref(this._db, `sessions/${this._code}/combatants/${id}/speed`), Math.max(0, parseInt(speed) || 0));
+    await this._patch(id, { speed: Math.max(0, parseInt(speed) || 0) });
   }
 
   async setName(id, name) {
-    await set(ref(this._db, `sessions/${this._code}/combatants/${id}/name`), name || '');
+    await this._patch(id, { name: name || '' });
   }
 
   async setFaction(id, faction) {
@@ -103,7 +123,7 @@ export class Combatant {
   }
 
   async setAvatarThumb(id, thumb) {
-    await set(ref(this._db, `sessions/${this._code}/combatants/${id}/avatarThumb`), thumb || null);
+    await this._patch(id, { avatarThumb: thumb || null });
   }
 
   async setAction(id, text) {
@@ -124,11 +144,10 @@ export class Combatant {
 
   async setMaxHp(id, val) {
     const hp = Math.max(1, parseInt(val) || 1);
-    await set(ref(this._db, `sessions/${this._code}/combatants/${id}/hpMax`), hp);
-    // Cap current HP to new max
     await runTransaction(
-      ref(this._db, `sessions/${this._code}/combatants/${id}/hpCurrent`),
-      (current) => Math.min(current ?? 0, hp)
+      ref(this._db, `sessions/${this._code}/combatants/${id}`),
+      (current) => applyMaxHp(current, hp),
+      NO_OPTIMISTIC
     );
   }
 

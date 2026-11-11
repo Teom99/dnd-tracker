@@ -15,6 +15,7 @@ export const state = {
   seenLogIds:             null, // Set<string> | null — null finché non è stato processato il primo snapshot di logs
   library:                null,
   selectedJoinCharId:     null,
+  libFilter:              'all',   // filtro della libreria in home (solo locale)
   selectedCreatureCharId: null,
   sheetReturnView:        'view-combat',
   selectedGridTokenId:    null,
@@ -28,6 +29,9 @@ export const state = {
   drawFill:               'outline', // 'outline' | 'filled' — forme (rect/square/circle): solo contorno o piene
   drawSize:               1, // lato in caselle (1-4) del blocco pennello/gomma, centrato sulla cella sotto il cursore
   drawShape:              'square', // 'square' | 'round' — forma del blocco pennello/gomma
+  // Stato di interfaccia della schermata di combattimento: locale al client, mai su Firebase
+  ui: { tool: 'move', menuOpen: false, drawer: null, detailId: null, spellsOpen: false, moreOpen: false, initSheetOpen: false },
+  trajectoryFrom:         null,  // id del combattente di partenza mentre si traccia una traiettoria
   ship:                   null,
   shipData:               null,
   shipPanelOpen:          false,

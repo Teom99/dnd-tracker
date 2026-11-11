@@ -2,6 +2,10 @@ import * as GridUI from '../ui/GridUI.js';
 import { state }   from '../utils/state.js';
 import { playerColor } from '../utils/presence.js';
 import { esc }     from '../views/core.js';
+import { icon }    from '../ui/icons.js';
+import { attr }    from '../utils/sanitize.js';
+import * as CombatChrome from '../ui/CombatChrome.js';
+import { readDensity } from './combatChrome.js';
 
 // ─── Undo/redo del disegno sulla mappa (locale a questo client, non condiviso
 // e non persistito — si perde al reload, come il resto dello stato locale
@@ -11,6 +15,9 @@ import { esc }     from '../views/core.js';
 const UNDO_LIMIT = 50;
 let _undoStack = [];
 let _redoStack = [];
+
+// All'uscita dalla sessione (evento di exitToHome): l'annulla di una sessione non deve scrivere nella paint della successiva
+document.addEventListener('dnd:reset-draw-history', () => { _undoStack = []; _redoStack = []; });
 
 function recordPaintChange(changes) {
   if (!changes || !changes.length) return;
@@ -89,10 +96,22 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
     isMaster ? state.selectedDockId : state.selectedGridTokenId,
     currentTurnId,
     isMaster,
-    isMaster
-      ? (id) => document.dispatchEvent(new CustomEvent('dnd:dock-select', { detail: { id } }))
-      : selectToken,
-    comb
+    (id) => {
+      // Comportamento di sempre (master: soggetto del dock; giocatore: selezione/movimento)...
+      if (isMaster) document.dispatchEvent(new CustomEvent('dnd:dock-select', { detail: { id } }));
+      else selectToken(id);
+      // ...e in più si apre (o si chiude) il dettaglio del combattente
+      if (id) CombatChrome.set({ drawer: 'detail', detailId: id, initSheetOpen: false });
+      else CombatChrome.set({ drawer: state.ui.drawer === 'detail' ? null : state.ui.drawer, detailId: null });
+    },
+    comb,
+    {
+      density:      readDensity(),
+      myUid:        state.myUid,
+      masterUid:    state.session.masterUid,
+      acMap:        state.acMap,
+      myDeathSaves: state.sheetData?.deathSaves ?? null,
+    }
   );
 
   GridUI.renderGrid(
@@ -113,12 +132,15 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
     state.snapshot?.template ?? null,
     state.templatePlacingShape,
     state.templateOrigin,
-    (col, row) => { state.templateOrigin = { col, row }; reRender(); },
+    (col, row) => { state.templateOrigin = { col, row }; reRender(); document.dispatchEvent(new CustomEvent('dnd:grid-mode-changed')); },
     (shape, originCol, originRow, size, angleDeg) => {
       state.session.setTemplate(shape, originCol, originRow, size, angleDeg, state.myUid);
       state.templatePlacingShape = null;
       state.templateOrigin       = null;
       reRender();
+      // La guida a passi e i bottoni dell'area si riallineano subito (il listener di sessione
+      // scatta prima che queste due righe azzerino lo stato)
+      document.dispatchEvent(new CustomEvent('dnd:grid-mode-changed'));
     },
     state.snapshot?.paint ?? {},
     state.drawMode,
@@ -145,7 +167,27 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
     state.drawSize,
     state.drawShape,
     (changes) => recordPaintChange(changes),
-    state.drawFill
+    state.drawFill,
+    state.snapshot?.trajectories ?? {},
+    state.trajectoryFrom,
+    state.ui.tool === 'traj',
+    (pick) => {
+      // Primo tocco: chi attacca (serve un segnalino). Secondo: il bersaglio, segnalino o casella.
+      if (!state.trajectoryFrom) {
+        if (pick.tokenId) { state.trajectoryFrom = pick.tokenId; reRender(); document.dispatchEvent(new CustomEvent('dnd:grid-mode-changed')); }
+        return;
+      }
+      if (pick.tokenId === state.trajectoryFrom) {          // ritocco sul punto di partenza: annulla
+        state.trajectoryFrom = null; reRender(); document.dispatchEvent(new CustomEvent('dnd:grid-mode-changed'));
+        return;
+      }
+      const data = { fromId: state.trajectoryFrom };
+      if (pick.tokenId) data.toId = pick.tokenId; else { data.toCol = pick.col; data.toRow = pick.row; }
+      state.session.setTrajectory(state.myUid, data);
+      state.trajectoryFrom = null;
+      reRender();
+      document.dispatchEvent(new CustomEvent('dnd:grid-mode-changed'));
+    }
   );
   renderTokenBar(gridPos, combatants);
   updateTokenSizeControl(combatants);
@@ -279,9 +321,9 @@ export function renderTokenBar(gridPos, combatants) {
     const player   = c.type === 'player';
     return `<button
       class="grid-token-chip${selected ? ' selected' : ''}${ko ? ' ko' : ''}${player ? ' is-player' : ''}"
-      data-token-id="${id}"
+      data-token-id="${attr(id)}"
       title="${esc(c.name || '?')} — ${placed ? 'rimuovi dalla griglia' : 'posiziona sulla griglia'}"
-    >${(c.name || '?').slice(0, 2).toUpperCase()}${ko ? ' 💀' : ''}${placed ? '' : ' +'}</button>`;
+    >${esc(String(c.name || '?').slice(0, 2).toUpperCase())}${ko ? ' ' + icon('skull', { size: 13 }) : ''}${placed ? '' : ' +'}</button>`;
   }).join('');
 
   bar.onclick = (e) => {

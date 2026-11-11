@@ -1,3 +1,9 @@
+import { icon, iconPath } from './icons.js';
+import { footprintOf, squareDistance, fmtM, validTemplate } from '../logic/gridMath.js';
+import { num, attr, safeImageUrl } from '../utils/sanitize.js';
+import { trajectoryEndpoints, trajectoryDistance } from '../logic/trajectory.js';
+import { combatantView, healthHintText } from '../logic/visibility.js';
+import { captureFocusState, restoreFocusState } from '../utils/domPreserve.js';
 // Griglia quadrata. 1 cella = 1 m. Dimensioni guidate da gridConfig.
 // Zoom via viewBox: _zoom scala il viewBox, _panX/_panY traslano l'origine.
 // Distanza a diagonali alternate (variante DMG 5-10-5: la 1ª diagonale costa 1,
@@ -6,8 +12,7 @@
 const CELL = 40;        // lato cella nelle coordinate del viewBox
 const PAD  = 14;        // margine interno (coordinate viewBox) — spazio per etichette nome/distanza
 
-const SIZE_FOOTPRINT = { tiny: 1, small: 1, medium: 1, large: 2, huge: 3, gargantuan: 4 };
-export function footprintOf(size) { return SIZE_FOOTPRINT[size] || 1; }
+export { footprintOf, squareDistance } from '../logic/gridMath.js';
 
 // ─── Stato zoom e pan ─────────────────────────────────────────────────────────
 let _zoom     = 1;
@@ -198,7 +203,7 @@ function _renderShapeGhost() {
   const d = _shapeDrag;
   const keys = shapeCellKeys(d.tool, d.sc, d.sr, d.ec, d.er, _ctx.drawFill === 'filled', _ctx.drawSize, _ctx.cols, _ctx.rows);
   const isErase = !_ctx.drawColor;
-  const col_    = isErase ? '#ffffff' : _ctx.drawColor;
+  const col_    = isErase ? 'var(--c-text)' : _ctx.drawColor;
   let html = '';
   for (const key of keys) {
     const [c, r] = key.split('_').map(Number);
@@ -321,41 +326,22 @@ function cellXY(col, row) {
 
 // Screen-px ↔ spazio SVG fisso (indipendente da zoom/pan) — stessa idiomatica
 // già usata dal pan-drag in initGridControls (rect + rapporto viewBox/rect).
-function _screenToGrid(clientX, clientY, svg, container) {
-  const rect = container.getBoundingClientRect();
-  const scaleX = svg.viewBox.baseVal.width  / (rect.width  || 1);
-  const scaleY = svg.viewBox.baseVal.height / (rect.height || 1);
-  const svgX = _panX + (clientX - rect.left) * scaleX;
-  const svgY = _panY + (clientY - rect.top)  * scaleY;
-  return { col: (svgX - PAD) / CELL, row: (svgY - PAD) / CELL };
+// Si usa la matrice schermo↔SVG del browser: tiene conto da sola di viewBox (zoom e pan) e
+// dell'eventuale bordo vuoto che preserveAspectRatio="meet" lascia quando il contenitore ha un
+// rapporto diverso da quello della mappa (prima i cursori degli altri slittavano in quel caso).
+function _screenToGrid(clientX, clientY, svg) {
+  const ctm = svg.getScreenCTM();
+  if (!ctm) return { col: NaN, row: NaN };
+  const p = new DOMPoint(clientX, clientY).matrixTransform(ctm.inverse());
+  return { col: (p.x - PAD) / CELL, row: (p.y - PAD) / CELL };
 }
 
 function _gridToScreen(col, row, svg, container) {
+  const ctm = svg.getScreenCTM();
+  if (!ctm) return { x: -9999, y: -9999 };
+  const p = new DOMPoint(PAD + col * CELL, PAD + row * CELL).matrixTransform(ctm);
   const rect = container.getBoundingClientRect();
-  const vb = svg.viewBox.baseVal;
-  const scaleX = rect.width  / vb.width;
-  const scaleY = rect.height / vb.height;
-  return {
-    x: (PAD + col * CELL - vb.x) * scaleX,
-    y: (PAD + row * CELL - vb.y) * scaleY,
-  };
-}
-
-// Separazione su un asse tra due intervalli [a1,a2] e [b1,b2] (0 se si toccano/sovrappongono, +1 se adiacenti)
-function axisDist(a1, a2, b1, b2) {
-  return Math.max(0, Math.max(a1, b1) - Math.min(a2, b2));
-}
-
-// Distanza bordo-a-bordo tra due footprint quadrati, con diagonali alternate
-// (variante DMG: ogni seconda diagonale costa doppio) → max + floor(min/2).
-export function squareDistance(c1, r1, n1, c2, r2, n2) {
-  const dc = axisDist(c1, c1 + n1 - 1, c2, c2 + n2 - 1);
-  const dr = axisDist(r1, r1 + n1 - 1, r2, r2 + n2 - 1);
-  return Math.max(dc, dr) + Math.floor(Math.min(dc, dr) / 2);
-}
-
-function fmtM(d) {
-  return d === Math.floor(d) ? `${d}m` : `${d.toFixed(1)}m`;
+  return { x: p.x - rect.left, y: p.y - rect.top };
 }
 
 // ─── Disegno a colori sulla mappa ─────────────────────────────────────────────
@@ -367,7 +353,7 @@ const HEX_COLOR_RE = /^#[0-9a-fA-F]{6}$/;
 
 // ─── Template ad area (cerchio/cono/linea) ───────────────────────────────────
 const TEMPLATE_LABEL     = { circle: 'Cerchio', cone: 'Cono', line: 'Linea' };
-const TEMPLATE_COLOR     = '#c084fc'; // viola neutro, distinto da muri/reach/selezione
+const TEMPLATE_COLOR     = 'var(--c-foe)'; // rosso inchiostro, come nel mockup delle aree
 const CONE_HALF_ANGLE    = 45;        // cono 5e: larghezza = distanza dall'origine (angolo totale 90°)
 const LINE_HALF_WIDTH_M  = 0.75;      // linea larga 1.5m
 const TEMPLATE_MIN_M     = { circle: 3, cone: 9, line: 9 }; // default se origine e conferma coincidono
@@ -408,7 +394,8 @@ function templateShapeMarkup(shape, originCol, originRow, size, angleDeg, color,
   const o = cellCenterOf(originCol, originRow);
   const r = size * CELL;
   const dash = dashed ? ' stroke-dasharray="6 4"' : '';
-  const common = `fill="${color}" fill-opacity="${fillOpacity}" stroke="${color}" stroke-opacity="${strokeOpacity}" stroke-width="2"${dash} pointer-events="none"`;
+  // Riempimento a righe diagonali (pattern #tpl-hatch) e bordo marcato: si legge subito come "area d'effetto"
+  const common = `fill="url(#tpl-hatch)" stroke="${color}" stroke-opacity="${Math.max(strokeOpacity, 0.85)}" stroke-width="2.5" stroke-linejoin="round"${dash} pointer-events="none"`;
 
   if (shape === 'circle') {
     return `<circle cx="${o.x.toFixed(1)}" cy="${o.y.toFixed(1)}" r="${r.toFixed(1)}" ${common}/>`;
@@ -432,6 +419,13 @@ function templateShapeMarkup(shape, originCol, originRow, size, angleDeg, color,
     return `<polygon points="${p1.x.toFixed(1)},${p1.y.toFixed(1)} ${p2.x.toFixed(1)},${p2.y.toFixed(1)} ${p3.x.toFixed(1)},${p3.y.toFixed(1)} ${p4.x.toFixed(1)},${p4.y.toFixed(1)}" ${common}/>`;
   }
   return '';
+}
+
+// Chi ha piazzato il template: il nome del suo personaggio; se non ne ha uno è il master
+function _templateAuthor(ownerUid, comb) {
+  if (!ownerUid) return '';
+  const own = Object.values(comb || {}).find(c => c.ownerUid === ownerUid && c.type === 'player');
+  return own?.name || 'Master';
 }
 
 function esc(s) {
@@ -467,6 +461,12 @@ function _renderCursorOverlay() {
   const svg = container?.querySelector('svg');
   if (!container || !svg) return;
   const layer = _ensureCursorLayer(container);
+  // Il layer è un fratello del contenitore: lo si allinea al suo rettangolo (sotto toolbar e riga
+  // opzioni non sta più a 44px dal bordo del pannello)
+  layer.style.top    = `${container.offsetTop}px`;
+  layer.style.left   = `${container.offsetLeft}px`;
+  layer.style.width  = `${container.offsetWidth}px`;
+  layer.style.height = `${container.offsetHeight}px`;
 
   const seen = new Set();
   for (const [uid, c] of Object.entries(_cursors)) {
@@ -474,7 +474,7 @@ function _renderCursorOverlay() {
     if (c == null || typeof c.col !== 'number' || typeof c.row !== 'number') continue;
     seen.add(uid);
     const { x, y } = _gridToScreen(c.col, c.row, svg, container);
-    let el = layer.querySelector(`[data-cursor-uid="${uid}"]`);
+    let el = [...layer.children].find(n => n.dataset.cursorUid === uid);   // niente selettore con l'uid: viene da Firebase
     if (!el) {
       el = document.createElement('div');
       el.className = 'grid-cursor';
@@ -484,7 +484,7 @@ function _renderCursorOverlay() {
     }
     el.style.left = `${x}px`;
     el.style.top  = `${y}px`;
-    const color = typeof c.color === 'string' ? c.color : '#888';
+    const color = typeof c.color === 'string' && HEX_COLOR_RE.test(c.color) ? c.color : 'var(--c-mute)';
     el.querySelector('.dot').style.background   = color;
     const label = el.querySelector('.label');
     label.style.background = color;
@@ -530,17 +530,21 @@ export function setCursors(cursorsObj, myUid) {
  * @param onStrokeEnd (changes) => void        — fine di una modifica colore (pennellata, secchiello o forma); changes = [{key, before, after}], per l'undo/redo locale
  * @param drawFill 'outline' | 'filled'        — forme: solo contorno (spesso drawSize caselle) o piene
  */
-export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onSetWall, template, placingShape, templateOrigin, onSetTemplateOrigin, onCommitTemplate, paint, drawMode, drawColor, onSetPaint, onCursorMove, drawTool, onPaintCells, drawSize, drawShape, onStrokeEnd, drawFill) {
+export function renderGrid(container, gridPos, combatants, myCombatantId, myOwnedIds, isMaster, selectedId, currentTurnId, gridConfig, walls, editMode, onSelect, onMove, onSetWall, template, placingShape, templateOrigin, onSetTemplateOrigin, onCommitTemplate, paint, drawMode, drawColor, onSetPaint, onCursorMove, drawTool, onPaintCells, drawSize, drawShape, onStrokeEnd, drawFill, trajectories, trajectoryFrom, trajTool, onTrajectoryPick) {
   const pos   = gridPos    || {};
   const comb  = combatants || {};
   const wall  = walls      || {};
   const cellPaint = paint  || {};
-  const cols  = Math.max(1, gridConfig?.cols || 20);
-  const rows  = Math.max(1, gridConfig?.rows || 20);
+  // misure da Firebase (scrivibile da chiunque): fuori da 1–60 non si disegna, altrimenti i cicli sulle celle bloccano tutti
+  const cols  = Math.min(60, Math.max(1, Math.floor(num(gridConfig?.cols, 20)) || 20));
+  const rows  = Math.min(60, Math.max(1, Math.floor(num(gridConfig?.rows, 20)) || 20));
+  // L'area viene da Firebase (scrivibile da chiunque): forma o misure sballate non si disegnano
+  if (!validTemplate(template)) template = null;
 
   // Celle coperte dal template attivo + combattenti coinvolti (per evidenziazione ed elenco)
   const templateCells = new Set();
   const templateHitNames = [];
+  const templateHitIds   = new Set();
   if (template) {
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
@@ -556,7 +560,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
           if (templateCells.has(`${p.col + dc}_${p.row + dr}`)) hit = true;
         }
       }
-      if (hit) templateHitNames.push(comb[id].name || '?');
+      if (hit) { templateHitNames.push(comb[id].name || '?'); templateHitIds.add(id); }
     });
   }
 
@@ -588,17 +592,18 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
 
   // I token grandi si ancorano (circa) al centro: la cella cliccata non è il top-left ma il centro del footprint
   const selOff  = Math.floor((selSide - 1) / 2);
-  const selRing = !selComb ? '#8a8a8a'
-    : (selComb.type === 'player' || selectedId === myCombatantId) ? '#4aba4a'
-    : selComb.faction === 'good' ? '#4aa8d8'
-    : '#bf4a4a';
+  const selRing = !selComb ? 'var(--c-dead)'
+    : (selComb.type === 'player' || selectedId === myCombatantId) ? 'var(--c-pc)'
+    : selComb.faction === 'good' ? 'var(--c-ally)'
+    : 'var(--c-foe)';
 
   const vbW = (PAD * 2 + cols * CELL).toFixed(0);
   const vbH = (PAD * 2 + rows * CELL).toFixed(0);
   _totalW = PAD * 2 + cols * CELL;
   _totalH = PAD * 2 + rows * CELL;
 
-  let defs  = '';
+  let defs  = '<pattern id="tpl-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="var(--c-foe)" fill-opacity=".10"/><line x1="0" y1="0" x2="0" y2="7" stroke="var(--c-foe)" stroke-opacity=".45" stroke-width="1.5"/></pattern>'
+    + '<marker id="traj-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--c-ally)"/></marker>';
   let inner = '';
 
   // 1) Celle di sfondo + muri + raggio di movimento
@@ -624,6 +629,14 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   // 1b) Contorno del template confermato (sopra le celle, sotto i token)
   if (template) {
     inner += templateShapeMarkup(template.shape, template.originCol, template.originRow, template.size, template.angleDeg, TEMPLATE_COLOR, 0.12, 0.7, false);
+    // Punto d'origine ed etichetta "Forma misura · autore"
+    const o = cellCenterOf(template.originCol, template.originRow);
+    const author = _templateAuthor(template.ownerUid, comb);
+    const labelText = `${TEMPLATE_LABEL[template.shape]} ${fmtM(template.size)}${author ? ' · ' + author : ''}`;
+    const lw = Math.max(64, labelText.length * 6.4 + 14);
+    inner += `<circle cx="${o.x.toFixed(1)}" cy="${o.y.toFixed(1)}" r="4.5" fill="${TEMPLATE_COLOR}" pointer-events="none"/>`;
+    inner += `<g pointer-events="none"><rect x="${(o.x - lw / 2).toFixed(1)}" y="${(o.y - 54).toFixed(1)}" width="${lw.toFixed(1)}" height="19" rx="3" fill="var(--c-paper-hi)" stroke="${TEMPLATE_COLOR}"/>`
+           + `<text x="${o.x.toFixed(1)}" y="${(o.y - 41).toFixed(1)}" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--c-text)">${esc(labelText)}</text></g>`;
   }
 
   // 2) Token (un rect per footprint)
@@ -642,12 +655,12 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     const isPlayer   = occ.type === 'player';
     const isDead     = occ.hpCurrent <= 0;
 
-    // Colore del bordo per tipo di token; sfondo opaco in tinta scura
-    let fill, ring;
-    if (isPlayer || isMyToken)       { fill = '#0d2d0d'; ring = '#4aba4a'; }   // giocatori: verde
-    else if (occ.faction === 'good') { fill = '#10293c'; ring = '#4aa8d8'; }   // creature alleate: azzurro
-    else                             { fill = '#2d1010'; ring = '#bf4a4a'; }   // nemici: rosso
-    if (isDead) { fill = '#2e2e2e'; ring = '#8a8a8a'; }
+    // Colore del bordo per tipo di token; sfondo opaco color carta
+    let fill = 'var(--c-paper-hi)', ring;
+    if (isPlayer || isMyToken)       ring = 'var(--c-pc)';     // giocatori: verde
+    else if (occ.faction === 'good') ring = 'var(--c-ally)';   // creature alleate: azzurro
+    else                             ring = 'var(--c-foe)';    // nemici: rosso
+    if (isDead) { fill = 'var(--c-track)'; ring = 'var(--c-dead)'; }
 
     const inset  = 3;
     const letter = esc((occ.name || '?').trim().charAt(0).toUpperCase());
@@ -659,10 +672,16 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     const rRing  = rOuter - ringW / 2;
     const rBody  = rRing - ringW / 2;
 
+    if (trajTool && trajectoryFrom && id === trajectoryFrom) {
+      inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 6}" fill="none" stroke="var(--c-ally)" stroke-width="2.5" stroke-dasharray="5 3" pointer-events="none"/>`;
+    }
+    if (templateHitIds.has(id)) {
+      inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 6}" fill="none" stroke="${TEMPLATE_COLOR}" stroke-width="2" stroke-dasharray="3 3" pointer-events="none"/>`;
+    }
     if (isActive) {
-      inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 2}" fill="none" stroke="var(--gold-bright)" stroke-width="1.5" pointer-events="none"/>`;
+      inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 2}" fill="none" stroke="var(--c-heading)" stroke-width="1.5" pointer-events="none"/>`;
     } else if (isSelected) {
-      inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 2}" fill="none" stroke="var(--gold)" stroke-width="1.5" stroke-dasharray="4 4" pointer-events="none"/>`;
+      inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 2}" fill="none" stroke="var(--c-heading)" stroke-width="1.5" stroke-dasharray="4 4" pointer-events="none"/>`;
     }
 
     // HP esatti: master vede tutto, i player solo PG/famigli — per le creature il bordo resta pieno
@@ -677,13 +696,17 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
 
     // Avatar: <image> SVG con clipPath circolare; fallback lettera/teschio se assente o morto
     const rawThumb = occ.avatarThumb;
-    const avatarSrc = typeof rawThumb === 'string' && rawThumb.startsWith('data:image/') ? rawThumb : null;
+    const avatarSrc = safeImageUrl(rawThumb);
     if (avatarSrc && !isDead) {
       const clipId = `tc_${id.replace(/[^a-zA-Z0-9]/g, '_')}`;
       defs += `<clipPath id="${clipId}"><circle cx="${cx}" cy="${cy}" r="${rBody.toFixed(1)}"/></clipPath>`;
-      inner += `<image href="${avatarSrc}" x="${(cx - rBody).toFixed(1)}" y="${(cy - rBody).toFixed(1)}" width="${(rBody * 2).toFixed(1)}" height="${(rBody * 2).toFixed(1)}" clip-path="url(#${clipId})" preserveAspectRatio="xMidYMid slice" pointer-events="none"/>`;
+      inner += `<image href="${attr(avatarSrc)}" x="${(cx - rBody).toFixed(1)}" y="${(cy - rBody).toFixed(1)}" width="${(rBody * 2).toFixed(1)}" height="${(rBody * 2).toFixed(1)}" clip-path="url(#${clipId})" preserveAspectRatio="xMidYMid slice" pointer-events="none"/>`;
     } else {
-      inner += `<text x="${cx}" y="${(cy + fsz * 0.36).toFixed(1)}" text-anchor="middle" font-size="${fsz}" class="sq-name" pointer-events="none">${isDead ? '💀' : letter}</text>`;
+      inner += `<text x="${cx}" y="${(cy + fsz * 0.36).toFixed(1)}" text-anchor="middle" font-size="${fsz}" class="sq-name" pointer-events="none">${isDead ? '' : letter}</text>`;
+      if (isDead) {
+        // teschio al posto della lettera: stesso tracciato dell'icona "skull"
+        inner += `<g transform="translate(${(cx - fsz / 2).toFixed(1)} ${(cy - fsz / 2).toFixed(1)}) scale(${(fsz / 512).toFixed(4)})" fill="var(--c-dead)" pointer-events="none"><path d="${iconPath('skull')}"/></g>`;
+      }
     }
     inner += `<text x="${cx}" y="${(y + w + 9).toFixed(1)}" text-anchor="middle" class="sq-nm" pointer-events="none">${esc((occ.name || '').trim().slice(0, 12).toUpperCase())}</text>`;
 
@@ -693,6 +716,27 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
       inner += `<text x="${cx}" y="${(y - 3).toFixed(1)}" text-anchor="middle" font-size="11" class="sq-dist" pointer-events="none">${esc(fmtM(d))}</text>`;
     }
   });
+
+  // 2b) Traiettorie: freccia tratteggiata da chi attacca al bersaglio, con la distanza in metri
+  for (const traj of Object.values(trajectories || {})) {
+    const ep = trajectoryEndpoints(traj, pos, comb);
+    if (!ep) continue;   // attaccante/bersaglio rimosso o tolto dalla mappa: non si disegna
+    const a = cellXY(ep.from.col, ep.from.row), b = cellXY(ep.to.col, ep.to.row);
+    const ax = a.x + ep.from.n * CELL / 2, ay = a.y + ep.from.n * CELL / 2;
+    const bx = b.x + ep.to.n * CELL / 2,   by = b.y + ep.to.n * CELL / 2;
+    const len = Math.hypot(bx - ax, by - ay);
+    if (len < 1) continue;
+    const ux = (bx - ax) / len, uy = (by - ay) / len;
+    // la freccia parte dal bordo di chi attacca e si ferma al bordo del bersaglio (o a metà casella)
+    const r0 = ep.from.n * CELL / 2 - 2, r1 = (traj.toId != null) ? ep.to.n * CELL / 2 + 3 : 6;
+    if (len <= r0 + r1) continue;
+    const x1 = ax + ux * r0, y1 = ay + uy * r0, x2 = bx - ux * r1, y2 = by - uy * r1;
+    const label = fmtM(trajectoryDistance(ep));
+    const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, lw = label.length * 7 + 12;
+    inner += `<g pointer-events="none"><line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="var(--c-ally)" stroke-width="2.5" stroke-dasharray="7 5" marker-end="url(#traj-arrow)"/>`
+           + `<rect x="${(mx - lw / 2).toFixed(1)}" y="${(my - 9).toFixed(1)}" width="${lw}" height="18" rx="3" fill="var(--c-paper-hi)" stroke="var(--c-ally)"/>`
+           + `<text x="${mx.toFixed(1)}" y="${(my + 4.5).toFixed(1)}" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--c-text)">${esc(label)}</text></g>`;
+  }
 
   // 3) Hit layer trasparente (intercetta i click su ogni cella)
   for (let row = 0; row < rows; row++) {
@@ -714,23 +758,32 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   _ensureCursorLayer(container);
   _renderCursorOverlay();
 
+  // Elenco dei combattenti dentro l'area, sotto le opzioni dell'area
+  const hitEl = document.getElementById('area-hit');
+  if (hitEl) {
+    hitEl.textContent = !template ? ''
+      : templateHitNames.length > 0 ? `Colpiti: ${templateHitNames.join(', ')}` : 'Nessun combattente nell\'area';
+  }
+
   // Hint contestuale nella toolbar
   const hintEl = document.getElementById('grid-hint');
   if (hintEl) {
     if (drawMode && isShapeTool(drawTool)) {
       hintEl.textContent = drawTool === 'circle'
-        ? '🎨 Cerchio: premi sul centro e trascina per il raggio'
-        : `🎨 ${drawTool === 'square' ? 'Quadrato' : 'Rettangolo'}: trascina da un angolo all'angolo opposto`;
+        ? 'Cerchio: premi sul centro e trascina per il raggio'
+        : `${drawTool === 'square' ? 'Quadrato' : 'Rettangolo'}: trascina da un angolo all'angolo opposto`;
     } else if (drawMode) {
       hintEl.textContent = drawColor
-        ? '🎨 Disegna: trascina per colorare le caselle'
-        : '🎨 Disegna: trascina per cancellare il colore (gomma attiva)';
+        ? 'Trascina sulla mappa per colorare'
+        : 'Trascina per cancellare il colore (gomma attiva)';
     } else if (placingShape && !templateOrigin) {
       hintEl.textContent = `${TEMPLATE_LABEL[placingShape]}: tocca la cella di origine`;
     } else if (placingShape && templateOrigin) {
       hintEl.textContent = `${TEMPLATE_LABEL[placingShape]}: muovi per orientare, tocca per confermare`;
+    } else if (trajTool) {
+      hintEl.textContent = trajectoryFrom ? 'Tocca il bersaglio: un segnalino o una casella' : 'Tocca il segnalino di chi attacca';
     } else if (editMode && isMaster) {
-      hintEl.textContent = '✏️ Modifica: imposta le dimensioni e clicca le caselle vuote per i muri';
+      hintEl.textContent = 'Imposta le dimensioni e clicca le caselle vuote per i muri';
     } else if (showReach) {
       hintEl.textContent = `${selComb.name} — raggio di movimento ${fmtM(reachSpeed)} · tocca la destinazione`;
     } else if (selectedId && selComb) {
@@ -743,7 +796,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
         ? `${label} — nel template: ${templateHitNames.join(', ')}`
         : `${label} — nessun combattente nel template`;
     } else {
-      hintEl.textContent = '1 casella = 1 m · Seleziona un token, poi tocca la destinazione';
+      hintEl.textContent = '1 casella = 1 m · Tocca un segnalino, poi la destinazione';
     }
   }
 
@@ -773,14 +826,14 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   let ghost = null;
   const removeGhost = () => { ghost?.remove(); ghost = null; };
   function updateGhost(c, r) {
-    const canMoveSel = selectedId && !((editMode && isMaster)) && !drawMode && (isMaster || myOwnedIds.has(selectedId));
+    const canMoveSel = selectedId && !((editMode && isMaster)) && !drawMode && !trajTool && (isMaster || myOwnedIds.has(selectedId));
     if (!canMoveSel || occCell[`${c}_${r}`]) { removeGhost(); return; }   // sopra un token il click seleziona, niente preview
     const ac = c - selOff;
     const ar = r - selOff;
     const ok = canPlace(ac, ar, selSide, selectedId);
     const { x: gx, y: gy } = cellXY(ac, ar);
     const gw    = selSide * CELL;
-    const color = ok ? selRing : '#8a8a8a';
+    const color = ok ? selRing : 'var(--c-dead)';
     if (!ghost) {
       ghost = document.createElementNS('http://www.w3.org/2000/svg', 'g');
       ghost.setAttribute('pointer-events', 'none');
@@ -825,7 +878,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     const offset  = Math.floor((size - 1) / 2);
     const round   = !shape && drawShape === 'round';
     const isErase = !drawColor;
-    const col_    = isErase ? '#ffffff' : drawColor;
+    const col_    = isErase ? 'var(--c-text)' : drawColor;
     let rects = '';
     for (let dc = 0; dc < size; dc++) {
       for (let dr = 0; dr < size; dr++) {
@@ -918,6 +971,12 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
       return;
     }
 
+    // Traiettoria: il primo tocco sceglie chi attacca, il secondo il bersaglio (segnalino o casella)
+    if (trajTool) {
+      onTrajectoryPick?.({ col, row, tokenId: occupantId ?? null });
+      return;
+    }
+
     // Modalità modifica (master) o disegno: si dipinge con mousedown/drag (vedi _bindCellPaint)
     if ((editMode && isMaster) || drawMode) return;
 
@@ -952,19 +1011,31 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   });
 }
 
-export function renderInitiativeList(container, sortedCombatants, gridPos, myCombatantId, selectedId, currentTurnId, isMaster, onSelect, combatants) {
+// Editor inline dell'iniziativa: lo stato sta qui (non nel DOM) così sopravvive
+// al rebuild della lista che ogni snapshot di sessione innesca.
+let _initEdit = null;          // { id, value }
+let _initRendering = false;    // true mentre si ricostruisce: il blur dell'input rimosso va ignorato
+
+const INIT_TYPE_CLASS = (c) => c.hpCurrent === 0 ? 'dead' : (c.type === 'creature' ? (c.faction === 'good' ? 'ally' : 'foe') : 'pc');
+
+// opts = { density: 'compact'|'details', myUid, masterUid, acMap, myDeathSaves, conditionColor }
+export function renderInitiativeList(container, sortedCombatants, gridPos, myCombatantId, selectedId, currentTurnId, isMaster, onSelect, combatants, opts = {}) {
   if (!container) return;
 
+  const { density = 'compact', myUid = null, masterUid = null, acMap = {}, myDeathSaves = null } = opts;
   const pos = gridPos || {};
   const comb = combatants || {};
   const referenceId = selectedId || myCombatantId;
   const refPos  = referenceId ? pos[referenceId] : null;
   const refSide = referenceId ? footprintOf(comb[referenceId]?.size) : 1;
 
+  const snap = captureFocusState(container);
   let html = '';
   for (const c of sortedCombatants) {
+    const v = combatantView(c, myUid, masterUid, acMap);
     const isActive = c.id === currentTurnId;
     const cPos = pos[c.id];
+    const ko = c.hpCurrent === 0;
 
     let distText = '';
     if (refPos && cPos && c.id !== referenceId) {
@@ -972,33 +1043,103 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
       distText = `<span class="grid-initiative-dist">${fmtM(d)}</span>`;
     }
 
-    const isSelected = c.id === selectedId;
     let cls = 'grid-initiative-item';
     if (isActive)          cls += ' active-turn';
-    if (isSelected)        cls += ' selected';
-    if (c.hpCurrent === 0) cls += ' ko';
+    if (c.id === selectedId) cls += ' selected';
+    if (ko)                cls += ' ko';
 
-    const koIcon = c.hpCurrent === 0
-      ? `<span class="grid-initiative-ko">💀</span>`
-      : '<span class="grid-initiative-ko"></span>';
+    // Numero di iniziativa: modificabile al volo da chi può (proprietario o master)
+    const cid  = attr(c.id);
+    const init = num(c.initiative);
+    const initNum = (_initEdit && _initEdit.id === c.id)
+      ? `<input type="number" class="init-num-input" data-id="${cid}" data-init-edit min="-10" max="30" value="${attr(_initEdit.value)}">`
+      : (v.canEdit
+        ? `<button type="button" class="init-num" data-id="${cid}" data-init-open title="Modifica iniziativa">${init}</button>`
+        : `<span class="init-num">${init}</span>`);
 
-    const factionDot = c.type === 'creature'
-      ? `<i class="init-faction-dot ${c.faction === 'good' ? 'ally' : 'enemy'}"></i>`
-      : '';
+    const thumb = safeImageUrl(c.avatarThumb);
+    const letter = esc((c.name || '?').trim().charAt(0).toUpperCase());
+    const avatar = `<span class="init-av ${INIT_TYPE_CLASS(c)}">${ko ? icon('skull', { size: 15 }) : (thumb ? `<img src="${esc(thumb)}" alt="">` : letter)}</span>`;
+
+    // Vita: barra e valore solo se l'utente può vederli; altrimenti l'accenno del master, se c'è
+    const hpPct = c.hpMax > 0 ? Math.min(100, Math.max(0, (c.hpCurrent / c.hpMax) * 100)) : 0;
+    let bar = '', val = '';
+    if (v.showFullHp) {
+      bar = `<span class="init-bar ${INIT_TYPE_CLASS(c)}"><i style="width:${hpPct.toFixed(1)}%"></i></span>`;
+      val = `<span class="init-val">${num(c.hpCurrent)}/${num(c.hpMax)}</span>`;
+    } else if (v.showHint) {
+      val = `<span class="init-val">${healthHintText(hpPct)}</span>`;
+    }
+    // Creatura con vita nascosta e nessun accenno del master: niente (stesse regole della card)
+
+    let extra = '';
+    if (density === 'details') {
+      const parts = [];
+      parts.push(v.acVisible && v.ac !== null ? `<span>CA <b>${num(v.ac)}</b></span>` : (v.isCreature ? '<span>CA nascosta</span>' : ''));
+      if (v.showFullHp && num(c.tempHp) > 0) parts.push(`<span>HP temp. <b>+${num(c.tempHp)}</b></span>`);
+      if (v.isOwnCard && ko && myDeathSaves) parts.push(`<span>TS morte: <b>${myDeathSaves.successes ?? 0}\u2713 ${myDeathSaves.failures ?? 0}\u2717</b></span>`);
+      for (const cond of Object.keys(c.conditions || {})) parts.push(`<span class="chip">${esc(cond)}</span>`);
+      const insp = (c.type === 'player' || c.type === 'pet')
+        ? `<button type="button" class="init-insp${c.inspiration ? ' on' : ''}" data-id="${cid}" data-insp-toggle ${v.canEdit ? '' : 'disabled'} title="${c.inspiration ? 'Ispirazione' : 'Nessuna ispirazione'}" aria-label="Ispirazione" aria-pressed="${c.inspiration ? 'true' : 'false'}">${icon('star', { size: 16 })}</button>`
+        : '';
+      extra = `<div class="init-extra">${parts.filter(Boolean).join('')}${insp}</div>`;
+    }
 
     html += `
-      <li class="${cls}" style="cursor:pointer" data-id="${c.id}">
-        <span class="grid-initiative-init">${c.initiative}</span>
-        <span class="grid-initiative-name">${esc(c.name)}</span>
-        <div class="grid-initiative-meta">${koIcon}${factionDot}${distText}</div>
+      <li class="${cls}" data-id="${cid}">
+        ${initNum}${avatar}
+        <span class="init-who"><span class="grid-initiative-name">${esc(c.name)}</span>${bar}</span>
+        <span class="grid-initiative-meta">${val}${distText}</span>
+        ${extra}
       </li>`;
   }
 
+  _initRendering = true;
   container.innerHTML = html;
+  _initRendering = false;
+  restoreFocusState(container, snap);
+
+  const commit = (input) => {
+    const id = input.dataset.id;
+    const n = input.value === '' ? NaN : parseInt(input.value, 10);
+    _initEdit = null;
+    if (!isNaN(n) && n !== comb[id]?.initiative) document.dispatchEvent(new CustomEvent('dnd:initiative-change', { detail: { id, value: n } }));
+    _reRenderCallback?.();
+  };
+
   container.onclick = (e) => {
+    const openBtn = e.target.closest('[data-init-open]');
+    if (openBtn) {
+      e.stopPropagation();
+      _initEdit = { id: openBtn.dataset.id, value: comb[openBtn.dataset.id]?.initiative ?? 0 };
+      _reRenderCallback?.();
+      const input = container.querySelector('.init-num-input');
+      if (input) { input.focus(); input.select(); }
+      return;
+    }
+    if (e.target.closest('.init-num-input')) return;
+    const insp = e.target.closest('[data-insp-toggle]');
+    if (insp) {
+      if (!insp.disabled) document.dispatchEvent(new CustomEvent('dnd:toggle-inspiration', { detail: { id: insp.dataset.id, current: insp.classList.contains('on') } }));
+      return;
+    }
     const li = e.target.closest('li[data-id]');
     if (!li) return;
     onSelect(li.dataset.id === selectedId ? null : li.dataset.id);
+  };
+  container.oninput = (e) => {
+    if (e.target.matches('.init-num-input') && _initEdit) _initEdit.value = e.target.value;
+  };
+  container.onkeydown = (e) => {
+    const input = e.target.closest?.('.init-num-input');
+    if (!input) return;
+    if (e.key === 'Enter')  { e.preventDefault(); commit(input); }
+    if (e.key === 'Escape') { e.preventDefault(); _initEdit = null; _reRenderCallback?.(); }
+  };
+  container.onfocusout = (e) => {
+    if (_initRendering) return;
+    const input = e.target.closest?.('.init-num-input');
+    if (input && _initEdit && _initEdit.id === input.dataset.id) commit(input);
   };
 }
 

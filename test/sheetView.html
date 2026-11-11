@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Test — logica della scheda</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background:#0a0c0b; color:#e8e2d2;
+         margin:0; padding:24px 20px 60px; }
+  h1 { font-size:16px; margin:0 0 4px; letter-spacing:.04em; }
+  p.sub { color:#8f8f82; margin:0 0 20px; font-size:12.5px; }
+  h2 { font-size:13px; color:#c9a24a; margin:22px 0 6px; letter-spacing:.08em; text-transform:uppercase; }
+  .t { padding:2px 0 2px 22px; position:relative; }
+  .t::before { position:absolute; left:0; width:16px; }
+  .ok::before  { content:"PASS"; color:#7cc78a; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko::before  { content:"FAIL"; color:#e0685c; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko { color:#e0685c; }
+  .detail { color:#8f8f82; font-size:12px; padding-left:22px; white-space:pre; }
+  #summary { position:fixed; left:0; right:0; bottom:0; padding:12px 20px;
+             background:#161b19; border-top:1px solid #2b3631; font-weight:700; }
+</style>
+</head>
+<body>
+<h1>sheetView.js — XP, livello pronto, schede</h1>
+<p class="sub">Aprila con un server statico: <code>python3 -m http.server</code> → <code>/test/sheetView.html</code></p>
+<div id="out"></div>
+<div id="summary">✗ modulo non caricato</div>
+
+<script type="module">
+import { xpProgress, levelUpReady, sheetSubtitle, effectiveXp, xpSyncAction, sheetMatchesCombatant, readSheetTab, saveSheetTab, SHEET_TABS, XP_THRESHOLDS } from '../src/logic/sheetView.js';
+
+const out = document.getElementById('out');
+let pass = 0, fail = 0;
+const group = (name) => { const h = document.createElement('h2'); h.textContent = name; out.append(h); };
+function check(label, got, want) {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  ok ? pass++ : fail++;
+  const d = document.createElement('div');
+  d.className = 't ' + (ok ? 'ok' : 'ko');
+  d.textContent = label;
+  out.append(d);
+  if (!ok) {
+    const e = document.createElement('div');
+    e.className = 'detail';
+    e.textContent = `atteso ${JSON.stringify(want)} · ottenuto ${JSON.stringify(got)}`;
+    out.append(e);
+  }
+}
+
+group('soglie');
+check('venti soglie, la prima è 0', [XP_THRESHOLDS.length, XP_THRESHOLDS[0], XP_THRESHOLDS[1], XP_THRESHOLDS[19]], [20, 0, 300, 355000]);
+
+group('xpProgress');
+check('livello 4 con 1950 XP', xpProgress(4, 1950), { pct: 1950 / 6500, hi: 6500, max: false });
+check('livello 1 a zero', xpProgress(1, 0), { pct: 0, hi: 300, max: false });
+check('oltre la soglia: fermo al 100%', xpProgress(1, 9999), { pct: 1, hi: 300, max: false });
+check('XP negativi → 0', xpProgress(1, -50), { pct: 0, hi: 300, max: false });
+check('XP NaN → 0', xpProgress(1, NaN), { pct: 0, hi: 300, max: false });
+check('livello assente → 1', xpProgress(undefined, 100), { pct: 100 / 300, hi: 300, max: false });
+check('livello 20 → massimo', xpProgress(20, 400000), { pct: 1, hi: null, max: true });
+check('livello oltre 20 → massimo', xpProgress(25, 1), { pct: 1, hi: null, max: true });
+
+group('levelUpReady');
+check('a soglia', levelUpReady({ level: 3, xp: 2700, mode: 'xp' }), true);
+check('sotto soglia', levelUpReady({ level: 3, xp: 2699, mode: 'xp' }), false);
+check('livello 20 mai', levelUpReady({ level: 20, xp: 999999, mode: 'xp' }), false);
+check('milestone concesso', levelUpReady({ level: 3, xp: 0, mode: 'milestone', granted: true }), true);
+check('milestone non concesso, anche con tanti XP', levelUpReady({ level: 3, xp: 99999, mode: 'milestone', granted: false }), false);
+check('milestone a livello 20 mai', levelUpReady({ level: 20, mode: 'milestone', granted: true }), false);
+
+group('sheetSubtitle');
+check('scheda vuota', sheetSubtitle({}), '—');
+check('null', sheetSubtitle(null), '—');
+check('scheda completa', sheetSubtitle({ race: 'Mezzelfo', class: 'Ladra', level: 4, subclass: 'Furfante arcano', background: 'Criminale', alignment: 'Caotico neutrale' }),
+  'Mezzelfo · Ladra Lv.4 · Furfante arcano · Criminale · Caotico neutrale');
+check('solo classe', sheetSubtitle({ class: 'Ladra' }), 'Ladra');
+check('il livello da solo non basta', sheetSubtitle({ level: 3 }), '—');
+check('spazi ignorati', sheetSubtitle({ race: '  ', class: ' Ladra ', level: 2 }), 'Ladra Lv.2');
+
+group('XP unica (scheda e combattimento)');
+check('in sessione vale quello del master', effectiveXp({ inSession: true, sessionXp: 900, sheetXp: 5000 }), 900);
+check('0 assegnato è un valore, non "assente"', effectiveXp({ inSession: true, sessionXp: 0, sheetXp: 5000 }), 0);
+check('in sessione ma senza XP assegnati: la scheda', effectiveXp({ inSession: true, sessionXp: undefined, sheetXp: 5000 }), 5000);
+check('fuori sessione: la scheda', effectiveXp({ inSession: false, sessionXp: 900, sheetXp: 5000 }), 5000);
+check('dati sporchi → 0', effectiveXp({ inSession: true, sessionXp: 'x', sheetXp: -3 }), 0);
+check('niente → 0', effectiveXp({}), 0);
+check('seed: sessione senza XP, scheda con XP', xpSyncAction({ sessionXp: undefined, sheetXp: 5000 }), 'seed');
+check('seed anche con null', xpSyncAction({ sessionXp: null, sheetXp: 5000 }), 'seed');
+check('niente da seminare', xpSyncAction({ sessionXp: undefined, sheetXp: 0 }), null);
+check('mirror: sessione più alta della scheda', xpSyncAction({ sessionXp: 5000, sheetXp: 900 }), 'mirror');
+check('sessione più bassa della scheda: si alza la sessione, la scheda non perde XP', xpSyncAction({ sessionXp: 300, sheetXp: 2000 }), 'seed');
+check('già allineati: nessuna scrittura (niente cicli)', xpSyncAction({ sessionXp: 900, sheetXp: 900 }), null);
+check('sessione a 0 e scheda con XP: si alza la sessione', xpSyncAction({ sessionXp: 0, sheetXp: 700 }), 'seed');
+check('dato sporco in sessione: non si scrive', xpSyncAction({ sessionXp: 'x', sheetXp: 5 }), null);
+
+group('sheetMatchesCombatant');
+check('stesso charId', sheetMatchesCombatant({ combatantCharId: 'a', sheetCharId: 'a' }), true);
+check('charId diversi', sheetMatchesCombatant({ combatantCharId: 'a', sheetCharId: 'b' }), false);
+check('combattente senza charId: non si sincronizza', sheetMatchesCombatant({ combatantCharId: null, sheetCharId: 'b' }), false);
+check('scheda senza charId: non si sincronizza', sheetMatchesCombatant({ combatantCharId: 'a', sheetCharId: undefined }), false);
+check('niente argomenti', sheetMatchesCombatant(), false);
+
+group('scheda scelta');
+localStorage.removeItem('dnd-sheet-tab');
+check('elenco', SHEET_TABS, ['combat', 'spells', 'bag', 'features', 'character']);
+check('default combattimento', readSheetTab(), 'combat');
+saveSheetTab('spells');
+check('salva e rilegge', readSheetTab(), 'spells');
+localStorage.setItem('dnd-sheet-tab', 'boh');
+check('valore non valido → combattimento', readSheetTab(), 'combat');
+saveSheetTab('invalida');
+check('saveSheetTab ignora valori non validi', localStorage.getItem('dnd-sheet-tab'), 'boh');
+localStorage.removeItem('dnd-sheet-tab');
+const real = Object.getOwnPropertyDescriptor(window, 'localStorage');
+Object.defineProperty(window, 'localStorage', { get() { throw new Error('blocked'); }, configurable: true });
+let threw = false, got;
+try { got = readSheetTab(); saveSheetTab('bag'); } catch { threw = true; }
+check('storage bloccato: non lancia', threw, false);
+check('storage bloccato: legge combattimento', got, 'combat');
+if (real) Object.defineProperty(window, 'localStorage', real); else delete window.localStorage;
+
+document.getElementById('summary').textContent =
+  fail === 0 ? `✓ ${pass} test passati` : `✗ ${fail} falliti · ${pass} passati`;
+document.getElementById('summary').style.color = fail === 0 ? '#7cc78a' : '#e0685c';
+</script>
+</body>
+</html>

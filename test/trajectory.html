@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Test — traiettoria</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background:#0a0c0b; color:#e8e2d2;
+         margin:0; padding:24px 20px 60px; }
+  h1 { font-size:16px; margin:0 0 4px; letter-spacing:.04em; }
+  p.sub { color:#8f8f82; margin:0 0 20px; font-size:12.5px; }
+  h2 { font-size:13px; color:#c9a24a; margin:22px 0 6px; letter-spacing:.08em; text-transform:uppercase; }
+  .t { padding:2px 0 2px 22px; position:relative; }
+  .t::before { position:absolute; left:0; width:16px; }
+  .ok::before  { content:"PASS"; color:#7cc78a; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko::before  { content:"FAIL"; color:#e0685c; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko { color:#e0685c; }
+  .detail { color:#8f8f82; font-size:12px; padding-left:22px; white-space:pre; }
+  #summary { position:fixed; left:0; right:0; bottom:0; padding:12px 20px;
+             background:#161b19; border-top:1px solid #2b3631; font-weight:700; }
+</style>
+</head>
+<body>
+<h1>trajectory.js — estremi e distanza</h1>
+<p class="sub">Aprila con un server statico: <code>python3 -m http.server</code> → <code>/test/trajectory.html</code></p>
+<div id="out"></div>
+<div id="summary">✗ modulo non caricato</div>
+
+<script type="module">
+import { trajectoryEndpoints, trajectoryDistance } from '../src/logic/trajectory.js';
+import { squareDistance } from '../src/ui/GridUI.js';
+
+const out = document.getElementById('out');
+let pass = 0, fail = 0;
+const group = (name) => { const h = document.createElement('h2'); h.textContent = name; out.append(h); };
+function check(label, got, want) {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  ok ? pass++ : fail++;
+  const d = document.createElement('div');
+  d.className = 't ' + (ok ? 'ok' : 'ko');
+  d.textContent = label;
+  out.append(d);
+  if (!ok) {
+    const e = document.createElement('div');
+    e.className = 'detail';
+    e.textContent = `atteso ${JSON.stringify(want)} · ottenuto ${JSON.stringify(got)}`;
+    out.append(e);
+  }
+}
+
+const comb = { a: { size: 'medium' }, b: { size: 'large' } };
+const pos  = { a: { col: 2, row: 2 }, b: { col: 6, row: 2 } };
+
+group('estremi');
+check('da combattente a combattente (footprint della taglia)', trajectoryEndpoints({ fromId: 'a', toId: 'b' }, pos, comb),
+  { from: { col: 2, row: 2, n: 1 }, to: { col: 6, row: 2, n: 2 } });
+check('da combattente a una cella', trajectoryEndpoints({ fromId: 'a', toCol: 5, toRow: 5 }, pos, comb),
+  { from: { col: 2, row: 2, n: 1 }, to: { col: 5, row: 5, n: 1 } });
+check('attaccante rimosso → niente freccia', trajectoryEndpoints({ fromId: 'x', toId: 'b' }, pos, comb), null);
+check('bersaglio rimosso → niente freccia', trajectoryEndpoints({ fromId: 'a', toId: 'x' }, pos, comb), null);
+check('bersaglio tolto dalla mappa → niente freccia', trajectoryEndpoints({ fromId: 'a', toId: 'b' }, { a: pos.a }, comb), null);
+check('attaccante tolto dalla mappa → niente freccia', trajectoryEndpoints({ fromId: 'a', toCol: 1, toRow: 1 }, { b: pos.b }, comb), null);
+check('dato incompleto (nessun bersaglio) → null', trajectoryEndpoints({ fromId: 'a' }, pos, comb), null);
+check('cella con una sola coordinata → null', trajectoryEndpoints({ fromId: 'a', toCol: 3 }, pos, comb), null);
+check('coordinate non numeriche → null', trajectoryEndpoints({ fromId: 'a', toCol: 'x', toRow: 'y' }, pos, comb), null);
+check('traiettoria assente → null', trajectoryEndpoints(null, pos, comb), null);
+check('posizioni assenti → null', trajectoryEndpoints({ fromId: 'a', toId: 'b' }, null, comb), null);
+check('combattenti assenti → null', trajectoryEndpoints({ fromId: 'a', toId: 'b' }, pos, null), null);
+check('posizione con col nulla → null', trajectoryEndpoints({ fromId: 'a', toId: 'b' }, { a: { col: null, row: 1 }, b: pos.b }, comb), null);
+
+group('distanza');
+// I valori attesi sono quelli di squareDistance, la stessa metrica del movimento
+const ep = (c1, r1, n1, c2, r2, n2) => ({ from: { col: c1, row: r1, n: n1 }, to: { col: c2, row: r2, n: n2 } });
+check('bordo a bordo tra casella e footprint 2×2', trajectoryDistance(ep(2, 2, 1, 6, 2, 2)), squareDistance(2, 2, 1, 6, 2, 2));
+check('… che vale 4 metri', trajectoryDistance(ep(2, 2, 1, 6, 2, 2)), 4);
+check('diagonale 5-10-5 (3 + floor(3/2))', trajectoryDistance(ep(0, 0, 1, 3, 3, 1)), 4);
+check('stessa casella → 0', trajectoryDistance(ep(2, 2, 1, 2, 2, 1)), 0);
+check('caselle adiacenti → 1', trajectoryDistance(ep(2, 2, 1, 3, 2, 1)), 1);
+check('footprint sovrapposti → 0', trajectoryDistance(ep(2, 2, 2, 3, 3, 2)), 0);
+
+document.getElementById('summary').textContent =
+  fail === 0 ? `✓ ${pass} test passati` : `✗ ${fail} falliti · ${pass} passati`;
+document.getElementById('summary').style.color = fail === 0 ? '#7cc78a' : '#e0685c';
+</script>
+</body>
+</html>

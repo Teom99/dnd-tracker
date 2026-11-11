@@ -1,3 +1,4 @@
+import { applyNextTurn } from '../logic/combatantRules.js';
 import { ref, set, get, update, remove, onValue, onDisconnect, runTransaction, push, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import {
   signInAnonymously, signInWithPopup, GoogleAuthProvider
@@ -125,21 +126,13 @@ export class Session {
 
   // Avanza turno in modo atomico: legge currentTurnId e round dal nodo Firebase
   // e li aggiorna in un'unica transazione, evitando race condition.
-  async nextTurnAtomic(aliveIds) {
-    if (aliveIds.length === 0) return;
-    await runTransaction(ref(this._db, `sessions/${this.code}`), (session) => {
-      if (session == null) return session;
-      const currentId    = session.currentTurnId ?? null;
-      const currentIndex = aliveIds.indexOf(currentId);
-      if (currentIndex === -1) {
-        session.currentTurnId = aliveIds[0];
-        return session;
-      }
-      const nextIndex = (currentIndex + 1) % aliveIds.length;
-      if (nextIndex === 0) session.round = (session.round ?? 1) + 1;
-      session.currentTurnId = aliveIds[nextIndex];
-      return session;
-    });
+  async nextTurnAtomic(aliveIds, expectedTurnId) {
+    if (aliveIds.length === 0) return false;
+    const { committed } = await runTransaction(
+      ref(this._db, `sessions/${this.code}`),
+      (session) => applyNextTurn(session, aliveIds, expectedTurnId)
+    );
+    return committed;   // false = il turno era già avanzato (doppio clic): non si è fatto nulla
   }
 
   async setGridPosition(combatantId, col, row) {
@@ -227,6 +220,28 @@ export class Session {
   async resetGrid() {
     await set(ref(this._db, `sessions/${this.code}/grid`), null);
     await set(ref(this._db, `sessions/${this.code}/walls`), null);
+    await this.clearAllTrajectories();
+  }
+
+  // Traiettorie: una per giocatore, { fromId, toId | toCol+toRow, ownerUid }.
+  // Si scrivono solo da azioni utente (tracciare, cambio turno, reset), mai dal listener.
+  async setTrajectory(uid, data) {
+    if (!this.code || !uid || !data?.fromId) return;
+    const clean = { fromId: String(data.fromId), ownerUid: uid };
+    if (data.toId != null) clean.toId = String(data.toId);
+    else if (Number.isInteger(data.toCol) && Number.isInteger(data.toRow)) { clean.toCol = data.toCol; clean.toRow = data.toRow; }
+    else return;
+    await set(ref(this._db, `sessions/${this.code}/trajectories/${uid}`), clean);
+  }
+
+  async clearTrajectory(uid) {
+    if (!this.code || !uid) return;
+    await set(ref(this._db, `sessions/${this.code}/trajectories/${uid}`), null);
+  }
+
+  async clearAllTrajectories() {
+    if (!this.code) return;
+    await set(ref(this._db, `sessions/${this.code}/trajectories`), null);
   }
 
   async setTemplate(shape, originCol, originRow, size, angleDeg, ownerUid) {
@@ -281,8 +296,8 @@ export class Session {
 
   async setSceneImage(url, name) {
     if (!this.code) return;
-    await set(ref(this._db, `sessions/${this.code}/sceneImageUrl`), url);
-    await set(ref(this._db, `sessions/${this.code}/sceneImageName`), name || '');
+    // un solo update: gli altri client non vedono mai la scena nuova col titolo della vecchia
+    await update(ref(this._db, `sessions/${this.code}`), { sceneImageUrl: url, sceneImageName: name || '' });
   }
 
   async clearSceneImage() {
@@ -327,6 +342,17 @@ export class Session {
     await runTransaction(
       ref(this._db, `sessions/${this.code}/xp/${combatantId}`),
       (current) => (current ?? 0) + amount
+    );
+  }
+
+  // Alza l'XP di sessione di un combattente fino a `xp` se è assente o più basso: non lo abbassa mai.
+  // Serve a non perdere l'XP della scheda (entrata in una sessione nuova o con meno XP).
+  async raiseXpTo(combatantId, xp) {
+    if (!this.code || !combatantId || !Number.isFinite(xp) || xp <= 0) return;
+    await runTransaction(
+      ref(this._db, `sessions/${this.code}/xp/${combatantId}`),
+      (current) => (typeof current === 'number' && current >= xp ? current : xp),
+      { applyLocally: false }
     );
   }
 

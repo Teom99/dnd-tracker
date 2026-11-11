@@ -1,4 +1,6 @@
 import { captureFocusState, restoreFocusState } from '../utils/domPreserve.js';
+import { num } from '../utils/sanitize.js';
+import { icon } from './icons.js';
 
 // ─── Calculation helpers ───────────────────────────────────────────────────
 
@@ -14,8 +16,7 @@ const ABILITIES = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 const SPELL_LEVELS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
 const ABILITY_LABELS = { str: 'FOR', dex: 'DES', con: 'COS', int: 'INT', wis: 'SAG', cha: 'CAR' };
-const XP_THRESHOLDS = [0,300,900,2700,6500,14000,23000,34000,48000,64000,
-                       85000,100000,120000,140000,165000,195000,225000,265000,305000,355000];
+import { xpProgress, levelUpReady, sheetSubtitle, effectiveXp } from '../logic/sheetView.js';
 
 function abilityScore(data, ab) { return data?.abilities?.[ab] ?? 10; }
 function mod(score)              { return Math.floor((score - 10) / 2); }
@@ -134,28 +135,59 @@ export function updateComputedValues(data) {
 
   // Testata scheda: sottotitolo + barra XP
   const subEl = document.getElementById('sheet-sub');
-  if (subEl) {
-    const cls  = [d.class, d.level ? `Lv.${d.level}` : null].filter(Boolean).join(' ');
-    const bits = [d.race, cls, d.subclass, d.background, d.alignment]
-      .map(v => String(v ?? '').trim()).filter(Boolean);
-    subEl.textContent = bits.length ? bits.join(' · ') : '—';
-  }
+  if (subEl) subEl.textContent = sheetSubtitle(d);
   const lvlEl  = document.getElementById('sheet-level-label');
   const fillEl = document.getElementById('sheet-xp-fill');
   const xpEl   = document.getElementById('sheet-xp-text');
-  if (lvlEl) lvlEl.textContent = `Liv ${d.level ?? 1}`;
+  const level  = d.level ?? 1;
+  if (lvlEl) lvlEl.textContent = `Liv ${level}`;
   if (fillEl && xpEl) {
-    const level = d.level ?? 1;
-    const xp    = d.xp ?? 0;
-    if (level >= 20) {
-      fillEl.style.transform = 'scaleX(1)';
-      xpEl.textContent = `${xp.toLocaleString('it')} xp · liv. max`;
-    } else {
-      const hi = XP_THRESHOLDS[level] ?? XP_THRESHOLDS[19];
-      fillEl.style.transform = `scaleX(${Math.min(1, Math.max(0, xp / hi))})`;
-      xpEl.textContent = `${xp.toLocaleString('it')} / ${hi.toLocaleString('it')} xp`;
+    const xp = currentXp(d);
+    const prog = xpProgress(level, xp);
+    fillEl.style.transform = `scaleX(${prog.pct})`;
+    xpEl.textContent = prog.max
+      ? `${xp.toLocaleString('it')} xp · liv. max`
+      : `${xp.toLocaleString('it')} / ${prog.hi.toLocaleString('it')} xp`;
+    // Anello XP intorno al ritratto: --xp 0..1; oro pieno e pulsante quando il livello è pronto
+    const frame = document.querySelector('#view-character .pframe');
+    if (frame) {
+      const ready = isLevelUpReady(d);
+      frame.style.setProperty('--xp', String(ready ? 1 : prog.pct));
+      frame.classList.toggle('lvlup', ready);
     }
   }
+}
+
+// Fascia vitale: la vita ATTUALE e l'ispirazione sono del combattente (non della scheda): si
+// mostrano, in sola lettura, solo in sessione; si cambiano in combattimento (danno/cura, stella).
+// Fuori sessione (scheda aperta dalla libreria della home) restano nascoste. Non lancia mai.
+export function updateVitals(combatant, { inSession = false } = {}) {
+  const show = !!(inSession && combatant && typeof combatant === 'object');
+  const $ = (id) => document.getElementById(id);
+  $('sheet-hp-current')?.classList.toggle('hidden', !show);
+  $('sheet-hp-of')?.classList.toggle('hidden', !show);
+  $('sheet-hp-bar')?.classList.toggle('hidden', !show);
+  const insp = $('sheet-insp-wrap');
+  insp?.classList.toggle('hidden', !show);
+  insp?.classList.toggle('on', show && combatant.inspiration === true);
+  if (!show) return;
+  const cur = Math.max(0, num(combatant.hpCurrent));
+  const max = Math.max(0, num(combatant.hpMax));
+  const el = $('sheet-hp-current');
+  if (el) el.textContent = String(cur);
+  const fill = $('sheet-hp-bar')?.querySelector('i');
+  if (fill) fill.style.width = `${max > 0 ? Math.min(100, (cur / max) * 100) : 0}%`;
+}
+
+// Contesto XP: UN SOLO XP corrente per scheda e combattimento. In sessione è quello assegnato
+// dal master (sessions/{code}/xp/{combatantId}); fuori sessione quello salvato sulla scheda.
+// Lo imposta src/views/sheet.js a ogni snapshot di sessione.
+let _xpCtx = { inSession: false, sessionXp: undefined, mode: 'xp', granted: false };
+export function setXpContext(ctx) { _xpCtx = { ..._xpCtx, ...ctx }; }
+export function getEffectiveXp(d) { return currentXp(d); }
+function currentXp(d) { return effectiveXp({ inSession: _xpCtx.inSession, sessionXp: _xpCtx.sessionXp, sheetXp: d?.xp }); }
+export function isLevelUpReady(d) {
+  return levelUpReady({ level: d?.level ?? 1, xp: currentXp(d), mode: _xpCtx.mode, granted: _xpCtx.granted });
 }
 
 // ─── Death saves ────────────────────────────────────────────────────────────
@@ -217,7 +249,7 @@ export function renderAttacks(attacks, data, onRemove) {
         <div><b>${escapeHtml(atk.name)}</b>${meta ? `<br><span class="t-mono">${meta}</span>` : ''}</div>
         <span class="atk-pill">${atkBonus} colpire</span>
         <span class="atk-pill">${dmgStr}</span>
-        <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-attack" data-id="${id}" aria-label="Rimuovi">✕</button>
+        <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-attack" data-id="${id}" aria-label="Rimuovi">${icon('close', { size: 16 })}</button>
       </div>`;
   }).join('');
 
@@ -233,35 +265,38 @@ export function renderSpellSlots(slots, onSetUsed, onSetMax) {
   const container = document.getElementById('spell-slots-list');
   if (!container) return;
   const focusSnap = captureFocusState(container);
+  // I rombi sono <button> ricreati a ogni snapshot: si ricorda quale aveva il focus (livello, posizione)
+  const fd = document.activeElement?.closest?.('.dia');
+  const dia = fd && container.contains(fd)
+    ? { lvl: fd.dataset.slotLevel, i: [...fd.parentElement.children].indexOf(fd) } : null;
+  // Un rombo per slot: pieno = libero (clic → usato), vuoto = usato (clic → recuperato); come nel
+  // popover del dock. Il massimo per livello resta un campo accanto.
   container.innerHTML = SPELL_LEVELS.map(lvl => {
     const s    = slots?.[lvl] || {};
-    const max  = s.max  ?? 0;
-    const used = s.used ?? 0;
+    const max  = Math.min(9, Math.max(0, Math.floor(num(s.max))));
+    const used = Math.min(max, Math.max(0, Math.floor(num(s.used))));
     const free = Math.max(0, max - used);
-    const pips = Array.from({ length: max }, (_, i) =>
-      `<i class="slot-pip ${i < free ? 'free' : 'used'}"></i>`).join('');
+    const dias = Array.from({ length: max }, (_, i) =>
+      `<button type="button" class="dia ${i < free ? 'free' : 'used'}" data-slot-level="${lvl}" aria-label="${i < free ? 'Usa uno slot' : 'Recupera uno slot'} di livello ${ROMAN[lvl - 1]}"></button>`).join('');
     return `
       <div class="slot-row${max === 0 ? ' is-zero' : ''}" data-level="${lvl}" data-used="${used}">
-        <span class="slot-lv">Slot ${ROMAN[lvl - 1]}</span>
-        <span class="slot-pips">${pips}</span>
-        <span class="slot-ctrl">
-          <button class="btn btn--icon btn-slot-adj" data-level="${lvl}" data-delta="1"  ${used >= max ? 'disabled' : ''} title="Usa slot">−</button>
-          <button class="btn btn--icon btn-slot-adj" data-level="${lvl}" data-delta="-1" ${used <= 0 ? 'disabled' : ''} title="Recupera slot">+</button>
-        </span>
-        <input type="number" class="slot-max-input" data-level="${lvl}" min="0" max="9" value="${max}" title="Slot massimi">
+        <span class="slot-lv">Livello ${ROMAN[lvl - 1]}</span>
+        <span class="slot-dias">${dias}</span>
+        <span class="slot-count">${max > 0 ? `${free} su ${max}` : ''}</span>
+        <input type="number" class="slot-max-input" data-level="${lvl}" min="0" max="9" value="${max}" title="Slot massimi" aria-label="Slot massimi di livello ${ROMAN[lvl - 1]}">
       </div>`;
   }).join('');
   restoreFocusState(container, focusSnap);
+  if (dia) container.querySelector(`.slot-row[data-level="${dia.lvl}"] .slot-dias`)?.children[dia.i]?.focus();
 
   container.onclick = (e) => {
-    const btn = e.target.closest('.btn-slot-adj');
-    if (!btn || btn.disabled) return;
-    const lvl   = btn.dataset.level;
-    const delta = parseInt(btn.dataset.delta);
-    const row   = container.querySelector(`.slot-row[data-level="${lvl}"]`);
-    const used  = parseInt(row.dataset.used) || 0;
-    const max   = parseInt(row.querySelector('.slot-max-input').value) || 0;
-    onSetUsed(lvl, Math.max(0, Math.min(max, used + delta)));
+    const dia = e.target.closest('.dia');
+    if (!dia) return;
+    const lvl  = dia.dataset.slotLevel;
+    const row  = container.querySelector(`.slot-row[data-level="${lvl}"]`);
+    const used = parseInt(row.dataset.used) || 0;
+    const max  = parseInt(row.querySelector('.slot-max-input').value) || 0;
+    onSetUsed(lvl, Math.max(0, Math.min(max, dia.classList.contains('free') ? used + 1 : used - 1)));
   };
 
   container.querySelectorAll('.slot-max-input').forEach(input => {
@@ -287,7 +322,7 @@ export function renderCantrips(cantrips, onRemove) {
     <div class="spell-row">
       <span class="nm">${escapeHtml(name)}</span>
       <span class="lv">truc</span>
-      <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-cantrip" data-id="${id}" aria-label="Rimuovi">✕</button>
+      <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-cantrip" data-id="${id}" aria-label="Rimuovi">${icon('close', { size: 16 })}</button>
     </div>`).join('');
 
   container.onclick = (e) => {
@@ -301,6 +336,7 @@ export function renderCantrips(cantrips, onRemove) {
 export function renderSpellsByLevel(spells, onRemove, onTogglePrepared, onAddSpell) {
   const container = document.getElementById('spells-by-level');
   if (!container) return;
+  const focusSnap = captureFocusState(container);   // il form "Aggiungi" si ricrea a ogni snapshot della scheda
   container.innerHTML = SPELL_LEVELS.map(lvl => {
     const levelSpells = spells?.[lvl] || {};
     const entries = Object.entries(levelSpells);
@@ -310,14 +346,14 @@ export function renderSpellsByLevel(spells, onRemove, onTogglePrepared, onAddSpe
           <div class="spell-row">
             <button class="prep ${sp.prepared ? 'on' : ''}" data-action="toggle-prepared" data-level="${lvl}" data-id="${id}" aria-pressed="${!!sp.prepared}" title="${sp.prepared ? 'Preparato' : 'Non preparato'}"></button>
             <span class="nm">${escapeHtml(sp.name)}</span>
-            <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-spell" data-level="${lvl}" data-id="${id}" aria-label="Rimuovi">✕</button>
+            <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-spell" data-level="${lvl}" data-id="${id}" aria-label="Rimuovi">${icon('close', { size: 16 })}</button>
           </div>`).join('');
     return `
       <div class="spell-level-block">
         <span class="t-label">Livello ${ROMAN[lvl - 1]}</span>
         <div class="spell-level-entries" id="spell-level-${lvl}">${spellItems}</div>
         <form class="add-form-inline" data-spell-level="${lvl}" novalidate>
-          <input class="input" type="text" placeholder="Nome incantesimo" maxlength="60">
+          <input class="input" type="text" data-spell-input="${lvl}" placeholder="Nome incantesimo" maxlength="60">
           <button type="submit" class="btn btn--sm">+ Aggiungi</button>
         </form>
       </div>`;
@@ -338,6 +374,7 @@ export function renderSpellsByLevel(spells, onRemove, onTogglePrepared, onAddSpe
       if (name) { onAddSpell(form.dataset.spellLevel, name); input.value = ''; }
     });
   });
+  restoreFocusState(container, focusSnap);
 }
 
 // ─── Inventory ───────────────────────────────────────────────────────────────
@@ -362,8 +399,8 @@ export function renderInventory(inventory, editingId, callbacks = {}) {
           </div>
           <input class="input edit-qty" type="number" value="${item.quantity ?? 1}" min="1">
           <span class="inv-actions">
-            <button class="btn btn--sm btn--icon" data-action="save-item" data-id="${id}" title="Salva">✔</button>
-            <button class="btn btn--ghost btn--sm btn--icon" data-action="cancel-item" data-id="${id}" title="Annulla">✕</button>
+            <button class="btn btn--sm btn--icon" data-action="save-item" data-id="${id}" title="Salva" aria-label="Salva">${icon('check', { size: 16 })}</button>
+            <button class="btn btn--ghost btn--sm btn--icon" data-action="cancel-item" data-id="${id}" title="Annulla" aria-label="Annulla">${icon('close', { size: 16 })}</button>
           </span>
         </div>`;
     }
@@ -376,8 +413,8 @@ export function renderInventory(inventory, editingId, callbacks = {}) {
         </div>
         <span class="qty" data-action="edit-qty" data-id="${id}" title="Modifica quantità">${item.quantity ?? 1}</span>
         <span class="inv-actions">
-          <button class="btn btn--ghost btn--sm btn--icon" data-action="edit-item" data-id="${id}" aria-label="Modifica">✎</button>
-          <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-item" data-id="${id}" aria-label="Rimuovi">✕</button>
+          <button class="btn btn--ghost btn--sm btn--icon" data-action="edit-item" data-id="${id}" aria-label="Modifica" title="Modifica">${icon('edit', { size: 16 })}</button>
+          <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-item" data-id="${id}" aria-label="Rimuovi">${icon('close', { size: 16 })}</button>
         </span>
       </div>`;
   }).join('');
@@ -438,7 +475,7 @@ export function renderClassFeatures(classFeatures, classStats, onRemoveFeature, 
     html += `<div class="class-stats-row">${
       statEntries.map(([id, s]) =>
         `<span class="class-stat-chip">${escapeHtml(s.label)}: <strong>${escapeHtml(s.value)}</strong>
-         <button class="btn-chip-remove" data-action="remove-stat" data-id="${id}" aria-label="Rimuovi">×</button></span>`
+         <button class="btn-chip-remove" data-action="remove-stat" data-id="${id}" aria-label="Rimuovi">${icon('close', { size: 12 })}</button></span>`
       ).join('')
     }</div>`;
   }
@@ -453,7 +490,7 @@ export function renderClassFeatures(classFeatures, classStats, onRemoveFeature, 
         <span class="class-feature-name">${escapeHtml(f.name)}</span>
         ${f.level ? `<span class="class-feature-level-badge">Lv.${f.level}</span>` : ''}
         <div class="class-feature-actions">
-          <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-feature" data-id="${id}" aria-label="Rimuovi">✕</button>
+          <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-feature" data-id="${id}" aria-label="Rimuovi">${icon('close', { size: 16 })}</button>
         </div>
       </summary>
       <div class="class-feature-body">

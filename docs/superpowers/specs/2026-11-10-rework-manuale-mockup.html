@@ -1,0 +1,289 @@
+<title>Direzioni grafiche Combat Tracker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,500;0,700;1,400&family=Alegreya+SC:wght@500;700&family=Alegreya+Sans:wght@400;500;700&family=Cormorant+SC:wght@600;700&family=Figtree:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: una colonna, tre schermate della stessa scena di combattimento una sotto l'altra, ognuna con la sua nota. */
+:root {
+  --bg: #f3efe8; --fg: #2a2420; --mute: #6f655b; --line: #d6cdbf; --accent: #7a2a1c;
+  --f-display: "Alegreya SC", "Iowan Old Style", Georgia, serif;
+  --f-body: "Alegreya Sans", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #191614; --fg: #ebe3d6; --mute: #a2978a; --line: #3a332d; --accent: #e0a36a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #191614; --fg: #ebe3d6; --mute: #a2978a; --line: #3a332d; --accent: #e0a36a; color-scheme: dark }
+
+body { background: var(--bg); color: var(--fg); font: 17px/1.5 var(--f-body);
+  padding-block: 28px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 44px; }
+header h1 { font: 700 34px/1.1 var(--f-display); text-wrap: balance; margin: 0 0 10px; }
+header p { max-width: 62ch; color: var(--mute); margin: 0; }
+.dir { display: flex; flex-direction: column; gap: 14px; }
+.dir-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.dir-letter { font: 700 30px/1 var(--f-display); color: var(--accent); }
+.dir-head h2 { font: 700 24px/1.1 var(--f-display); margin: 0; }
+.dir-note { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 6px 28px; margin: 0; }
+.dir-note div { min-width: 0; }
+.dir-note dt { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--mute); }
+.dir-note dd { margin: 0; }
+.common { border-top: 1px solid var(--line); padding-top: 20px; }
+.common h2 { font: 700 22px/1.2 var(--f-display); margin: 0 0 8px; }
+.common ul { margin: 0; padding-left: 20px; max-width: 68ch; }
+
+/* ── Schermata finta: struttura comune ── */
+.screen { --r: 8px; border-radius: 10px; overflow: hidden; font-size: 15px; line-height: 1.3;
+  background: var(--s-bg); color: var(--s-ink); font-family: var(--s-body); box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+.s-top { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 10px 16px; }
+.s-brand { font: 700 19px/1 var(--s-display); letter-spacing: .02em; }
+.s-meta { color: var(--s-mute); font-size: 14px; }
+.s-spacer { flex: 1; }
+.s-btn { font: inherit; font-size: 14px; padding: 6px 12px; border-radius: var(--r); cursor: default;
+  background: transparent; color: inherit; border: 1px solid var(--s-line); }
+.s-btn.primary { background: var(--s-accent); color: var(--s-on-accent); border-color: transparent; font-weight: 700; }
+.s-body { display: grid; grid-template-columns: 230px minmax(0, 1fr); gap: 14px; padding: 0 16px 14px; }
+.s-h { font: 700 14px/1 var(--s-display); letter-spacing: .1em; text-transform: uppercase; color: var(--s-head); margin: 0 0 8px; }
+.s-init { min-width: 0; }
+.row { display: grid; grid-template-columns: 22px 30px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 8px; border-radius: var(--r); }
+.row .n { font-variant-numeric: tabular-nums; color: var(--s-mute); font-size: 13px; text-align: right; }
+.row .who { min-width: 0; }
+.row .nm { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.row .hp { height: 5px; border-radius: 3px; background: var(--s-track); margin-top: 4px; overflow: hidden; }
+.row .hp i { display: block; height: 100%; background: var(--c); }
+.row .val { font-size: 13px; font-variant-numeric: tabular-nums; color: var(--s-mute); }
+.row.ko { opacity: .55; }
+.av { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 14px;
+  background: var(--s-token); color: var(--s-ink); border: 2.5px solid var(--c); }
+.pc { --c: var(--s-pc); } .foe { --c: var(--s-foe); } .ally { --c: var(--s-ally); } .dead { --c: var(--s-mute); }
+.s-map { min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.tools { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.tools .s-btn.on { background: var(--s-on-bg); border-color: var(--s-accent); font-weight: 700; }
+.tools .hint { color: var(--s-mute); font-size: 13px; margin-left: 4px; }
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); background: var(--s-map); border: 1px solid var(--s-map-edge); border-radius: 4px; overflow: hidden; }
+.cell { aspect-ratio: 1; border-right: 1px solid var(--s-cell); border-bottom: 1px solid var(--s-cell); display: grid; place-items: center; }
+.cell.wall { background: var(--s-wall); }
+.cell.reach { background: var(--s-reach); }
+.cell .av { width: 78%; height: 78%; font-size: clamp(9px, 1.6vw, 15px); border-width: 2px; }
+.cell .av.sel { box-shadow: 0 0 0 3px var(--s-gold); }
+.s-dock { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; padding: 12px 16px; }
+.s-dock .av { width: 46px; height: 46px; font-size: 20px; }
+.me { min-width: 150px; flex: 1; }
+.me .nm { font: 700 19px/1.1 var(--s-display); }
+.me .sub { color: var(--s-mute); font-size: 13px; }
+.stat { text-align: center; }
+.stat b { display: block; font: 700 22px/1 var(--s-display); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--s-mute); }
+.dmg { display: flex; gap: 6px; align-items: center; }
+.dmg .amt { width: 46px; text-align: center; padding: 6px 0; border-radius: var(--r); border: 1px solid var(--s-line); background: var(--s-field); font-variant-numeric: tabular-nums; }
+@media (max-width: 640px) {
+  .s-body { grid-template-columns: 1fr; }
+  .s-dock .primary { flex: 1 1 100%; }
+}
+
+/* ── A · Manuale: tutta la pagina è carta, niente riquadri ── */
+.t-a { --s-display: "Alegreya SC", Georgia, serif; --s-body: "Alegreya", Georgia, serif;
+  --s-bg: #efe3c8; --s-ink: #2b1d12; --s-mute: #7a6548; --s-line: #b9a57f; --s-head: #6b1d10;
+  --s-accent: #6b1d10; --s-on-accent: #f6ecd6; --s-on-bg: #e2d2ad; --s-track: #d3c19a; --s-token: #f6ecd6; --s-field: #f6ecd6;
+  --s-map: #e6d6b3; --s-map-edge: #8a7350; --s-cell: rgba(74,52,28,.22); --s-wall: #4a3826; --s-reach: rgba(107,29,16,.14);
+  --s-pc: #3f6b3a; --s-foe: #9a2a1c; --s-ally: #2f5f7d; --s-gold: #b8892b; --r: 3px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.035' numOctaves='4'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .32 0 0 0 0 .15 0 0 0 .22 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.t-a .s-top { border-bottom: 3px double var(--s-line); margin-bottom: 12px; }
+.t-a .s-brand { color: var(--s-head); }
+.t-a .s-h { border-bottom: 1.5px solid var(--s-gold); padding-bottom: 5px; }
+.t-a .row { border-bottom: 1px solid rgba(74,52,28,.16); border-radius: 0; }
+.t-a .row.act { background: var(--s-on-bg); }
+.t-a .row.act .n::before { content: "▸ "; color: var(--s-accent); }
+.t-a .s-dock { border-top: 3px double var(--s-line); }
+
+/* ── Proposta strumenti mappa ── */
+.steps { display: flex; gap: 6px 18px; flex-wrap: wrap; padding: 8px 12px; background: var(--s-on-bg); border-radius: 3px; font-size: 14px; }
+.steps b { color: var(--s-accent); }
+.steps .done { color: var(--s-mute); text-decoration: line-through; }
+.mapsvg { display: block; width: 100%; height: auto; background: var(--s-map); border: 1px solid var(--s-map-edge); border-radius: 4px; }
+.mapsvg text { font-family: "Alegreya", Georgia, serif; fill: var(--s-ink); }
+.mapsvg .lbl { font-size: 11px; font-weight: 700; }
+.mapsvg .tag { fill: var(--s-token); stroke: var(--s-accent); }
+.hit { padding: 8px 12px; border-top: 1px solid var(--s-line); font-size: 14px; }
+.pad { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 8px; }
+
+/* ── A notte: stessa pagina, carta annerita e inchiostro chiaro ── */
+.t-a.night { --s-bg: #1d1814; --s-ink: #e9dcc0; --s-mute: #a08d6e; --s-line: #5a4a34; --s-head: #d98a6a;
+  --s-accent: #b5452f; --s-on-accent: #fbf1dc; --s-on-bg: #2e261d; --s-track: #3a3024; --s-token: #2a221a; --s-field: #2a221a;
+  --s-map: #262019; --s-map-edge: #5a4a34; --s-cell: rgba(233,220,192,.12); --s-wall: #8a7758; --s-reach: rgba(217,138,106,.18);
+  --s-pc: #7fb26f; --s-foe: #d9604c; --s-ally: #6fa8c9; --s-gold: #c9a24a;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.035' numOctaves='4'/%3E%3CfeColorMatrix values='0 0 0 0 .9 0 0 0 0 .75 0 0 0 0 .5 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.t-a.night .row { border-bottom-color: rgba(233,220,192,.1); }
+
+/* ── B · Tavolo: fogli di pergamena appoggiati su un tavolo scuro ── */
+.t-b { --s-display: "Cormorant SC", Georgia, serif; --s-body: "Alegreya Sans", system-ui, sans-serif;
+  --s-bg: #1f1712; --s-ink: #2b1d12; --s-mute: #75624a; --s-line: #b7a27c; --s-head: #5a3d1c;
+  --s-accent: #a8771f; --s-on-accent: #1f1712; --s-on-bg: #dccaa2; --s-track: #cdbb94; --s-token: #f4e9d0; --s-field: #f4e9d0;
+  --s-map: #e3d3ae; --s-map-edge: #6f5a3b; --s-cell: rgba(74,52,28,.22); --s-wall: #3d2f20; --s-reach: rgba(168,119,31,.22);
+  --s-pc: #3f6b3a; --s-foe: #9a2a1c; --s-ally: #2f5f7d; --s-gold: #c9962c; --r: 5px;
+  background-image: linear-gradient(100deg, rgba(255,220,170,.05), transparent 40%), repeating-linear-gradient(92deg, rgba(0,0,0,.18) 0 2px, transparent 2px 46px); }
+.t-b .s-top { color: #e9dcc0; }
+.t-b .s-top .s-meta { color: #a89474; }
+.t-b .s-top .s-btn { border-color: #5a4a36; }
+.t-b .s-init, .t-b .s-map, .t-b .s-dock { background: #eadcbd; box-shadow: 0 4px 14px rgba(0,0,0,.5); }
+.t-b .s-init, .t-b .s-map { padding: 12px; border-radius: 4px; }
+.t-b .s-init { transform: rotate(-.5deg); }
+.t-b .s-dock { margin: 0 16px 16px; border-radius: 4px; }
+.t-b .row.act { background: var(--s-on-bg); box-shadow: inset 0 0 0 1.5px var(--s-accent); }
+.t-b .s-brand { font-size: 22px; }
+
+/* ── C · Lanterna: scuro moderno, niente texture ── */
+.t-c { --s-display: "Figtree", system-ui, sans-serif; --s-body: "Figtree", system-ui, sans-serif;
+  --s-bg: #14181f; --s-ink: #e8ebf0; --s-mute: #8b95a5; --s-line: #2e3644; --s-head: #8b95a5;
+  --s-accent: #f2b34a; --s-on-accent: #1a1405; --s-on-bg: #222a36; --s-track: #2a3240; --s-token: #1c222c; --s-field: #1c222c;
+  --s-map: #1a2029; --s-map-edge: #2e3644; --s-cell: rgba(255,255,255,.06); --s-wall: #3a4454; --s-reach: rgba(242,179,74,.16);
+  --s-pc: #58c08a; --s-foe: #ef6b5e; --s-ally: #5aa9e6; --s-gold: #f2b34a; --r: 10px; }
+.t-c .s-init, .t-c .s-dock { background: #1b212b; }
+.t-c .s-init { padding: 12px; border-radius: 14px; }
+.t-c .s-dock { margin: 0 16px 16px; border-radius: 14px; }
+.t-c .row.act { background: var(--s-on-bg); }
+.t-c .row.act .nm { color: var(--s-accent); }
+.t-c .s-h { letter-spacing: .12em; font-size: 12px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Tre direzioni per il nuovo aspetto</h1>
+    <p>La stessa schermata di combattimento, con gli stessi dati, disegnata in tre modi. I contenuti sono di esempio. Guarda quale ti sembra più "tuo": si possono anche mescolare.</p>
+  </header>
+
+  <section class="dir">
+    <div class="dir-head"><span class="dir-letter">✦</span><h2>Aree e traiettorie sulla mappa</h2></div>
+    <div class="screen t-a">
+      <div class="s-top"><span class="s-brand">Area incantesimo</span><span class="s-meta">Cono · 4 m</span><span class="s-spacer"></span><button class="s-btn" type="button">Annulla</button><button class="s-btn primary" type="button">Conferma</button></div>
+      <div class="pad">
+        <div class="steps"><span class="done">1. Scegli la forma</span><span class="done">2. Tocca da dove parte</span><span><b>3. Muovi per orientare, poi conferma</b></span></div>
+        <svg class="mapsvg" viewBox="0 0 480 280" role="img" aria-label="Mappa con un cono che parte da Lyra e colpisce due goblin, e una freccia di traiettoria da Thorin a un goblin">
+          <defs>
+            <pattern id="g" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0V40H0" fill="none" stroke="rgba(74,52,28,.25)"/></pattern>
+            <pattern id="h" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="rgba(154,42,28,.10)"/><line x1="0" y1="0" x2="0" y2="7" stroke="rgba(154,42,28,.45)" stroke-width="1.5"/></pattern>
+            <marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#2f5f7d"/></marker>
+          </defs>
+          <rect width="480" height="280" fill="url(#g)"/>
+          <path d="M100 140L213 27A160 160 0 0 1 213 253Z" fill="url(#h)" stroke="#9a2a1c" stroke-width="2.5" stroke-linejoin="round"/>
+          <circle cx="100" cy="140" r="4" fill="#9a2a1c"/>
+          <rect class="tag" x="128" y="34" width="96" height="20" rx="3"/><text class="lbl" x="176" y="48" text-anchor="middle">Cono 4 m · Lyra</text>
+          <line x1="380" y1="220" x2="414" y2="82" stroke="#2f5f7d" stroke-width="2.5" stroke-dasharray="7 5" marker-end="url(#ar)"/>
+          <rect class="tag" x="404" y="140" width="40" height="20" rx="3" style="stroke:#2f5f7d"/><text class="lbl" x="424" y="154" text-anchor="middle">4 m</text>
+          <g font-size="15" font-weight="700" text-anchor="middle">
+            <circle cx="100" cy="140" r="15" fill="#f6ecd6" stroke="#3f6b3a" stroke-width="3"/><text x="100" y="145">L</text>
+            <circle cx="220" cy="100" r="19" fill="none" stroke="#9a2a1c" stroke-width="2" stroke-dasharray="3 3"/><circle cx="220" cy="100" r="15" fill="#f6ecd6" stroke="#9a2a1c" stroke-width="3"/><text x="220" y="105">G</text>
+            <circle cx="220" cy="180" r="19" fill="none" stroke="#9a2a1c" stroke-width="2" stroke-dasharray="3 3"/><circle cx="220" cy="180" r="15" fill="#f6ecd6" stroke="#9a2a1c" stroke-width="3"/><text x="220" y="185">G</text>
+            <circle cx="420" cy="60" r="15" fill="#f6ecd6" stroke="#9a2a1c" stroke-width="3"/><text x="420" y="65">G</text>
+            <circle cx="380" cy="220" r="15" fill="#f6ecd6" stroke="#3f6b3a" stroke-width="3"/><text x="380" y="225">T</text>
+          </g>
+        </svg>
+        <div class="hit"><b>Colpiti:</b> Goblin arciere, Goblin · <span style="color:var(--s-mute)">la freccia blu è una traiettoria: da Thorin al bersaglio, con la distanza</span></div>
+      </div>
+    </div>
+    <dl class="dir-note">
+      <div><dt>Area</dt><dd>Lo strumento ti guida un passo alla volta. Sulla mappa l'area è una forma tratteggiata con il bordo rosso, il punto di partenza, un'etichetta con forma, misura e autore, e i bersagli colpiti cerchiati.</dd></div>
+      <div><dt>Traiettoria</dt><dd>Uno strumento a parte: tocchi chi attacca e poi il bersaglio. Disegna una freccia con la distanza, visibile a tutti, che sparisce a fine turno.</dd></div>
+    </dl>
+  </section>
+
+  <section class="dir">
+    <div class="dir-head"><span class="dir-letter">A</span><h2>Manuale</h2></div>
+    <div class="screen t-a" data-mock></div>
+    <dl class="dir-note">
+      <div><dt>L'idea</dt><dd>Tutto il sito è una pagina del Manuale del Giocatore: carta chiara, inchiostro, titoli rosso scuro con filetto oro.</dd></div>
+      <div><dt>Da sapere</dt><dd>È un tema chiaro. Di sera, a luci basse, lo schermo è più luminoso di quello attuale.</dd></div>
+    </dl>
+  </section>
+
+  <section class="dir">
+    <div class="dir-head"><span class="dir-letter">A</span><h2>Manuale, versione notte</h2></div>
+    <div class="screen t-a night" data-mock></div>
+    <dl class="dir-note">
+      <div><dt>L'idea</dt><dd>Stessi caratteri, stessi filetti e stessa disposizione: cambia solo la carta, che diventa scura con inchiostro color pergamena.</dd></div>
+      <div><dt>Da sapere</dt><dd>Si sceglie con un interruttore chiaro/scuro e prende il posto dei due temi di adesso.</dd></div>
+    </dl>
+  </section>
+
+  <section class="dir">
+    <div class="dir-head"><span class="dir-letter">B</span><h2>Tavolo da gioco</h2></div>
+    <div class="screen t-b" data-mock></div>
+    <dl class="dir-note">
+      <div><dt>L'idea</dt><dd>Sfondo scuro come un tavolo di legno; iniziativa, mappa e scheda sono fogli di pergamena appoggiati sopra.</dd></div>
+      <div><dt>Da sapere</dt><dd>Tiene l'atmosfera scura di adesso ma con la pergamena dove si legge. È la più scenografica e la più lunga da rifinire.</dd></div>
+    </dl>
+  </section>
+
+  <section class="dir">
+    <div class="dir-head"><span class="dir-letter">C</span><h2>Lanterna</h2></div>
+    <div class="screen t-c" data-mock></div>
+    <dl class="dir-note">
+      <div><dt>L'idea</dt><dd>Scuro, pulito e moderno: nessuna texture, un solo colore d'accento ambra, tanto spazio.</dd></div>
+      <div><dt>Da sapere</dt><dd>La più leggibile e la più veloce da realizzare, ma è quella con meno sapore di D&amp;D.</dd></div>
+    </dl>
+  </section>
+
+  <section class="common">
+    <h2>Uguale in tutte e tre</h2>
+    <ul>
+      <li>Un solo bottone evidente per schermata: qui è "Fine turno".</li>
+      <li>Gli strumenti della mappa passano da una ventina di icone a quattro voci con il nome scritto; le opzioni compaiono solo dopo aver scelto lo strumento.</li>
+      <li>L'iniziativa è una lista snella. I dettagli di un combattente si aprono toccandolo.</li>
+      <li>Il tuo personaggio sta sempre in basso, con vita, CA e danno/cura a portata di mano.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+const who = [
+  { n: 18, l: 'L', nm: 'Lyra', t: 'pc', hp: 24, max: 31, act: true },
+  { n: 15, l: 'G', nm: 'Goblin arciere', t: 'foe', hp: null },
+  { n: 12, l: 'T', nm: 'Thorin', t: 'pc', hp: 12, max: 40 },
+  { n: 9,  l: 'F', nm: 'Fiuto (lupo)', t: 'ally', hp: 11, max: 11 },
+  { n: 7,  l: 'B', nm: 'Brakka', t: 'pc dead', hp: 0, max: 28, ko: true },
+];
+const walls = [5, 17, 29, 30, 31, 66, 67, 68, 80];
+const tokens = { 38: ['L', 'pc', true], 44: ['G', 'foe'], 51: ['T', 'pc'], 26: ['F', 'ally'], 58: ['G', 'foe'] };
+const reach = [13, 14, 15, 25, 27, 37, 39, 40, 49, 50, 52, 61, 62, 63, 24, 36, 48];
+
+const rows = who.map(c => `
+  <div class="row ${c.act ? 'act' : ''} ${c.ko ? 'ko' : ''}">
+    <span class="n">${c.n}</span>
+    <span class="av ${c.t}">${c.ko ? '☠' : c.l}</span>
+    <span class="who"><div class="nm">${c.nm}</div>${c.hp === null ? '' : `<div class="hp ${c.t}"><i style="width:${c.hp / c.max * 100}%"></i></div>`}</span>
+    <span class="val">${c.hp === null ? 'ferito' : c.hp + '/' + c.max}</span>
+  </div>`).join('');
+
+let cells = '';
+for (let i = 0; i < 84; i++) {
+  const t = tokens[i];
+  const cls = walls.includes(i) ? 'wall' : reach.includes(i) ? 'reach' : '';
+  cells += `<div class="cell ${cls}">${t ? `<span class="av ${t[1]} ${t[2] ? 'sel' : ''}">${t[0]}</span>` : ''}</div>`;
+}
+
+const html = `
+  <div class="s-top">
+    <span class="s-brand">Sessione K7QM</span><span class="s-meta">Round 3 · turno di Lyra</span>
+    <span class="s-spacer"></span>
+    <button class="s-btn" type="button">Riposo</button><button class="s-btn" type="button">Altro</button>
+  </div>
+  <div class="s-body">
+    <div class="s-init"><h3 class="s-h">Iniziativa</h3>${rows}</div>
+    <div class="s-map">
+      <div class="tools">
+        <button class="s-btn on" type="button">Muovi</button><button class="s-btn" type="button">Area incantesimo</button>
+        <button class="s-btn" type="button">Disegna</button><button class="s-btn" type="button">Muri</button>
+        <span class="hint">Lyra può muoversi di 9 m</span>
+      </div>
+      <div class="grid">${cells}</div>
+    </div>
+  </div>
+  <div class="s-dock">
+    <span class="av pc">L</span>
+    <div class="me"><div class="nm">Lyra</div><div class="sub">Ladra · livello 4</div></div>
+    <div class="stat"><b>24<small>/31</small></b><span>Vita</span></div>
+    <div class="stat"><b>15</b><span>CA</span></div>
+    <div class="dmg"><button class="s-btn" type="button">Danno</button><span class="amt">0</span><button class="s-btn" type="button">Cura</button></div>
+    <button class="s-btn primary" type="button">Fine turno</button>
+  </div>`;
+document.querySelectorAll('[data-mock]').forEach(el => { el.innerHTML = html; });
+</script>

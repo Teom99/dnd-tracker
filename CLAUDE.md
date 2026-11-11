@@ -12,7 +12,7 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | File | Ruolo |
 |---|---|
 | `index.html` | Struttura viste: `#view-home`, `#view-combat`, `#view-character` + modal condizioni |
-| `styles/base.css` | Variabili CSS, reset, tipografia, bottoni, input — tema fantasy dark |
+| `styles/base.css` | Variabili CSS (`--c-*`, `--f-*`) per i temi chiaro/notte, reset, tipografia, bottoni, input — identità "Manuale" |
 | `styles/home.css` | Home view, auth panel, libreria personaggi, picker join/creature |
 | `styles/combat.css` | Vista combat, card combattente, dock giocatore, modal condizioni, log |
 | `styles/character.css` | Scheda personaggio, stat block, slot magia, inventario, level-up |
@@ -32,13 +32,27 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | `src/ui/ShipUI.js` | Render pannello nave Damselfly: ponti/stanze CSS grid, token equipaggio, carte armi |
 | `src/ui/LevelUpUI.js` | Render pannello level-up: feature di classe, modal conferma |
 | `src/logic/CombatTracker.js` | `nextTurn(combatants)`, `sortedCombatants()`, `reset()` |
+| `src/ui/dialogs.js` | Fogli "Manuale" al posto di `confirm()`/`prompt()`: `askConfirm`, `askText`, `askChoice`, `openSheet` (Promise, uno alla volta in coda, testo sempre via `textContent`) — test in `test/dialogs.html` |
+| `src/logic/sceneView.js` | `safeSceneUrl` (solo https/data:image) e `sceneAction` (quando la scena si apre da sola) — test in `test/sceneView.html` |
+| `src/logic/sheetView.js` | Logica pura della scheda: `XP_THRESHOLDS`, `xpProgress`, `levelUpReady`, `sheetSubtitle`, `effectiveXp`, `xpSyncAction`, schede (`SHEET_TABS`, `readSheetTab`/`saveSheetTab`) — test in `test/sheetView.html` |
+| `test/run.sh` | Esegue le pagine di test in Chrome headless (senza argomenti: tutte tranne componenti) |
 | `src/logic/LevelUp.js` | Logica XP/milestone, calcolo livello, feature di classe disponibili |
 | `src/logic/grid.js` | `renderGrid`, `renderTokenBar` — orchestrazione render griglia |
 | `src/utils/DndApi.js` | Fetch mostri/incantesimi/condizioni da api.open5e.com |
 | `src/utils/imageUtils.js` | `resizeToBase64` — ridimensionamento avatar prima dell'upload |
 | `src/utils/domPreserve.js` | `captureFocusState`/`restoreFocusState` — preserva focus, valore, cursore e scroll di un input durante un rebuild `innerHTML` |
+| `src/utils/theme.js` | Tema chiaro/notte: `resolveTheme`, `initTheme`, `toggleTheme` — `<html data-theme>` + `localStorage['dnd-theme']` |
+| `src/ui/icons.js` | `icon(name, {size, title})` — icone SVG in tinta unita (`currentColor`); a tema da game-icons.net (crediti in `CREDITS.md`), di servizio disegnate a tratto |
+| `src/logic/combatChrome.js` | Logica pura dell'interfaccia di combattimento: `toolTransition`, `toolFromState`, `detailStillValid`, densità iniziativa, `nextInTurnOrder` |
+| `src/logic/visibility.js` | `combatantView` (cosa vede/modifica ciascun utente di ciascun combattente), `healthHintKey/Text` — usata da card e riga iniziativa |
+| `src/logic/gridMath.js` | `footprintOf`, `squareDistance` (puri; GridUI li ri-esporta) |
+| `src/logic/trajectory.js` | `trajectoryEndpoints`, `trajectoryDistance` — freccia di attacco |
+| `src/ui/CombatChrome.js` | Applica `state.ui` a `#view-combat` (attributi `data-*`), menu, pannello laterale, popover; `hydrateIcons` per `data-icon` nel markup statico |
+| `src/logic/combatantRules.js` | Updater puri delle transazioni sul combattente (`applyMaxHp`, `applyFields`) |
+| `test/*.html` | Test in pagina (niente Node): `shapes`, `theme`, `icons`, `combatantRules`, `combatChrome`, `visibility`, `trajectory`, `sheetView`, `homeView`, `dialogs`, `sceneView` + campionario `componenti.html`; servire con `python3 -m http.server` |
 | `src/utils/presence.js` | `playerColor(uid)` — colore deterministico per giocatore (hash su palette fissa), usato per lock note e cursori live |
-| `src/views/home.js` | Auth UI, libreria personaggi, picker join/creature, sessioni utente salvate |
+| `src/logic/homeView.js` | Logica pura della home: `splitSessions` (la più recente = "Riprendi"), `filterLibrary`, `libraryMeta`, `lastSeenLabel` — test in `test/homeView.html` |
+| `src/views/home.js` | Auth UI, libreria personaggi (carte, filtro, conferma di eliminazione in pagina, ingresso rapido), picker join a chip/creature, sessioni utente salvate |
 | `src/views/sheet.js` | Sheet listener, `makeCallbacks`, `initSheet`, `openCharacterSheet`, `openLibrarySheet`, `bindSheetEvents` |
 | `src/views/core.js` | `initCombatManagers`, `exitToHome`, `esc`, `openConditionModal`, `removeCombatant`, `closeConditionModal` |
 
@@ -50,12 +64,13 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 sessions/{code}/
   masterUid, round, currentTurnId
   gridConfig/  cols, rows                  (dimensioni decise dal master, default 20x20)
-  combatants/{id}/  name, type (player|creature), initiative, hpMax, hpCurrent,
+  combatants/{id}/  name, type (player|creature), initiative, hpMax, hpCurrent, hpPending (true finché la scheda non ha dato l'HP max),
                     conditions/{name: true}, ownerUid, charId, armorClass,
                     currentAction, showHealthHint, inspiration (bool),
                     size (tiny|small|medium|large|huge|gargantuan)
   grid/{combatantId}/  col, row            (angolo top-left del footprint)
   walls/{col_row}: true
+  trajectories/{uid}/  fromId, toId | toCol+toRow, ownerUid   (una per giocatore: freccia con distanza dal segnalino di chi attacca al bersaglio; durano un turno — le cancella CombatTracker.nextTurn/reset, "Svuota mappa" e chi la rimuove; mai dal listener)
   paint/{col_row}: "#rrggbb"               (colore libero sulla mappa, disegnabile da chiunque)
   template/  shape (circle|cone|line), originCol, originRow, size (metri), angleDeg, ownerUid
              (un solo template attivo per sessione; null se nessuno)
@@ -137,7 +152,7 @@ Note: `.indexOn: ["ownerUid"]` serve a `Combatant.findByOwner`. `.read`/`.write`
 - Log eventi condivisi e realtime su Firebase (`sessions/{code}/logs`)
 - Log azioni attaccante->bersaglio (es. "A ha colpito B infliggendogli N danni")
 - Cancellazione log condivisa (`session.clearLogs`)
-- Favicon emoji drago SVG inline
+- Favicon: drago SVG inline (da `src/ui/icons.js`, stesso tracciato dell'icona `dragon`)
 - Slot incantesimo con counter numerico +/− e max editabile inline; scritture atomiche con `runTransaction`
 - Campo `spellBonusModifier` per modificatore extra su CD e bonus attacco magia
 - Refactor struttura progetto: `app.js` ridotto, stato in `src/state.js`, logica in moduli separati
@@ -163,14 +178,48 @@ Note: `.indexOn: ["ownerUid"]` serve a `Combatant.findByOwner`. `.read`/`.write`
 - Undo/redo (↶/↷) del disegno sulla mappa, locale a ciascun giocatore: annulla/ripete le proprie pennellate, secchiello e "Pulisci tutto" (non quelle di altri giocatori); non persistito, si perde al reload
 - Forme nel disegno sulla mappa: rettangolo ▭, quadrato ◻ (da angolo ad angolo) e cerchio ◯ (dal centro, trascinando per il raggio), solo contorno (spessore = selettore dimensione) o piene (bottone ▢/■); anteprima locale con misura in metri durante il drag, scrittura batch al rilascio, un solo passo di undo; test della geometria in `test/shapes.html`
 
+- Rework "Manuale", tappa 1 (fondamenta): identità carta/inchiostro in due temi (chiaro e notte, interruttore sole/luna in topbar), nuovo vocabolario di variabili, componenti di base rifatti, modulo icone. Layout e logica invariati. Design in `docs/superpowers/specs/2026-11-10-rework-manuale-design.md`; le tappe 2-5 (combattimento, scheda, home, resto) rifanno le schermate una alla volta
+- Fix rientro in sessione: un combattente rimosso non viene più ricreato (a 0 HP) dalla sincronizzazione della scheda di chi rientra con il vecchio id, e chi entra col segnaposto 1/1 parte a piena vita quando la scheda porta l'HP max al valore vero
+
+- Rework "Manuale", tappa 2 (schermata di combattimento): iniziativa a destra della mappa (compatta o con dettagli, per client), mappa che riempie il rettangolo (pulsante "Adatta allo spazio" nel menu muri), quattro strumenti con nome (Muovi · Area · Traiettoria · Disegna) e una riga di opzioni per strumento, area incantesimo guidata a passi, Traiettoria (nuova), dock con Incantesimi (popover con slot e preparati), tutto il resto nel menu, layout telefono (striscia del turno, foglio iniziativa, "Altro" del dock)
+
+- Rework "Manuale", tappa 3 (scheda): testata con ritratto/anello XP, fascia vitale, cinque schede, slot a rombi, XP unica tra scheda e combattimento (vince sempre l'XP più alto, `Session.raiseXpTo`; si sincronizza solo se la scheda aperta è quella del proprio combattente, `sheetMatchesCombatant`)
+- Rework "Manuale", tappa 4 (home e libreria): "Riprendi" (ultima sessione, un solo bottone pieno) + altre sessioni, schede Entra/Crea, scelta del personaggio a chip, libreria a carte con filtro Tutti/Personaggi/Creature, ingresso rapido dalla carta, eliminazione con conferma nella carta, crediti icone in fondo; nessuna emoji. Il bottone pieno è "Rientra" se c'è una sessione, altrimenti "Varca la soglia" (`_setJoinPrimary` in `home.js`)
+
+- Rework "Manuale", tappa 5 (nave, finestre, pulizia): conferme e richieste di testo nella pagina (`dialogs.js`, mai più `confirm()`/`prompt()`/`alert()` del browser); **scena in finestra** (`#scene-modal`): si apre da sola a tutti quando qualcuno carica una scena nuova (mai al primo snapshot), X/Esc/clic fuori la chiudono solo per chi chiude, "Rivedi scena" nel menu la riapre, **carica/cambia/elimina per tutti**; nave con soli token (stanze a tono, scafo verde/oro/rosso); diario con icona per tipo; notifiche con filetto colorato; alias delle variabili e ~1300 righe di CSS morto eliminati (confronto dello stile calcolato prima/dopo: nessuna differenza)
+
+- Rework "Manuale", tappa 6 (rifinitura): minor delle revisioni 3–5 — focus da tastiera sui rombi degli slot, scheda sbagliata non sincronizzata, tabs della libreria con frecce, stato vuoto con azione, errore di lettura delle sessioni gestito, codice dell'ingresso rapido che non si perde, scudo anti click-through e soglia di 350 ms sul velo dei fogli, focus sulla scena, link `data:` della scena, livello controllato prima della conferma, scheda orfana dopo "Rientra", doppia esecuzione dei calcoli della scheda, keyframe `fc-lvlup-pulse` in `base.css`, vecchio blocco `--cond-color` eliminato
+
 ### Bug noti non ancora risolti
 Nessuno al momento.
 
 ---
 
+## Schermata di combattimento (rework "Manuale", tappa 2)
+
+- **Stato di interfaccia locale** in `state.ui` (`tool`, `menuOpen`, `drawer`, `detailId`, `spellsOpen`, `moreOpen`, `initSheetOpen`): mai su Firebase. `CombatChrome.apply()` lo scrive su `#view-combat` come `data-tool/menu/drawer/spells/more/init-sheet/density` e il CSS decide cosa si vede. `apply()` non fa `innerHTML`; va chiamata dopo ogni modifica (usa `CombatChrome.set(patch)`) e in coda al listener di sessione.
+- **I nodi si spostano, gli handler no**: ogni comando ha lo stesso `id` e lo stesso handler di prima, cambia dove sta nel markup e quando è visibile. Non rinominare un `id`/`data-action` senza aggiornare il JS.
+- **Aggiungere una voce al menu**: un `<button class="btn btn--ghost menu-item" data-icon="nome"><span class="lbl">Etichetta</span></button>` dentro `#topbar-more` nel gruppo giusto; `CombatChrome.hydrateIcons` mette l'icona. Una voce solo-master va dentro `#master-controls`.
+- **Aggiungere uno strumento alla mappa**: bottone `[data-tool]` in `#grid-tools`, riga `.opt-<nome>` in `#grid-options` (visibile con `#view-combat[data-tool="nome"]`), nome in `TOOLS` e nelle tabelle di `src/logic/combatChrome.js` (`RESET_ON_EXIT`, `toolFromState`), clic gestito da `_selectTool` in `app.js`. Cambiando strumento si annulla ciò che il precedente aveva a metà (`toolTransition`).
+- **Pannello laterale** (`#panel-side`): dettaglio, diario o cronache secondo `data-drawer`. Il dettaglio mostra una sola card tramite una regola CSS generata (`#detail-style`) sul `data-combatant-id`; si chiude da solo se il combattente sparisce.
+- **Clic dentro un popover che si ridisegna**: i controlli "clic fuori" usano `e.composedPath()` (helper `inPath` in `CombatChrome.js`), mai `e.target.closest`: la scrittura su Firebase scatta i listener in modo sincrono e il bersaglio del clic può essere già stato ricostruito.
+- **Eventi tra moduli** (come `dnd:dock-select`): `dnd:initiative-change`, `dnd:toggle-inspiration`, `dnd:rerender-grid`, `dnd:grid-mode-changed`, `dnd:sheet-changed` — evitano import circolari tra `GridUI`/`logic/grid.js`/`app.js`.
+- **Dock**: `_renderMyDock()` in `app.js`; si ridisegna a ogni snapshot di sessione **e** a ogni cambio della scheda (i tiri salvezza contro la morte stanno nella scheda).
+- **Visibilità**: una sola fonte, `combatantView` in `src/logic/visibility.js` (ha test). Dei nemici i giocatori non vedono vita né CA a meno che il master non attivi "Mostra HP" / "Mostra CA".
+- **Transazioni sul combattente avviate dalla scheda** usano `{ applyLocally: false }` (`NO_OPTIMISTIC` in `Combatant.js`): senza, la prima esecuzione su un nodo non ancora in cache applicava un `null` locale e i listener vedevano "combattente rimosso" (il rientro tornava alla home).
+
+## Tema e variabili (rework "Manuale")
+
+- **Due temi, una identità**: chiaro (default) e notte, scelti da `<html data-theme="light|night">`. Lo imposta uno script inline in `<head>` di `index.html` prima del primo paint (niente lampo), che **duplica** `resolveTheme` di `src/utils/theme.js`: vanno tenuti allineati. Scelta salvata in `localStorage['dnd-theme']`; senza scelta si segue il sistema. I vecchi temi (viola, `theme-old`) e il pannello "Aspetto" (palette/decorazioni/font) non esistono più.
+- **Solo variabili nei componenti**: i colori stanno in `styles/base.css` come `--c-*` (carta `--c-paper*`, testo `--c-text`/`--c-mute`, filetti `--c-rule`, titoli `--c-heading`, azione principale `--c-accent`, oro `--c-gold`, significato `--c-pc`/`--c-foe`/`--c-ally`, mappa `--c-map*`/`--c-wall`/`--c-reach`), i caratteri come `--f-display` (Alegreya SC) e `--f-body` (Alegreya). **Nessun colore letterale** in CSS o negli stili scritti dal JS: un letterale è leggibile in un tema solo. Negli attributi SVG generati dal JS `var(--c-…)` funziona (vedi i segnalini in `GridUI.renderGrid`).
+- **Nessun alias**: i vocabolari vecchi (`--gold`, `--bone`, `--bg0`, `--line`…) non esistono più. Una variabile non definita vale "nessun valore" in silenzio: se ne aggiungi una nuova, definiscila in `:root` e nel tema notte di `base.css`.
+- **Un solo `.btn--primary` per schermata**; titoli di sezione con `.rule-head`, testate e dock con `.rule-double` / `.rule-double--top`. Campionario in `test/componenti.html`.
+- **Icone**: sempre `icon('nome')` da `src/ui/icons.js`, mai emoji. Nessuna emoji nel progetto (`grep` dei blocchi Unicode emoji = 0 fuori dai commenti). Ogni bottone solo-icona ha `aria-label` e `title`.
+- **Eccezioni note ai letterali**: colori delle condizioni (`CONDITIONS` in `UI.js`), stanze della nave (`ShipUI.js`), palette del disegno sulla mappa (sono dati, non tema) e logo Google.
+
 ## Pattern ricorrenti da rispettare
 
-**Aggiungere un'azione a una card combattente:**
+**Aggiungere un'azione a una card combattente** (la card è il *dettaglio* nel pannello laterale; il dock ha le azioni del turno):
 1. Aggiungere `data-action="nome"` al bottone in `src/ui/UI.js` -> `renderCombatantList` (template HTML)
 2. Aggiungere handler in `list.onclick` delegation nello stesso file
 3. Aggiungere callback `onNome` in `makeCallbacks()` dentro `src/views/sheet.js`
@@ -255,6 +304,9 @@ Nessuno al momento.
 
 **Invarianti:**
 - `updateHp` è atomico: legge `hpMax` e aggiorna `hpCurrent` in un solo `runTransaction`
+- **Fine turno non avanza due volte**: `Session.nextTurnAtomic(aliveIds, expectedTurnId)` usa l'updater `applyNextTurn` (`combatantRules.js`) e annulla la transazione se il turno corrente non è più quello che chi clicca vedeva (doppio clic, due client); `CombatTracker.nextTurn` ritorna `false` e non cancella le traiettorie né scrive il log. Ogni chiamante passa `state.snapshot.currentTurnId ?? null`
+- `setMaxHp` e i campi sincronizzati dalla scheda (CA, taglia, livello, velocità, nome, avatar) scrivono con una transazione sul nodo combattente che **non fa nulla se il combattente non esiste** (`applyMaxHp`/`applyFields` in `src/logic/combatantRules.js`): una `set` su un path figlio ricreerebbe a pezzi un combattente rimosso. Chi entra prima che la scheda abbia comunicato l'HP max viene creato col segnaposto 1/1 e `hpPending: true` (`Combatant.add` con `hpMax` null): la prima `setMaxHp` lo porta a piena vita e consuma il segnaposto; in ogni altro caso `setMaxHp` limita soltanto gli HP correnti al nuovo massimo (alzare il massimo non cura)
+- Il rientro (`_rejoinSession` e restore all'avvio in `app.js`) verifica che il combattente salvato esista ancora prima di adottarne l'id
 - Player KO restano nel turno per death saves; creature KO vengono saltate
 - Visibilità HP: master vede tutto · player vede tutti i PG · creature mostrano solo hint opzionale
 - Death saves inline: 3 successi = revive a 1 HP (scritto via `Combatant.updateHp`)
@@ -263,6 +315,12 @@ Nessuno al momento.
 ---
 
 ### Scheda personaggio
+
+**Rework "Manuale" (tappa 3):** testata con ritratto incorniciato dalla barra XP (`.pframe`, `--xp`; oro e pulsante quando il level-up è pronto), fascia vitale (`.vitals`: HP attuali/max/temp, CA, velocità, iniziativa, competenza, ispirazione), colonna sinistra (caratteristiche, tiri salvezza, abilità ripiegabili) e cinque schede a destra (Combattimento, Incantesimi, Zaino, Capacità, Personaggio; scelta ricordata in `localStorage['dnd-sheet-tab']`). Slot incantesimo a rombi cliccabili (`.dia`: libero → usato, usato → recuperato).
+
+**XP unica (regola):** in sessione la fonte è `sessions/{code}/xp/{combatantId}` (assegnata dal master); la scheda la mostra in sola lettura (`effectiveXp`) e la rispecchia su `characters/.../xp` (`syncXpWithSession`, con guardie `_seededFor`/`_lastMirroredXp` contro i cicli). Se la sessione non ha XP si semina quello della scheda con `Session.raiseXpTo` (transazione `applyLocally:false`, alza soltanto: vince sempre l'XP più alto, nessuna delle due parti scende mai). Scheda e schermata combattimento devono sempre mostrare lo stesso valore.
+
+**Aggiungere un campo alla scheda:** nuovo `data-path` in `#view-character` dentro la scheda giusta (`section.sheet-pane[data-pane]`); gli id esistenti (mod-*, save-*, skill-*, spell-slots-list…) non vanno rinominati.
 
 **Cosa fa:** Stat block D&D 5e completo — abilità, skill, tiri salvezza, attacchi, slot magia, incantesimi, inventario, death saves. Sincronizza AC, HP max e velocità al combattente in sessione in real-time.
 

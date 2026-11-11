@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Test — dati scritti a mano</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background:#0a0c0b; color:#e8e2d2;
+         margin:0; padding:24px 20px 60px; }
+  h1 { font-size:16px; margin:0 0 4px; letter-spacing:.04em; }
+  p.sub { color:#8f8f82; margin:0 0 20px; font-size:12.5px; }
+  h2 { font-size:13px; color:#c9a24a; margin:22px 0 6px; letter-spacing:.08em; text-transform:uppercase; }
+  .t { padding:2px 0 2px 22px; position:relative; }
+  .t::before { position:absolute; left:0; width:16px; }
+  .ok::before  { content:"PASS"; color:#7cc78a; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko::before  { content:"FAIL"; color:#e0685c; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko { color:#e0685c; }
+  .detail { color:#8f8f82; font-size:12px; padding-left:22px; white-space:pre; }
+  #summary { position:fixed; left:0; right:0; bottom:0; padding:12px 20px;
+             background:#161b19; border-top:1px solid #2b3631; font-weight:700; }
+</style>
+</head>
+<body>
+<h1>sanitize / validTemplate / fmtM / pulsanti traiettoria</h1>
+<p class="sub">Aprila con un server statico: <code>python3 -m http.server</code> → <code>/test/hardening.html</code></p>
+<div id="out"></div>
+<div id="summary">✗ modulo non caricato</div>
+
+<script type="module">
+import { num, attr, safeCombatant, safeImageUrl } from '../src/utils/sanitize.js';
+import { fmtM, validTemplate } from '../src/logic/gridMath.js';
+import { trajectoryClearButtons } from '../src/logic/trajectory.js';
+
+const out = document.getElementById('out');
+let pass = 0, fail = 0;
+const group = (name) => { const h = document.createElement('h2'); h.textContent = name; out.append(h); };
+function check(label, got, want) {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  ok ? pass++ : fail++;
+  const d = document.createElement('div');
+  d.className = 't ' + (ok ? 'ok' : 'ko');
+  d.textContent = label;
+  out.append(d);
+  if (!ok) {
+    const e = document.createElement('div');
+    e.className = 'detail';
+    e.textContent = `atteso ${JSON.stringify(want)} · ottenuto ${JSON.stringify(got)}`;
+    out.append(e);
+  }
+}
+const threw = (fn) => { try { fn(); return false; } catch { return true; } };
+
+// Le regole Firebase permettono a qualunque utente autenticato di scrivere sotto sessions/{code}:
+// ogni valore che arriva da lì va trattato come ostile prima di finire in HTML/SVG.
+group('num');
+check('numero', num(12), 12);
+check('stringa numerica', num('7'), 7);
+check('markup → fallback', num('<img src=x onerror=alert(1)>'), 0);
+check('fallback personalizzato', num('x', 5), 5);
+check('undefined → fallback', num(undefined), 0);
+check('null → fallback', num(null), 0);
+check('Infinity → fallback', num(Infinity), 0);
+check('oggetto → fallback', num({ a: 1 }), 0);
+
+group('attr (valore dentro un attributo HTML)');
+check('virgolette neutralizzate', attr('a"b'), 'a&quot;b');
+check('angolari e &', attr('<&>'), '&lt;&amp;&gt;');
+check('apice', attr("it's"), 'it&#39;s');
+check('numero → stringa', attr(5), '5');
+check('undefined → stringa vuota', attr(undefined), '');
+
+group('fmtM non lancia mai');
+check('intero', fmtM(4), '4m');
+check('decimale', fmtM(2.84), '2.8m');
+check('stringa non numerica', threw(() => fmtM('x')), false);
+check('stringa non numerica → 0m', fmtM('x'), '0m');
+check('undefined', fmtM(undefined), '0m');
+check('oggetto', fmtM({}), '0m');
+
+group('validTemplate (area scritta a mano su Firebase)');
+const ok = { shape: 'cone', originCol: 3, originRow: 4, size: 9, angleDeg: 45, ownerUid: 'u' };
+check('area valida', validTemplate(ok), true);
+check('forma sconosciuta', validTemplate({ ...ok, shape: 'dragon' }), false);
+check('misura non numerica', validTemplate({ ...ok, size: 'x' }), false);
+check('misura negativa', validTemplate({ ...ok, size: -3 }), false);
+check('misura enorme', validTemplate({ ...ok, size: 1e9 }), false);
+check('angolo non finito', validTemplate({ ...ok, angleDeg: Infinity }), false);
+check('origine non intera', validTemplate({ ...ok, originCol: 1.5 }), false);
+check('origine mancante', validTemplate({ ...ok, originRow: undefined }), false);
+check('null', validTemplate(null), false);
+check('stringa', validTemplate('cono'), false);
+check('cerchio senza angolo è valido (angolo non serve)', validTemplate({ shape: 'circle', originCol: 1, originRow: 1, size: 3 }), true);
+
+group('pulsanti traiettoria');
+const t1 = { me: { fromId: 'a' }, other: { fromId: 'b' } };
+check('giocatore con la propria: vede "la mia"', trajectoryClearButtons({ me: { fromId: 'a' } }, 'me', false), { mine: true, all: false });
+check('giocatore senza traiettorie', trajectoryClearButtons({}, 'me', false), { mine: false, all: false });
+check('giocatore non vede "tutte" nemmeno con più traiettorie', trajectoryClearButtons(t1, 'me', false), { mine: true, all: false });
+check('master con UNA traiettoria altrui può rimuoverla', trajectoryClearButtons({ p1: { fromId: 'a' } }, 'master', true), { mine: false, all: true });
+check('master con solo la propria: basta "la mia"', trajectoryClearButtons({ master: { fromId: 'a' } }, 'master', true), { mine: true, all: false });
+check('master con la propria e una altrui', trajectoryClearButtons({ master: { fromId: 'a' }, p1: { fromId: 'b' } }, 'master', true), { mine: true, all: true });
+check('traiettorie assenti', trajectoryClearButtons(null, 'master', true), { mine: false, all: false });
+
+group('safeImageUrl (avatar)');
+check('data URL png valido', safeImageUrl('data:image/png;base64,iVBORw0KGgo='), 'data:image/png;base64,iVBORw0KGgo=');
+check('jpeg/webp ok', [!!safeImageUrl('data:image/jpeg;base64,AAAA'), !!safeImageUrl('data:image/webp;base64,AAAA')], [true, true]);
+check('attributo chiuso con " e onload: scartato', safeImageUrl('data:image/png" onload="x'), null);
+check('con spazi o < >: scartato', [safeImageUrl('data:image/png;base64,AA AA'), safeImageUrl('data:image/png;base64,<AA')], [null, null]);
+check('svg e altri tipi: scartati', [safeImageUrl('data:image/svg+xml;base64,AAAA'), safeImageUrl('https://x.it/a.png'), safeImageUrl('javascript:1')], [null, null, null]);
+check('non stringa', [safeImageUrl(null), safeImageUrl(5), safeImageUrl(undefined)], [null, null, null]);
+
+group('safeCombatant (un combattente scritto a mano non diventa markup)');
+const evil = '<img src=x onerror="window.__pwn=1">';
+const base = { id: '-P65Kf0NtE3E6w8ifNJR', name: 'Goblin', type: 'creature', initiative: 15, hpCurrent: 7, hpMax: 12, tempHp: 2, armorClass: 13, level: 3, speed: 9 };
+check('combattente normale: invariato', safeCombatant(base), base);
+check('iniziativa ostile → 0', safeCombatant({ ...base, initiative: evil }).initiative, 0);
+check('PF ostili → 0', [safeCombatant({ ...base, hpCurrent: evil }).hpCurrent, safeCombatant({ ...base, hpMax: evil }).hpMax], [0, 0]);
+check('PF temporanei ostili → 0', safeCombatant({ ...base, tempHp: evil }).tempHp, 0);
+check('CA ostile → null', safeCombatant({ ...base, armorClass: evil }).armorClass, null);
+check('CA assente resta assente', safeCombatant({ ...base, armorClass: undefined }).armorClass, undefined);
+check('livello e velocità ostili → valori sicuri', [safeCombatant({ ...base, level: evil }).level, safeCombatant({ ...base, speed: evil }).speed], [1, 0]);
+check('id con virgolette → scartato', safeCombatant({ ...base, id: 'a" onmouseover="x' }), null);
+check('id con angolari → scartato', safeCombatant({ ...base, id: '<b>' }), null);
+check('id vuoto → scartato', safeCombatant({ ...base, id: '' }), null);
+check('non oggetto → scartato', safeCombatant(null), null);
+check('i campi di testo non vengono toccati (li escapa il renderer)', safeCombatant({ ...base, name: evil }).name, evil);
+check('la mappa delle condizioni non viene toccata', safeCombatant({ ...base, conditions: { Prono: true } }).conditions, { Prono: true });
+
+document.getElementById('summary').textContent =
+  fail === 0 ? `✓ ${pass} test passati` : `✗ ${fail} falliti · ${pass} passati`;
+document.getElementById('summary').style.color = fail === 0 ? '#7cc78a' : '#e0685c';
+</script>
+</body>
+</html>

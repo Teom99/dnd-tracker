@@ -3,12 +3,14 @@ import * as UI           from '../ui/UI.js';
 import { CharacterSheet } from '../data/CharacterSheet.js';
 import { state }          from '../utils/state.js';
 import { openConditionModal, removeCombatant } from './core.js';
+import { askConfirm } from '../ui/dialogs.js';
 import { LevelUp }   from '../logic/LevelUp.js';
 import { LevelUpUI } from '../ui/LevelUpUI.js';
+import { readSheetTab, saveSheetTab, SHEET_TABS, xpSyncAction, sheetMatchesCombatant } from '../logic/sheetView.js';
 
 let editingInventoryId = null;
 const inventoryCallbacks = {
-  onRemove: (id) => { if (confirm('Rimuovere l\'oggetto?')) state.sheet.removeInventoryItem(id); },
+  onRemove: async (id) => { if (await askConfirm({ title: 'Rimuovere l\'oggetto?', confirmLabel: 'Rimuovi', danger: true })) state.sheet.removeInventoryItem(id); },
   onEdit:   (id) => { editingInventoryId = id; SheetUI.renderInventory(state.sheetData.inventory, editingInventoryId, inventoryCallbacks); },
   onCancel: ()    => { editingInventoryId = null; SheetUI.renderInventory(state.sheetData.inventory, editingInventoryId, inventoryCallbacks); },
   onSave:   async (id, data) => {
@@ -109,6 +111,7 @@ export function setupSheetListener() {
     const combatView = document.getElementById('view-combat');
     if (combatView && !combatView.classList.contains('hidden') && state.snapshot) {
       _renderCombatantLists();
+      document.dispatchEvent(new CustomEvent('dnd:sheet-changed'));
     }
 
     if (!populated) {
@@ -122,7 +125,10 @@ export function setupSheetListener() {
     } else {
       SheetUI.populateSheet(state.sheetData);
     }
-    SheetUI.updateComputedValues(state.sheetData);
+    // Popover incantesimi del dock: si ridisegna se aperto (stessi dati della scheda)
+    if (state.ui?.spellsOpen) UI.renderSpellsPopover(state.sheetData);
+    refreshSessionDerived();
+    syncXpWithSession();
     SheetUI.renderSaveChecks(state.sheetData.savingThrows);
     SheetUI.renderSkillProfs(state.sheetData.skills);
     SheetUI.renderDeathSaves(state.sheetData.deathSaves);
@@ -138,7 +144,6 @@ export function setupSheetListener() {
       (id) => state.sheet.removeClassStat(id),
       (id, name, desc) => state.sheet.updateClassFeature(id, name, desc),
     );
-    _updateLevelUpButton(state.sheetData);
   });
 }
 
@@ -167,13 +172,74 @@ function _updateLevelUpButton(data) {
   } else {
     btn.classList.add('hidden');
   }
+  // Il bottone resta disponibile come prima (il master può concedere il livello a voce),
+  // ma è quello PRIMARIO solo quando il livello è davvero pronto
+  btn.classList.toggle('btn--primary', SheetUI.isLevelUpReady(data));
 }
+
+// Tutto ciò che nella scheda dipende dalla sessione: XP corrente, vita attuale, ispirazione,
+// pulsante di livello. Si richiama a ogni snapshot di sessione (evento dnd:session-update), a ogni
+// snapshot della scheda e all'apertura. Non scrive mai su Firebase.
+export function refreshSessionDerived() {
+  const snap = state.snapshot, id = state.myCombatantId;
+  const inSession = !!(snap && id && state.sheetReturnView === 'view-combat');
+  SheetUI.setXpContext({
+    inSession,
+    sessionXp: inSession ? snap.xp?.[id] : undefined,
+    mode:      snap?.progressionMode ?? 'xp',
+    granted:   inSession && snap.levelUpGranted?.[id] === true,
+  });
+  SheetUI.updateComputedValues(state.sheetData);
+  SheetUI.updateVitals(inSession ? snap.combatants?.[id] : null, { inSession });
+  _updateLevelUpButton(state.sheetData);
+  // L'XP in sessione la assegna il master: il campo della scheda mostra quello e non si modifica
+  const xpInput = document.querySelector('#view-character [data-path="xp"]');
+  if (xpInput) {
+    xpInput.disabled = inSession;
+    xpInput.title = inSession ? 'Gli XP li assegna il master' : '';
+    if (inSession && xpInput !== document.activeElement) xpInput.value = String(SheetUI.getEffectiveXp(state.sheetData));
+  }
+}
+
+// XP UNICA tra scheda e combattimento (vedi xpSyncAction in src/logic/sheetView.js). Lo fa il client
+// del proprietario: le rules non permettono al master di scrivere sul personaggio di un altro.
+// 'seed': la sessione non ha XP o ne ha meno della scheda → si alza la sessione (mai abbassa).
+// 'mirror': la sessione ha più XP della scheda → si riporta sulla scheda. Guardie contro i cicli: si ricorda
+// l'ultimo valore scritto e si scrive solo se diverso. Non si fa nulla in modalità milestone.
+let _seededFor = null;
+let _lastMirroredXp = null;
+export function syncXpWithSession() {
+  const snap = state.snapshot, id = state.myCombatantId;
+  if (!state.sheet || !state.sheetData || !snap || !id || state.sheetReturnView === 'view-home') return;
+  if ((snap.progressionMode ?? 'xp') !== 'xp') return;
+  // La scheda aperta deve essere quella di QUESTO combattente (un rientro da una voce vecchia senza charId
+  // lascia aperta un'altra scheda: non le si scrive l'XP della sessione)
+  if (!sheetMatchesCombatant({ combatantCharId: snap.combatants?.[id]?.charId, sheetCharId: state.myCurrentCharId })) return;
+  const action = xpSyncAction({ sessionXp: snap.xp?.[id], sheetXp: state.sheetData.xp });
+  if (action !== 'mirror') _lastMirroredXp = null;   // allineati o in salita: la prossima discesa si riscrive
+  if (action !== 'seed') _seededFor = null;
+  if (action === 'seed') {
+    const key = `${id}:${state.sheetData.xp}`;
+    if (_seededFor === key) return;
+    _seededFor = key;
+    state.session.raiseXpTo(id, state.sheetData.xp).catch(() => { _seededFor = null; });
+  } else if (action === 'mirror') {
+    const v = snap.xp[id], key = `${id}:${v}`;   // per combattente: lo stesso valore in un'altra sessione si riscrive
+    if (_lastMirroredXp === key) return;
+    _lastMirroredXp = key;
+    state.sheet.setField('xp', v);
+  }
+}
+document.addEventListener('dnd:session-update', syncXpWithSession);
+document.addEventListener('dnd:session-update', () => {
+  if (document.body.classList.contains('sheet-only') && state.sheetData) refreshSessionDerived();
+});
 
 async function _openLevelUpModal() {
   const fromLevel = state.sheetData?.level ?? 1;
   const className = state.sheetData?.class;
-  if (!confirm(`Sei sicuro di voler far salire di livello ${state.sheetData?.characterName ?? 'il personaggio'}?\n${className} Lv.${fromLevel} → Lv.${fromLevel + 1}`)) return;
   if (!className || fromLevel >= 20) return;
+  if (!await askConfirm({ title: 'Salire di livello?', text: `${state.sheetData?.characterName ?? 'Il personaggio'}: ${className} Lv.${fromLevel} → Lv.${fromLevel + 1}`, confirmLabel: 'Sali di livello' })) return;
 
   const classesData  = await LevelUp.load();
   const resolvedName = LevelUp.resolveClassName(classesData, className);
@@ -235,7 +301,7 @@ function _renderCombatantLists() {
 
 function _makeCallbacks() {
   return {
-    onEndTurn:          async ()                          => { const s = state.tracker.sortedCombatants(state.snapshot.combatants); await state.tracker.nextTurn(s); },
+    onEndTurn:          async ()                          => { const s = state.tracker.sortedCombatants(state.snapshot.combatants); await state.tracker.nextTurn(s, state.snapshot.currentTurnId ?? null); },
     onRemove: async (id) => {
       await removeCombatant(id);
       await state.ship?.removeToken(id);
@@ -302,10 +368,6 @@ export function initSheet(uid, charId) {
   setupSheetListener();
 }
 
-export function isSheetEmbedded() {
-  return false;
-}
-
 export function openCharacterSheet() {
   if (!state.sheet) return;
   state.sheetReturnView = 'view-combat';
@@ -316,10 +378,10 @@ export function openCharacterSheet() {
   SheetUI.renderSpellsByLevel(state.sheetData?.spells, (lvl, id) => state.sheet.removeSpell(lvl, id), (lvl, id) => state.sheet.toggleSpellPrepared(lvl, id), (lvl, name) => state.sheet.addSpell(lvl, name));
   SheetUI.renderInventory(state.sheetData?.inventory, editingInventoryId, inventoryCallbacks);
   bindSheetEvents();
-  if (!isSheetEmbedded()) {
-    document.body.classList.add('sheet-only');
-    UI.showView('view-combat');
-  }
+  applySheetTab(readSheetTab());
+  refreshSessionDerived();
+  document.body.classList.add('sheet-only');
+  UI.showView('view-combat');
 }
 
 export async function openLibrarySheet(charId) {
@@ -339,14 +401,57 @@ export async function openLibrarySheet(charId) {
     SheetUI.renderSpellsByLevel(state.sheetData?.spells, (lvl, id) => state.sheet.removeSpell(lvl, id), (lvl, id) => state.sheet.toggleSpellPrepared(lvl, id), (lvl, name) => state.sheet.addSpell(lvl, name));
     SheetUI.renderInventory(state.sheetData?.inventory, editingInventoryId, inventoryCallbacks);
     bindSheetEvents();
+    applySheetTab(readSheetTab());
+    refreshSessionDerived();
     UI.showView('view-combat');
   } catch (err) {
     UI.showError('Errore apertura scheda: ' + err.message);
   }
 }
 
+// ─── Schede della scheda (Combattimento · Incantesimi · Zaino · Capacità · Personaggio) ───
+// Sono solo pannelli: i campi restano tutti nel DOM (anche quelli nascosti) e restano agganciati
+// come prima. Lo stato è l'attributo data-tab su #view-character; la scelta è ricordata per client.
+export function applySheetTab(tab, { focus = false } = {}) {
+  const view = document.getElementById('view-character');
+  if (!view) return;
+  const t = SHEET_TABS.includes(tab) ? tab : 'combat';
+  view.dataset.tab = t;
+  view.querySelectorAll('.sheet-tab').forEach(b => {
+    const on = b.dataset.tab === t;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-selected', String(on));
+    b.tabIndex = on ? 0 : -1;
+    if (on && focus) b.focus();
+    if (on) b.scrollIntoView?.({ inline: 'nearest', block: 'nearest' });
+  });
+}
+
+function _bindSheetTabs(view) {
+  const bar = view.querySelector('.sheet-tabs');
+  if (!bar || bar._sheetBound) return;
+  bar._sheetBound = true;
+  bar.addEventListener('click', (e) => {
+    const b = e.target.closest('.sheet-tab');
+    if (!b) return;
+    saveSheetTab(b.dataset.tab);
+    applySheetTab(b.dataset.tab);
+  });
+  bar.addEventListener('keydown', (e) => {
+    const i = SHEET_TABS.indexOf(view.dataset.tab);
+    const next = e.key === 'ArrowRight' ? (i + 1) % SHEET_TABS.length
+               : e.key === 'ArrowLeft'  ? (i - 1 + SHEET_TABS.length) % SHEET_TABS.length
+               : e.key === 'Home' ? 0 : e.key === 'End' ? SHEET_TABS.length - 1 : -1;
+    if (next < 0) return;
+    e.preventDefault();
+    saveSheetTab(SHEET_TABS[next]);
+    applySheetTab(SHEET_TABS[next], { focus: true });
+  });
+}
+
 export function bindSheetEvents() {
   const view = document.getElementById('view-character');
+  _bindSheetTabs(view);
 
   // Upload avatar dal ritratto nella scheda
   const portraitEl = view.querySelector('.portrait');

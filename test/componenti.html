@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Campionario — componenti "Manuale"</title>
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,500;0,600;0,700;1,500&family=Alegreya+SC:wght@500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../styles/base.css">
+<link rel="stylesheet" href="../styles/combat.css">
+<style>
+  /* Solo impaginazione del campionario: i componenti arrivano da styles/ */
+  body { display: block; }
+  .sheet { max-width: 880px; margin: 0 auto; padding: 24px 16px 80px; display: flex; flex-direction: column; gap: 28px; }
+  .sheet > header { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding-bottom: 12px; }
+  .sheet h1 { font: 700 26px/1.1 var(--f-display); color: var(--c-heading); text-align: left; flex: 1; letter-spacing: .02em; }
+  .line { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+  .sw { border: 1px solid var(--c-rule); border-radius: var(--r); overflow: hidden; font-size: 12px; }
+  .sw i { display: block; height: 38px; }
+  .sw span { display: block; padding: 3px 6px; font-family: var(--font-mono); }
+  .demo-veil { position: relative; inset: auto; z-index: 0; border-radius: var(--r); }
+  .demo-stack { position: static; }
+  .flash { padding: 10px 14px; border: 1px solid var(--c-rule); border-radius: var(--r); }
+</style>
+<script>
+  (function() {
+    var saved = null;
+    try { saved = localStorage.getItem('dnd-theme'); } catch (e) {}
+    document.documentElement.dataset.theme = (saved === 'light' || saved === 'night') ? saved
+      : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'light');
+  })();
+</script>
+</head>
+<body>
+<div class="sheet">
+  <header class="rule-double">
+    <h1>Campionario dei componenti</h1>
+    <button class="btn btn--sm" id="toggle">Cambia tema</button>
+  </header>
+
+  <section>
+    <h2 class="rule-head">Bottoni</h2>
+    <div class="line">
+      <button class="btn btn--primary">Fine turno</button>
+      <button class="btn">Riposo</button>
+      <button class="btn btn--ghost">Altro</button>
+      <button class="btn btn--danger">Reset incontro</button>
+      <button class="btn" disabled>Disattivato</button>
+      <button class="btn btn--primary" disabled>Primario disattivato</button>
+    </div>
+    <div class="line" style="margin-top:10px">
+      <button class="btn btn--sm btn--primary">Piccolo primario</button>
+      <button class="btn btn--sm">Piccolo</button>
+      <button class="btn btn--sm btn--ghost">Piccolo testo</button>
+      <button class="btn btn--sm btn--danger">Piccolo pericolo</button>
+      <button class="btn btn--sm btn--icon" aria-label="Chiudi">✕</button>
+      <button class="btn-secondary">Classe precedente</button>
+    </div>
+    <div style="margin-top:10px"><button class="btn btn--block">A tutta larghezza</button></div>
+  </section>
+
+  <section>
+    <h2 class="rule-head">Campi</h2>
+    <div class="cols">
+      <div class="field"><label for="f1">Nome personaggio</label><input id="f1" class="input" placeholder="Nome"></div>
+      <div class="field"><label for="f2">Punti ferita</label><input id="f2" class="input input--num" type="number" value="24"></div>
+      <div class="field"><label for="f3">Taglia</label><select id="f3" class="select"><option>Media (1×1)</option><option>Grande (2×2)</option></select></div>
+      <div class="field"><label for="f4">Codice sessione</label><input id="f4" class="input input--code" value="K7QM"></div>
+    </div>
+    <div class="field" style="margin-top:12px"><label for="f5">Cronaca</label><textarea id="f5" class="input" rows="3">La compagnia attraversa il ponte al tramonto.</textarea></div>
+  </section>
+
+  <section>
+    <h2 class="rule-head">Titoli e filetti</h2>
+    <h3 class="ds-heading"><span>Titolo di pannello</span></h3>
+    <p>Testo corrente in Alegreya. <span class="t-mut">Testo secondario.</span> <span class="t-gold">Testo in evidenza.</span> <span class="t-label">Etichetta</span></p>
+    <hr class="ds-sep">
+    <div class="rule-double" style="padding:8px 0">Doppio filetto sotto (testata)</div>
+    <div class="rule-double--top" style="padding:8px 0;margin-top:12px">Doppio filetto sopra (dock)</div>
+  </section>
+
+  <section>
+    <h2 class="rule-head">Vita, condizioni, flash</h2>
+    <div class="cols">
+      <div><div class="hpbar hpbar--big"><i class="trail" style="transform:scaleX(.8)"></i><i class="fill" style="transform:scaleX(.6)"></i></div><span class="hp-text">18 / 30 · nemico</span></div>
+      <div><div class="hpbar hpbar--big hpbar--ally"><i class="fill" style="transform:scaleX(.77)"></i></div><span class="hp-text">24 / 31 · giocatore</span></div>
+    </div>
+    <div class="line" style="margin-top:12px">
+      <span class="chip chip--gold"><i></i>Stordito</span><span class="chip chip--blood"><i></i>Spaventato</span>
+      <span class="chip chip--accent"><i></i>Benedetto</span><span class="chip chip--iron"><i></i>Invisibile</span>
+      <span class="chip chip--ash"><i></i>Prono</span><button class="chip chip--hex" aria-pressed="true"><i></i>Concentrato</button>
+    </div>
+    <div class="line" style="margin-top:12px">
+      <div class="flash" id="flash-dmg">Flash danno</div>
+      <div class="flash" id="flash-heal">Flash cura</div>
+      <button class="btn btn--sm" id="replay">Ripeti i flash</button>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="rule-head">Notifiche</h2>
+    <div class="notification-stack demo-stack">
+      <div class="notification notification-damage">Lyra subisce 7 danni</div>
+      <div class="notification notification-heal">Thorin recupera 9 punti ferita</div>
+      <div class="notification notification-info">Goblin arciere ha colpito Lyra infliggendogli 7 danni</div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="rule-head">Finestra</h2>
+    <div class="veil demo-veil">
+      <div class="modal-frame">
+        <h3 class="ds-heading"><span>Aggiungi creatura</span></h3>
+        <div class="field"><label for="m1">Nome</label><input id="m1" class="input" placeholder="Nome creatura"></div>
+        <div class="line" style="margin-top:14px"><button class="btn btn--primary grow">Aggiungi</button><button class="btn grow">Annulla</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2 class="rule-head">Colori</h2>
+    <div class="swatches" id="swatches"></div>
+  </section>
+</div>
+
+<script type="module">
+import { toggleTheme } from '../src/utils/theme.js';
+document.getElementById('toggle').addEventListener('click', toggleTheme);
+
+const names = ['paper','paper-hi','paper-lo','track','text','mute','rule','heading','accent','gold','pc','foe','ally','map','map-edge','wall'];
+document.getElementById('swatches').innerHTML = names.map(n =>
+  `<div class="sw"><i style="background:var(--c-${n})"></i><span>--c-${n}</span></div>`).join('');
+
+function flash() {
+  for (const [id, cls] of [['flash-dmg', 'anim-dmg'], ['flash-heal', 'anim-heal']]) {
+    const el = document.getElementById(id);
+    el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls);
+  }
+}
+document.getElementById('replay').addEventListener('click', flash);
+flash();
+</script>
+</body>
+</html>

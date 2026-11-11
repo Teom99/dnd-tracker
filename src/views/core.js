@@ -1,6 +1,8 @@
+import * as CombatChrome from '../ui/CombatChrome.js';
 import { Combatant }    from '../data/Combatant.js';
 import { CombatTracker } from '../logic/CombatTracker.js';
 import * as UI           from '../ui/UI.js';
+import { closeAllSheets } from '../ui/dialogs.js';
 import * as GridUI       from '../ui/GridUI.js';
 import { state }         from '../utils/state.js';
 
@@ -22,6 +24,13 @@ export function detachSessionListeners() {
 }
 
 export function exitToHome(errorMessage) {
+  closeAllSheets();
+  document.dispatchEvent(new CustomEvent('dnd:reset-draw-history'));   // la pila undo vive in logic/grid.js (niente import circolare)
+  state.gridEditMode = false;
+  state.drawMode     = false;
+  state.shipPanelOpen = false;
+  document.querySelector('.combat-shell')?.classList.remove('hidden');
+  document.getElementById('ship-panel')?.classList.add('hidden');
   detachSessionListeners();
   localStorage.removeItem('dnd_session_code');
   localStorage.removeItem('dnd_combatant_id');
@@ -42,14 +51,26 @@ export function exitToHome(errorMessage) {
   state.selectedDockId         = null;
   state.templatePlacingShape   = null;
   state.templateOrigin         = null;
+  state.trajectoryFrom         = null;
+  CombatChrome.reset();
   const gridContainer = document.getElementById('grid-container');
   if (gridContainer) gridContainer.innerHTML = '';
   GridUI.clearCursors();
-  const submitBtn = document.querySelector('#form-join [type="submit"]');
-  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Entra nella Sessione'; }
+  setJoinBusy(false);
+  UI.resetScene();
+  document.querySelectorAll('.btn-rejoin').forEach(b => { b.disabled = false; });
   document.body.classList.remove('in-combat', 'has-sheet', 'sheet-only');
   UI.showView('view-home');
   if (errorMessage) UI.showError(errorMessage);
+}
+
+// Bottone di ingresso della home: il testo sta in .lbl per non perdere l'icona.
+export function setJoinBusy(busy) {
+  const btn = document.getElementById('btn-join-submit');
+  if (!btn) return;
+  btn.disabled = busy;
+  const lbl = btn.querySelector('.lbl');
+  if (lbl) lbl.textContent = busy ? 'Caricamento…' : 'Varca la soglia';
 }
 
 export function esc(str) {
@@ -68,6 +89,10 @@ export function openConditionModal(combatantId, conditionsObj) {
 export async function removeCombatant(id) {
   await state.session.clearGridPosition(id);
   await state.combatantManager.remove(id);
+  // Le traiettorie che partivano da lui o lo avevano per bersaglio non hanno più senso
+  for (const [uid, t] of Object.entries(state.snapshot?.trajectories ?? {})) {
+    if (t?.fromId === id || t?.toId === id) await state.session.clearTrajectory(uid);
+  }
 }
 
 export function closeConditionModal() {

@@ -1,4 +1,5 @@
 import { LevelUp } from '../logic/LevelUp.js';
+import { icon } from './icons.js';
 
 function esc(str) {
   return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -44,8 +45,8 @@ export class LevelUpUI {
            ${LevelUpUI.#featuresForm(changes.features)}
          </div>` : '';
 
-    document.getElementById('levelup-modal-title').textContent =
-      `⬆ Level Up: ${className} ${fromLevel} → ${toLevel}`;
+    document.getElementById('levelup-modal-title').innerHTML =
+      `${icon('crown',{size:18})} Level Up: ${esc(className)} ${esc(fromLevel)} → ${esc(toLevel)}`;
 
     document.getElementById('levelup-modal-body').innerHTML = `
       ${statsHtml}

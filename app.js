@@ -9,7 +9,7 @@ import { CharacterLibrary }  from './src/data/CharacterLibrary.js';
 import * as UI               from './src/ui/UI.js';
 import * as GridUI           from './src/ui/GridUI.js';
 import { state }             from './src/utils/state.js';
-import { initCombatManagers, exitToHome, esc, closeConditionModal, detachSessionListeners } from './src/views/core.js';
+import { initCombatManagers, exitToHome, esc, closeConditionModal, detachSessionListeners, setJoinBusy } from './src/views/core.js';
 import { renderGrid, toggleTemplatePlacement, clearTemplate, toggleDrawMode, setDrawColor, clearPaint, setDrawTool, toggleDrawFill, setDrawSize, setDrawShape, undoPaint, redoPaint } from './src/logic/grid.js';
 import { initSheet, makeCallbacks } from './src/views/sheet.js';
 import { LevelUp }   from './src/logic/LevelUp.js';
@@ -18,22 +18,37 @@ import { Ship }    from './src/data/Ship.js';
 import * as ShipUI from './src/ui/ShipUI.js';
 import { captureFocusState, restoreFocusState } from './src/utils/domPreserve.js';
 import { playerColor } from './src/utils/presence.js';
+import { initTheme, toggleTheme } from './src/utils/theme.js';
+import { icon } from './src/ui/icons.js';
+import { num, attr } from './src/utils/sanitize.js';
+import { askConfirm, askText, askChoice } from './src/ui/dialogs.js';
+import * as CombatChrome from './src/ui/CombatChrome.js';
+import { toolTransition, toolFromState, nextInTurnOrder } from './src/logic/combatChrome.js';
+import { trajectoryClearButtons } from './src/logic/trajectory.js';
 import { updateHomeAuthUI, loadCharacterLibrary, populateJoinPicker, populateCreaturePicker, saveUserSession, loadUserSessions } from './src/views/home.js';
 
-// --- Theme Management ---
-function initTheme() {
-  const savedTheme = localStorage.getItem('theme') || 'purple';
-  if (savedTheme === 'old') {
-    document.documentElement.classList.add('theme-old');
-  }
-}
-function toggleTheme() {
-  const isOld = document.documentElement.classList.toggle('theme-old');
-  localStorage.setItem('theme', isOld ? 'old' : 'purple');
+// --- Tema chiaro/notte ---
+// Il bottone mostra il tema a cui si passa: sole in notte, luna in chiaro.
+function _syncThemeButtons() {
+  const night = document.documentElement.dataset.theme === 'night';
+  const label = night ? 'Tema chiaro' : 'Tema notte';
+  const ico   = icon(night ? 'sun' : 'crescent');
+  const home   = document.getElementById('btn-theme-toggle-home');
+  const auth   = document.getElementById('btn-theme-toggle-auth');   // schermata di accesso (la topbar della home ha il suo, ma nascosto finché non si è dentro)
+  const combat = document.getElementById('btn-theme-toggle-combat');
+  home.innerHTML   = ico;
+  auth.innerHTML   = ico;
+  combat.innerHTML = `${ico}<span class="lbl">${label}</span>`;
+  for (const b of [home, auth, combat]) { b.setAttribute('aria-label', label); b.title = label; }
 }
 document.getElementById('btn-theme-toggle-home').addEventListener('click', toggleTheme);
+document.getElementById('btn-theme-toggle-auth').addEventListener('click', toggleTheme);
 document.getElementById('btn-theme-toggle-combat').addEventListener('click', toggleTheme);
 initTheme();
+CombatChrome.init();
+// data-theme cambia anche senza click (cambio tema di sistema): si osserva l'attributo
+new MutationObserver(_syncThemeButtons).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+_syncThemeButtons();
 
 // --- Firebase init ---
 const firebaseApp = initializeApp(FIREBASE_CONFIG);
@@ -106,9 +121,9 @@ document.getElementById('btn-create-player').addEventListener('click', async () 
 });
 
 document.getElementById('btn-create-creature').addEventListener('click', async () => {
-  const name = prompt('Nome della creatura:');
-  if (!name?.trim()) return;
-  await state.library.create(name.trim(), 'creature');
+  const name = await askText({ title: 'Nuova creatura', label: 'Nome della creatura', confirmLabel: 'Aggiungi' });
+  if (!name) return;
+  await state.library.create(name, 'creature');
   loadCharacterLibrary();
 });
 
@@ -152,34 +167,52 @@ async function _joinSessionAsCharacter(code, name, charId, initiative = '0') {
 }
 
 async function _doJoinSessionAsCharacter(code, name, charId, initiative = '0') {
+  // join() sovrascrive il rientro automatico: se l'ingresso viene annullato si rimette com'era
+  const prev = { code: localStorage.getItem('dnd_session_code'), combatant: localStorage.getItem('dnd_combatant_id') };
   state.myUid = await state.session.join(code);
   initCombatManagers(code);
 
+  let createdCharId = null;   // scheda nuova creata da questa chiamata: se si annulla l'ingresso, si toglie
   if (!charId) {
     if (!state.library && auth.currentUser) state.library = new CharacterLibrary(db, auth.currentUser.uid);
-    if (state.library) charId = await state.library.create(name, 'player');
+    if (state.library) charId = createdCharId = await state.library.create(name, 'player');
   }
 
   const existing = await state.combatantManager.findByOwner(state.myUid);
   let savedCharName = name;
   if (existing) {
     const existingName = existing.name || 'il tuo personaggio';
-    const rejoin = confirm(
-      `Sei già presente in questa sessione con il personaggio "${existingName}".\n\n` +
-      `OK → Rientra con "${existingName}"\n` +
-      `Annulla → Rimuovi il vecchio e crea "${name}"`
-    );
-    if (rejoin) {
+    const choice = await askChoice({
+      title: 'Sei già in questa sessione',
+      text: `Sei già presente con il personaggio "${existingName}".`,
+      primaryLabel: `Rientra con "${existingName}"`,
+      secondaryLabel: `Sostituisci con "${name}"`,
+    });
+    if (choice === null) {
+      if (createdCharId) { try { await state.library.delete(createdCharId); } catch { /* resta una scheda in più */ } }
+      for (const [key, v] of [['dnd_session_code', prev.code], ['dnd_combatant_id', prev.combatant]]) {
+        if (v == null) localStorage.removeItem(key); else localStorage.setItem(key, v);
+      }
+      state.session.code = null;
+      const cancelled = new Error('Ingresso annullato.');
+      cancelled.cancelled = true;
+      throw cancelled;
+    }
+    if (choice === 'primary') {
       state.myCombatantId = existing.id;
+      if (createdCharId && existing.charId && existing.charId !== createdCharId) {
+        // la scheda appena creata per questo ingresso resterebbe orfana in libreria
+        try { await state.library.delete(createdCharId); } catch { /* resta una scheda in più */ }
+      }
       savedCharName = existing.name || name;
       if (!existing.name) await state.combatantManager.setName(existing.id, name);
       charId = existing.charId ?? charId;
     } else {
       await state.combatantManager.remove(existing.id);
-      state.myCombatantId = await state.combatantManager.add(name, initiative, 1, 'player', state.myUid, charId);
+      state.myCombatantId = await state.combatantManager.add(name, initiative, null, 'player', state.myUid, charId);
     }
   } else {
-    state.myCombatantId = await state.combatantManager.add(name, initiative, 1, 'player', state.myUid, charId);
+    state.myCombatantId = await state.combatantManager.add(name, initiative, null, 'player', state.myUid, charId);
   }
 
   // Avviato solo ora che myCombatantId e charId sono definitivi: la primissima
@@ -209,16 +242,13 @@ document.getElementById('form-join').addEventListener('submit', async (e) => {
     return;
   }
 
-  const submitBtn = e.target.querySelector('[type="submit"]');
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Caricamento...';
+  setJoinBusy(true);
 
   try {
     await _joinSessionAsCharacter(code, name, state.selectedJoinCharId ?? null, initiative);
   } catch (err) {
-    UI.showError(err.message);
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Entra nella Sessione';
+    if (!err.cancelled) UI.showError(err.message);
+    setJoinBusy(false);
   }
 });
 
@@ -230,8 +260,11 @@ document.addEventListener('dnd:join-with-character', async (e) => {
   try {
     await _joinSessionAsCharacter(code, name, charId);
   } catch (err) {
-    UI.showError(err.message);
-    loadCharacterLibrary(); // ripristina il campo/tasto disabilitati sulla card
+    if (!err.cancelled) UI.showError(err.message);
+    // riattiva campo e tasto della carta SENZA ricaricare la libreria: il codice digitato resta lì
+    const form = [...document.querySelectorAll('.char-lib-join')].find(f => f.dataset.id === charId);
+    form?.querySelectorAll('input, button').forEach(el => { el.disabled = false; });
+    if (!form) loadCharacterLibrary();
   }
 });
 
@@ -274,6 +307,15 @@ document.getElementById('form-add-creature').addEventListener('submit', async (e
 
 // ─── COMBAT: Aggiungi compagno (player only) ──────────────────────────────────
 
+const _addPetModal = document.getElementById('add-pet-modal');
+function _closeAddPetModal() { _addPetModal.classList.add('hidden'); }
+document.getElementById('btn-open-add-pet').addEventListener('click', () => {
+  _addPetModal.classList.remove('hidden');
+  setTimeout(() => document.getElementById('input-pet-name')?.focus(), 50);
+});
+document.getElementById('btn-add-pet-cancel').addEventListener('click', _closeAddPetModal);
+_addPetModal.addEventListener('click', (e) => { if (e.target === _addPetModal) _closeAddPetModal(); });
+
 document.getElementById('form-add-pet').addEventListener('submit', async (e) => {
   e.preventDefault();
 
@@ -286,7 +328,7 @@ document.getElementById('form-add-pet').addEventListener('submit', async (e) => 
 
   await state.combatantManager.add(name, initiative, hp, 'pet', state.myUid, null, ac, null);
   e.target.reset();
-  document.getElementById('input-pet-name').focus();
+  _closeAddPetModal();
 });
 
 // ─── D&D API: Monster Search + Stat Block ─────────────────────────────────────
@@ -408,15 +450,28 @@ document.getElementById('monster-stat-block-modal').addEventListener('click', (e
 });
 
 // Dock giocatore — azioni rapide (condizioni, scheda, fine turno, death saves)
-document.getElementById('my-dock')?.addEventListener('click', (e) => {
+function _onDockClick(e) {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
   const action = btn.dataset.action;
+  if (action === 'dock-more') { CombatChrome.set({ moreOpen: !state.ui.moreOpen, spellsOpen: false }); return; }
+  if (btn.closest('#dock-more')) CombatChrome.set({ moreOpen: false });
   const cb = makeCallbacks();
   // Per il master il soggetto del dock è la creatura/PG selezionato da carte o iniziativa; per il player è il proprio combattente
   const subjectId = state.session?.isMaster ? state.selectedDockId : state.myCombatantId;
   if (!subjectId) return;
   if (action === 'dock-conditions') { cb.onOpenConditions?.(subjectId); return; }
+  if (action === 'dock-spells') {
+    const open = !state.ui.spellsOpen;
+    if (open) UI.renderSpellsPopover(state.sheet ? (state.sheetData || {}) : null);
+    CombatChrome.set({ spellsOpen: open });
+    return;
+  }
+  if (action === 'view-stat-block') {
+    const idx = btn.dataset.apiIndex;
+    if (idx) getMonster(idx).then(_renderMonsterStatBlock).catch(() => { /* API non raggiungibile */ });
+    return;
+  }
   if (action === 'dock-sheet')      { cb.onOpenSheet?.(); return; }
   if (action === 'dock-end-turn')   { cb.onEndTurn?.(); return; }
   if (action === 'dock-attack' || action === 'dock-heal') {
@@ -432,6 +487,23 @@ document.getElementById('my-dock')?.addEventListener('click', (e) => {
     cb.onDeathSave?.(type, on ? index : index + 1);
     return;
   }
+}
+document.getElementById('my-dock')?.addEventListener('click', _onDockClick);
+document.getElementById('dock-more')?.addEventListener('click', _onDockClick);
+
+// Popover incantesimi: i rombi degli slot (stessa scrittura della scheda) e i comandi del popover
+document.getElementById('spells-pop')?.addEventListener('click', (e) => {
+  const dia = e.target.closest('[data-slot-level]');
+  if (dia) {
+    const lvl  = dia.dataset.slotLevel;
+    const slot = state.sheetData?.spellSlots?.[lvl] || {};
+    const max  = slot.max ?? 0, used = slot.used ?? 0;
+    const next = dia.classList.contains('free') ? used + 1 : used - 1;   // rombo pieno = libero → lo uso
+    state.sheet?.setSpellSlotsUsed(lvl, Math.max(0, Math.min(max, next)));
+    return;
+  }
+  if (e.target.closest('#btn-spells-close')) { CombatChrome.set({ spellsOpen: false }); return; }
+  if (e.target.closest('#btn-spells-sheet')) { CombatChrome.set({ spellsOpen: false }); makeCallbacks().onOpenSheet?.(); }
 });
 
 // Dock master: mostra il combattente selezionato (da carte o tabella iniziativa)
@@ -452,18 +524,28 @@ function _setDockSubject(id) {
 
 document.addEventListener('dnd:dock-select', (e) => _setDockSubject(e.detail?.id ?? null));
 
-// Bottone "📖 Visualizza Dati" nelle card creature (master-only, riapre il stat block)
+// Dalla riga dell'iniziativa: modifica rapida del numero e stella dell'ispirazione
+document.addEventListener('dnd:initiative-change', (e) => {
+  makeCallbacks().onInitiativeChange?.(e.detail.id, e.detail.value);
+});
+document.addEventListener('dnd:toggle-inspiration', (e) => {
+  makeCallbacks().onToggleInspiration?.(e.detail.id, e.detail.current);
+});
+document.addEventListener('dnd:rerender-grid', () => _rerenderGridFromSnapshot());
+document.addEventListener('dnd:grid-mode-changed', () => _syncGridModeUI());
+
+// Bottone "Scheda mostro" nelle card creature (master-only, riapre il stat block)
 document.getElementById('creature-list').addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-action="view-stat-block"]');
   if (!btn) return;
   const idx = btn.dataset.apiIndex;
   if (!idx) return;
-  btn.textContent = '⏳';
+  btn.disabled = true;   // in attesa della risposta dell'API
   try {
     const data = await getMonster(idx);
     _renderMonsterStatBlock(data);
   } catch { /* API non raggiungibile */ }
-  finally { btn.textContent = '📖 Visualizza Dati'; }
+  finally { btn.disabled = false; }
 });
 
 {
@@ -489,7 +571,7 @@ document.getElementById('creature-list').addEventListener('click', async (e) => 
         ev.preventDefault();
         suggestionBox.classList.add('hidden');
         searchInput.value  = '';
-        li.textContent     = '⏳ Caricamento...';
+        li.textContent     = 'Caricamento…';
         try {
           const data = await getMonster(m.index);
           _renderMonsterStatBlock(data);
@@ -519,10 +601,10 @@ document.getElementById('creature-list').addEventListener('click', async (e) => 
   _spellBox.id = 'spell-suggestions';
   _spellBox.style.cssText = [
     'position:fixed', 'z-index:200', 'list-style:none', 'display:none',
-    `background:var(--bg-card)`, `border:1px solid var(--border-warm)`,
-    `border-radius:0 0 var(--radius) var(--radius)`,
+    `background:var(--c-paper)`, `border:1px solid var(--c-rule)`,
+    `border-radius:0 0 var(--r) var(--r)`,
     'max-height:220px', 'overflow-y:auto',
-    `box-shadow:var(--shadow)`, 'margin:0', 'padding:0',
+    `box-shadow:0 4px 14px var(--c-shadow)`, 'margin:0', 'padding:0',
   ].join(';');
   document.body.appendChild(_spellBox);
 
@@ -624,14 +706,14 @@ document.getElementById('btn-next-turn').addEventListener('click', async () => {
   const currentId  = state.snapshot.currentTurnId ?? null;
   const currentIdx = active.findIndex(c => c.id === currentId);
   const nextActive = currentIdx === -1 ? active[0] : active[(currentIdx + 1) % active.length];
-  await state.tracker.nextTurn(sorted);
-  if (nextActive) {
+  const advanced = await state.tracker.nextTurn(sorted, currentId);
+  if (advanced && nextActive) {
     await state.session.addLogEvent(`È il turno di ${nextActive.name}!`, 'turn', { actor: nextActive.name });
   }
 });
 
 document.getElementById('btn-reset').addEventListener('click', async () => {
-  if (!confirm('Sei sicuro di voler resettare l\'incontro?\nTutti i combattenti verranno rimossi.')) return;
+  if (!await askConfirm({ title: 'Resettare l\'incontro?', text: 'Tutti i combattenti verranno rimossi dall\'incontro.', confirmLabel: 'Resetta', danger: true })) return;
   await state.combatantManager.removeAll();
   // Senza questo, grid/ restava pieno di voci orfane: i combattenti erano
   // spariti ma le loro celle risultavano ancora occupate — e siccome il token
@@ -643,32 +725,33 @@ document.getElementById('btn-reset').addEventListener('click', async () => {
 });
 
 document.getElementById('btn-rest-short').addEventListener('click', async () => {
-  if (!confirm('Riposo breve: tutti i giocatori (e famigli) recuperano metà della loro vita massima. Procedere?')) return;
+  if (!await askConfirm({ title: 'Riposo breve', text: 'Tutti i giocatori (e i famigli) recuperano metà della loro vita massima.', confirmLabel: 'Riposo breve' })) return;
   await state.combatantManager.restParty('short');
-  await state.session.addLogEvent('🌙 Riposo breve — il gruppo recupera metà della vita massima', 'heal');
+  await state.session.addLogEvent('Riposo breve — il gruppo recupera metà della vita massima', 'heal');
 });
 
 document.getElementById('btn-rest-long').addEventListener('click', async () => {
-  if (!confirm('Riposo lungo: tutti i giocatori (e famigli) recuperano tutta la vita. Procedere?')) return;
+  if (!await askConfirm({ title: 'Riposo lungo', text: 'Tutti i giocatori (e i famigli) recuperano tutta la vita e perdono gli HP temporanei.', confirmLabel: 'Riposo lungo' })) return;
   await state.combatantManager.restParty('long');
-  await state.session.addLogEvent('☀️ Riposo lungo — il gruppo recupera tutta la vita', 'heal');
+  await state.session.addLogEvent('Riposo lungo — il gruppo recupera tutta la vita', 'heal');
 });
 
 document.getElementById('btn-copy-code').addEventListener('click', () => {
   navigator.clipboard.writeText(state.session.code).then(() => {
-    const btn = document.getElementById('btn-copy-code');
-    btn.textContent = '✓ Copiato';
-    setTimeout(() => (btn.textContent = '📋 Copia'), 2000);
+    const lbl = document.querySelector('#btn-copy-code .lbl');
+    if (!lbl) return;
+    lbl.textContent = 'Codice copiato';
+    setTimeout(() => (lbl.textContent = 'Copia codice'), 2000);
   });
 });
 
-document.getElementById('btn-exit-session').addEventListener('click', () => {
-  if (!confirm('Sei sicuro di voler uscire dalla sessione?')) return;
+document.getElementById('btn-exit-session').addEventListener('click', async () => {
+  if (!await askConfirm({ title: 'Uscire dalla sessione?', text: 'Potrai rientrare dalla home con lo stesso codice.', confirmLabel: 'Esci' })) return;
   exitToHome();
 });
 
-document.getElementById('btn-clear-log').addEventListener('click', () => {
-  if (confirm('Sei sicuro di voler cancellare tutto il log degli eventi?')) {
+document.getElementById('btn-clear-log').addEventListener('click', async () => {
+  if (await askConfirm({ title: 'Svuotare il diario?', text: 'Le voci verranno cancellate per tutta la compagnia.', confirmLabel: 'Svuota', danger: true })) {
     state.session.clearLogs();
   }
 });
@@ -725,7 +808,7 @@ _sceneUploadModal.addEventListener('click', (e) => { if (e.target === _sceneUplo
 async function _handleSceneFile(file, name) {
   if (!state.session) return;
   _sceneDropZone.classList.add('uploading');
-  _sceneDropText.textContent = '⏳ Caricamento...';
+  _sceneDropText.textContent = 'Caricamento…';
   try {
     const url = await _uploadToDiscord(file);
     await state.session.setSceneImage(url, name ?? file.name);
@@ -769,47 +852,21 @@ document.addEventListener('paste', async (e) => {
   await _handleSceneFile(imageItem.getAsFile(), 'scena-incollata.png');
 });
 
+// Scena in finestra: chiunque può caricarla, cambiarla ed eliminarla; chiudere vale solo per chi chiude.
 document.getElementById('btn-clear-scene').addEventListener('click', async () => {
-  if (state.session) await state.session.clearSceneImage();
+  if (!state.session) return;
+  if (!await askConfirm({ title: 'Eliminare la scena?', text: 'La scena sparirà per tutta la compagnia.', confirmLabel: 'Elimina', danger: true })) return;
+  await state.session.clearSceneImage();
 });
-
-document.getElementById('btn-hide-scene').addEventListener('click', () => UI.hideSceneLocally());
-
-document.getElementById('btn-expand-scene').addEventListener('click', () => {
-  const panel = document.getElementById('scene-section');
-  const btn   = document.getElementById('btn-expand-scene');
-  const expanded = panel.classList.toggle('scene-expanded');
-  btn.textContent = expanded ? '⤡' : '⤢';
-  btn.title       = expanded ? 'Riduci' : 'Ingrandisci';
+document.getElementById('btn-close-scene').addEventListener('click', UI.closeSceneLocally);
+document.getElementById('btn-view-scene').addEventListener('click', UI.openSceneLocally);
+document.getElementById('scene-modal').addEventListener('click', (e) => { if (e.target.id === 'scene-modal') UI.closeSceneLocally(); });
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const upload = document.getElementById('scene-upload-modal');
+  if (!upload.classList.contains('hidden')) { _closeSceneModal(); return; }   // prima il caricamento, poi la scena
+  UI.closeSceneLocally();
 });
-
-// Drag sul pannello scena
-(function () {
-  const panel  = document.getElementById('scene-section');
-  const header = panel?.querySelector('.scene-header');
-  if (!panel || !header) return;
-  let dragging = false;
-  let ox = 0, oy = 0, pl = 0, pt = 0;
-  header.addEventListener('mousedown', (e) => {
-    if (e.button !== 0) return;
-    e.preventDefault();
-    const parent = panel.offsetParent?.getBoundingClientRect() ?? { left: 0, top: 0 };
-    const rect   = panel.getBoundingClientRect();
-    // Passa da right-anchored a left-anchored
-    panel.style.right = 'auto';
-    panel.style.left  = (rect.left - parent.left) + 'px';
-    panel.style.top   = (rect.top  - parent.top)  + 'px';
-    ox = e.clientX; oy = e.clientY;
-    pl = parseFloat(panel.style.left); pt = parseFloat(panel.style.top);
-    dragging = true;
-  });
-  window.addEventListener('mousemove', (e) => {
-    if (!dragging) return;
-    panel.style.left = (pl + e.clientX - ox) + 'px';
-    panel.style.top  = (pt + e.clientY - oy) + 'px';
-  });
-  window.addEventListener('mouseup', () => { dragging = false; });
-})();
 
 // ─── CRONACHE: Note di sessione collaborative ─────────────────────────────────
 
@@ -833,7 +890,7 @@ document.getElementById('session-notes-list').addEventListener('click', async (e
   // Delete va controllato PRIMA di toggle: il bottone × è dentro l'header toggle
   const deleteEl = e.target.closest('[data-action="delete"]');
   if (deleteEl) {
-    if (confirm('Eliminare questa nota di sessione?')) {
+    if (await askConfirm({ title: 'Eliminare la nota?', text: 'La nota sparirà per tutta la compagnia.', confirmLabel: 'Elimina', danger: true })) {
       _expandedNoteIds.delete(deleteEl.dataset.noteId);
       await state.session.deleteSessionNote(deleteEl.dataset.noteId);
     }
@@ -923,11 +980,11 @@ function _openXpAwardModal() {
     .filter(c => c.type === 'player');
   const targetsEl = document.getElementById('xp-award-targets');
   targetsEl.innerHTML = players.map(c => {
-    const xp  = snap.xp?.[c.id] ?? 0;
-    const lvl = c.level ?? 1;
-    return `<div class="xp-target sel" data-id="${c.id}">
+    const xp  = num(snap.xp?.[c.id]);
+    const lvl = num(c.level, 1);
+    return `<div class="xp-target sel" data-id="${attr(c.id)}">
       <span class="box"></span>
-      <span class="grow">${esc(c.name)} <span class="t-mono" style="color:var(--faint);font-size:11px;">Lv.${lvl}</span></span>
+      <span class="grow">${esc(c.name)} <span class="t-mono" style="color:var(--c-mute);font-size:11px;">Lv.${lvl}</span></span>
       <span class="t-mono">${xp.toLocaleString('it')} xp</span>
     </div>`;
   }).join('');
@@ -1082,11 +1139,14 @@ function _enterCombatView(code, isMaster) {
   document.body.classList.toggle('is-master', isMaster);
   _startListening();
   _bindShipEvents();
-  GridUI.initGridControls(() => state.session.resetGrid());
+  GridUI.initGridControls(async () => {
+    if (await askConfirm({ title: 'Svuotare la mappa?', text: 'Segnalini, muri e traiettorie vengono tolti per tutti. Il disegno resta.', confirmLabel: 'Svuota', danger: true })) state.session.resetGrid();
+  });
   GridUI.setReRenderCallback(() => _rerenderGridFromSnapshot());
   const _btnGridReset = document.getElementById('btn-grid-reset');
   if (_btnGridReset) _btnGridReset.style.display = isMaster ? '' : 'none';
   _initGridMasterControls(isMaster);
+  CombatChrome.apply();
   UI.showView('view-combat');
 }
 
@@ -1137,11 +1197,10 @@ function _applyGridDims() {
 
 function _applyGridEditUI() {
   const on       = state.gridEditMode;
-  const editCtrl = document.getElementById('grid-edit-controls');
   const editBtn  = document.getElementById('btn-grid-edit');
-  if (editCtrl) editCtrl.style.display = on ? 'flex' : 'none';
   if (editBtn) {
-    editBtn.textContent = on ? '✓ Fine modifica' : '✏️ Modifica griglia';
+    const lbl = editBtn.querySelector('.lbl');
+    if (lbl) lbl.textContent = on ? 'Fine modifica mappa' : 'Muri e dimensioni mappa';
     editBtn.classList.toggle('active', on);
   }
   // Il testo di #grid-hint è gestito da GridUI.renderGrid (contestuale a modifica/selezione)
@@ -1160,7 +1219,71 @@ function _syncGridModeUI() {
   _applyGridEditUI();
   _applyTemplateControlsUI();
   _applyDrawControlsUI();
+  // Una modalità può cambiare anche da codice esistente (es. area piazzata, modifica muri dal menu):
+  // lo strumento mostrato segue sempre lo stato reale.
+  _applyTrajControlsUI();
+  const tool = toolFromState({
+    gridEditMode: state.gridEditMode, drawMode: state.drawMode,
+    templatePlacingShape: state.templatePlacingShape, currentTool: state.ui.tool,
+  });
+  if (tool !== state.ui.tool) state.ui.tool = tool;
+  // Il primo punto della traiettoria vale solo mentre si usa lo strumento (anche se la modalità
+  // cambia da un'altra via, es. "Muri e dimensioni" dal menu)
+  if (state.ui.tool !== 'traj' && state.trajectoryFrom) { state.trajectoryFrom = null; _rerenderGridFromSnapshot(); }
+  CombatChrome.apply();
 }
+
+function _applyTrajControlsUI() {
+  const steps = document.getElementById('traj-steps');
+  if (steps) steps.dataset.step = state.trajectoryFrom ? '2' : '1';
+  const clear = trajectoryClearButtons(state.snapshot?.trajectories, state.myUid, !!state.session?.isMaster);
+  const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
+  show('btn-traj-cancel',    !!state.trajectoryFrom);
+  show('btn-traj-clear',     clear.mine);
+  show('btn-traj-clear-all', clear.all);
+}
+document.getElementById('btn-traj-cancel')?.addEventListener('click', () => {
+  state.trajectoryFrom = null; _syncGridModeUI(); _rerenderGridFromSnapshot();
+});
+document.getElementById('btn-traj-clear')?.addEventListener('click', () => state.session.clearTrajectory(state.myUid));
+document.getElementById('btn-traj-clear-all')?.addEventListener('click', () => state.session.clearAllTrajectories());
+
+// Clic su uno dei quattro strumenti. Cambiando strumento si annulla ciò che
+// il precedente aveva a metà (origine area, primo punto della traiettoria, ecc.).
+function _selectTool(next) {
+  const { tool, reset } = toolTransition(state.ui.tool, next);
+  if (reset.includes('gridEditMode')) _applyGridDims();   // commit di eventuali dimensioni in sospeso
+  for (const key of reset) {
+    state[key] = (key === 'drawMode' || key === 'gridEditMode') ? false : null;
+  }
+  state.ui.tool = tool;
+  if (tool === 'draw' && !state.drawMode) {
+    toggleDrawMode();                                      // esclusivo con muri e area, come sempre
+  }
+  if (tool === 'area') {                                   // area: nessuna forma finché non se ne sceglie una
+    state.drawMode = false;
+    state.gridEditMode = false;
+  }
+  _syncGridModeUI();
+  _rerenderGridFromSnapshot();
+}
+document.getElementById('grid-tools')?.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-tool]');
+  if (btn) _selectTool(btn.dataset.tool);
+});
+// "Adatta allo spazio": tiene le righe e sceglie le colonne in modo che la mappa riempia il rettangolo
+document.getElementById('btn-grid-fit')?.addEventListener('click', async () => {
+  const box = document.getElementById('grid-container')?.getBoundingClientRect();
+  if (!box || !box.width || !box.height) return;
+  const rows = Math.max(1, Math.min(60, state.snapshot?.gridConfig?.rows ?? 20));
+  const cols = Math.max(1, Math.min(60, Math.round(rows * box.width / box.height)));
+  // Restringere la mappa toglie segnalini e muri che non ci stanno più, per tutti: si chiede prima
+  const cur = state.snapshot?.gridConfig?.cols ?? 20;
+  const wouldDrop = cols < cur && (Object.keys(state.snapshot?.grid ?? {}).length > 0 || Object.keys(state.snapshot?.walls ?? {}).length > 0);
+  if (wouldDrop && !await askConfirm({ title: 'Restringere la mappa?', text: `La mappa passa da ${cur} a ${cols} colonne: i segnalini e i muri fuori dai nuovi bordi verranno tolti, per tutti.`, confirmLabel: 'Restringi', danger: true })) return;
+  state.session.setGridConfig(cols, rows);
+});
+document.getElementById('btn-walls-done')?.addEventListener('click', () => document.getElementById('btn-grid-edit')?.click());
 
 // ─── TEMPLATE AD AREA (cerchio/cono/linea) ───────────────────────────────────
 
@@ -1168,12 +1291,25 @@ function _applyTemplateControlsUI() {
   document.querySelectorAll('#grid-template-controls button[data-shape]').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.shape === state.templatePlacingShape);
   });
+  // Passo corrente della guida: 1 forma · 2 origine · 3 orientamento e conferma
+  const step = !state.templatePlacingShape ? 1 : !state.templateOrigin ? 2 : 3;
+  const steps = document.getElementById('area-steps');
+  if (steps) steps.dataset.step = String(step);
+  const cancel = document.getElementById('btn-area-cancel');
+  if (cancel) cancel.style.display = state.templatePlacingShape ? '' : 'none';
   const clearBtn = document.getElementById('btn-template-clear');
   if (!clearBtn) return;
   const t = state.snapshot?.template;
   const canClear = !!t && (state.session?.isMaster || t.ownerUid === state.myUid);
   clearBtn.style.display = canClear ? '' : 'none';
 }
+
+document.getElementById('btn-area-cancel')?.addEventListener('click', () => {
+  state.templatePlacingShape = null;
+  state.templateOrigin = null;
+  _syncGridModeUI();
+  _rerenderGridFromSnapshot();
+});
 
 document.getElementById('grid-template-controls')?.addEventListener('click', (e) => {
   const shapeBtn = e.target.closest('[data-shape]');
@@ -1195,11 +1331,10 @@ document.getElementById('grid-template-controls')?.addEventListener('click', (e)
 // altrimenti .value col colore precedente mentre l'utente sta ancora
 // scegliendo. Flag esplicito su focus/blur come difesa aggiuntiva.
 let _customColorPicking = false;
+let _lastBrushColor = state.drawColor || '#e74c3c'; // per tornare al pennello dopo la gomma
 
 function _applyDrawControlsUI() {
-  document.getElementById('btn-draw-toggle')?.classList.toggle('active', state.drawMode);
   const palette = document.getElementById('grid-draw-palette');
-  if (palette) palette.style.display = state.drawMode ? 'flex' : 'none';
 
   document.querySelectorAll('#grid-draw-palette .draw-swatch:not(.draw-eraser)').forEach(sw => {
     sw.classList.toggle('active', state.drawColor === sw.dataset.color);
@@ -1214,14 +1349,22 @@ function _applyDrawControlsUI() {
 
   const shapeTool = GridUI.isShapeTool(state.drawTool);
   document.querySelectorAll('#grid-draw-palette [data-draw-tool]').forEach(btn => {
-    btn.classList.toggle('active', state.drawTool === btn.dataset.drawTool);
+    // il pennello è attivo solo con un colore: senza colore è la gomma
+    const on = state.drawTool === btn.dataset.drawTool && (btn.dataset.drawTool !== 'brush' || state.drawColor !== null);
+    btn.classList.toggle('active', on);
   });
+  if (palette) {
+    // quali gruppi di opzioni hanno senso per lo strumento scelto lo decide il CSS da questi attributi
+    palette.dataset.tool  = state.drawTool;
+    palette.dataset.shape = shapeTool ? '1' : '';
+    palette.dataset.fill  = state.drawFill;
+  }
   const fillBtn = document.getElementById('btn-draw-fill');
   if (fillBtn) {
     const filled = state.drawFill === 'filled';
     fillBtn.toggleAttribute('disabled', !shapeTool); // contorno/pieno vale solo per le forme
     fillBtn.classList.toggle('active', shapeTool && filled);
-    fillBtn.textContent = filled ? '■' : '▢';
+    fillBtn.innerHTML = icon(filled ? 'fill' : 'outline') + `<span class="lbl">${filled ? 'Piena' : 'Contorno'}</span>`;
     fillBtn.title = filled ? 'Forma piena (clicca per solo contorno)' : 'Solo contorno (clicca per forma piena)';
   }
 
@@ -1244,15 +1387,13 @@ function _applyDrawControlsUI() {
   }
 }
 
-document.getElementById('btn-draw-toggle')?.addEventListener('click', () => {
-  toggleDrawMode();
-  _syncGridModeUI();
-});
 
-document.getElementById('grid-draw-palette')?.addEventListener('click', (e) => {
+document.getElementById('grid-draw-palette')?.addEventListener('click', async (e) => {
   const toolBtn = e.target.closest('[data-draw-tool]');
   if (toolBtn) {
     setDrawTool(toolBtn.dataset.drawTool);
+    // "Pennello" dopo la gomma torna all'ultimo colore usato
+    if (toolBtn.dataset.drawTool === 'brush' && state.drawColor === null) setDrawColor(_lastBrushColor);
     _applyDrawControlsUI();
     return;
   }
@@ -1269,6 +1410,7 @@ document.getElementById('grid-draw-palette')?.addEventListener('click', (e) => {
   }
   const swatch = e.target.closest('.draw-swatch:not(.draw-eraser)');
   if (swatch) {
+    _lastBrushColor = swatch.dataset.color;
     setDrawColor(swatch.dataset.color);
     _applyDrawControlsUI();
     return;
@@ -1279,7 +1421,7 @@ document.getElementById('grid-draw-palette')?.addEventListener('click', (e) => {
     return;
   }
   if (e.target.closest('#btn-paint-clear')) {
-    if (!confirm('Cancellare tutto il disegno sulla mappa?')) return;
+    if (!await askConfirm({ title: 'Cancellare il disegno?', text: 'Tutto il disegno sulla mappa verrà cancellato, per tutti.', confirmLabel: 'Cancella', danger: true })) return;
     clearPaint();
     return;
   }
@@ -1300,6 +1442,7 @@ document.getElementById('input-draw-custom')?.addEventListener('blur', () => {
   _customColorPicking = false;
 });
 document.getElementById('input-draw-custom')?.addEventListener('input', (e) => {
+  _lastBrushColor = e.target.value;
   setDrawColor(e.target.value);
   _applyDrawControlsUI();
 });
@@ -1307,6 +1450,29 @@ document.getElementById('input-draw-custom')?.addEventListener('input', (e) => {
 document.getElementById('select-draw-size')?.addEventListener('change', (e) => {
   setDrawSize(e.target.value);
   _applyDrawControlsUI();
+});
+
+// Il dock (proprio personaggio o soggetto del master). Va ridisegnato anche quando cambia la
+// scheda, non solo a ogni snapshot di sessione: i tiri salvezza contro la morte vivono nella scheda.
+function _renderMyDock() {
+  const data = state.snapshot;
+  if (!data) return;
+  if (state.session.isMaster) { _refreshMasterDock(); return; }
+  if (!state.myCombatantId) { UI.renderPlayerDock(null, false); return; }
+  const progressionData = {
+    mode:           data.progressionMode ?? 'xp',
+    xp:             data.xp ?? {},
+    levelUpGranted: data.levelUpGranted ?? {},
+  };
+  const myRaw = data.combatants?.[state.myCombatantId];
+  const myC   = myRaw ? { ...myRaw, id: state.myCombatantId } : null;
+  UI.renderPlayerDock(myC, state.myCombatantId === data.currentTurnId, progressionData, state.sheetData?.deathSaves ?? null);
+}
+// Dalla scheda (src/views/sheet.js): ridisegna dock e riga dell'iniziativa con i dati nuovi
+document.addEventListener('dnd:sheet-changed', () => {
+  if (!state.snapshot) return;
+  _renderMyDock();
+  _rerenderGridFromSnapshot();
 });
 
 function _renderCombatLists() {
@@ -1359,8 +1525,7 @@ function _startListening() {
         if (state.seenLogIds.has(logId)) continue;
         state.seenLogIds.add(logId);
         if ((entry.type === 'damage' || entry.type === 'heal') && entry.actor && entry.target) {
-          const icon = entry.type === 'damage' ? '🗡 ' : '✚ ';
-          UI.showNotification(icon + entry.message, entry.type);
+          UI.showNotification(entry.message, entry.type, entry.type === 'damage' ? 'sword' : 'heal');
         }
       }
     }
@@ -1377,36 +1542,20 @@ function _startListening() {
         const delta  = currentHp - state.lastKnownHp;
         const amount = Math.abs(delta);
         if (delta < 0) {
-          UI.showNotification(`🗡 Hai ricevuto ${amount} danni!`, 'damage');
+          UI.showNotification(`Hai ricevuto ${amount} danni!`, 'damage', 'sword');
         } else if (delta > 0) {
-          UI.showNotification(`✚ Hai ricevuto ${amount} punti vita!`, 'heal');
+          UI.showNotification(`Hai ricevuto ${amount} punti vita!`, 'heal', 'heal');
         }
       }
       state.lastKnownHp = currentHp;
     }
 
     const sorted   = state.tracker.sortedCombatants(data.combatants);
-    const creatures = sorted.filter(c => c.type === 'creature');
-    const players   = sorted.filter(c => c.type === 'player' || c.type === 'pet');
     const currentCombatant = sorted.find(c => c.id === data.currentTurnId);
-    UI.renderRound(data.round ?? 1, currentCombatant?.name ?? null);
-    const callbacks = makeCallbacks();
-    const progressionData = {
-      mode:           data.progressionMode ?? 'xp',
-      xp:             data.xp ?? {},
-      levelUpGranted: data.levelUpGranted ?? {},
-    };
+    UI.renderRound(data.round ?? 1, currentCombatant?.name ?? null, nextInTurnOrder(sorted, data.currentTurnId)?.name ?? null);
     _renderCombatLists();
 
-    if (state.session.isMaster) {
-      _refreshMasterDock();
-    } else if (state.myCombatantId) {
-      const myRaw = data.combatants?.[state.myCombatantId];
-      const myC   = myRaw ? { ...myRaw, id: state.myCombatantId } : null;
-      UI.renderPlayerDock(myC, state.myCombatantId === data.currentTurnId, progressionData, state.sheetData?.deathSaves ?? null);
-    } else {
-      UI.renderPlayerDock(null, false);
-    }
+    _renderMyDock();
 
     renderGrid(data.grid || {}, data.combatants || {}, data.currentTurnId ?? null, sorted, data.gridConfig || null, data.walls || {});
     _syncGridModeUI();
@@ -1420,7 +1569,7 @@ function _startListening() {
     }
 
     const isMaster = data.masterUid === state.myUid;
-    UI.renderScenePanel(data.sceneImageUrl ?? null, data.sceneImageName ?? null, isMaster);
+    UI.renderScene(data.sceneImageUrl ?? null, data.sceneImageName ?? null);
 
     // Progressione: aggiorna controlli master
     const selLive = document.getElementById('select-progression-mode-live');
@@ -1431,6 +1580,9 @@ function _startListening() {
     if (state.shipPanelOpen) _renderShipPanel();
 
     _renderSessionNotes();
+    CombatChrome.apply();
+    // La scheda (se aperta) rilegge XP, vita attuale e ispirazione: nessuna scrittura qui
+    document.dispatchEvent(new CustomEvent('dnd:session-update'));
   }));
 }
 
@@ -1446,6 +1598,15 @@ async function _rejoinSession(code, savedCombatantId, role, savedCharId = null) 
     const isMaster = role === 'master';
     if (!isMaster && !savedCombatantId) {
       UI.showError('Non è possibile recuperare il personaggio.');
+      return;
+    }
+    // Il combattente può essere stato rimosso mentre eravamo via (reset
+    // incontro, rimozione dal master): rientrare con quell'id lo farebbe
+    // ricreare a pezzi dalla sincronizzazione della scheda.
+    if (!isMaster && !(await get(ref(db, `sessions/${code}/combatants/${savedCombatantId}`))).exists()) {
+      UI.showError('Il tuo personaggio non è più in questa sessione. Rientra con il codice per ricrearlo.');
+      await remove(ref(db, `userSessions/${uid}/${code}`));
+      await loadUserSessions(uid);
       return;
     }
     state.myUid         = uid;
@@ -1484,6 +1645,13 @@ async function _rejoinSession(code, savedCombatantId, role, savedCharId = null) 
 
     if (!state.session.isMaster && !savedCombatantId) {
       localStorage.removeItem('dnd_session_code');
+      return;
+    }
+
+    if (!state.session.isMaster &&
+        !(await get(ref(db, `sessions/${savedCode}/combatants/${savedCombatantId}`))).exists()) {
+      localStorage.removeItem('dnd_session_code');
+      localStorage.removeItem('dnd_combatant_id');
       return;
     }
 
