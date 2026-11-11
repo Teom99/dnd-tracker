@@ -5,6 +5,7 @@ import { state }                 from '../utils/state.js';
 import { esc }                   from './core.js';
 import { openLibrarySheet }      from './sheet.js';
 import { icon }                  from '../ui/icons.js';
+import { safeImageUrl }          from '../utils/sanitize.js';
 import { splitSessions, filterLibrary, libraryMeta, lastSeenLabel } from '../logic/homeView.js';
 import { captureFocusState, restoreFocusState } from '../utils/domPreserve.js';
 
@@ -51,7 +52,7 @@ let _libJoinOpen = null;  // id della carta con il campo codice aperto
 
 function _libCard(id, c) {
   const rawThumb = c.avatarThumb;
-  const avatarSrc = typeof rawThumb === 'string' && rawThumb.startsWith('data:image/') ? rawThumb : null;
+  const avatarSrc = safeImageUrl(rawThumb);
   const isCreature = c.type === 'creature';
   const avatar = avatarSrc
     ? `<img src="${esc(avatarSrc)}" class="lib-avatar" alt="">`

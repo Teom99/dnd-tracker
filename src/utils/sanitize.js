@@ -32,3 +32,9 @@ export function safeCombatant(c) {
   if ('speed' in c)       out.speed = num(c.speed);
   return out;
 }
+
+// Avatar: solo un data URL immagine "pulito". startsWith('data:image/') non basta: il resto della stringa
+// può chiudere l'attributo (`"`) e aggiungere handler.
+export function safeImageUrl(v) {
+  return typeof v === 'string' && /^data:image\/(png|jpe?g|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(v) ? v : null;
+}

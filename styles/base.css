@@ -14,7 +14,7 @@
   --c-track:    #d3c19a;   /* fondo barre */
   /* inchiostro */
   --c-text:    #2b1d12;
-  --c-mute:    #7a6548;
+  --c-mute:    #66533a;
   --c-rule:    #b9a57f;
   --c-heading: #6b1d10;
   --c-accent:  #6b1d10;
@@ -344,7 +344,7 @@ img { max-width: 100%; display: block; }
 }
 .btn:hover { border-color: var(--c-heading); background: var(--c-paper-lo); }
 .btn:active { background: var(--c-track); }
-.btn:focus-visible { outline: 2px solid var(--c-gold); outline-offset: 2px; }
+.btn:focus-visible { outline: 2px solid var(--c-heading); outline-offset: 2px; }
 .btn:disabled { opacity: .45; cursor: default; }
 .btn:disabled:hover { border-color: var(--c-rule); background: transparent; }
 
@@ -535,7 +535,7 @@ button.chip[aria-pressed="true"] {
 *::-webkit-scrollbar-track { background: transparent; }
 
 /* focus visibile coerente */
-:focus-visible { outline: 2px solid var(--c-gold); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--c-heading); outline-offset: 2px; }   /* --c-gold sulla carta chiara non arriva a 3:1 */
 
 /* ── Fogli di dialogo (src/ui/dialogs.js) ── */
 .btn--solid.btn--danger { background: var(--c-foe); border-color: transparent; color: var(--c-on-accent); font-weight: 700; }

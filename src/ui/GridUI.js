@@ -1,6 +1,6 @@
 import { icon, iconPath } from './icons.js';
 import { footprintOf, squareDistance, fmtM, validTemplate } from '../logic/gridMath.js';
-import { num, attr } from '../utils/sanitize.js';
+import { num, attr, safeImageUrl } from '../utils/sanitize.js';
 import { trajectoryEndpoints, trajectoryDistance } from '../logic/trajectory.js';
 import { combatantView, healthHintText } from '../logic/visibility.js';
 import { captureFocusState, restoreFocusState } from '../utils/domPreserve.js';
@@ -535,8 +535,9 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   const comb  = combatants || {};
   const wall  = walls      || {};
   const cellPaint = paint  || {};
-  const cols  = Math.max(1, gridConfig?.cols || 20);
-  const rows  = Math.max(1, gridConfig?.rows || 20);
+  // misure da Firebase (scrivibile da chiunque): fuori da 1–60 non si disegna, altrimenti i cicli sulle celle bloccano tutti
+  const cols  = Math.min(60, Math.max(1, Math.floor(num(gridConfig?.cols, 20)) || 20));
+  const rows  = Math.min(60, Math.max(1, Math.floor(num(gridConfig?.rows, 20)) || 20));
   // L'area viene da Firebase (scrivibile da chiunque): forma o misure sballate non si disegnano
   if (!validTemplate(template)) template = null;
 
@@ -695,11 +696,11 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
 
     // Avatar: <image> SVG con clipPath circolare; fallback lettera/teschio se assente o morto
     const rawThumb = occ.avatarThumb;
-    const avatarSrc = typeof rawThumb === 'string' && rawThumb.startsWith('data:image/') ? rawThumb : null;
+    const avatarSrc = safeImageUrl(rawThumb);
     if (avatarSrc && !isDead) {
       const clipId = `tc_${id.replace(/[^a-zA-Z0-9]/g, '_')}`;
       defs += `<clipPath id="${clipId}"><circle cx="${cx}" cy="${cy}" r="${rBody.toFixed(1)}"/></clipPath>`;
-      inner += `<image href="${avatarSrc}" x="${(cx - rBody).toFixed(1)}" y="${(cy - rBody).toFixed(1)}" width="${(rBody * 2).toFixed(1)}" height="${(rBody * 2).toFixed(1)}" clip-path="url(#${clipId})" preserveAspectRatio="xMidYMid slice" pointer-events="none"/>`;
+      inner += `<image href="${attr(avatarSrc)}" x="${(cx - rBody).toFixed(1)}" y="${(cy - rBody).toFixed(1)}" width="${(rBody * 2).toFixed(1)}" height="${(rBody * 2).toFixed(1)}" clip-path="url(#${clipId})" preserveAspectRatio="xMidYMid slice" pointer-events="none"/>`;
     } else {
       inner += `<text x="${cx}" y="${(cy + fsz * 0.36).toFixed(1)}" text-anchor="middle" font-size="${fsz}" class="sq-name" pointer-events="none">${isDead ? '' : letter}</text>`;
       if (isDead) {
@@ -1056,7 +1057,7 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
         ? `<button type="button" class="init-num" data-id="${cid}" data-init-open title="Modifica iniziativa">${init}</button>`
         : `<span class="init-num">${init}</span>`);
 
-    const thumb = typeof c.avatarThumb === 'string' && c.avatarThumb.startsWith('data:image/') ? c.avatarThumb : null;
+    const thumb = safeImageUrl(c.avatarThumb);
     const letter = esc((c.name || '?').trim().charAt(0).toUpperCase());
     const avatar = `<span class="init-av ${INIT_TYPE_CLASS(c)}">${ko ? icon('skull', { size: 15 }) : (thumb ? `<img src="${esc(thumb)}" alt="">` : letter)}</span>`;
 

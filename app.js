@@ -20,6 +20,7 @@ import { captureFocusState, restoreFocusState } from './src/utils/domPreserve.js
 import { playerColor } from './src/utils/presence.js';
 import { initTheme, toggleTheme } from './src/utils/theme.js';
 import { icon } from './src/ui/icons.js';
+import { num, attr } from './src/utils/sanitize.js';
 import { askConfirm, askText, askChoice } from './src/ui/dialogs.js';
 import * as CombatChrome from './src/ui/CombatChrome.js';
 import { toolTransition, toolFromState, nextInTurnOrder } from './src/logic/combatChrome.js';
@@ -976,9 +977,9 @@ function _openXpAwardModal() {
     .filter(c => c.type === 'player');
   const targetsEl = document.getElementById('xp-award-targets');
   targetsEl.innerHTML = players.map(c => {
-    const xp  = snap.xp?.[c.id] ?? 0;
-    const lvl = c.level ?? 1;
-    return `<div class="xp-target sel" data-id="${c.id}">
+    const xp  = num(snap.xp?.[c.id]);
+    const lvl = num(c.level, 1);
+    return `<div class="xp-target sel" data-id="${attr(c.id)}">
       <span class="box"></span>
       <span class="grow">${esc(c.name)} <span class="t-mono" style="color:var(--c-mute);font-size:11px;">Lv.${lvl}</span></span>
       <span class="t-mono">${xp.toLocaleString('it')} xp</span>
@@ -1135,7 +1136,9 @@ function _enterCombatView(code, isMaster) {
   document.body.classList.toggle('is-master', isMaster);
   _startListening();
   _bindShipEvents();
-  GridUI.initGridControls(() => state.session.resetGrid());
+  GridUI.initGridControls(async () => {
+    if (await askConfirm({ title: 'Svuotare la mappa?', text: 'Segnalini, muri e traiettorie vengono tolti per tutti. Il disegno resta.', confirmLabel: 'Svuota', danger: true })) state.session.resetGrid();
+  });
   GridUI.setReRenderCallback(() => _rerenderGridFromSnapshot());
   const _btnGridReset = document.getElementById('btn-grid-reset');
   if (_btnGridReset) _btnGridReset.style.display = isMaster ? '' : 'none';

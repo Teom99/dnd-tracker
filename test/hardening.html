@@ -26,7 +26,7 @@
 <div id="summary">✗ modulo non caricato</div>
 
 <script type="module">
-import { num, attr, safeCombatant } from '../src/utils/sanitize.js';
+import { num, attr, safeCombatant, safeImageUrl } from '../src/utils/sanitize.js';
 import { fmtM, validTemplate } from '../src/logic/gridMath.js';
 import { trajectoryClearButtons } from '../src/logic/trajectory.js';
 
@@ -99,6 +99,14 @@ check('master con UNA traiettoria altrui può rimuoverla', trajectoryClearButton
 check('master con solo la propria: basta "la mia"', trajectoryClearButtons({ master: { fromId: 'a' } }, 'master', true), { mine: true, all: false });
 check('master con la propria e una altrui', trajectoryClearButtons({ master: { fromId: 'a' }, p1: { fromId: 'b' } }, 'master', true), { mine: true, all: true });
 check('traiettorie assenti', trajectoryClearButtons(null, 'master', true), { mine: false, all: false });
+
+group('safeImageUrl (avatar)');
+check('data URL png valido', safeImageUrl('data:image/png;base64,iVBORw0KGgo='), 'data:image/png;base64,iVBORw0KGgo=');
+check('jpeg/webp ok', [!!safeImageUrl('data:image/jpeg;base64,AAAA'), !!safeImageUrl('data:image/webp;base64,AAAA')], [true, true]);
+check('attributo chiuso con " e onload: scartato', safeImageUrl('data:image/png" onload="x'), null);
+check('con spazi o < >: scartato', [safeImageUrl('data:image/png;base64,AA AA'), safeImageUrl('data:image/png;base64,<AA')], [null, null]);
+check('svg e altri tipi: scartati', [safeImageUrl('data:image/svg+xml;base64,AAAA'), safeImageUrl('https://x.it/a.png'), safeImageUrl('javascript:1')], [null, null, null]);
+check('non stringa', [safeImageUrl(null), safeImageUrl(5), safeImageUrl(undefined)], [null, null, null]);
 
 group('safeCombatant (un combattente scritto a mano non diventa markup)');
 const evil = '<img src=x onerror="window.__pwn=1">';

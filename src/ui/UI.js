@@ -1,7 +1,7 @@
 import { captureFocusState, restoreFocusState } from '../utils/domPreserve.js';
 import { combatantView, healthHintKey, healthHintText } from '../logic/visibility.js';
 import { icon } from './icons.js';
-import { num, attr } from '../utils/sanitize.js';
+import { num, attr, safeImageUrl } from '../utils/sanitize.js';
 
 import { XP_THRESHOLDS } from '../logic/sheetView.js';
 import { safeSceneUrl, sceneAction } from '../logic/sceneView.js';
@@ -137,7 +137,7 @@ export function renderSessionNotes(notesObj, canEdit, expandedIds, noteLocks = {
     const isEditingByMe   = lock && lock.uid === myUid;
     const disabled        = Boolean(isLockedByOther);
 
-    let el = container.querySelector(`.note-entry[data-note-id="${note.id}"]`);
+    let el = [...container.querySelectorAll('.note-entry')].find(n => n.dataset.noteId === note.id);   // niente id dentro un selettore
     if (!el) {
       el = document.createElement('div');
       el.className = 'note-entry';
@@ -147,7 +147,7 @@ export function renderSessionNotes(notesObj, canEdit, expandedIds, noteLocks = {
 
     // Classe e colore del lock (non tocca mai gli input/textarea sottostanti)
     el.className = 'note-entry' + (isLockedByOther ? ' note-locked' : isEditingByMe ? ' note-editing-self' : '');
-    if (lock) el.style.setProperty('--lock-color', lock.color);
+    if (lock && /^#[0-9a-fA-F]{6}$/.test(lock.color)) el.style.setProperty('--lock-color', lock.color);
     else      el.style.removeProperty('--lock-color');
 
     // Presence tag ("✏️ Nome" di chi sta editando)
@@ -446,7 +446,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     let levelUpReady  = false;
     if (c.type === 'player') {
       const { mode = 'xp', xp = {}, levelUpGranted = {} } = progressionData;
-      const combXp = xp[c.id] ?? 0;
+      const combXp = num(xp[c.id]);
       const level  = c.level ?? 1;
       levelUpReady = mode === 'xp'
         ? (level < 20 && combXp >= XP_THRESHOLDS[level])
@@ -484,9 +484,9 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const portraitIcon     = isCreature ? icon('monster', { size: 20 }) : isPet ? icon('paw', { size: 20 }) : escapeHtml((c.name || '?').trim().charAt(0).toUpperCase());
     const canUploadAvatar  = canEdit && c.charId;
     const rawThumb         = c.avatarThumb;
-    const avatarSrc        = typeof rawThumb === 'string' && rawThumb.startsWith('data:image/') ? rawThumb : null;
+    const avatarSrc        = safeImageUrl(rawThumb);
     const portraitContent  = avatarSrc ? `<img src="${escapeHtml(avatarSrc)}" class="fc-avatar" alt="">` : portraitIcon;
-    const uploadAttrs      = canUploadAvatar ? ` data-action="upload-avatar" data-id="${c.id}" data-char-id="${c.charId}" data-owner-uid="${c.ownerUid}"` : '';
+    const uploadAttrs      = canUploadAvatar ? ` data-action="upload-avatar" data-id="${attr(c.id)}" data-char-id="${attr(c.charId)}" data-owner-uid="${attr(c.ownerUid)}"` : '';
     const uploadClass      = canUploadAvatar ? ' fc-portrait--upload' : '';
 
     const portraitHtml  = c.type === 'player'
@@ -581,7 +581,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
             <button class="faction-btn good ${c.faction === 'good' ? 'active' : ''}" data-id="${c.id}" data-action="set-faction" data-faction="good">Alleato</button>
           </div>
         ` : ''}
-        ${isMaster && isCreature && c.monsterApiIndex ? `<button class="btn btn--ghost btn--sm" data-id="${c.id}" data-api-index="${c.monsterApiIndex}" data-action="view-stat-block" style="font-size:9.5px;">${icon('monster', { size: 14 })}<span class="lbl">Scheda mostro</span></button>` : ''}
+        ${isMaster && isCreature && c.monsterApiIndex ? `<button class="btn btn--ghost btn--sm" data-id="${attr(c.id)}" data-api-index="${attr(c.monsterApiIndex)}" data-action="view-stat-block" style="font-size:9.5px;">${icon('monster', { size: 14 })}<span class="lbl">Scheda mostro</span></button>` : ''}
         ${isOwnCard ? `<button class="btn btn--ghost btn--sm" data-id="${c.id}" data-action="open-sheet" style="font-size:9.5px;">${icon('scroll', { size: 14 })}<span class="lbl">Scheda</span></button>` : ''}
         ${isActive && (isOwnCard || isOwnPet) ? `<button class="btn btn--primary btn--sm" data-id="${c.id}" data-action="end-turn" style="margin-left:auto;"><span class="lbl">Fine turno</span></button>` : ''}
       </div>
@@ -858,7 +858,7 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
   }).join('');
 
   const { mode = 'xp', xp = {}, levelUpGranted = {} } = progressionData;
-  const combXp = xp[c.id] ?? 0;
+  const combXp = num(xp[c.id]);
   const level  = c.level ?? 1;
   const levelUpReady = mode === 'xp'
     ? (level < 20 && combXp >= XP_THRESHOLDS[level])
@@ -1000,7 +1000,7 @@ export function openDockActionModal(mode, myId, combatants, callbacks) {
 
   const me    = combatants.find(c => c.id === myId);
   const valid = combatants.filter(x => x.hpCurrent > 0 || x.type === 'player' || x.type === 'pet');
-  const chip  = (id, label) => `<button class="target-chip" data-target-id="${id}">${label}</button>`;
+  const chip  = (id, label) => `<button class="target-chip" data-target-id="${attr(id)}">${label}</button>`;
   const dot = (x) => `<i class="chip-dot ${x.type === 'creature' ? (x.faction === 'good' ? 'ally' : 'foe') : 'pc'}"></i>`;
   const chips = [chip(myId, `${me ? dot(me) : ''}Sé stesso`)];
   valid.filter(x => x.id !== myId).forEach(x => {

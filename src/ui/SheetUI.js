@@ -336,6 +336,7 @@ export function renderCantrips(cantrips, onRemove) {
 export function renderSpellsByLevel(spells, onRemove, onTogglePrepared, onAddSpell) {
   const container = document.getElementById('spells-by-level');
   if (!container) return;
+  const focusSnap = captureFocusState(container);   // il form "Aggiungi" si ricrea a ogni snapshot della scheda
   container.innerHTML = SPELL_LEVELS.map(lvl => {
     const levelSpells = spells?.[lvl] || {};
     const entries = Object.entries(levelSpells);
@@ -352,7 +353,7 @@ export function renderSpellsByLevel(spells, onRemove, onTogglePrepared, onAddSpe
         <span class="t-label">Livello ${ROMAN[lvl - 1]}</span>
         <div class="spell-level-entries" id="spell-level-${lvl}">${spellItems}</div>
         <form class="add-form-inline" data-spell-level="${lvl}" novalidate>
-          <input class="input" type="text" placeholder="Nome incantesimo" maxlength="60">
+          <input class="input" type="text" data-spell-input="${lvl}" placeholder="Nome incantesimo" maxlength="60">
           <button type="submit" class="btn btn--sm">+ Aggiungi</button>
         </form>
       </div>`;
@@ -373,6 +374,7 @@ export function renderSpellsByLevel(spells, onRemove, onTogglePrepared, onAddSpe
       if (name) { onAddSpell(form.dataset.spellLevel, name); input.value = ''; }
     });
   });
+  restoreFocusState(container, focusSnap);
 }
 
 // ─── Inventory ───────────────────────────────────────────────────────────────

@@ -25,6 +25,12 @@ export function detachSessionListeners() {
 
 export function exitToHome(errorMessage) {
   closeAllSheets();
+  document.dispatchEvent(new CustomEvent('dnd:reset-draw-history'));   // la pila undo vive in logic/grid.js (niente import circolare)
+  state.gridEditMode = false;
+  state.drawMode     = false;
+  state.shipPanelOpen = false;
+  document.querySelector('.combat-shell')?.classList.remove('hidden');
+  document.getElementById('ship-panel')?.classList.add('hidden');
   detachSessionListeners();
   localStorage.removeItem('dnd_session_code');
   localStorage.removeItem('dnd_combatant_id');

@@ -16,6 +16,9 @@ const UNDO_LIMIT = 50;
 let _undoStack = [];
 let _redoStack = [];
 
+// All'uscita dalla sessione (evento di exitToHome): l'annulla di una sessione non deve scrivere nella paint della successiva
+document.addEventListener('dnd:reset-draw-history', () => { _undoStack = []; _redoStack = []; });
+
 function recordPaintChange(changes) {
   if (!changes || !changes.length) return;
   _undoStack.push(changes);
