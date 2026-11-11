@@ -20,6 +20,7 @@ import { captureFocusState, restoreFocusState } from './src/utils/domPreserve.js
 import { playerColor } from './src/utils/presence.js';
 import { initTheme, toggleTheme } from './src/utils/theme.js';
 import { icon } from './src/ui/icons.js';
+import { askConfirm, askText, askChoice } from './src/ui/dialogs.js';
 import * as CombatChrome from './src/ui/CombatChrome.js';
 import { toolTransition, toolFromState, nextInTurnOrder } from './src/logic/combatChrome.js';
 import { trajectoryClearButtons } from './src/logic/trajectory.js';
@@ -116,9 +117,9 @@ document.getElementById('btn-create-player').addEventListener('click', async () 
 });
 
 document.getElementById('btn-create-creature').addEventListener('click', async () => {
-  const name = prompt('Nome della creatura:');
-  if (!name?.trim()) return;
-  await state.library.create(name.trim(), 'creature');
+  const name = await askText({ title: 'Nuova creatura', label: 'Nome della creatura', confirmLabel: 'Aggiungi' });
+  if (!name) return;
+  await state.library.create(name, 'creature');
   loadCharacterLibrary();
 });
 
@@ -165,21 +166,29 @@ async function _doJoinSessionAsCharacter(code, name, charId, initiative = '0') {
   state.myUid = await state.session.join(code);
   initCombatManagers(code);
 
+  let createdCharId = null;   // scheda nuova creata da questa chiamata: se si annulla l'ingresso, si toglie
   if (!charId) {
     if (!state.library && auth.currentUser) state.library = new CharacterLibrary(db, auth.currentUser.uid);
-    if (state.library) charId = await state.library.create(name, 'player');
+    if (state.library) charId = createdCharId = await state.library.create(name, 'player');
   }
 
   const existing = await state.combatantManager.findByOwner(state.myUid);
   let savedCharName = name;
   if (existing) {
     const existingName = existing.name || 'il tuo personaggio';
-    const rejoin = confirm(
-      `Sei già presente in questa sessione con il personaggio "${existingName}".\n\n` +
-      `OK → Rientra con "${existingName}"\n` +
-      `Annulla → Rimuovi il vecchio e crea "${name}"`
-    );
-    if (rejoin) {
+    const choice = await askChoice({
+      title: 'Sei già in questa sessione',
+      text: `Sei già presente con il personaggio "${existingName}".`,
+      primaryLabel: `Rientra con "${existingName}"`,
+      secondaryLabel: `Sostituisci con "${name}"`,
+    });
+    if (choice === null) {
+      if (createdCharId) { try { await state.library.delete(createdCharId); } catch { /* resta una scheda in più */ } }
+      const cancelled = new Error('Ingresso annullato.');
+      cancelled.cancelled = true;
+      throw cancelled;
+    }
+    if (choice === 'primary') {
       state.myCombatantId = existing.id;
       savedCharName = existing.name || name;
       if (!existing.name) await state.combatantManager.setName(existing.id, name);
@@ -224,7 +233,7 @@ document.getElementById('form-join').addEventListener('submit', async (e) => {
   try {
     await _joinSessionAsCharacter(code, name, state.selectedJoinCharId ?? null, initiative);
   } catch (err) {
-    UI.showError(err.message);
+    if (!err.cancelled) UI.showError(err.message);
     setJoinBusy(false);
   }
 });
@@ -237,7 +246,7 @@ document.addEventListener('dnd:join-with-character', async (e) => {
   try {
     await _joinSessionAsCharacter(code, name, charId);
   } catch (err) {
-    UI.showError(err.message);
+    if (!err.cancelled) UI.showError(err.message);
     loadCharacterLibrary(); // ripristina il campo/tasto disabilitati sulla card
   }
 });
@@ -687,7 +696,7 @@ document.getElementById('btn-next-turn').addEventListener('click', async () => {
 });
 
 document.getElementById('btn-reset').addEventListener('click', async () => {
-  if (!confirm('Sei sicuro di voler resettare l\'incontro?\nTutti i combattenti verranno rimossi.')) return;
+  if (!await askConfirm({ title: 'Resettare l\'incontro?', text: 'Tutti i combattenti verranno rimossi dall\'incontro.', confirmLabel: 'Resetta', danger: true })) return;
   await state.combatantManager.removeAll();
   // Senza questo, grid/ restava pieno di voci orfane: i combattenti erano
   // spariti ma le loro celle risultavano ancora occupate — e siccome il token
@@ -699,13 +708,13 @@ document.getElementById('btn-reset').addEventListener('click', async () => {
 });
 
 document.getElementById('btn-rest-short').addEventListener('click', async () => {
-  if (!confirm('Riposo breve: tutti i giocatori (e famigli) recuperano metà della loro vita massima. Procedere?')) return;
+  if (!await askConfirm({ title: 'Riposo breve', text: 'Tutti i giocatori (e i famigli) recuperano metà della loro vita massima.', confirmLabel: 'Riposo breve' })) return;
   await state.combatantManager.restParty('short');
   await state.session.addLogEvent('Riposo breve — il gruppo recupera metà della vita massima', 'heal');
 });
 
 document.getElementById('btn-rest-long').addEventListener('click', async () => {
-  if (!confirm('Riposo lungo: tutti i giocatori (e famigli) recuperano tutta la vita. Procedere?')) return;
+  if (!await askConfirm({ title: 'Riposo lungo', text: 'Tutti i giocatori (e i famigli) recuperano tutta la vita e perdono gli HP temporanei.', confirmLabel: 'Riposo lungo' })) return;
   await state.combatantManager.restParty('long');
   await state.session.addLogEvent('Riposo lungo — il gruppo recupera tutta la vita', 'heal');
 });
@@ -719,13 +728,13 @@ document.getElementById('btn-copy-code').addEventListener('click', () => {
   });
 });
 
-document.getElementById('btn-exit-session').addEventListener('click', () => {
-  if (!confirm('Sei sicuro di voler uscire dalla sessione?')) return;
+document.getElementById('btn-exit-session').addEventListener('click', async () => {
+  if (!await askConfirm({ title: 'Uscire dalla sessione?', text: 'Potrai rientrare dalla home con lo stesso codice.', confirmLabel: 'Esci' })) return;
   exitToHome();
 });
 
-document.getElementById('btn-clear-log').addEventListener('click', () => {
-  if (confirm('Sei sicuro di voler cancellare tutto il log degli eventi?')) {
+document.getElementById('btn-clear-log').addEventListener('click', async () => {
+  if (await askConfirm({ title: 'Svuotare il diario?', text: 'Le voci verranno cancellate per tutta la compagnia.', confirmLabel: 'Svuota', danger: true })) {
     state.session.clearLogs();
   }
 });
@@ -890,7 +899,7 @@ document.getElementById('session-notes-list').addEventListener('click', async (e
   // Delete va controllato PRIMA di toggle: il bottone × è dentro l'header toggle
   const deleteEl = e.target.closest('[data-action="delete"]');
   if (deleteEl) {
-    if (confirm('Eliminare questa nota di sessione?')) {
+    if (await askConfirm({ title: 'Eliminare la nota?', text: 'La nota sparirà per tutta la compagnia.', confirmLabel: 'Elimina', danger: true })) {
       _expandedNoteIds.delete(deleteEl.dataset.noteId);
       await state.session.deleteSessionNote(deleteEl.dataset.noteId);
     }
@@ -1270,7 +1279,7 @@ document.getElementById('grid-tools')?.addEventListener('click', (e) => {
   if (btn) _selectTool(btn.dataset.tool);
 });
 // "Adatta allo spazio": tiene le righe e sceglie le colonne in modo che la mappa riempia il rettangolo
-document.getElementById('btn-grid-fit')?.addEventListener('click', () => {
+document.getElementById('btn-grid-fit')?.addEventListener('click', async () => {
   const box = document.getElementById('grid-container')?.getBoundingClientRect();
   if (!box || !box.width || !box.height) return;
   const rows = Math.max(1, Math.min(60, state.snapshot?.gridConfig?.rows ?? 20));
@@ -1278,7 +1287,7 @@ document.getElementById('btn-grid-fit')?.addEventListener('click', () => {
   // Restringere la mappa toglie segnalini e muri che non ci stanno più, per tutti: si chiede prima
   const cur = state.snapshot?.gridConfig?.cols ?? 20;
   const wouldDrop = cols < cur && (Object.keys(state.snapshot?.grid ?? {}).length > 0 || Object.keys(state.snapshot?.walls ?? {}).length > 0);
-  if (wouldDrop && !confirm(`La mappa passa da ${cur} a ${cols} colonne: i segnalini e i muri fuori dai nuovi bordi verranno tolti. Procedere?`)) return;
+  if (wouldDrop && !await askConfirm({ title: 'Restringere la mappa?', text: `La mappa passa da ${cur} a ${cols} colonne: i segnalini e i muri fuori dai nuovi bordi verranno tolti, per tutti.`, confirmLabel: 'Restringi', danger: true })) return;
   state.session.setGridConfig(cols, rows);
 });
 document.getElementById('btn-walls-done')?.addEventListener('click', () => document.getElementById('btn-grid-edit')?.click());
@@ -1386,7 +1395,7 @@ function _applyDrawControlsUI() {
 }
 
 
-document.getElementById('grid-draw-palette')?.addEventListener('click', (e) => {
+document.getElementById('grid-draw-palette')?.addEventListener('click', async (e) => {
   const toolBtn = e.target.closest('[data-draw-tool]');
   if (toolBtn) {
     setDrawTool(toolBtn.dataset.drawTool);
@@ -1419,7 +1428,7 @@ document.getElementById('grid-draw-palette')?.addEventListener('click', (e) => {
     return;
   }
   if (e.target.closest('#btn-paint-clear')) {
-    if (!confirm('Cancellare tutto il disegno sulla mappa?')) return;
+    if (!await askConfirm({ title: 'Cancellare il disegno?', text: 'Tutto il disegno sulla mappa verrà cancellato, per tutti.', confirmLabel: 'Cancella', danger: true })) return;
     clearPaint();
     return;
   }

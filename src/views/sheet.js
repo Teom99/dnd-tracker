@@ -3,13 +3,14 @@ import * as UI           from '../ui/UI.js';
 import { CharacterSheet } from '../data/CharacterSheet.js';
 import { state }          from '../utils/state.js';
 import { openConditionModal, removeCombatant } from './core.js';
+import { askConfirm } from '../ui/dialogs.js';
 import { LevelUp }   from '../logic/LevelUp.js';
 import { LevelUpUI } from '../ui/LevelUpUI.js';
 import { readSheetTab, saveSheetTab, SHEET_TABS, xpSyncAction } from '../logic/sheetView.js';
 
 let editingInventoryId = null;
 const inventoryCallbacks = {
-  onRemove: (id) => { if (confirm('Rimuovere l\'oggetto?')) state.sheet.removeInventoryItem(id); },
+  onRemove: async (id) => { if (await askConfirm({ title: 'Rimuovere l\'oggetto?', confirmLabel: 'Rimuovi', danger: true })) state.sheet.removeInventoryItem(id); },
   onEdit:   (id) => { editingInventoryId = id; SheetUI.renderInventory(state.sheetData.inventory, editingInventoryId, inventoryCallbacks); },
   onCancel: ()    => { editingInventoryId = null; SheetUI.renderInventory(state.sheetData.inventory, editingInventoryId, inventoryCallbacks); },
   onSave:   async (id, data) => {
@@ -235,7 +236,7 @@ document.addEventListener('dnd:session-update', () => {
 async function _openLevelUpModal() {
   const fromLevel = state.sheetData?.level ?? 1;
   const className = state.sheetData?.class;
-  if (!confirm(`Sei sicuro di voler far salire di livello ${state.sheetData?.characterName ?? 'il personaggio'}?\n${className} Lv.${fromLevel} → Lv.${fromLevel + 1}`)) return;
+  if (!await askConfirm({ title: 'Salire di livello?', text: `${state.sheetData?.characterName ?? 'Il personaggio'}: ${className} Lv.${fromLevel} → Lv.${fromLevel + 1}`, confirmLabel: 'Sali di livello' })) return;
   if (!className || fromLevel >= 20) return;
 
   const classesData  = await LevelUp.load();
