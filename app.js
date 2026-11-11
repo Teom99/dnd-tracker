@@ -1590,6 +1590,8 @@ function _startListening() {
 
     _renderSessionNotes();
     CombatChrome.apply();
+    // La scheda (se aperta) rilegge XP, vita attuale e ispirazione: nessuna scrittura qui
+    document.dispatchEvent(new CustomEvent('dnd:session-update'));
   }));
 }
 

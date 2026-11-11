@@ -126,7 +126,7 @@ export function setupSheetListener() {
     }
     // Popover incantesimi del dock: si ridisegna se aperto (stessi dati della scheda)
     if (state.ui?.spellsOpen) UI.renderSpellsPopover(state.sheetData);
-    SheetUI.updateComputedValues(state.sheetData);
+    refreshSessionDerived();
     SheetUI.renderSaveChecks(state.sheetData.savingThrows);
     SheetUI.renderSkillProfs(state.sheetData.skills);
     SheetUI.renderDeathSaves(state.sheetData.deathSaves);
@@ -171,7 +171,30 @@ function _updateLevelUpButton(data) {
   } else {
     btn.classList.add('hidden');
   }
+  // Il bottone resta disponibile come prima (il master può concedere il livello a voce),
+  // ma è quello PRIMARIO solo quando il livello è davvero pronto
+  btn.classList.toggle('btn--primary', SheetUI.isLevelUpReady(data));
 }
+
+// Tutto ciò che nella scheda dipende dalla sessione: XP corrente, vita attuale, ispirazione,
+// pulsante di livello. Si richiama a ogni snapshot di sessione (evento dnd:session-update), a ogni
+// snapshot della scheda e all'apertura. Non scrive mai su Firebase.
+export function refreshSessionDerived() {
+  const snap = state.snapshot, id = state.myCombatantId;
+  const inSession = !!(snap && id && state.sheetReturnView === 'view-combat');
+  SheetUI.setXpContext({
+    inSession,
+    sessionXp: inSession ? snap.xp?.[id] : undefined,
+    mode:      snap?.progressionMode ?? 'xp',
+    granted:   inSession && snap.levelUpGranted?.[id] === true,
+  });
+  SheetUI.updateComputedValues(state.sheetData);
+  SheetUI.updateVitals(inSession ? snap.combatants?.[id] : null, { inSession });
+  _updateLevelUpButton(state.sheetData);
+}
+document.addEventListener('dnd:session-update', () => {
+  if (document.body.classList.contains('sheet-only') && state.sheetData) refreshSessionDerived();
+});
 
 async function _openLevelUpModal() {
   const fromLevel = state.sheetData?.level ?? 1;
@@ -321,6 +344,7 @@ export function openCharacterSheet() {
   SheetUI.renderInventory(state.sheetData?.inventory, editingInventoryId, inventoryCallbacks);
   bindSheetEvents();
   applySheetTab(readSheetTab());
+  refreshSessionDerived();
   if (!isSheetEmbedded()) {
     document.body.classList.add('sheet-only');
     UI.showView('view-combat');
@@ -345,6 +369,7 @@ export async function openLibrarySheet(charId) {
     SheetUI.renderInventory(state.sheetData?.inventory, editingInventoryId, inventoryCallbacks);
     bindSheetEvents();
     applySheetTab(readSheetTab());
+    refreshSessionDerived();
     UI.showView('view-combat');
   } catch (err) {
     UI.showError('Errore apertura scheda: ' + err.message);

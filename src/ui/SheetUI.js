@@ -1,4 +1,5 @@
 import { captureFocusState, restoreFocusState } from '../utils/domPreserve.js';
+import { num } from '../utils/sanitize.js';
 
 // ─── Calculation helpers ───────────────────────────────────────────────────
 
@@ -154,6 +155,27 @@ export function updateComputedValues(data) {
       frame.classList.toggle('lvlup', ready);
     }
   }
+}
+
+// Fascia vitale: la vita ATTUALE e l'ispirazione sono del combattente (non della scheda): si
+// mostrano, in sola lettura, solo in sessione; si cambiano in combattimento (danno/cura, stella).
+// Fuori sessione (scheda aperta dalla libreria della home) restano nascoste. Non lancia mai.
+export function updateVitals(combatant, { inSession = false } = {}) {
+  const show = !!(inSession && combatant && typeof combatant === 'object');
+  const $ = (id) => document.getElementById(id);
+  $('sheet-hp-current')?.classList.toggle('hidden', !show);
+  $('sheet-hp-of')?.classList.toggle('hidden', !show);
+  $('sheet-hp-bar')?.classList.toggle('hidden', !show);
+  const insp = $('sheet-insp-wrap');
+  insp?.classList.toggle('hidden', !show);
+  insp?.classList.toggle('on', show && combatant.inspiration === true);
+  if (!show) return;
+  const cur = Math.max(0, num(combatant.hpCurrent));
+  const max = Math.max(0, num(combatant.hpMax));
+  const el = $('sheet-hp-current');
+  if (el) el.textContent = String(cur);
+  const fill = $('sheet-hp-bar')?.querySelector('i');
+  if (fill) fill.style.width = `${max > 0 ? Math.min(100, (cur / max) * 100) : 0}%`;
 }
 
 // Contesto XP: UN SOLO XP corrente per scheda e combattimento. In sessione è quello assegnato
