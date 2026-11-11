@@ -762,7 +762,7 @@ button.initiative-value.editable:hover { border-color: var(--c-heading); color: 
 
 .notification-stack {
   position: fixed;
-  top: 20px;
+  top: 68px;
   right: 20px;
   z-index: 1000;
   display: flex;
@@ -788,8 +788,12 @@ button.initiative-value.editable:hover { border-color: var(--c-heading); color: 
   box-shadow: 0 4px 14px var(--c-shadow);
 }
 
-.notification-damage { color: var(--c-dmg); font-weight: 700; }
-.notification-heal   { color: var(--c-heal); font-weight: 700; }
+.notification { border-left: 4px solid var(--c-gold); }
+.notification-damage { border-left-color: var(--c-foe); }
+.notification-heal   { border-left-color: var(--c-pc); }
+.notification .ico { color: var(--c-mute); }
+.notification-damage .ico { color: var(--c-foe); }
+.notification-heal .ico   { color: var(--c-pc); }
 
 /* ═══════════════════════════════════════════
    COMBAT HEADER — aggiornamenti (exit + right)
@@ -1311,14 +1315,15 @@ body.is-master .fight-card { cursor: pointer; }
 .death-pips .ok button.on { background: var(--c-gold); border-color: var(--c-gold); }
 .death-pips .ko button.on { background: var(--c-foe); border-color: var(--c-foe); }
 
-/* Log entries */
+/* Diario: ora, icona del tipo e messaggio; il cambio turno è una riga evidenziata */
 #event-log { display: flex; flex-direction: column; }
-.log-entry { display: grid; grid-template-columns: 40px 1fr; gap: 8px; padding: 6px 4px; border-bottom: 1px solid var(--c-rule-soft); font-size: 12.5px; color: var(--c-mute); }
-.log-entry time { font-family: var(--font-mono); font-size: 9.5px; color: var(--c-mute); padding-top: 2px; }
-.log-entry b { color: var(--c-text); font-weight: 500; }
-.log-entry .amt-dmg  { color: var(--c-foe); font-weight: 700; }
-.log-entry .amt-heal { color: var(--c-heal); font-weight: 700; }
-.log-entry--turn { color: var(--c-heading); }
+.log-entry { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 8px; align-items: start; padding: 6px 4px; border-bottom: 1px solid color-mix(in srgb, var(--c-rule) 55%, transparent); font-size: 14px; color: var(--c-text); }
+.log-entry time { font-size: 12px; color: var(--c-mute); font-variant-numeric: tabular-nums; padding-top: 2px; }
+.log-ico { display: inline-flex; vertical-align: -.2em; margin-right: 5px; color: var(--c-mute); }
+.log-entry--dmg .log-ico  { color: var(--c-foe); }
+.log-entry--heal .log-ico { color: var(--c-pc); }
+.log-entry--turn { background: var(--c-paper-lo); padding-inline: 8px; border-radius: 3px; font-weight: 700; color: var(--c-heading); }
+.log-entry--turn .log-ico { color: var(--c-gold); }
 
 /* Note entries */
 .note-entry { background: var(--c-paper); border: 1px solid var(--c-rule-soft); border-radius: var(--r); padding: 10px 12px; }

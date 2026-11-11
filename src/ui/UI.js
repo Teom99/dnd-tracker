@@ -255,6 +255,14 @@ export function renderSessionNotes(notesObj, canEdit, expandedIds, noteLocks = {
 
 let lastLogId = null;
 
+// Tipo della voce di diario → icona e classe (danno, cura, turno; il resto è una voce generica)
+const LOG_KINDS = {
+  damage: { icon: 'sword',  cls: 'log-entry--dmg' },
+  heal:   { icon: 'heal',   cls: 'log-entry--heal' },
+  turn:   { icon: 'd20',    cls: 'log-entry--turn' },
+  other:  { icon: 'scroll', cls: '' },
+};
+
 export function renderLogs(logsObj) {
   const logContainer = document.getElementById('event-log');
   if (!logContainer) return;
@@ -280,12 +288,13 @@ export function renderLogs(logsObj) {
     // Animate only if it's the newest AND it's different from the last time we rendered
     const isNew = index === 0 && logId !== lastLogId;
     
-    entry.className = `log-entry${log.type === 'turn' ? ' log-entry--turn' : ''}${isNew ? ' anim-in' : ''}`;
+    const kind = LOG_KINDS[log.type] ?? LOG_KINDS.other;
+    entry.className = `log-entry ${kind.cls}${isNew ? ' anim-in' : ''}`;
 
     const d  = new Date(log.timestamp);
     const ts = d.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
 
-    entry.innerHTML = `<time>${ts}</time><div>${escapeHtml(log.message)}</div>`;
+    entry.innerHTML = `<time>${ts}</time><div><span class="log-ico">${icon(kind.icon, { size: 14 })}</span>${escapeHtml(log.message)}</div>`;
     logContainer.appendChild(entry);
   });
 

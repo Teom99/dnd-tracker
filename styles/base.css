@@ -590,20 +590,6 @@ button.chip[aria-pressed="true"] {
 .tabbar button .ico { font-size: 17px; line-height: 1; }
 .tabbar button.is-on { color: var(--c-heading); font-weight: 700; }
 
-/* ── 15. LOG EVENTI ────────────────────────────────────────── */
-.log-entry {
-  display: grid; grid-template-columns: 44px 1fr; gap: 10px;
-  padding: 7px 4px;
-  border-bottom: 1px solid var(--line);
-  font-size: 13.5px; color: var(--mut);
-}
-.log-entry time { font-family: var(--font-mono); font-size: 10.5px; color: var(--faint); padding-top: 3px; }
-.log-entry b { color: var(--bone); font-weight: 500; }
-.log-entry .amt-dmg  { color: var(--c-dmg); font-weight: 700; }
-.log-entry .amt-heal { color: var(--heal); font-weight: 700; }
-.log-entry--turn { color: var(--gold-bright); }
-.log-entry--ko b { color: var(--c-dmg); }
-
 /* ── 16. ANIMAZIONI ────────────────────────────────────────── */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes dmg-flash {
