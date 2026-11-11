@@ -183,6 +183,7 @@ export function updateVitals(combatant, { inSession = false } = {}) {
 // Lo imposta src/views/sheet.js a ogni snapshot di sessione.
 let _xpCtx = { inSession: false, sessionXp: undefined, mode: 'xp', granted: false };
 export function setXpContext(ctx) { _xpCtx = { ..._xpCtx, ...ctx }; }
+export function getEffectiveXp(d) { return currentXp(d); }
 function currentXp(d) { return effectiveXp({ inSession: _xpCtx.inSession, sessionXp: _xpCtx.sessionXp, sheetXp: d?.xp }); }
 export function isLevelUpReady(d) {
   return levelUpReady({ level: d?.level ?? 1, xp: currentXp(d), mode: _xpCtx.mode, granted: _xpCtx.granted });

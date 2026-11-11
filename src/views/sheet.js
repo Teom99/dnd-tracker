@@ -5,7 +5,7 @@ import { state }          from '../utils/state.js';
 import { openConditionModal, removeCombatant } from './core.js';
 import { LevelUp }   from '../logic/LevelUp.js';
 import { LevelUpUI } from '../ui/LevelUpUI.js';
-import { readSheetTab, saveSheetTab, SHEET_TABS } from '../logic/sheetView.js';
+import { readSheetTab, saveSheetTab, SHEET_TABS, xpSyncAction } from '../logic/sheetView.js';
 
 let editingInventoryId = null;
 const inventoryCallbacks = {
@@ -127,6 +127,7 @@ export function setupSheetListener() {
     // Popover incantesimi del dock: si ridisegna se aperto (stessi dati della scheda)
     if (state.ui?.spellsOpen) UI.renderSpellsPopover(state.sheetData);
     refreshSessionDerived();
+    syncXpWithSession();
     SheetUI.renderSaveChecks(state.sheetData.savingThrows);
     SheetUI.renderSkillProfs(state.sheetData.skills);
     SheetUI.renderDeathSaves(state.sheetData.deathSaves);
@@ -191,7 +192,39 @@ export function refreshSessionDerived() {
   SheetUI.updateComputedValues(state.sheetData);
   SheetUI.updateVitals(inSession ? snap.combatants?.[id] : null, { inSession });
   _updateLevelUpButton(state.sheetData);
+  // L'XP in sessione la assegna il master: il campo della scheda mostra quello e non si modifica
+  const xpInput = document.querySelector('#view-character [data-path="xp"]');
+  if (xpInput) {
+    xpInput.disabled = inSession;
+    xpInput.title = inSession ? 'Gli XP li assegna il master' : '';
+    if (inSession && xpInput !== document.activeElement) xpInput.value = String(SheetUI.getEffectiveXp(state.sheetData));
+  }
 }
+
+// XP UNICA tra scheda e combattimento (vedi xpSyncAction in src/logic/sheetView.js). Lo fa il client
+// del proprietario: le rules non permettono al master di scrivere sul personaggio di un altro.
+// 'seed': la sessione non ha XP per questo combattente → si semina quello della scheda (mai sovrascrive).
+// 'mirror': la sessione ha un XP diverso → si riporta sulla scheda. Guardie contro i cicli: si ricorda
+// l'ultimo valore scritto e si scrive solo se diverso. Non si fa nulla in modalità milestone.
+let _seededFor = null;
+let _lastMirroredXp = null;
+export function syncXpWithSession() {
+  const snap = state.snapshot, id = state.myCombatantId;
+  if (!state.sheet || !state.sheetData || !snap || !id || state.sheetReturnView === 'view-home') return;
+  if ((snap.progressionMode ?? 'xp') !== 'xp') return;
+  const action = xpSyncAction({ sessionXp: snap.xp?.[id], sheetXp: state.sheetData.xp });
+  if (action === 'seed') {
+    if (_seededFor === id) return;
+    _seededFor = id;
+    state.session.seedXpIfAbsent(id, state.sheetData.xp).catch(() => { _seededFor = null; });
+  } else if (action === 'mirror') {
+    const v = snap.xp[id], key = `${id}:${v}`;   // per combattente: lo stesso valore in un'altra sessione si riscrive
+    if (_lastMirroredXp === key) return;
+    _lastMirroredXp = key;
+    state.sheet.setField('xp', v);
+  }
+}
+document.addEventListener('dnd:session-update', syncXpWithSession);
 document.addEventListener('dnd:session-update', () => {
   if (document.body.classList.contains('sheet-only') && state.sheetData) refreshSessionDerived();
 });
