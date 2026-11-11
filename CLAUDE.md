@@ -47,9 +47,10 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | `src/logic/trajectory.js` | `trajectoryEndpoints`, `trajectoryDistance` — freccia di attacco |
 | `src/ui/CombatChrome.js` | Applica `state.ui` a `#view-combat` (attributi `data-*`), menu, pannello laterale, popover; `hydrateIcons` per `data-icon` nel markup statico |
 | `src/logic/combatantRules.js` | Updater puri delle transazioni sul combattente (`applyMaxHp`, `applyFields`) |
-| `test/*.html` | Test in pagina (niente Node): `shapes`, `theme`, `icons`, `combatantRules`, `combatChrome`, `visibility`, `trajectory` + campionario `componenti.html`; servire con `python3 -m http.server` |
+| `test/*.html` | Test in pagina (niente Node): `shapes`, `theme`, `icons`, `combatantRules`, `combatChrome`, `visibility`, `trajectory`, `sheetView`, `homeView` + campionario `componenti.html`; servire con `python3 -m http.server` |
 | `src/utils/presence.js` | `playerColor(uid)` — colore deterministico per giocatore (hash su palette fissa), usato per lock note e cursori live |
-| `src/views/home.js` | Auth UI, libreria personaggi, picker join/creature, sessioni utente salvate |
+| `src/logic/homeView.js` | Logica pura della home: `splitSessions` (la più recente = "Riprendi"), `filterLibrary`, `libraryMeta`, `lastSeenLabel` — test in `test/homeView.html` |
+| `src/views/home.js` | Auth UI, libreria personaggi (carte, filtro, conferma di eliminazione in pagina, ingresso rapido), picker join a chip/creature, sessioni utente salvate |
 | `src/views/sheet.js` | Sheet listener, `makeCallbacks`, `initSheet`, `openCharacterSheet`, `openLibrarySheet`, `bindSheetEvents` |
 | `src/views/core.js` | `initCombatManagers`, `exitToHome`, `esc`, `openConditionModal`, `removeCombatant`, `closeConditionModal` |
 
@@ -180,6 +181,9 @@ Note: `.indexOn: ["ownerUid"]` serve a `Combatant.findByOwner`. `.read`/`.write`
 
 - Rework "Manuale", tappa 2 (schermata di combattimento): iniziativa a destra della mappa (compatta o con dettagli, per client), mappa che riempie il rettangolo (pulsante "Adatta allo spazio" nel menu muri), quattro strumenti con nome (Muovi · Area · Traiettoria · Disegna) e una riga di opzioni per strumento, area incantesimo guidata a passi, Traiettoria (nuova), dock con Incantesimi (popover con slot e preparati), tutto il resto nel menu, layout telefono (striscia del turno, foglio iniziativa, "Altro" del dock)
 
+- Rework "Manuale", tappa 3 (scheda): testata con ritratto/anello XP, fascia vitale, cinque schede, slot a rombi, XP unica tra scheda e combattimento (vince sempre l'XP più alto, `Session.raiseXpTo`)
+- Rework "Manuale", tappa 4 (home e libreria): "Riprendi" (ultima sessione, un solo bottone pieno) + altre sessioni, schede Entra/Crea, scelta del personaggio a chip, libreria a carte con filtro Tutti/Personaggi/Creature, ingresso rapido dalla carta, eliminazione con conferma nella carta, crediti icone in fondo; nessuna emoji. Il bottone pieno è "Rientra" se c'è una sessione, altrimenti "Varca la soglia" (`_setJoinPrimary` in `home.js`)
+
 ### Bug noti non ancora risolti
 Nessuno al momento.
 
@@ -204,7 +208,7 @@ Nessuno al momento.
 - **Solo variabili nei componenti**: i colori stanno in `styles/base.css` come `--c-*` (carta `--c-paper*`, testo `--c-text`/`--c-mute`, filetti `--c-rule`, titoli `--c-heading`, azione principale `--c-accent`, oro `--c-gold`, significato `--c-pc`/`--c-foe`/`--c-ally`, mappa `--c-map*`/`--c-wall`/`--c-reach`), i caratteri come `--f-display` (Alegreya SC) e `--f-body` (Alegreya). **Nessun colore letterale** in CSS o negli stili scritti dal JS: un letterale è leggibile in un tema solo. Negli attributi SVG generati dal JS `var(--c-…)` funziona (vedi i segnalini in `GridUI.renderGrid`).
 - **Alias temporanei**: in testa a `base.css` le variabili dei due vocabolari precedenti (`--gold`, `--text-muted`, `--border-warm`… e `--bg0`, `--bone`, `--mut`, `--line`…) sono alias delle nuove. Servono solo alle schermate non ancora rifatte: ogni tappa del rework le sostituisce nella propria schermata, e a fine tappa 5 il blocco va eliminato. Se una schermata vecchia rende male si corregge l'alias, non il componente.
 - **Un solo `.btn--primary` per schermata**; titoli di sezione con `.rule-head`, testate e dock con `.rule-double` / `.rule-double--top`. Campionario in `test/componenti.html`.
-- **Icone**: sempre `icon('nome')` da `src/ui/icons.js`, mai emoji. Le emoji ancora presenti nelle schermate vecchie spariscono con la tappa della schermata. Ogni bottone solo-icona ha `aria-label` e `title`.
+- **Icone**: sempre `icon('nome')` da `src/ui/icons.js`, mai emoji. Le emoji ancora presenti (nave, cronache, log, modali) spariscono con la tappa 5. Ogni bottone solo-icona ha `aria-label` e `title`.
 - **Eccezioni note ai letterali**: colori delle condizioni (`CONDITIONS` in `UI.js`), stanze della nave (`ShipUI.js`), palette del disegno sulla mappa (sono dati, non tema) e logo Google.
 
 ## Pattern ricorrenti da rispettare
