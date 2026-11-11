@@ -104,6 +104,11 @@ Ogni tappa: mockup della schermata → approvazione dell'utente → implementazi
 3. Scheda personaggio e level-up.
 4. Home e libreria.
 5. Nave, cronache, log, scena, notifiche, finestre rimaste; pulizia finale di emoji, colori letterali e CSS morto; aggiornamento di `CLAUDE.md`.
+6. Rifinitura: i difetti minori rimandati dalle revisioni delle tappe 3 e 4 (elenco sotto), senza nuove funzioni. **[richiesta dell'utente]** Ogni voce con il suo test o la sua verifica in browser.
+
+   *Dalla tappa 3 (scheda):* XP sincronizzata sul personaggio sbagliato quando si rientra da una voce `userSessions` senza `charId` (`syncXpWithSession` deve uscire se `state.sheet` non è del combattente); focus da tastiera perso sui rombi degli slot a ogni snapshot (`renderSpellSlots`); glifo `▶` residuo in `styles/character.css:79`; `updateComputedValues`/`_updateLevelUpButton` eseguiti due volte per snapshot; keyframe `fc-lvlup-pulse` definito in `combat.css` ma usato da `character.css`.
+
+   *Dalla tappa 4 (home):* il codice digitato nell'ingresso rapido di una carta si perde se l'ingresso fallisce (`loadCharacterLibrary` azzera `_libJoinOpen`); stato vuoto della libreria senza azione dentro; errore di lettura di `userSessions` non gestito (la home resta senza bottone principale); frecce da tastiera nel `role="tablist"` dei filtri della libreria.
 
 ## Verifica
 
