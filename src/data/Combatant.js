@@ -114,6 +114,10 @@ export class Combatant {
     await this._patch(id, { speed: Math.max(0, parseInt(speed) || 0) });
   }
 
+  async setCharId(id, charId) {
+    await this._patch(id, { charId: charId || null });
+  }
+
   async setName(id, name) {
     await this._patch(id, { name: name || '' });
   }

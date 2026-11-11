@@ -173,10 +173,19 @@ async function _doJoinSessionAsCharacter(code, name, charId, initiative = '0') {
   initCombatManagers(code);
 
   let createdCharId = null;   // scheda nuova creata da questa chiamata: se si annulla l'ingresso, si toglie
-  if (!charId) {
-    if (!state.library && auth.currentUser) state.library = new CharacterLibrary(db, auth.currentUser.uid);
-    if (state.library) charId = createdCharId = await state.library.create(name, 'player');
+  if (!state.library && auth.currentUser) state.library = new CharacterLibrary(db, auth.currentUser.uid);
+  if (!charId && state.library) {
+    // Nessun personaggio scelto: se in libreria ce n'è uno con lo stesso nome si usa quello (con la sua scheda),
+    // invece di crearne uno vuoto che lascerebbe il giocatore senza incantesimi e senza HP max
+    try {
+      const all = (await state.library.getAll()) || {};
+      const key = String(name).trim().toLowerCase();
+      const match = Object.entries(all).find(([, c]) => c?.type !== 'creature' && String(c?.name ?? '').trim().toLowerCase() === key);
+      if (match) charId = match[0];
+    } catch { /* libreria illeggibile: si crea una scheda nuova */ }
   }
+  const chosenCharId = charId;   // scelto dall'utente (o trovato per nome): da preferire a quello salvato sul combattente
+  if (!charId && state.library) charId = createdCharId = await state.library.create(name, 'player');
 
   const existing = await state.combatantManager.findByOwner(state.myUid);
   let savedCharName = name;
@@ -206,7 +215,13 @@ async function _doJoinSessionAsCharacter(code, name, charId, initiative = '0') {
       }
       savedCharName = existing.name || name;
       if (!existing.name) await state.combatantManager.setName(existing.id, name);
-      charId = existing.charId ?? charId;
+      if (chosenCharId && existing.charId !== chosenCharId) {
+        // Si rientra col personaggio scelto: il combattente (che poteva non avere scheda, o averne una vuota) viene ricollegato
+        await state.combatantManager.setCharId(existing.id, chosenCharId);
+        charId = chosenCharId;
+      } else {
+        charId = existing.charId ?? charId;
+      }
     } else {
       await state.combatantManager.remove(existing.id);
       state.myCombatantId = await state.combatantManager.add(name, initiative, null, 'player', state.myUid, charId);
