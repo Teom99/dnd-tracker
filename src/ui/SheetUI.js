@@ -1,5 +1,6 @@
 import { captureFocusState, restoreFocusState } from '../utils/domPreserve.js';
 import { num } from '../utils/sanitize.js';
+import { icon } from './icons.js';
 
 // ─── Calculation helpers ───────────────────────────────────────────────────
 
@@ -248,7 +249,7 @@ export function renderAttacks(attacks, data, onRemove) {
         <div><b>${escapeHtml(atk.name)}</b>${meta ? `<br><span class="t-mono">${meta}</span>` : ''}</div>
         <span class="atk-pill">${atkBonus} colpire</span>
         <span class="atk-pill">${dmgStr}</span>
-        <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-attack" data-id="${id}" aria-label="Rimuovi">✕</button>
+        <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-attack" data-id="${id}" aria-label="Rimuovi">${icon('close', { size: 16 })}</button>
       </div>`;
   }).join('');
 
@@ -264,35 +265,33 @@ export function renderSpellSlots(slots, onSetUsed, onSetMax) {
   const container = document.getElementById('spell-slots-list');
   if (!container) return;
   const focusSnap = captureFocusState(container);
+  // Un rombo per slot: pieno = libero (clic → usato), vuoto = usato (clic → recuperato); come nel
+  // popover del dock. Il massimo per livello resta un campo accanto.
   container.innerHTML = SPELL_LEVELS.map(lvl => {
     const s    = slots?.[lvl] || {};
     const max  = s.max  ?? 0;
-    const used = s.used ?? 0;
+    const used = Math.min(max, s.used ?? 0);
     const free = Math.max(0, max - used);
-    const pips = Array.from({ length: max }, (_, i) =>
-      `<i class="slot-pip ${i < free ? 'free' : 'used'}"></i>`).join('');
+    const dias = Array.from({ length: max }, (_, i) =>
+      `<button type="button" class="dia ${i < free ? 'free' : 'used'}" data-slot-level="${lvl}" aria-label="${i < free ? 'Usa uno slot' : 'Recupera uno slot'} di livello ${ROMAN[lvl - 1]}"></button>`).join('');
     return `
       <div class="slot-row${max === 0 ? ' is-zero' : ''}" data-level="${lvl}" data-used="${used}">
-        <span class="slot-lv">Slot ${ROMAN[lvl - 1]}</span>
-        <span class="slot-pips">${pips}</span>
-        <span class="slot-ctrl">
-          <button class="btn btn--icon btn-slot-adj" data-level="${lvl}" data-delta="1"  ${used >= max ? 'disabled' : ''} title="Usa slot">−</button>
-          <button class="btn btn--icon btn-slot-adj" data-level="${lvl}" data-delta="-1" ${used <= 0 ? 'disabled' : ''} title="Recupera slot">+</button>
-        </span>
-        <input type="number" class="slot-max-input" data-level="${lvl}" min="0" max="9" value="${max}" title="Slot massimi">
+        <span class="slot-lv">Livello ${ROMAN[lvl - 1]}</span>
+        <span class="slot-dias">${dias}</span>
+        <span class="slot-count">${max > 0 ? `${free} su ${max}` : ''}</span>
+        <input type="number" class="slot-max-input" data-level="${lvl}" min="0" max="9" value="${max}" title="Slot massimi" aria-label="Slot massimi di livello ${ROMAN[lvl - 1]}">
       </div>`;
   }).join('');
   restoreFocusState(container, focusSnap);
 
   container.onclick = (e) => {
-    const btn = e.target.closest('.btn-slot-adj');
-    if (!btn || btn.disabled) return;
-    const lvl   = btn.dataset.level;
-    const delta = parseInt(btn.dataset.delta);
-    const row   = container.querySelector(`.slot-row[data-level="${lvl}"]`);
-    const used  = parseInt(row.dataset.used) || 0;
-    const max   = parseInt(row.querySelector('.slot-max-input').value) || 0;
-    onSetUsed(lvl, Math.max(0, Math.min(max, used + delta)));
+    const dia = e.target.closest('.dia');
+    if (!dia) return;
+    const lvl  = dia.dataset.slotLevel;
+    const row  = container.querySelector(`.slot-row[data-level="${lvl}"]`);
+    const used = parseInt(row.dataset.used) || 0;
+    const max  = parseInt(row.querySelector('.slot-max-input').value) || 0;
+    onSetUsed(lvl, Math.max(0, Math.min(max, dia.classList.contains('free') ? used + 1 : used - 1)));
   };
 
   container.querySelectorAll('.slot-max-input').forEach(input => {
@@ -318,7 +317,7 @@ export function renderCantrips(cantrips, onRemove) {
     <div class="spell-row">
       <span class="nm">${escapeHtml(name)}</span>
       <span class="lv">truc</span>
-      <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-cantrip" data-id="${id}" aria-label="Rimuovi">✕</button>
+      <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-cantrip" data-id="${id}" aria-label="Rimuovi">${icon('close', { size: 16 })}</button>
     </div>`).join('');
 
   container.onclick = (e) => {
@@ -341,7 +340,7 @@ export function renderSpellsByLevel(spells, onRemove, onTogglePrepared, onAddSpe
           <div class="spell-row">
             <button class="prep ${sp.prepared ? 'on' : ''}" data-action="toggle-prepared" data-level="${lvl}" data-id="${id}" aria-pressed="${!!sp.prepared}" title="${sp.prepared ? 'Preparato' : 'Non preparato'}"></button>
             <span class="nm">${escapeHtml(sp.name)}</span>
-            <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-spell" data-level="${lvl}" data-id="${id}" aria-label="Rimuovi">✕</button>
+            <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-spell" data-level="${lvl}" data-id="${id}" aria-label="Rimuovi">${icon('close', { size: 16 })}</button>
           </div>`).join('');
     return `
       <div class="spell-level-block">
@@ -393,8 +392,8 @@ export function renderInventory(inventory, editingId, callbacks = {}) {
           </div>
           <input class="input edit-qty" type="number" value="${item.quantity ?? 1}" min="1">
           <span class="inv-actions">
-            <button class="btn btn--sm btn--icon" data-action="save-item" data-id="${id}" title="Salva">✔</button>
-            <button class="btn btn--ghost btn--sm btn--icon" data-action="cancel-item" data-id="${id}" title="Annulla">✕</button>
+            <button class="btn btn--sm btn--icon" data-action="save-item" data-id="${id}" title="Salva" aria-label="Salva">${icon('check', { size: 16 })}</button>
+            <button class="btn btn--ghost btn--sm btn--icon" data-action="cancel-item" data-id="${id}" title="Annulla" aria-label="Annulla">${icon('close', { size: 16 })}</button>
           </span>
         </div>`;
     }
@@ -407,8 +406,8 @@ export function renderInventory(inventory, editingId, callbacks = {}) {
         </div>
         <span class="qty" data-action="edit-qty" data-id="${id}" title="Modifica quantità">${item.quantity ?? 1}</span>
         <span class="inv-actions">
-          <button class="btn btn--ghost btn--sm btn--icon" data-action="edit-item" data-id="${id}" aria-label="Modifica">✎</button>
-          <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-item" data-id="${id}" aria-label="Rimuovi">✕</button>
+          <button class="btn btn--ghost btn--sm btn--icon" data-action="edit-item" data-id="${id}" aria-label="Modifica" title="Modifica">${icon('edit', { size: 16 })}</button>
+          <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-item" data-id="${id}" aria-label="Rimuovi">${icon('close', { size: 16 })}</button>
         </span>
       </div>`;
   }).join('');
@@ -469,7 +468,7 @@ export function renderClassFeatures(classFeatures, classStats, onRemoveFeature, 
     html += `<div class="class-stats-row">${
       statEntries.map(([id, s]) =>
         `<span class="class-stat-chip">${escapeHtml(s.label)}: <strong>${escapeHtml(s.value)}</strong>
-         <button class="btn-chip-remove" data-action="remove-stat" data-id="${id}" aria-label="Rimuovi">×</button></span>`
+         <button class="btn-chip-remove" data-action="remove-stat" data-id="${id}" aria-label="Rimuovi">${icon('close', { size: 12 })}</button></span>`
       ).join('')
     }</div>`;
   }
@@ -484,7 +483,7 @@ export function renderClassFeatures(classFeatures, classStats, onRemoveFeature, 
         <span class="class-feature-name">${escapeHtml(f.name)}</span>
         ${f.level ? `<span class="class-feature-level-badge">Lv.${f.level}</span>` : ''}
         <div class="class-feature-actions">
-          <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-feature" data-id="${id}" aria-label="Rimuovi">✕</button>
+          <button class="btn btn--ghost btn--sm btn--icon" data-action="remove-feature" data-id="${id}" aria-label="Rimuovi">${icon('close', { size: 16 })}</button>
         </div>
       </summary>
       <div class="class-feature-body">

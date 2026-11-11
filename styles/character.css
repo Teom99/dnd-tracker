@@ -1437,3 +1437,13 @@ details.tome > summary .sumnote { margin-left: auto; font: 500 11px var(--f-body
 .vitals:has(.v-insp.hidden) .v:nth-last-child(2) { border-right: 0; }
 #view-character .ab input, #view-character .cstat input { min-height: 0; border: 0; border-radius: 0; box-shadow: none; background: none; }
 @media (max-width: 760px) { .vitals:has(.v-insp.hidden) { grid-template-columns: repeat(2, minmax(0, 1fr)); } .vitals:has(.v-insp.hidden) .v-hp { grid-column: 1 / -1; } #view-character .sheet-name-input { font-size: 24px; } }
+
+/* Slot a rombi (stessi del popover del dock) */
+#view-character .slot-row { grid-template-columns: 92px minmax(0, 1fr) auto auto; }
+.slot-dias { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+.slot-dias .dia { margin: 7px; position: relative; cursor: pointer; padding: 0; flex: none; }
+.slot-dias .dia::after { content: ""; position: absolute; inset: -10px; }   /* area di tocco più ampia del rombo */
+.slot-dias .dia:focus-visible { outline: 2px solid var(--c-gold); outline-offset: 3px; }
+.slot-count { color: var(--c-mute); font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* attacchi e righe: pillole in tinta */
+.atk-row .atk-pill { font: 700 15px var(--f-display); }
