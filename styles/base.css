@@ -643,3 +643,12 @@ button.chip[aria-pressed="true"] {
 
 /* focus visibile coerente */
 :focus-visible { outline: 2px solid var(--c-gold); outline-offset: 2px; }
+
+/* ── Fogli di dialogo (src/ui/dialogs.js) ── */
+.btn--solid.btn--danger { background: var(--c-foe); border-color: transparent; color: var(--c-on-accent); font-weight: 700; }
+.btn--solid.btn--danger:hover { background: color-mix(in srgb, var(--c-foe) 86%, var(--c-text)); }
+.sheet-dialog { z-index: 90; }
+.sheet-dialog-frame { width: min(440px, 100%); gap: 12px; }
+.sheet-dialog-text { margin: 0; color: var(--c-mute); font-size: 16px; line-height: 1.45; white-space: pre-line; }
+.sheet-dialog-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; margin-top: 4px; }
+@media (max-width: 480px) { .sheet-dialog-actions .btn { flex: 1 1 100%; } }
