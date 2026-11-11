@@ -3,6 +3,7 @@ import { state }   from '../utils/state.js';
 import { playerColor } from '../utils/presence.js';
 import { esc }     from '../views/core.js';
 import { icon }    from '../ui/icons.js';
+import { attr }    from '../utils/sanitize.js';
 import * as CombatChrome from '../ui/CombatChrome.js';
 import { readDensity } from './combatChrome.js';
 
@@ -317,9 +318,9 @@ export function renderTokenBar(gridPos, combatants) {
     const player   = c.type === 'player';
     return `<button
       class="grid-token-chip${selected ? ' selected' : ''}${ko ? ' ko' : ''}${player ? ' is-player' : ''}"
-      data-token-id="${id}"
+      data-token-id="${attr(id)}"
       title="${esc(c.name || '?')} — ${placed ? 'rimuovi dalla griglia' : 'posiziona sulla griglia'}"
-    >${(c.name || '?').slice(0, 2).toUpperCase()}${ko ? ' ' + icon('skull', { size: 13 }) : ''}${placed ? '' : ' +'}</button>`;
+    >${esc(String(c.name || '?').slice(0, 2).toUpperCase())}${ko ? ' ' + icon('skull', { size: 13 }) : ''}${placed ? '' : ' +'}</button>`;
   }).join('');
 
   bar.onclick = (e) => {

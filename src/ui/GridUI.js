@@ -1,5 +1,6 @@
 import { icon, iconPath } from './icons.js';
-import { footprintOf, squareDistance } from '../logic/gridMath.js';
+import { footprintOf, squareDistance, fmtM, validTemplate } from '../logic/gridMath.js';
+import { num, attr } from '../utils/sanitize.js';
 import { trajectoryEndpoints, trajectoryDistance } from '../logic/trajectory.js';
 import { combatantView, healthHintText } from '../logic/visibility.js';
 import { captureFocusState, restoreFocusState } from '../utils/domPreserve.js';
@@ -325,28 +326,22 @@ function cellXY(col, row) {
 
 // Screen-px ↔ spazio SVG fisso (indipendente da zoom/pan) — stessa idiomatica
 // già usata dal pan-drag in initGridControls (rect + rapporto viewBox/rect).
-function _screenToGrid(clientX, clientY, svg, container) {
-  const rect = container.getBoundingClientRect();
-  const scaleX = svg.viewBox.baseVal.width  / (rect.width  || 1);
-  const scaleY = svg.viewBox.baseVal.height / (rect.height || 1);
-  const svgX = _panX + (clientX - rect.left) * scaleX;
-  const svgY = _panY + (clientY - rect.top)  * scaleY;
-  return { col: (svgX - PAD) / CELL, row: (svgY - PAD) / CELL };
+// Si usa la matrice schermo↔SVG del browser: tiene conto da sola di viewBox (zoom e pan) e
+// dell'eventuale bordo vuoto che preserveAspectRatio="meet" lascia quando il contenitore ha un
+// rapporto diverso da quello della mappa (prima i cursori degli altri slittavano in quel caso).
+function _screenToGrid(clientX, clientY, svg) {
+  const ctm = svg.getScreenCTM();
+  if (!ctm) return { col: NaN, row: NaN };
+  const p = new DOMPoint(clientX, clientY).matrixTransform(ctm.inverse());
+  return { col: (p.x - PAD) / CELL, row: (p.y - PAD) / CELL };
 }
 
 function _gridToScreen(col, row, svg, container) {
+  const ctm = svg.getScreenCTM();
+  if (!ctm) return { x: -9999, y: -9999 };
+  const p = new DOMPoint(PAD + col * CELL, PAD + row * CELL).matrixTransform(ctm);
   const rect = container.getBoundingClientRect();
-  const vb = svg.viewBox.baseVal;
-  const scaleX = rect.width  / vb.width;
-  const scaleY = rect.height / vb.height;
-  return {
-    x: (PAD + col * CELL - vb.x) * scaleX,
-    y: (PAD + row * CELL - vb.y) * scaleY,
-  };
-}
-
-function fmtM(d) {
-  return d === Math.floor(d) ? `${d}m` : `${d.toFixed(1)}m`;
+  return { x: p.x - rect.left, y: p.y - rect.top };
 }
 
 // ─── Disegno a colori sulla mappa ─────────────────────────────────────────────
@@ -466,6 +461,12 @@ function _renderCursorOverlay() {
   const svg = container?.querySelector('svg');
   if (!container || !svg) return;
   const layer = _ensureCursorLayer(container);
+  // Il layer è un fratello del contenitore: lo si allinea al suo rettangolo (sotto toolbar e riga
+  // opzioni non sta più a 44px dal bordo del pannello)
+  layer.style.top    = `${container.offsetTop}px`;
+  layer.style.left   = `${container.offsetLeft}px`;
+  layer.style.width  = `${container.offsetWidth}px`;
+  layer.style.height = `${container.offsetHeight}px`;
 
   const seen = new Set();
   for (const [uid, c] of Object.entries(_cursors)) {
@@ -473,7 +474,7 @@ function _renderCursorOverlay() {
     if (c == null || typeof c.col !== 'number' || typeof c.row !== 'number') continue;
     seen.add(uid);
     const { x, y } = _gridToScreen(c.col, c.row, svg, container);
-    let el = layer.querySelector(`[data-cursor-uid="${uid}"]`);
+    let el = [...layer.children].find(n => n.dataset.cursorUid === uid);   // niente selettore con l'uid: viene da Firebase
     if (!el) {
       el = document.createElement('div');
       el.className = 'grid-cursor';
@@ -483,7 +484,7 @@ function _renderCursorOverlay() {
     }
     el.style.left = `${x}px`;
     el.style.top  = `${y}px`;
-    const color = typeof c.color === 'string' ? c.color : 'var(--c-mute)';
+    const color = typeof c.color === 'string' && HEX_COLOR_RE.test(c.color) ? c.color : 'var(--c-mute)';
     el.querySelector('.dot').style.background   = color;
     const label = el.querySelector('.label');
     label.style.background = color;
@@ -536,6 +537,8 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   const cellPaint = paint  || {};
   const cols  = Math.max(1, gridConfig?.cols || 20);
   const rows  = Math.max(1, gridConfig?.rows || 20);
+  // L'area viene da Firebase (scrivibile da chiunque): forma o misure sballate non si disegnano
+  if (!validTemplate(template)) template = null;
 
   // Celle coperte dal template attivo + combattenti coinvolti (per evidenziazione ed elenco)
   const templateCells = new Set();
@@ -668,7 +671,7 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     const rRing  = rOuter - ringW / 2;
     const rBody  = rRing - ringW / 2;
 
-    if (trajectoryFrom && id === trajectoryFrom) {
+    if (trajTool && trajectoryFrom && id === trajectoryFrom) {
       inner += `<circle cx="${cx}" cy="${cy}" r="${rOuter + 6}" fill="none" stroke="var(--c-ally)" stroke-width="2.5" stroke-dasharray="5 3" pointer-events="none"/>`;
     }
     if (templateHitIds.has(id)) {
@@ -1045,11 +1048,13 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
     if (ko)                cls += ' ko';
 
     // Numero di iniziativa: modificabile al volo da chi può (proprietario o master)
+    const cid  = attr(c.id);
+    const init = num(c.initiative);
     const initNum = (_initEdit && _initEdit.id === c.id)
-      ? `<input type="number" class="init-num-input" data-id="${c.id}" data-init-edit min="-10" max="30" value="${esc(String(_initEdit.value))}">`
+      ? `<input type="number" class="init-num-input" data-id="${cid}" data-init-edit min="-10" max="30" value="${attr(_initEdit.value)}">`
       : (v.canEdit
-        ? `<button type="button" class="init-num" data-id="${c.id}" data-init-open title="Modifica iniziativa">${c.initiative}</button>`
-        : `<span class="init-num">${c.initiative}</span>`);
+        ? `<button type="button" class="init-num" data-id="${cid}" data-init-open title="Modifica iniziativa">${init}</button>`
+        : `<span class="init-num">${init}</span>`);
 
     const thumb = typeof c.avatarThumb === 'string' && c.avatarThumb.startsWith('data:image/') ? c.avatarThumb : null;
     const letter = esc((c.name || '?').trim().charAt(0).toUpperCase());
@@ -1060,7 +1065,7 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
     let bar = '', val = '';
     if (v.showFullHp) {
       bar = `<span class="init-bar ${INIT_TYPE_CLASS(c)}"><i style="width:${hpPct.toFixed(1)}%"></i></span>`;
-      val = `<span class="init-val">${c.hpCurrent}/${c.hpMax}</span>`;
+      val = `<span class="init-val">${num(c.hpCurrent)}/${num(c.hpMax)}</span>`;
     } else if (v.showHint) {
       val = `<span class="init-val">${healthHintText(hpPct)}</span>`;
     }
@@ -1069,18 +1074,18 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
     let extra = '';
     if (density === 'details') {
       const parts = [];
-      parts.push(v.acVisible && v.ac !== null ? `<span>CA <b>${v.ac}</b></span>` : (v.isCreature ? '<span>CA nascosta</span>' : ''));
-      if (v.showFullHp && (c.tempHp ?? 0) > 0) parts.push(`<span>HP temp. <b>+${c.tempHp}</b></span>`);
+      parts.push(v.acVisible && v.ac !== null ? `<span>CA <b>${num(v.ac)}</b></span>` : (v.isCreature ? '<span>CA nascosta</span>' : ''));
+      if (v.showFullHp && num(c.tempHp) > 0) parts.push(`<span>HP temp. <b>+${num(c.tempHp)}</b></span>`);
       if (v.isOwnCard && ko && myDeathSaves) parts.push(`<span>TS morte: <b>${myDeathSaves.successes ?? 0}\u2713 ${myDeathSaves.failures ?? 0}\u2717</b></span>`);
       for (const cond of Object.keys(c.conditions || {})) parts.push(`<span class="chip">${esc(cond)}</span>`);
       const insp = (c.type === 'player' || c.type === 'pet')
-        ? `<button type="button" class="init-insp${c.inspiration ? ' on' : ''}" data-id="${c.id}" data-insp-toggle ${v.canEdit ? '' : 'disabled'} title="${c.inspiration ? 'Ispirazione' : 'Nessuna ispirazione'}" aria-label="Ispirazione" aria-pressed="${c.inspiration ? 'true' : 'false'}">${icon('star', { size: 16 })}</button>`
+        ? `<button type="button" class="init-insp${c.inspiration ? ' on' : ''}" data-id="${cid}" data-insp-toggle ${v.canEdit ? '' : 'disabled'} title="${c.inspiration ? 'Ispirazione' : 'Nessuna ispirazione'}" aria-label="Ispirazione" aria-pressed="${c.inspiration ? 'true' : 'false'}">${icon('star', { size: 16 })}</button>`
         : '';
       extra = `<div class="init-extra">${parts.filter(Boolean).join('')}${insp}</div>`;
     }
 
     html += `
-      <li class="${cls}" data-id="${c.id}">
+      <li class="${cls}" data-id="${cid}">
         ${initNum}${avatar}
         <span class="init-who"><span class="grid-initiative-name">${esc(c.name)}</span>${bar}</span>
         <span class="grid-initiative-meta">${val}${distText}</span>

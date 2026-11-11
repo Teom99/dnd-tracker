@@ -16,3 +16,21 @@ export function squareDistance(c1, r1, n1, c2, r2, n2) {
   const dr = axisDist(r1, r1 + n1 - 1, r2, r2 + n2 - 1);
   return Math.max(dc, dr) + Math.floor(Math.min(dc, dr) / 2);
 }
+
+// Metri per le etichette. Non lancia mai: un valore non numerico (scritto a mano su Firebase)
+// diventa 0m invece di rompere il render di tutti i client.
+export function fmtM(d) {
+  const n = Number.isFinite(d) ? d : 0;
+  return n === Math.floor(n) ? `${n}m` : `${n.toFixed(1)}m`;
+}
+
+// L'area incantesimo letta da Firebase prima di disegnarla: forma nota, misure finite e sensate.
+const TEMPLATE_SHAPES = ['circle', 'cone', 'line'];
+export function validTemplate(t) {
+  if (!t || typeof t !== 'object') return false;
+  if (!TEMPLATE_SHAPES.includes(t.shape)) return false;
+  if (!Number.isInteger(t.originCol) || !Number.isInteger(t.originRow)) return false;
+  if (!Number.isFinite(t.size) || t.size <= 0 || t.size > 200) return false;
+  if (t.shape !== 'circle' && !Number.isFinite(t.angleDeg)) return false;
+  return true;
+}

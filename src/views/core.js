@@ -71,6 +71,10 @@ export function openConditionModal(combatantId, conditionsObj) {
 export async function removeCombatant(id) {
   await state.session.clearGridPosition(id);
   await state.combatantManager.remove(id);
+  // Le traiettorie che partivano da lui o lo avevano per bersaglio non hanno più senso
+  for (const [uid, t] of Object.entries(state.snapshot?.trajectories ?? {})) {
+    if (t?.fromId === id || t?.toId === id) await state.session.clearTrajectory(uid);
+  }
 }
 
 export function closeConditionModal() {

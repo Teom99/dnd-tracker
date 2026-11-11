@@ -22,6 +22,7 @@ import { initTheme, toggleTheme } from './src/utils/theme.js';
 import { icon } from './src/ui/icons.js';
 import * as CombatChrome from './src/ui/CombatChrome.js';
 import { toolTransition, toolFromState, nextInTurnOrder } from './src/logic/combatChrome.js';
+import { trajectoryClearButtons } from './src/logic/trajectory.js';
 import { updateHomeAuthUI, loadCharacterLibrary, populateJoinPicker, populateCreaturePicker, saveUserSession, loadUserSessions } from './src/views/home.js';
 
 // --- Tema chiaro/notte ---
@@ -1227,17 +1228,20 @@ function _syncGridModeUI() {
     templatePlacingShape: state.templatePlacingShape, currentTool: state.ui.tool,
   });
   if (tool !== state.ui.tool) state.ui.tool = tool;
+  // Il primo punto della traiettoria vale solo mentre si usa lo strumento (anche se la modalità
+  // cambia da un'altra via, es. "Muri e dimensioni" dal menu)
+  if (state.ui.tool !== 'traj' && state.trajectoryFrom) { state.trajectoryFrom = null; _rerenderGridFromSnapshot(); }
   CombatChrome.apply();
 }
 
 function _applyTrajControlsUI() {
   const steps = document.getElementById('traj-steps');
   if (steps) steps.dataset.step = state.trajectoryFrom ? '2' : '1';
-  const t = state.snapshot?.trajectories ?? {};
+  const clear = trajectoryClearButtons(state.snapshot?.trajectories, state.myUid, !!state.session?.isMaster);
   const show = (id, on) => { const el = document.getElementById(id); if (el) el.style.display = on ? '' : 'none'; };
   show('btn-traj-cancel',    !!state.trajectoryFrom);
-  show('btn-traj-clear',     !!t[state.myUid]);
-  show('btn-traj-clear-all', !!state.session?.isMaster && Object.keys(t).length > 1);
+  show('btn-traj-clear',     clear.mine);
+  show('btn-traj-clear-all', clear.all);
 }
 document.getElementById('btn-traj-cancel')?.addEventListener('click', () => {
   state.trajectoryFrom = null; _syncGridModeUI(); _rerenderGridFromSnapshot();
@@ -1274,6 +1278,10 @@ document.getElementById('btn-grid-fit')?.addEventListener('click', () => {
   if (!box || !box.width || !box.height) return;
   const rows = Math.max(1, Math.min(60, state.snapshot?.gridConfig?.rows ?? 20));
   const cols = Math.max(1, Math.min(60, Math.round(rows * box.width / box.height)));
+  // Restringere la mappa toglie segnalini e muri che non ci stanno più, per tutti: si chiede prima
+  const cur = state.snapshot?.gridConfig?.cols ?? 20;
+  const wouldDrop = cols < cur && (Object.keys(state.snapshot?.grid ?? {}).length > 0 || Object.keys(state.snapshot?.walls ?? {}).length > 0);
+  if (wouldDrop && !confirm(`La mappa passa da ${cur} a ${cols} colonne: i segnalini e i muri fuori dai nuovi bordi verranno tolti. Procedere?`)) return;
   state.session.setGridConfig(cols, rows);
 });
 document.getElementById('btn-walls-done')?.addEventListener('click', () => document.getElementById('btn-grid-edit')?.click());

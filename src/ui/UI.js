@@ -1,6 +1,7 @@
 import { captureFocusState, restoreFocusState } from '../utils/domPreserve.js';
 import { combatantView, healthHintKey, healthHintText } from '../logic/visibility.js';
 import { icon } from './icons.js';
+import { num, attr } from '../utils/sanitize.js';
 
 const XP_THRESHOLDS = [0,300,900,2700,6500,14000,23000,34000,48000,64000,
                         85000,100000,120000,140000,165000,195000,225000,265000,305000,355000];
@@ -475,7 +476,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       ? `<div class="fc-pframe${levelUpReady ? ' lvlup' : ''}" style="--xp:${(levelUpReady ? 1 : xpPct).toFixed(3)};"${xpTitle ? ` title="${xpTitle}"` : ''}>
            <div class="fc-portrait${uploadClass}" style="display:flex;align-items:center;justify-content:center;color:var(--c-gold);"${uploadAttrs}>${portraitContent}</div>
          </div>`
-      : `<div class="fc-portrait${uploadClass}" style="display:flex;align-items:center;justify-content:center;border:1px solid ${isAlly ? 'var(--c-pc)' : 'var(--c-foe)'};color:${isAlly ? 'var(--c-gold)' : '#c25b50'};"${uploadAttrs}>${portraitContent}</div>`;
+      : `<div class="fc-portrait${uploadClass}" style="display:flex;align-items:center;justify-content:center;border:1px solid ${isAlly ? 'var(--c-pc)' : 'var(--c-foe)'};color:${isAlly ? 'var(--c-gold)' : 'var(--c-foe)'};"${uploadAttrs}>${portraitContent}</div>`;
 
     li.innerHTML = `
       <div class="fc-top">
@@ -521,7 +522,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
         <div class="fc-conds">
           ${conditions.map(cond => {
             const meta = CONDITIONS.find(x => x.name === cond);
-            return `<span class="chip" style="--c:${meta?.color ?? 'var(--c-mute)'};">${cond}</span>`;
+            return `<span class="chip" style="--c:${meta?.color ?? 'var(--c-mute)'};">${escapeHtml(cond)}</span>`;
           }).join('')}
         </div>
       ` : ''}
@@ -831,12 +832,12 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
 
   const c      = combatant;
   const isKO   = c.hpCurrent === 0;
-  const hpPct  = c.hpMax > 0 ? Math.min(1, Math.max(0, c.hpCurrent / c.hpMax)) : 0;
-  const tempHp = c.tempHp ?? 0;
+  const hpPct  = num(c.hpMax) > 0 ? Math.min(1, Math.max(0, num(c.hpCurrent) / num(c.hpMax))) : 0;
+  const tempHp = num(c.tempHp);
   const conditions = c.conditions ? Object.keys(c.conditions) : [];
   const condChips  = conditions.map(cond => {
     const meta = CONDITIONS.find(x => x.name === cond);
-    return `<span class="chip" style="--c:${meta?.color ?? 'var(--c-mute)'};">${cond}</span>`;
+    return `<span class="chip" style="--c:${meta?.color ?? 'var(--c-mute)'};">${escapeHtml(cond)}</span>`;
   }).join('');
 
   const { mode = 'xp', xp = {}, levelUpGranted = {} } = progressionData;
@@ -866,7 +867,7 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
   const dockPortrait = dockAvatar
     ? `<img src="${escapeHtml(dockAvatar)}" class="fc-avatar" alt="">`
     : (c.type === 'pet' ? icon('paw', { size: 20 }) : escapeHtml((c.name || '?').trim().charAt(0).toUpperCase()));
-  const dockAc = c.armorClass ?? null;
+  const dockAc = c.armorClass == null ? null : num(c.armorClass, null);
 
   dock.innerHTML = `
     <div class="fc-pframe dock-pframe${levelUpReady ? ' lvlup' : ''}" style="--xp:${(levelUpReady ? 1 : xpPct).toFixed(3)};"${xpText ? ` title="${xpText}"` : ''}>
@@ -874,7 +875,7 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
     </div>
     <div class="dock-id">
       <b>${escapeHtml(c.name)}</b>
-      <span>${level ? `Livello ${level}` : (c.type === 'pet' ? 'Compagno' : '')}</span>
+      <span>${level ? `Livello ${num(level, 1)}` : (c.type === 'pet' ? 'Compagno' : '')}</span>
     </div>
     <div class="dock-vitals">
       <div style="display:flex;align-items:center;gap:6px;">
@@ -882,7 +883,7 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
           <i class="trail" style="transform:scaleX(${hpPct.toFixed(4)});"></i>
           <i class="fill"  style="transform:scaleX(${hpPct.toFixed(4)});"></i>
         </div>
-        <span style="font-size:12px;font-weight:700;color:var(--c-text);font-variant-numeric:tabular-nums;">${c.hpCurrent}<span style="color:var(--c-mute);font-weight:400">/${c.hpMax}</span></span>
+        <span style="font-size:12px;font-weight:700;color:var(--c-text);font-variant-numeric:tabular-nums;">${num(c.hpCurrent)}<span style="color:var(--c-mute);font-weight:400">/${num(c.hpMax)}</span></span>
         ${tempHp > 0 ? `<span class="chip chip--iron" style="font-size:9px;padding:1px 5px;">+${tempHp}</span>` : ''}
       </div>
       ${mode === 'xp' && level < 20 ? `<div class="xp-bar-track" style="margin-top:2px;"><div class="xp-bar-fill" style="width:${Math.round(xpPct * 100)}%"></div></div>` : ''}
@@ -916,12 +917,12 @@ export function renderMasterDock(combatant) {
 
   const c     = combatant;
   const isKO  = c.hpCurrent === 0;
-  const hpPct = c.hpMax > 0 ? Math.min(1, Math.max(0, c.hpCurrent / c.hpMax)) : 0;
-  const tempHp = c.tempHp ?? 0;
+  const hpPct = num(c.hpMax) > 0 ? Math.min(1, Math.max(0, num(c.hpCurrent) / num(c.hpMax))) : 0;
+  const tempHp = num(c.tempHp);
   const conditions = c.conditions ? Object.keys(c.conditions) : [];
   const condChips  = conditions.map(cond => {
     const meta = CONDITIONS.find(x => x.name === cond);
-    return `<span class="chip" style="--c:${meta?.color ?? 'var(--c-mute)'};">${cond}</span>`;
+    return `<span class="chip" style="--c:${meta?.color ?? 'var(--c-mute)'};">${escapeHtml(cond)}</span>`;
   }).join('');
 
   const portraitFallback = c.type === 'pet' ? icon('paw', { size: 20 }) : c.type === 'creature' ? icon('monster', { size: 22 }) : escapeHtml((c.name || '?').trim().charAt(0).toUpperCase());
@@ -945,17 +946,17 @@ export function renderMasterDock(combatant) {
           <i class="trail" style="transform:scaleX(${hpPct.toFixed(4)});"></i>
           <i class="fill"  style="transform:scaleX(${hpPct.toFixed(4)});"></i>
         </div>
-        <span style="font-size:12px;font-weight:700;color:var(--c-text);font-variant-numeric:tabular-nums;">${c.hpCurrent}<span style="color:var(--c-mute);font-weight:400">/${c.hpMax}</span></span>
+        <span style="font-size:12px;font-weight:700;color:var(--c-text);font-variant-numeric:tabular-nums;">${num(c.hpCurrent)}<span style="color:var(--c-mute);font-weight:400">/${num(c.hpMax)}</span></span>
         ${tempHp > 0 ? `<span class="chip chip--iron" style="font-size:9px;padding:1px 5px;">+${tempHp}</span>` : ''}
       </div>
       ${conditions.length ? `<div class="dock-conds">${condChips}</div>` : ''}
     </div>
-    <div class="dock-stat">${c.armorClass ? `<b>${c.armorClass}</b><span>CA</span>` : ''}</div>
+    <div class="dock-stat">${c.armorClass ? `<b>${num(c.armorClass)}</b><span>CA</span>` : ''}</div>
     <div class="dock-actions">
       <button class="btn btn--sm" data-action="dock-attack">${icon('sword')}<span class="lbl">Attacca</span></button>
       <button class="btn btn--sm" data-action="dock-heal">${icon('heal')}<span class="lbl">Cura</span></button>
       <button class="btn btn--sm" data-action="dock-conditions">${icon('star')}<span class="lbl">Condizioni</span></button>
-      ${c.type === 'creature' && c.monsterApiIndex ? `<button class="btn btn--sm" data-action="view-stat-block" data-api-index="${escapeHtml(c.monsterApiIndex)}" data-id="${c.id}">${icon('monster')}<span class="lbl">Scheda mostro</span></button>` : ''}
+      ${c.type === 'creature' && c.monsterApiIndex ? `<button class="btn btn--sm" data-action="view-stat-block" data-api-index="${escapeHtml(c.monsterApiIndex)}" data-id="${attr(c.id)}">${icon('monster')}<span class="lbl">Scheda mostro</span></button>` : ''}
     </div>`;
 }
 

@@ -534,11 +534,6 @@
   color: color-mix(in srgb, var(--c-ally) 16%, var(--c-paper));
   border-color: var(--c-heading);
 }
-#grid-template-controls button.active {
-  background: var(--c-heading);
-  color: color-mix(in srgb, var(--c-ally) 16%, var(--c-paper));
-  border-color: var(--c-heading);
-}
 .grid-dim-input {
   width: 3.2rem;
   background: var(--c-paper-lo);

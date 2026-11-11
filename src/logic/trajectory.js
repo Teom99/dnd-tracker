@@ -29,3 +29,13 @@ export function trajectoryEndpoints(traj, gridPos, combatants) {
 export function trajectoryDistance({ from, to }) {
   return squareDistance(from.col, from.row, from.n, to.col, to.row, to.n);
 }
+
+// Quali pulsanti di rimozione mostrare: "la mia" a chi ne ha una; "tutte" al master
+// non appena c'è almeno una traiettoria che non è sua (altrimenti non potrebbe toglierla).
+export function trajectoryClearButtons(trajectories, myUid, isMaster) {
+  const t = trajectories || {};
+  return {
+    mine: !!t[myUid],
+    all:  !!isMaster && Object.keys(t).some(uid => uid !== myUid),
+  };
+}

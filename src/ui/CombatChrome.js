@@ -120,6 +120,8 @@ export function init() {
 
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Escape') return;
+    // Esc mentre si scrive (cronaca, campo azione, iniziativa) non deve far sparire il pannello su cui si sta lavorando
+    if (e.target?.matches?.('input, textarea, select, [contenteditable]')) return;
     if (state.ui.menuOpen) set({ menuOpen: false });
     else if (state.ui.spellsOpen) set({ spellsOpen: false });
     else if (state.ui.moreOpen) set({ moreOpen: false });
