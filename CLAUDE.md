@@ -12,7 +12,7 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | File | Ruolo |
 |---|---|
 | `index.html` | Struttura viste: `#view-home`, `#view-combat`, `#view-character` + modal condizioni |
-| `styles/base.css` | Variabili CSS (`--c-*`, `--f-*`) per i temi chiaro/notte, alias temporanei delle variabili vecchie, reset, tipografia, bottoni, input — identità "Manuale" |
+| `styles/base.css` | Variabili CSS (`--c-*`, `--f-*`) per i temi chiaro/notte, reset, tipografia, bottoni, input — identità "Manuale" |
 | `styles/home.css` | Home view, auth panel, libreria personaggi, picker join/creature |
 | `styles/combat.css` | Vista combat, card combattente, dock giocatore, modal condizioni, log |
 | `styles/character.css` | Scheda personaggio, stat block, slot magia, inventario, level-up |
@@ -32,6 +32,8 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | `src/ui/ShipUI.js` | Render pannello nave Damselfly: ponti/stanze CSS grid, token equipaggio, carte armi |
 | `src/ui/LevelUpUI.js` | Render pannello level-up: feature di classe, modal conferma |
 | `src/logic/CombatTracker.js` | `nextTurn(combatants)`, `sortedCombatants()`, `reset()` |
+| `src/ui/dialogs.js` | Fogli "Manuale" al posto di `confirm()`/`prompt()`: `askConfirm`, `askText`, `askChoice`, `openSheet` (Promise, uno alla volta in coda, testo sempre via `textContent`) — test in `test/dialogs.html` |
+| `src/logic/sceneView.js` | `safeSceneUrl` (solo https/data:image) e `sceneAction` (quando la scena si apre da sola) — test in `test/sceneView.html` |
 | `src/logic/sheetView.js` | Logica pura della scheda: `XP_THRESHOLDS`, `xpProgress`, `levelUpReady`, `sheetSubtitle`, `effectiveXp`, `xpSyncAction`, schede (`SHEET_TABS`, `readSheetTab`/`saveSheetTab`) — test in `test/sheetView.html` |
 | `test/run.sh` | Esegue le pagine di test in Chrome headless (senza argomenti: tutte tranne componenti) |
 | `src/logic/LevelUp.js` | Logica XP/milestone, calcolo livello, feature di classe disponibili |
@@ -47,7 +49,7 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | `src/logic/trajectory.js` | `trajectoryEndpoints`, `trajectoryDistance` — freccia di attacco |
 | `src/ui/CombatChrome.js` | Applica `state.ui` a `#view-combat` (attributi `data-*`), menu, pannello laterale, popover; `hydrateIcons` per `data-icon` nel markup statico |
 | `src/logic/combatantRules.js` | Updater puri delle transazioni sul combattente (`applyMaxHp`, `applyFields`) |
-| `test/*.html` | Test in pagina (niente Node): `shapes`, `theme`, `icons`, `combatantRules`, `combatChrome`, `visibility`, `trajectory`, `sheetView`, `homeView` + campionario `componenti.html`; servire con `python3 -m http.server` |
+| `test/*.html` | Test in pagina (niente Node): `shapes`, `theme`, `icons`, `combatantRules`, `combatChrome`, `visibility`, `trajectory`, `sheetView`, `homeView`, `dialogs`, `sceneView` + campionario `componenti.html`; servire con `python3 -m http.server` |
 | `src/utils/presence.js` | `playerColor(uid)` — colore deterministico per giocatore (hash su palette fissa), usato per lock note e cursori live |
 | `src/logic/homeView.js` | Logica pura della home: `splitSessions` (la più recente = "Riprendi"), `filterLibrary`, `libraryMeta`, `lastSeenLabel` — test in `test/homeView.html` |
 | `src/views/home.js` | Auth UI, libreria personaggi (carte, filtro, conferma di eliminazione in pagina, ingresso rapido), picker join a chip/creature, sessioni utente salvate |
@@ -184,6 +186,8 @@ Note: `.indexOn: ["ownerUid"]` serve a `Combatant.findByOwner`. `.read`/`.write`
 - Rework "Manuale", tappa 3 (scheda): testata con ritratto/anello XP, fascia vitale, cinque schede, slot a rombi, XP unica tra scheda e combattimento (vince sempre l'XP più alto, `Session.raiseXpTo`)
 - Rework "Manuale", tappa 4 (home e libreria): "Riprendi" (ultima sessione, un solo bottone pieno) + altre sessioni, schede Entra/Crea, scelta del personaggio a chip, libreria a carte con filtro Tutti/Personaggi/Creature, ingresso rapido dalla carta, eliminazione con conferma nella carta, crediti icone in fondo; nessuna emoji. Il bottone pieno è "Rientra" se c'è una sessione, altrimenti "Varca la soglia" (`_setJoinPrimary` in `home.js`)
 
+- Rework "Manuale", tappa 5 (nave, finestre, pulizia): conferme e richieste di testo nella pagina (`dialogs.js`, mai più `confirm()`/`prompt()`/`alert()` del browser); **scena in finestra** (`#scene-modal`): si apre da sola a tutti quando qualcuno carica una scena nuova (mai al primo snapshot), X/Esc/clic fuori la chiudono solo per chi chiude, "Rivedi scena" nel menu la riapre, **carica/cambia/elimina per tutti**; nave con soli token (stanze a tono, scafo verde/oro/rosso); diario con icona per tipo; notifiche con filetto colorato; alias delle variabili e ~1300 righe di CSS morto eliminati (confronto dello stile calcolato prima/dopo: nessuna differenza)
+
 ### Bug noti non ancora risolti
 Nessuno al momento.
 
@@ -206,9 +210,9 @@ Nessuno al momento.
 
 - **Due temi, una identità**: chiaro (default) e notte, scelti da `<html data-theme="light|night">`. Lo imposta uno script inline in `<head>` di `index.html` prima del primo paint (niente lampo), che **duplica** `resolveTheme` di `src/utils/theme.js`: vanno tenuti allineati. Scelta salvata in `localStorage['dnd-theme']`; senza scelta si segue il sistema. I vecchi temi (viola, `theme-old`) e il pannello "Aspetto" (palette/decorazioni/font) non esistono più.
 - **Solo variabili nei componenti**: i colori stanno in `styles/base.css` come `--c-*` (carta `--c-paper*`, testo `--c-text`/`--c-mute`, filetti `--c-rule`, titoli `--c-heading`, azione principale `--c-accent`, oro `--c-gold`, significato `--c-pc`/`--c-foe`/`--c-ally`, mappa `--c-map*`/`--c-wall`/`--c-reach`), i caratteri come `--f-display` (Alegreya SC) e `--f-body` (Alegreya). **Nessun colore letterale** in CSS o negli stili scritti dal JS: un letterale è leggibile in un tema solo. Negli attributi SVG generati dal JS `var(--c-…)` funziona (vedi i segnalini in `GridUI.renderGrid`).
-- **Alias temporanei**: in testa a `base.css` le variabili dei due vocabolari precedenti (`--gold`, `--text-muted`, `--border-warm`… e `--bg0`, `--bone`, `--mut`, `--line`…) sono alias delle nuove. Servono solo alle schermate non ancora rifatte: ogni tappa del rework le sostituisce nella propria schermata, e a fine tappa 5 il blocco va eliminato. Se una schermata vecchia rende male si corregge l'alias, non il componente.
+- **Nessun alias**: i vocabolari vecchi (`--gold`, `--bone`, `--bg0`, `--line`…) non esistono più. Una variabile non definita vale "nessun valore" in silenzio: se ne aggiungi una nuova, definiscila in `:root` e nel tema notte di `base.css`.
 - **Un solo `.btn--primary` per schermata**; titoli di sezione con `.rule-head`, testate e dock con `.rule-double` / `.rule-double--top`. Campionario in `test/componenti.html`.
-- **Icone**: sempre `icon('nome')` da `src/ui/icons.js`, mai emoji. Le emoji ancora presenti (nave, cronache, log, modali) spariscono con la tappa 5. Ogni bottone solo-icona ha `aria-label` e `title`.
+- **Icone**: sempre `icon('nome')` da `src/ui/icons.js`, mai emoji. Nessuna emoji nel progetto (`grep` dei blocchi Unicode emoji = 0 fuori dai commenti). Ogni bottone solo-icona ha `aria-label` e `title`.
 - **Eccezioni note ai letterali**: colori delle condizioni (`CONDITIONS` in `UI.js`), stanze della nave (`ShipUI.js`), palette del disegno sulla mappa (sono dati, non tema) e logo Google.
 
 ## Pattern ricorrenti da rispettare
