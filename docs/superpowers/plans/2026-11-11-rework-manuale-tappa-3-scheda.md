@@ -27,7 +27,8 @@
 2. Scheda di un personaggio nuovo o con dati parziali (niente classe, caratteristiche assenti, XP assente) → nessun `NaN`/`undefined` visibile, sottotitolo "—", anello a 0, "Sali di livello" assente senza classe. *(test Task 1: `sheetSubtitle`, `xpProgress`)*
 3. Scheda scelta salvata non valida, o storage bloccato → si apre "Combattimento", senza errori. *(test Task 1: `readSheetTab`)*
 4. Scheda aperta dalla libreria della home (nessuna sessione) → niente vita attuale né dati di combattimento, nessun errore, "Indietro" torna alla home. *(verifica Task 3, passo 6)*
-5. Livello 20, XP enorme o negativo → anello fermo tra 0 e 100%, "Sali di livello" assente a 20. *(test Task 1: `xpProgress`, `levelUpReady`)*
+5. XP: la scheda e le card mostrano sempre lo stesso valore; la sincronizzazione scheda↔sessione non crea cicli di scrittura né sovrascrive un XP già assegnato con uno vecchio. *(test Task 1: `effectiveXp`, `xpSyncAction`; verifica Task 3b)*
+6. Livello 20, XP enorme o negativo → anello fermo tra 0 e 100%, "Sali di livello" assente a 20. *(test Task 1: `xpProgress`, `levelUpReady`)*
 
 ## File Structure
 
@@ -85,6 +86,8 @@ exit $rc
 - `readSheetTab(): string` / `saveSheetTab(tab): void` — chiave `localStorage['dnd-sheet-tab']`, default `'combat'`, valore non valido → `'combat'`, `try/catch` come `theme.js`; `saveSheetTab` ignora valori non validi.
 - `xpProgress(level, xp): { pct: number, hi: number|null, max: boolean }` — `level` non numerico → 1; `pct` tra 0 e 1 (xp negativo/NaN → 0, oltre la soglia → 1); a `level >= 20`: `{ pct: 1, hi: null, max: true }`; altrimenti `hi = XP_THRESHOLDS[level]`.
 - `levelUpReady({ level, xp, mode, granted }): boolean` — `mode === 'xp'`: `level < 20 && xp >= XP_THRESHOLDS[level]`; altrimenti `granted === true` (e `level < 20`).
+- `effectiveXp({ inSession, sessionXp, sheetXp }): number` — **un solo XP corrente** per scheda e combattimento: in sessione e con `sessionXp` definito vale `sessionXp` (l'XP assegnato dal master), altrimenti `sheetXp`; valori non numerici o negativi → 0.
+- `xpSyncAction({ sessionXp, sheetXp }): 'seed' | 'mirror' | null` — `'seed'` se la sessione non ha ancora un XP per questo combattente (`sessionXp == null`) e la scheda ne ha (`sheetXp > 0`); `'mirror'` se la sessione ha un XP diverso da quello salvato sulla scheda; altrimenti `null`.
 - `sheetSubtitle(d): string` — come oggi (`race · "<classe> Lv.<n>" · sottoclasse · background · allineamento`, parti vuote saltate), `'—'` se nessuna.
 
 - [ ] **Step 1:** Scrivere `test/sheetView.html` (stesso telaio di `test/hardening.html`) con questi casi:
@@ -104,6 +107,19 @@ eq(levelUpReady({ level: 20, xp: 999999, mode: 'xp' }), false);
 eq(levelUpReady({ level: 3, xp: 0, mode: 'milestone', granted: true }), true);
 eq(levelUpReady({ level: 3, xp: 99999, mode: 'milestone', granted: false }), false);
 eq(levelUpReady({ level: 20, mode: 'milestone', granted: true }), false);
+eq(effectiveXp({ inSession: true,  sessionXp: 900, sheetXp: 5000 }), 900);   // in sessione vale quello del master
+eq(effectiveXp({ inSession: true,  sessionXp: 0,   sheetXp: 5000 }), 0);     // 0 assegnato è un valore, non "assente"
+eq(effectiveXp({ inSession: true,  sessionXp: undefined, sheetXp: 5000 }), 5000);
+eq(effectiveXp({ inSession: false, sessionXp: 900, sheetXp: 5000 }), 5000);  // fuori sessione: la scheda
+eq(effectiveXp({ inSession: true,  sessionXp: 'x', sheetXp: -3 }), 0);
+eq(effectiveXp({}), 0);
+eq(xpSyncAction({ sessionXp: undefined, sheetXp: 5000 }), 'seed');
+eq(xpSyncAction({ sessionXp: null, sheetXp: 5000 }), 'seed');
+eq(xpSyncAction({ sessionXp: undefined, sheetXp: 0 }), null);                // niente da seminare
+eq(xpSyncAction({ sessionXp: 900, sheetXp: 5000 }), 'mirror');
+eq(xpSyncAction({ sessionXp: 900, sheetXp: 900 }), null);                    // già allineati: nessuna scrittura (niente cicli)
+eq(xpSyncAction({ sessionXp: 0, sheetXp: 700 }), 'mirror');
+eq(xpSyncAction({ sessionXp: 'x', sheetXp: 5 }), null);                      // dato sporco: non si scrive
 eq(sheetSubtitle({}), '—');
 eq(sheetSubtitle(null), '—');
 eq(sheetSubtitle({ race: 'Mezzelfo', class: 'Ladra', level: 4, subclass: 'Furfante arcano', background: 'Criminale', alignment: 'Caotico neutrale' }),
@@ -172,6 +188,29 @@ eq(sheetSubtitle({ race: '  ', class: ' Ladra ', level: 2 }), 'Ladra Lv.2');
 - [ ] **Step 4:** Commit `feat(rework): vita attuale, ispirazione e livello pronto sulla scheda`.
 - [ ] **Step 5: Verifica con due client** (master su `localhost`, giocatore su `127.0.0.1`, come in tappa 2): il master infligge danni al giocatore con la scheda aperta → la vita attuale si aggiorna da sola; il master concede l'ispirazione → la stella si accende; il giocatore sale di XP (master "Assegna XP") oltre soglia → anello oro e bottone primario.
 - [ ] **Step 6 (Review Focus 4):** scheda aperta dalla libreria della home: nessuna vita attuale né ispirazione, nessun errore in console, "Indietro" torna alla home.
+
+---
+
+### Task 3b: XP unica tra scheda e combattimento
+
+**Regola (richiesta dell'utente):** non ci deve essere disallineamento: scheda e schermata di combattimento mostrano **gli stessi XP correnti, quelli assegnati dal master**. Oggi sono due dati distinti (`characters/{uid}/{charId}/xp`, scritto a mano; `sessions/{code}/xp/{combatantId}`, assegnato dal master con `Session.addXp`).
+
+**Decisioni:**
+- **In sessione** la fonte è `sessions/{code}/xp/{combatantId}`. Card, dock, anello e testo XP della scheda, "livello pronto" e `Identità → Punti esperienza` leggono tutti `effectiveXp(...)`; il campo `data-path="xp"` in sessione è **disattivato** (`disabled`, con `title="Gli XP li assegna il master"`), fuori sessione resta modificabile.
+- **Continuità tra sessioni** (il master non può scrivere sul personaggio di un altro: le rules sono `characters/$uid` solo del proprietario): il client **del proprietario** tiene allineata la scheda.
+  - `'seed'`: all'ingresso o rientro in sessione, se la sessione non ha XP per il suo combattente e la scheda ne ha, scrive in sessione l'XP della scheda con `Session.seedXpIfAbsent(combatantId, xp)` (transazione: `cur == null ? xp : cur`, `applyLocally: false`) — mai sovrascrive un valore già assegnato.
+  - `'mirror'`: a ogni snapshot di sessione, se l'XP di sessione differisce da `sheetData.xp`, scrive `state.sheet.setField('xp', sessionXp)`. Guardia anti-ciclo: ricorda l'ultimo valore scritto (`_lastMirroredXp`) e non riscrive lo stesso; `xpSyncAction` torna `null` quando sono già uguali.
+- Il master non ha scheda: nessuna sincronizzazione lato master. Se il proprietario è offline il valore si allinea al suo prossimo ingresso (la sessione resta la verità).
+- Modalità milestone: nessun XP, nessuna sincronizzazione (`mode !== 'xp'` → non si fa nulla).
+- Le card in combattimento continuano a leggere `progressionData.xp[c.id]` (già la sessione): per costruzione coincide con la scheda dopo il seed.
+
+**Files:** Modify `src/data/Session.js` (`seedXpIfAbsent`), `src/views/sheet.js` (sincronizzazione nel listener della scheda e dal listener di sessione via evento), `src/ui/SheetUI.js` (testo/anello/livello pronto con `effectiveXp`; `disabled` sul campo `xp`), `app.js` (nel listener di sessione: `document.dispatchEvent(new CustomEvent('dnd:session-xp'))`, nessuna scrittura lì).
+
+- [ ] **Step 1:** Implementare `seedXpIfAbsent` e la sincronizzazione (`dnd:session-xp` gestito in `sheet.js`: calcola `xpSyncAction`, esegue seed o mirror).
+- [ ] **Step 2:** `SheetUI` legge `effectiveXp` per anello, testo, livello pronto e per il campo `xp`.
+- [ ] **Step 3:** `test/run.sh` verde.
+- [ ] **Step 4: Verifica con due client:** (a) giocatore con XP 5000 sulla scheda entra in una sessione nuova → la card mostra 5000 e la scheda 5000, nessun azzeramento; (b) il master assegna +300 → card, dock e scheda mostrano 5300 insieme; (c) fuori sessione la scheda mostra 5300 (è stato riportato sulla scheda) e il campo è modificabile; (d) il campo `xp` in sessione è disattivato; (e) rientro in sessione con XP già presente non lo sovrascrive; (f) il master assegna XP mentre il giocatore ha la scheda aperta e un campo in modifica → nessuna perdita di focus (Review Focus 1).
+- [ ] **Step 5:** Commit `feat(rework): XP unica tra scheda e combattimento`.
 
 ---
 
