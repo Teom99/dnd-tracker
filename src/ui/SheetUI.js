@@ -14,8 +14,7 @@ const ABILITIES = ['str', 'dex', 'con', 'int', 'wis', 'cha'];
 const SPELL_LEVELS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX'];
 const ABILITY_LABELS = { str: 'FOR', dex: 'DES', con: 'COS', int: 'INT', wis: 'SAG', cha: 'CAR' };
-const XP_THRESHOLDS = [0,300,900,2700,6500,14000,23000,34000,48000,64000,
-                       85000,100000,120000,140000,165000,195000,225000,265000,305000,355000];
+import { xpProgress, levelUpReady, sheetSubtitle, effectiveXp } from '../logic/sheetView.js';
 
 function abilityScore(data, ab) { return data?.abilities?.[ab] ?? 10; }
 function mod(score)              { return Math.floor((score - 10) / 2); }
@@ -134,28 +133,37 @@ export function updateComputedValues(data) {
 
   // Testata scheda: sottotitolo + barra XP
   const subEl = document.getElementById('sheet-sub');
-  if (subEl) {
-    const cls  = [d.class, d.level ? `Lv.${d.level}` : null].filter(Boolean).join(' ');
-    const bits = [d.race, cls, d.subclass, d.background, d.alignment]
-      .map(v => String(v ?? '').trim()).filter(Boolean);
-    subEl.textContent = bits.length ? bits.join(' · ') : '—';
-  }
+  if (subEl) subEl.textContent = sheetSubtitle(d);
   const lvlEl  = document.getElementById('sheet-level-label');
   const fillEl = document.getElementById('sheet-xp-fill');
   const xpEl   = document.getElementById('sheet-xp-text');
-  if (lvlEl) lvlEl.textContent = `Liv ${d.level ?? 1}`;
+  const level  = d.level ?? 1;
+  if (lvlEl) lvlEl.textContent = `Liv ${level}`;
   if (fillEl && xpEl) {
-    const level = d.level ?? 1;
-    const xp    = d.xp ?? 0;
-    if (level >= 20) {
-      fillEl.style.transform = 'scaleX(1)';
-      xpEl.textContent = `${xp.toLocaleString('it')} xp · liv. max`;
-    } else {
-      const hi = XP_THRESHOLDS[level] ?? XP_THRESHOLDS[19];
-      fillEl.style.transform = `scaleX(${Math.min(1, Math.max(0, xp / hi))})`;
-      xpEl.textContent = `${xp.toLocaleString('it')} / ${hi.toLocaleString('it')} xp`;
+    const xp = currentXp(d);
+    const prog = xpProgress(level, xp);
+    fillEl.style.transform = `scaleX(${prog.pct})`;
+    xpEl.textContent = prog.max
+      ? `${xp.toLocaleString('it')} xp · liv. max`
+      : `${xp.toLocaleString('it')} / ${prog.hi.toLocaleString('it')} xp`;
+    // Anello XP intorno al ritratto: --xp 0..1; oro pieno e pulsante quando il livello è pronto
+    const frame = document.querySelector('#view-character .pframe');
+    if (frame) {
+      const ready = isLevelUpReady(d);
+      frame.style.setProperty('--xp', String(ready ? 1 : prog.pct));
+      frame.classList.toggle('lvlup', ready);
     }
   }
+}
+
+// Contesto XP: UN SOLO XP corrente per scheda e combattimento. In sessione è quello assegnato
+// dal master (sessions/{code}/xp/{combatantId}); fuori sessione quello salvato sulla scheda.
+// Lo imposta src/views/sheet.js a ogni snapshot di sessione.
+let _xpCtx = { inSession: false, sessionXp: undefined, mode: 'xp', granted: false };
+export function setXpContext(ctx) { _xpCtx = { ..._xpCtx, ...ctx }; }
+function currentXp(d) { return effectiveXp({ inSession: _xpCtx.inSession, sessionXp: _xpCtx.sessionXp, sheetXp: d?.xp }); }
+export function isLevelUpReady(d) {
+  return levelUpReady({ level: d?.level ?? 1, xp: currentXp(d), mode: _xpCtx.mode, granted: _xpCtx.granted });
 }
 
 // ─── Death saves ────────────────────────────────────────────────────────────
