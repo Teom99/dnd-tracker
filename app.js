@@ -1048,6 +1048,11 @@ document.getElementById('condition-modal').addEventListener('click', (e) => {
 
 // ─── Rejoin via evento custom da home.js ─────────────────────────────────────
 
+document.addEventListener('dnd:home-refresh', () => {
+  const uid = auth.currentUser?.uid;
+  if (uid) { loadUserSessions(uid); loadCharacterLibrary(); populateJoinPicker(); }
+});
+
 document.addEventListener('dnd:rejoin', (e) => {
   const { code, combatantId, role, charId } = e.detail;
   _rejoinSession(code, combatantId, role, charId);
@@ -1586,6 +1591,16 @@ function _startListening() {
   }));
 }
 
+// Voci di userSessions vecchie o incomplete possono non avere charId: il combattente della sessione lo ha
+// (combatants/{id}/charId), quindi si recupera da lì invece di restare senza scheda.
+async function _resolveCharId(code, combatantId, savedCharId) {
+  if (savedCharId || !combatantId) return savedCharId ?? null;
+  try {
+    const snap = await get(ref(db, `sessions/${code}/combatants/${combatantId}/charId`));
+    return snap.val() ?? null;
+  } catch { return null; }
+}
+
 async function _rejoinSession(code, savedCombatantId, role, savedCharId = null) {
   try {
     const uid = await state.session.restore(code);
@@ -1616,7 +1631,7 @@ async function _rejoinSession(code, savedCombatantId, role, savedCharId = null) 
     localStorage.setItem('dnd_session_code', code);
     if (savedCombatantId) localStorage.setItem('dnd_combatant_id', savedCombatantId);
     initCombatManagers(code);
-    if (!isMaster) initSheet(uid, savedCharId);
+    if (!isMaster) initSheet(uid, await _resolveCharId(code, savedCombatantId, savedCharId));
     _enterCombatView(code, isMaster);
   } catch (err) {
     UI.showError('Errore nel rientro: ' + err.message);
@@ -1662,7 +1677,7 @@ async function _rejoinSession(code, savedCombatantId, role, savedCharId = null) 
     state.myUid         = uid;
     state.myCombatantId = savedCombatantId;
     initCombatManagers(savedCode);
-    if (!state.session.isMaster) initSheet(uid, savedCharId);
+    if (!state.session.isMaster) initSheet(uid, await _resolveCharId(savedCode, savedCombatantId, savedCharId));
     _enterCombatView(savedCode, state.session.isMaster);
   } catch {
     localStorage.removeItem('dnd_session_code');

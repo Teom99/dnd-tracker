@@ -61,6 +61,7 @@ export function exitToHome(errorMessage) {
   document.querySelectorAll('.btn-rejoin').forEach(b => { b.disabled = false; });
   document.body.classList.remove('in-combat', 'has-sheet', 'sheet-only');
   UI.showView('view-home');
+  document.dispatchEvent(new CustomEvent('dnd:home-refresh'));   // l'elenco "Riprendi" va riletto: ora include la sessione appena lasciata
   if (errorMessage) UI.showError(errorMessage);
 }
 
