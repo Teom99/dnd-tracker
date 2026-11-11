@@ -9,7 +9,7 @@ import { CharacterLibrary }  from './src/data/CharacterLibrary.js';
 import * as UI               from './src/ui/UI.js';
 import * as GridUI           from './src/ui/GridUI.js';
 import { state }             from './src/utils/state.js';
-import { initCombatManagers, exitToHome, esc, closeConditionModal, detachSessionListeners } from './src/views/core.js';
+import { initCombatManagers, exitToHome, esc, closeConditionModal, detachSessionListeners, setJoinBusy } from './src/views/core.js';
 import { renderGrid, toggleTemplatePlacement, clearTemplate, toggleDrawMode, setDrawColor, clearPaint, setDrawTool, toggleDrawFill, setDrawSize, setDrawShape, undoPaint, redoPaint } from './src/logic/grid.js';
 import { initSheet, makeCallbacks } from './src/views/sheet.js';
 import { LevelUp }   from './src/logic/LevelUp.js';
@@ -219,16 +219,13 @@ document.getElementById('form-join').addEventListener('submit', async (e) => {
     return;
   }
 
-  const submitBtn = e.target.querySelector('[type="submit"]');
-  submitBtn.disabled = true;
-  submitBtn.textContent = 'Caricamento...';
+  setJoinBusy(true);
 
   try {
     await _joinSessionAsCharacter(code, name, state.selectedJoinCharId ?? null, initiative);
   } catch (err) {
     UI.showError(err.message);
-    submitBtn.disabled = false;
-    submitBtn.textContent = 'Entra nella Sessione';
+    setJoinBusy(false);
   }
 });
 

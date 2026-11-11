@@ -48,11 +48,19 @@ export function exitToHome(errorMessage) {
   const gridContainer = document.getElementById('grid-container');
   if (gridContainer) gridContainer.innerHTML = '';
   GridUI.clearCursors();
-  const submitBtn = document.querySelector('#form-join [type="submit"]');
-  if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Entra nella Sessione'; }
+  setJoinBusy(false);
   document.body.classList.remove('in-combat', 'has-sheet', 'sheet-only');
   UI.showView('view-home');
   if (errorMessage) UI.showError(errorMessage);
+}
+
+// Bottone di ingresso della home: il testo sta in .lbl per non perdere l'icona.
+export function setJoinBusy(busy) {
+  const btn = document.getElementById('btn-join-submit');
+  if (!btn) return;
+  btn.disabled = busy;
+  const lbl = btn.querySelector('.lbl');
+  if (lbl) lbl.textContent = busy ? 'Caricamento…' : 'Varca la soglia';
 }
 
 export function esc(str) {

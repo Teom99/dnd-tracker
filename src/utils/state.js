@@ -15,6 +15,7 @@ export const state = {
   seenLogIds:             null, // Set<string> | null — null finché non è stato processato il primo snapshot di logs
   library:                null,
   selectedJoinCharId:     null,
+  libFilter:              'all',   // filtro della libreria in home (solo locale)
   selectedCreatureCharId: null,
   sheetReturnView:        'view-combat',
   selectedGridTokenId:    null,
