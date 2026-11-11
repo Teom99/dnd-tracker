@@ -196,6 +196,10 @@ async function _doJoinSessionAsCharacter(code, name, charId, initiative = '0') {
     }
     if (choice === 'primary') {
       state.myCombatantId = existing.id;
+      if (createdCharId && existing.charId && existing.charId !== createdCharId) {
+        // la scheda appena creata per questo ingresso resterebbe orfana in libreria
+        try { await state.library.delete(createdCharId); } catch { /* resta una scheda in più */ }
+      }
       savedCharName = existing.name || name;
       if (!existing.name) await state.combatantManager.setName(existing.id, name);
       charId = existing.charId ?? charId;
@@ -253,7 +257,10 @@ document.addEventListener('dnd:join-with-character', async (e) => {
     await _joinSessionAsCharacter(code, name, charId);
   } catch (err) {
     if (!err.cancelled) UI.showError(err.message);
-    loadCharacterLibrary(); // ripristina il campo/tasto disabilitati sulla card
+    // riattiva campo e tasto della carta SENZA ricaricare la libreria: il codice digitato resta lì
+    const form = [...document.querySelectorAll('.char-lib-join')].find(f => f.dataset.id === charId);
+    form?.querySelectorAll('input, button').forEach(el => { el.disabled = false; });
+    if (!form) loadCharacterLibrary();
   }
 });
 

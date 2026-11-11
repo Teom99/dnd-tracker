@@ -26,7 +26,7 @@
 <div id="summary">✗ modulo non caricato</div>
 
 <script type="module">
-import { xpProgress, levelUpReady, sheetSubtitle, effectiveXp, xpSyncAction, readSheetTab, saveSheetTab, SHEET_TABS, XP_THRESHOLDS } from '../src/logic/sheetView.js';
+import { xpProgress, levelUpReady, sheetSubtitle, effectiveXp, xpSyncAction, sheetMatchesCombatant, readSheetTab, saveSheetTab, SHEET_TABS, XP_THRESHOLDS } from '../src/logic/sheetView.js';
 
 const out = document.getElementById('out');
 let pass = 0, fail = 0;
@@ -91,6 +91,13 @@ check('sessione più bassa della scheda: si alza la sessione, la scheda non perd
 check('già allineati: nessuna scrittura (niente cicli)', xpSyncAction({ sessionXp: 900, sheetXp: 900 }), null);
 check('sessione a 0 e scheda con XP: si alza la sessione', xpSyncAction({ sessionXp: 0, sheetXp: 700 }), 'seed');
 check('dato sporco in sessione: non si scrive', xpSyncAction({ sessionXp: 'x', sheetXp: 5 }), null);
+
+group('sheetMatchesCombatant');
+check('stesso charId', sheetMatchesCombatant({ combatantCharId: 'a', sheetCharId: 'a' }), true);
+check('charId diversi', sheetMatchesCombatant({ combatantCharId: 'a', sheetCharId: 'b' }), false);
+check('combattente senza charId: non si sincronizza', sheetMatchesCombatant({ combatantCharId: null, sheetCharId: 'b' }), false);
+check('scheda senza charId: non si sincronizza', sheetMatchesCombatant({ combatantCharId: 'a', sheetCharId: undefined }), false);
+check('niente argomenti', sheetMatchesCombatant(), false);
 
 group('scheda scelta');
 localStorage.removeItem('dnd-sheet-tab');

@@ -265,6 +265,10 @@ export function renderSpellSlots(slots, onSetUsed, onSetMax) {
   const container = document.getElementById('spell-slots-list');
   if (!container) return;
   const focusSnap = captureFocusState(container);
+  // I rombi sono <button> ricreati a ogni snapshot: si ricorda quale aveva il focus (livello, posizione)
+  const fd = document.activeElement?.closest?.('.dia');
+  const dia = fd && container.contains(fd)
+    ? { lvl: fd.dataset.slotLevel, i: [...fd.parentElement.children].indexOf(fd) } : null;
   // Un rombo per slot: pieno = libero (clic → usato), vuoto = usato (clic → recuperato); come nel
   // popover del dock. Il massimo per livello resta un campo accanto.
   container.innerHTML = SPELL_LEVELS.map(lvl => {
@@ -283,6 +287,7 @@ export function renderSpellSlots(slots, onSetUsed, onSetMax) {
       </div>`;
   }).join('');
   restoreFocusState(container, focusSnap);
+  if (dia) container.querySelector(`.slot-row[data-level="${dia.lvl}"] .slot-dias`)?.children[dia.i]?.focus();
 
   container.onclick = (e) => {
     const dia = e.target.closest('.dia');

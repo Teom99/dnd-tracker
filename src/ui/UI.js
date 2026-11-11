@@ -99,12 +99,17 @@ export function renderScene(sceneImageUrl, sceneImageName) {
 
   if (img.getAttribute('src') !== url) img.src = url;
   img.alt = sceneImageName || 'Scena';
-  link.href = url;
+  if (url.startsWith('data:')) link.removeAttribute('href');   // Chrome blocca la navigazione verso data:
+  else link.href = url;
   if (title) title.textContent = sceneImageName ? `Scena · ${sceneImageName}` : 'Scena';
-  if (action === 'open') modal.classList.remove('hidden');
+  if (action === 'open') { modal.classList.remove('hidden'); document.getElementById('btn-close-scene')?.focus(); }
 }
 
-export function openSceneLocally()  { if (_prevSceneUrl) document.getElementById('scene-modal')?.classList.remove('hidden'); }
+export function openSceneLocally()  {
+  if (!_prevSceneUrl) return;
+  document.getElementById('scene-modal')?.classList.remove('hidden');
+  document.getElementById('btn-close-scene')?.focus();
+}
 export function closeSceneLocally() { document.getElementById('scene-modal')?.classList.add('hidden'); }
 
 

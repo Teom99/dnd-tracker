@@ -277,31 +277,6 @@ body.sheet-only .sheet-back-btn {
   padding: 1rem;
 }
 
-.condition-option {
-  padding: 0.45rem 0.8rem;
-  border-radius: 99px;
-  border: 2px solid transparent;
-  cursor: pointer;
-  font-size: 0.9rem;
-  background: color-mix(in srgb, var(--c-text) 10%, transparent);
-  color: var(--c-mute);
-  transition: background 0.15s, color 0.15s, border-color 0.15s;
-  min-height: 40px;
-}
-
-.condition-option:hover {
-  background: color-mix(in srgb, var(--cond-color, var(--c-mute)) 25%, transparent);
-  color: var(--c-text);
-  border-color: var(--cond-color, var(--c-mute));
-}
-
-.condition-option.active {
-  background: var(--cond-color, var(--c-mute));
-  color: var(--c-text);
-  border-color: var(--cond-color, var(--c-mute));
-  font-weight: 600;
-}
-
 /* ═══════════════════════════════════════════
    NOTIFICHE POPUP
 ═══════════════════════════════════════════ */
@@ -765,10 +740,6 @@ body.is-master .fight-card { cursor: pointer; }
 }
 .fc-pframe .fc-portrait { width: 100%; height: 100%; border-radius: 50%; background: var(--c-paper-lo); }
 .fc-pframe.lvlup { animation: fc-lvlup-pulse 1.6s ease-in-out infinite; }
-@keyframes fc-lvlup-pulse {
-  0%, 100% { box-shadow: 0 0 4px color-mix(in srgb, var(--c-gold) 35%, transparent); filter: brightness(.95); }
-  50%      { box-shadow: 0 0 16px color-mix(in srgb, var(--c-gold) 85%, transparent); filter: brightness(1.35); }
-}
 @media (prefers-reduced-motion: reduce) { .fc-pframe.lvlup { animation: none; box-shadow: 0 0 10px color-mix(in srgb, var(--c-gold) 60%, transparent); } }
 .fc-name { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .fc-name b { font-family: var(--f-display); font-size: 16px; font-weight: 600; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--c-text); }

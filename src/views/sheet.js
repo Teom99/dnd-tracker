@@ -6,7 +6,7 @@ import { openConditionModal, removeCombatant } from './core.js';
 import { askConfirm } from '../ui/dialogs.js';
 import { LevelUp }   from '../logic/LevelUp.js';
 import { LevelUpUI } from '../ui/LevelUpUI.js';
-import { readSheetTab, saveSheetTab, SHEET_TABS, xpSyncAction } from '../logic/sheetView.js';
+import { readSheetTab, saveSheetTab, SHEET_TABS, xpSyncAction, sheetMatchesCombatant } from '../logic/sheetView.js';
 
 let editingInventoryId = null;
 const inventoryCallbacks = {
@@ -144,7 +144,6 @@ export function setupSheetListener() {
       (id) => state.sheet.removeClassStat(id),
       (id, name, desc) => state.sheet.updateClassFeature(id, name, desc),
     );
-    _updateLevelUpButton(state.sheetData);
   });
 }
 
@@ -213,6 +212,9 @@ export function syncXpWithSession() {
   const snap = state.snapshot, id = state.myCombatantId;
   if (!state.sheet || !state.sheetData || !snap || !id || state.sheetReturnView === 'view-home') return;
   if ((snap.progressionMode ?? 'xp') !== 'xp') return;
+  // La scheda aperta deve essere quella di QUESTO combattente (un rientro da una voce vecchia senza charId
+  // lascia aperta un'altra scheda: non le si scrive l'XP della sessione)
+  if (!sheetMatchesCombatant({ combatantCharId: snap.combatants?.[id]?.charId, sheetCharId: state.myCurrentCharId })) return;
   const action = xpSyncAction({ sessionXp: snap.xp?.[id], sheetXp: state.sheetData.xp });
   if (action !== 'mirror') _lastMirroredXp = null;   // allineati o in salita: la prossima discesa si riscrive
   if (action !== 'seed') _seededFor = null;
@@ -236,8 +238,8 @@ document.addEventListener('dnd:session-update', () => {
 async function _openLevelUpModal() {
   const fromLevel = state.sheetData?.level ?? 1;
   const className = state.sheetData?.class;
-  if (!await askConfirm({ title: 'Salire di livello?', text: `${state.sheetData?.characterName ?? 'Il personaggio'}: ${className} Lv.${fromLevel} → Lv.${fromLevel + 1}`, confirmLabel: 'Sali di livello' })) return;
   if (!className || fromLevel >= 20) return;
+  if (!await askConfirm({ title: 'Salire di livello?', text: `${state.sheetData?.characterName ?? 'Il personaggio'}: ${className} Lv.${fromLevel} → Lv.${fromLevel + 1}`, confirmLabel: 'Sali di livello' })) return;
 
   const classesData  = await LevelUp.load();
   const resolvedName = LevelUp.resolveClassName(classesData, className);

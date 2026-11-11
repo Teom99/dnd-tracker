@@ -67,3 +67,9 @@ export function saveSheetTab(tab) {
   if (!SHEET_TABS.includes(tab)) return;
   try { localStorage.setItem(TAB_KEY, tab); } catch { /* storage non disponibile */ }
 }
+
+// La scheda aperta appartiene al combattente del giocatore? (un rientro da una voce vecchia senza charId
+// lascia aperta la scheda di un altro personaggio: non va sincronizzata né seminata col suo XP)
+export function sheetMatchesCombatant({ combatantCharId, sheetCharId } = {}) {
+  return !!combatantCharId && !!sheetCharId && combatantCharId === sheetCharId;
+}

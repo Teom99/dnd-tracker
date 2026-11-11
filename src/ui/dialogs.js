@@ -22,6 +22,16 @@ export function openSheet(opts) {
   return p;
 }
 
+// Per ~300 ms dopo la chiusura un velo trasparente assorbe i clic: il secondo clic di un doppio clic sul
+// bottone di conferma non deve arrivare all'elemento che sta sotto (una cella della griglia, un token…).
+function _shield() {
+  const s = document.createElement('div');
+  s.className = 'sheet-dialog-shield';
+  s.style.cssText = 'position:fixed;inset:0;z-index:95;background:transparent;';
+  document.body.append(s);
+  setTimeout(() => s.remove(), 300);
+}
+
 function _show({ title, text = '', field = null, buttons = [], cancelId = null }) {
   return new Promise((resolve) => {
     const previous = document.activeElement;
@@ -79,6 +89,7 @@ function _show({ title, text = '', field = null, buttons = [], cancelId = null }
       if (_current === finish) _current = null;
       document.removeEventListener('keydown', onKey, true);
       veil.remove();
+      _shield();
       try { previous?.focus?.(); } catch { /* l'elemento può non esistere più */ }
       resolve(result);
     };
@@ -111,13 +122,16 @@ function _show({ title, text = '', field = null, buttons = [], cancelId = null }
         const f = [...frame.querySelectorAll('input, button')];
         if (!f.length) return;
         const first = f[0], last = f[f.length - 1];
-        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        if (!frame.contains(document.activeElement)) { e.preventDefault(); (e.shiftKey ? last : first).focus(); }
+        else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
         else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
       }
     }
     _current = finish;
     document.addEventListener('keydown', onKey, true);
-    veil.addEventListener('click', (e) => { if (e.target === veil) finish(null); });
+    // Un doppio clic su una voce di menu non deve chiudere subito il foglio appena aperto: il secondo clic cade sul velo
+    const openedAt = Date.now();
+    veil.addEventListener('click', (e) => { if (e.target === veil && Date.now() - openedAt > 350) finish(null); });
 
     document.body.append(veil);
     // Foco: sul campo; su un'azione distruttiva su Annulla (un Invio distratto non deve cancellare)

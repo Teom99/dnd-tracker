@@ -70,9 +70,9 @@ p = askConfirm({ title: 'x', confirmLabel: 'Sì' }); await tick();
 document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
 check('Esc = false', await p, false);
 
-p = askConfirm({ title: 'x', confirmLabel: 'Sì' }); await tick();
+p = askConfirm({ title: 'x', confirmLabel: 'Sì' }); await new Promise(r => setTimeout(r, 400));
 dlg().dispatchEvent(new MouseEvent('click', { bubbles: true }));
-check('clic sul velo = false', await p, false);
+check('clic sul velo (dopo la soglia) = false', await p, false);
 
 p = askConfirm({ title: 'Eliminare <b>x</b>?', text: 'a "b" <i>c</i>', confirmLabel: 'Sì' }); await tick();
 check('il testo resta testo (nessun <b>/<i> nel DOM)', [dlg().querySelector('b'), dlg().querySelector('i')], [null, null]);
@@ -119,6 +119,16 @@ group('openSheet generico');
 p = openSheet({ title: 'T', buttons: [{ id: 'a', label: 'A', kind: 'primary' }, { id: 'b', label: 'B', kind: 'danger' }, { id: 'c', label: 'C', kind: 'plain' }] }); await tick();
 btn('B').click();
 check('restituisce id e valore', await p, { id: 'b', value: null });
+
+group('click-through e velo');
+let pz = askConfirm({ title: 'z', confirmLabel: 'Sì' }); await tick();
+dlg().dispatchEvent(new MouseEvent('click', { bubbles: true }));
+await tick();
+check('un clic sul velo subito dopo l\'apertura NON chiude (doppio clic sul menu)', !!dlg(), true);
+btn('Annulla').click(); await pz; 
+check('dopo la chiusura c\'è lo scudo anti click-through', !!document.querySelector('.sheet-dialog-shield'), true);
+await new Promise(r => setTimeout(r, 400));
+check('lo scudo sparisce dopo ~300 ms', document.querySelector('.sheet-dialog-shield'), null);
 
 group('closeAllSheets');
 const q1 = askConfirm({ title: 'uno', confirmLabel: 'Sì' });

@@ -89,13 +89,16 @@ function _renderLibrary() {
   const list = document.getElementById('character-library-list');
   if (!list) return;
   const filter = state.libFilter ?? 'all';
-  document.querySelectorAll('#lib-filter [data-filter]').forEach(b =>
-    b.setAttribute('aria-selected', String(b.dataset.filter === filter)));
+  document.querySelectorAll('#lib-filter [data-filter]').forEach(b => {
+    b.setAttribute('aria-selected', String(b.dataset.filter === filter));
+    b.tabIndex = b.dataset.filter === filter ? 0 : -1;   // roving tabindex: Tab entra nel gruppo, le frecce si spostano
+  });
 
   const shown = filterLibrary(_libEntries, filter);
   const snap = captureFocusState(list);
   if (_libEntries.length === 0) {
-    list.innerHTML = `<div class="lib-empty" style="grid-column:1/-1">Nessun personaggio. Creane uno qui sotto.</div>`;
+    list.innerHTML = `<div class="lib-empty" style="grid-column:1/-1">Nessun personaggio.
+      <button type="button" class="btn btn--sm" data-action="new-player">${icon('plus')} Crea il tuo primo personaggio</button></div>`;
   } else if (shown.length === 0) {
     list.innerHTML = `<div class="lib-empty" style="grid-column:1/-1">Niente in questa categoria.</div>`;
   } else {
@@ -118,7 +121,8 @@ export async function loadCharacterLibrary() {
     return;
   }
   _libEntries = Object.entries(chars ?? {});
-  _libDeleting = null; _libJoinOpen = null;
+  _libDeleting = null;
+  if (_libJoinOpen && !_libEntries.some(([id]) => id === _libJoinOpen)) _libJoinOpen = null;   // il campo codice resta aperto (e scritto) se la scheda c'è ancora
   _renderLibrary();
   section.classList.remove('hidden');
   _bindLibrary(list);
@@ -136,12 +140,26 @@ function _bindLibrary(list) {
     _renderLibrary();
   });
 
+  document.getElementById('lib-filter')?.addEventListener('keydown', (e) => {
+    const tabs = [...document.querySelectorAll('#lib-filter [data-filter]')];
+    const i = tabs.indexOf(document.activeElement);
+    if (i < 0) return;
+    const next = { ArrowRight: (i + 1) % tabs.length, ArrowLeft: (i - 1 + tabs.length) % tabs.length, Home: 0, End: tabs.length - 1 }[e.key];
+    if (next === undefined) return;
+    e.preventDefault();
+    state.libFilter = tabs[next].dataset.filter;
+    _libDeleting = null; _libJoinOpen = null;
+    _renderLibrary();
+    document.querySelector(`#lib-filter [data-filter="${state.libFilter}"]`)?.focus();
+  });
+
   list.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
     const id = btn.dataset.id;
     switch (btn.dataset.action) {
       case 'open-sheet':    openLibrarySheet(id); return;
+      case 'new-player':    document.getElementById('btn-create-player')?.click(); return;
       case 'open-join':     _libJoinOpen = id; _libDeleting = null; _renderLibrary(); list.querySelector('.lib-join input')?.focus(); return;
       case 'close-join':    _libJoinOpen = null; _renderLibrary(); return;
       case 'ask-delete':    _libDeleting = id; _libJoinOpen = null; _renderLibrary(); return;
@@ -285,7 +303,9 @@ export async function loadUserSessions(uid) {
     _setJoinPrimary(true);
   };
 
-  const snap = await get(ref(state.db, `userSessions/${uid}`));
+  let snap;
+  try { snap = await get(ref(state.db, `userSessions/${uid}`)); }
+  catch { hideAll(); return; }   // rete o permessi: la home resta usabile, con "Varca la soglia" come bottone principale
   if (!snap.exists()) { hideAll(); return; }
 
   const entries = Object.entries(snap.val());

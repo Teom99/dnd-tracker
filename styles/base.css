@@ -492,6 +492,12 @@ button.chip[aria-pressed="true"] {
 }
 .topbar .spacer { flex: 1; }
 
+/* pulsazione del livello pronto (cornice XP di card, dock e scheda) */
+@keyframes fc-lvlup-pulse {
+  0%, 100% { box-shadow: 0 0 4px color-mix(in srgb, var(--c-gold) 35%, transparent); filter: brightness(.95); }
+  50%      { box-shadow: 0 0 16px color-mix(in srgb, var(--c-gold) 85%, transparent); filter: brightness(1.35); }
+}
+
 /* ── 16. ANIMAZIONI ────────────────────────────────────────── */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes dmg-flash {
