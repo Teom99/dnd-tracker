@@ -168,7 +168,8 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
     state.drawShape,
     (changes) => recordPaintChange(changes),
     state.drawFill,
-    state.snapshot?.trajectories ?? {},
+    // la freccia del master è rossa: si segna qui (la chiave è l'uid di chi l'ha tracciata)
+    Object.fromEntries(Object.entries(state.snapshot?.trajectories ?? {}).map(([uid, t]) => [uid, { ...t, byMaster: uid === state.session?.masterUid }])),
     state.trajectoryFrom,
     state.ui.tool === 'traj',
     (pick) => {

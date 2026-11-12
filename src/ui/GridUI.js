@@ -603,7 +603,8 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
   _totalH = PAD * 2 + rows * CELL;
 
   let defs  = '<pattern id="tpl-hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="7" height="7" fill="var(--c-foe)" fill-opacity=".10"/><line x1="0" y1="0" x2="0" y2="7" stroke="var(--c-foe)" stroke-opacity=".45" stroke-width="1.5"/></pattern>'
-    + '<marker id="traj-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--c-ally)"/></marker>';
+    + '<marker id="traj-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--c-ally)"/></marker>'
+    + '<marker id="traj-arrow-master" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="var(--c-foe)"/></marker>';
   let inner = '';
 
   // 1) Celle di sfondo + muri + raggio di movimento
@@ -733,8 +734,9 @@ export function renderGrid(container, gridPos, combatants, myCombatantId, myOwne
     const x1 = ax + ux * r0, y1 = ay + uy * r0, x2 = bx - ux * r1, y2 = by - uy * r1;
     const label = fmtM(trajectoryDistance(ep));
     const mx = (x1 + x2) / 2, my = (y1 + y2) / 2, lw = label.length * 7 + 12;
-    inner += `<g pointer-events="none"><line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="var(--c-ally)" stroke-width="2.5" stroke-dasharray="7 5" marker-end="url(#traj-arrow)"/>`
-           + `<rect x="${(mx - lw / 2).toFixed(1)}" y="${(my - 9).toFixed(1)}" width="${lw}" height="18" rx="3" fill="var(--c-paper-hi)" stroke="var(--c-ally)"/>`
+    const tc = traj.byMaster ? 'var(--c-foe)' : 'var(--c-ally)';   // master = rosso, giocatori = azzurro
+    inner += `<g pointer-events="none"><line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${tc}" stroke-width="2.5" stroke-dasharray="7 5" marker-end="url(#${traj.byMaster ? 'traj-arrow-master' : 'traj-arrow'})"/>`
+           + `<rect x="${(mx - lw / 2).toFixed(1)}" y="${(my - 9).toFixed(1)}" width="${lw}" height="18" rx="3" fill="var(--c-paper-hi)" stroke="${tc}"/>`
            + `<text x="${mx.toFixed(1)}" y="${(my + 4.5).toFixed(1)}" text-anchor="middle" font-size="11.5" font-weight="700" fill="var(--c-text)">${esc(label)}</text></g>`;
   }
 
@@ -1066,7 +1068,8 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
     let bar = '', val = '';
     if (v.showFullHp) {
       bar = `<span class="init-bar ${INIT_TYPE_CLASS(c)}"><i style="width:${hpPct.toFixed(1)}%"></i></span>`;
-      val = `<span class="init-val">${num(c.hpCurrent)}/${num(c.hpMax)}</span>`;
+      const temp = num(c.tempHp) > 0 ? `<span class="init-temp" title="Punti ferita temporanei">+${num(c.tempHp)}</span>` : '';
+      val = `<span class="init-val">${num(c.hpCurrent)}/${num(c.hpMax)}${temp}</span>`;
     } else if (v.showHint) {
       val = `<span class="init-val">${healthHintText(hpPct)}</span>`;
     }
@@ -1076,7 +1079,7 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
     if (density === 'details') {
       const parts = [];
       parts.push(v.acVisible && v.ac !== null ? `<span>CA <b>${num(v.ac)}</b></span>` : (v.isCreature ? '<span>CA nascosta</span>' : ''));
-      if (v.showFullHp && num(c.tempHp) > 0) parts.push(`<span>HP temp. <b>+${num(c.tempHp)}</b></span>`);
+      if (v.showFullHp && num(c.tempHp) > 0) parts.push(`<span>HP temp. <b class="init-temp">+${num(c.tempHp)}</b></span>`);
       if (v.isOwnCard && ko && myDeathSaves) parts.push(`<span>TS morte: <b>${myDeathSaves.successes ?? 0}\u2713 ${myDeathSaves.failures ?? 0}\u2717</b></span>`);
       for (const cond of Object.keys(c.conditions || {})) parts.push(`<span class="chip">${esc(cond)}</span>`);
       const insp = (c.type === 'player' || c.type === 'pet')

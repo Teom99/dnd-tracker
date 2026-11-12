@@ -894,6 +894,8 @@ button.init-num { cursor: pointer; border-bottom: 1px dashed var(--c-rule); }
 .init-bar i { display: block; height: 100%; background: var(--c); }
 .init-bar.foe { --c: var(--c-foe); } .init-bar.ally { --c: var(--c-ally); } .init-bar.dead { --c: var(--c-dead); }
 .grid-initiative-meta { flex-direction: column; align-items: flex-end; gap: 1px; }
+.init-temp { color: var(--c-ally); font-weight: 700; margin-left: 4px; }
+.init-extra b.init-temp { color: var(--c-ally); }
 .init-val { font-size: 13px; font-variant-numeric: tabular-nums; color: var(--c-mute); white-space: nowrap; }
 .grid-initiative-dist { font: 600 11px var(--f-body); color: var(--c-heading); }
 .init-extra { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; padding-left: 62px; font-size: 13px; color: var(--c-mute); }
