@@ -1,6 +1,6 @@
 import { initializeApp }      from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getDatabase, ref, get, remove } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { getAuth }            from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 import { FIREBASE_CONFIG, DISCORD_WEBHOOK_URL } from './config.js';
 import { getMonsterList, getMonster, getSpellList, getConditionDescriptions } from './src/utils/DndApi.js';
@@ -62,26 +62,81 @@ state.session = new Session(db, auth);
 
 // ─── HOME: Auth ───────────────────────────────────────────────────────────────
 
+// La home si ridisegna quando cambia l'utente, comunque sia cambiato: un accesso
+// col popup che si completa dopo che la promessa ha già fallito (succede quando
+// il risultato arriva in ritardo dal dominio firebaseapp.com), un logout, un
+// rientro. Deduplicato sull'uid per non rileggere libreria e sessioni due volte
+// (avvio, click e listener chiamano tutti questa funzione).
+let _authUiKey;
+function _renderAuthUI(user) {
+  const key = user ? `${user.uid}:${user.isAnonymous ? 'anon' : 'google'}` : null;
+  if (key === _authUiKey) return;
+  _authUiKey = key;
+  if (!user) state.library = null;
+  updateHomeAuthUI(user);
+}
+onAuthStateChanged(auth, user => _renderAuthUI(user));
+
+// Errore dell'accesso Google -> messaggio leggibile. null = niente da dire
+// (l'utente ha annullato o ha aperto un secondo popup).
+function _googleAuthMessage(err) {
+  switch (err?.code) {
+    case 'auth/cancelled-popup-request':
+      return null;
+    case 'auth/popup-closed-by-user':
+      return "La finestra di Google si è chiusa senza completare l'accesso. Se non l'hai chiusa tu, " +
+             'il browser o un\'estensione (blocco tracker, privacy) potrebbe impedire il passaggio dei dati: ' +
+             'riprova, oppure prova con le estensioni disattivate o un altro browser.';
+    case 'auth/popup-blocked':
+      return 'Il browser ha bloccato la finestra di accesso: consenti i popup per questo sito e riprova.';
+    case 'auth/unauthorized-domain':
+      return 'Questo indirizzo non è autorizzato per l\'accesso Google (Firebase → Authentication → Domini autorizzati).';
+    case 'auth/network-request-failed':
+      return 'Connessione assente o instabile: riprova.';
+    case 'auth/web-storage-unsupported':
+      return 'Il browser blocca lo storage necessario all\'accesso (cookie/dati dei siti): controlla le impostazioni di privacy.';
+    default:
+      return `Errore accesso Google${err?.code ? ` (${err.code})` : ''}: ${err?.message ?? err}`;
+  }
+}
+
+// Il popup può fallire lato promessa mentre l'accesso va comunque a buon fine
+// (risultato arrivato in ritardo): prima di mostrare un errore si aspetta un
+// attimo e si guarda se nel frattempo l'utente è entrato.
+async function _googleSignIn(run) {
+  try {
+    await run();
+    _renderAuthUI(auth.currentUser);
+    return true;
+  } catch (err) {
+    console.error('[auth] accesso Google fallito:', err.code, err);
+    await new Promise(r => setTimeout(r, 1500));
+    const u = auth.currentUser;
+    if (u && !u.isAnonymous) {
+      _renderAuthUI(u);
+      return true;
+    }
+    const msg = _googleAuthMessage(err);
+    if (msg) UI.showError(msg, 'error-message', 10000);
+    return false;
+  }
+}
+
+const GOOGLE_BTN_HTML = `<svg class="google-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> Accedi con Google`;
+
 document.getElementById('btn-google-signin').addEventListener('click', async () => {
   const btn = document.getElementById('btn-google-signin');
   btn.disabled = true;
   btn.textContent = 'Accesso in corso...';
-  try {
-    await state.session.signInWithGoogle();
-    updateHomeAuthUI(auth.currentUser);
-  } catch (err) {
-    if (err.code !== 'auth/popup-closed-by-user') {
-      UI.showError('Errore accesso Google: ' + err.message);
-    }
-    btn.disabled = false;
-    btn.innerHTML = `<svg class="google-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg> Accedi con Google`;
-  }
+  await _googleSignIn(() => state.session.signInWithGoogle());
+  btn.disabled = false;
+  btn.innerHTML = GOOGLE_BTN_HTML;
 });
 
 document.getElementById('btn-anon-signin').addEventListener('click', async () => {
   try {
     await state.session.signInAnonymous();
-    updateHomeAuthUI(auth.currentUser);
+    _renderAuthUI(auth.currentUser);
   } catch (err) {
     UI.showError('Errore: ' + err.message);
   }
@@ -89,22 +144,14 @@ document.getElementById('btn-anon-signin').addEventListener('click', async () =>
 
 document.getElementById('btn-sign-out').addEventListener('click', async () => {
   await state.session.signOut();
-  state.library = null;
-  updateHomeAuthUI(null);
+  _renderAuthUI(null);
 });
 
 document.getElementById('btn-upgrade-google').addEventListener('click', async () => {
   const btn = document.getElementById('btn-upgrade-google');
   btn.disabled = true;
-  try {
-    await state.session.signInWithGoogle();
-    updateHomeAuthUI(auth.currentUser);
-  } catch (err) {
-    if (err.code !== 'auth/popup-closed-by-user') {
-      UI.showError('Errore accesso Google: ' + err.message);
-    }
-    btn.disabled = false;
-  }
+  await _googleSignIn(() => state.session.upgradeToGoogle());
+  btn.disabled = false;
 });
 
 // ─── HOME: Libreria personaggi ────────────────────────────────────────────────
@@ -1659,7 +1706,7 @@ async function _rejoinSession(code, savedCombatantId, role, savedCharId = null) 
   try {
     await state.session.ensureAuth();
   } catch { /* nessun auth state — gestito come non autenticato */ }
-  updateHomeAuthUI(auth.currentUser);
+  _renderAuthUI(auth.currentUser);
 
   const savedCode        = localStorage.getItem('dnd_session_code');
   const savedCombatantId = localStorage.getItem('dnd_combatant_id');

@@ -31,12 +31,13 @@ export function showView(viewId) {
   document.getElementById(viewId)?.classList.remove('hidden');
 }
 
-export function showError(message, targetId = 'error-message') {
+export function showError(message, targetId = 'error-message', ms = 4000) {
   const el = document.getElementById(targetId);
   if (!el) return;
   el.textContent = message;
   el.classList.remove('hidden');
-  setTimeout(() => el.classList.add('hidden'), 4000);
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(() => el.classList.add('hidden'), ms);
 }
 
 // Container fisso che impila le notifiche verticalmente (flex): creato una

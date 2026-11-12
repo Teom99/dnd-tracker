@@ -1,7 +1,7 @@
 import { applyNextTurn } from '../logic/combatantRules.js';
 import { ref, set, get, update, remove, onValue, onDisconnect, runTransaction, push, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import {
-  signInAnonymously, signInWithPopup, GoogleAuthProvider
+  signInAnonymously, signInWithPopup, linkWithPopup, signInWithCredential, GoogleAuthProvider
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 
 export class Session {
@@ -45,6 +45,25 @@ export class Session {
   async signInWithGoogle() {
     const { user } = await signInWithPopup(this._auth, this._provider);
     return user;
+  }
+
+  // Ospite -> Google: collega l'account Google all'utente anonimo (stesso uid,
+  // libreria e sessioni restano). Se quell'account Google esiste già, il
+  // collegamento non è possibile: si entra direttamente con l'account Google.
+  async upgradeToGoogle() {
+    const current = this._auth.currentUser;
+    if (!current?.isAnonymous) return this.signInWithGoogle();
+    try {
+      const { user } = await linkWithPopup(current, this._provider);
+      await user.reload();
+      return user;
+    } catch (err) {
+      if (err.code !== 'auth/credential-already-in-use') throw err;
+      const cred = GoogleAuthProvider.credentialFromError(err);
+      if (!cred) throw err;
+      const { user } = await signInWithCredential(this._auth, cred);
+      return user;
+    }
   }
 
   async signInAnonymous() {
