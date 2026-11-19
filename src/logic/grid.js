@@ -1,6 +1,7 @@
 import * as GridUI from '../ui/GridUI.js';
 import { state }   from '../utils/state.js';
 import { playerColor } from '../utils/presence.js';
+import { myDiceColor } from './dice.js';
 import { esc }     from '../views/core.js';
 import { icon }    from '../ui/icons.js';
 import { attr }    from '../utils/sanitize.js';
@@ -160,7 +161,8 @@ export function renderGrid(gridPos, combatants, currentTurnId, sortedCombatants,
       const myName = isMaster
         ? (state.session.displayName || 'Master')
         : (state.sheetData?.characterName || state.session.displayName || 'Giocatore');
-      state.session.setCursorPosition(state.myUid, col, row, myName, playerColor(state.myUid)).catch(() => {});
+      state.session.setCursorPosition(state.myUid, col, row, myName,
+        myDiceColor(state.snapshot?.diceColors, state.myUid) || playerColor(state.myUid)).catch(() => {});
     },
     state.drawTool,
     (cellKeys, color) => state.session.setPaintCells(cellKeys, color),

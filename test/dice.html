@@ -28,7 +28,7 @@
 <script type="module">
 import { addDie, removeDie, poolCount, poolLabel, advApplies, rollPool, critKind, rollFormula,
          rollMessage, sanitizeRoll, restSlots, throwKeyframes, MAX_DICE,
-         DICE_COLORS, isDiceColor, colorOwner, myDiceColor, applyDiceColorClaim, inkFor } from '../src/logic/dice.js';
+         DICE_COLORS, isDiceColor, colorOwner, myDiceColor, applyDiceColorClaim, inkFor, diceColorMap } from '../src/logic/dice.js';
 
 const out = document.getElementById('out');
 let pass = 0, fail = 0;
@@ -126,6 +126,8 @@ check('inchiostro chiaro su colore scuro', inkFor('#3a3430'), '#fbf1dc');
 check('inchiostro scuro su colore chiaro', inkFor('#b8892b'), '#1a1410');
 check('ogni colore della palette ha un inchiostro', DICE_COLORS.every(c => inkFor(c)), true);
 check('il tiro conserva un colore valido', sanitizeRoll({ dice: [{ s: 6, v: 2 }], color: B }).color, B);
+check('mappa uid → colore, scarta i valori non validi', diceColorMap({ u1: { color: R }, u2: { color: '#ffffff' }, u3: null }), { u1: R });
+check('mappa da nodo assente', diceColorMap(undefined), {});
 check('il tiro scarta un colore non valido', 'color' in sanitizeRoll({ dice: [{ s: 6, v: 2 }], color: 'url(x)' }), false);
 
 document.getElementById('summary').textContent =

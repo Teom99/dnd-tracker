@@ -4,6 +4,7 @@ import { num, attr, safeImageUrl } from '../utils/sanitize.js';
 import { trajectoryEndpoints, trajectoryDistance } from '../logic/trajectory.js';
 import { combatantView, healthHintText } from '../logic/visibility.js';
 import { captureFocusState, restoreFocusState } from '../utils/domPreserve.js';
+import { inkFor } from '../logic/dice.js';
 // Griglia quadrata. 1 cella = 1 m. Dimensioni guidate da gridConfig.
 // Zoom via viewBox: _zoom scala il viewBox, _panX/_panY traslano l'origine.
 // Distanza a diagonali alternate (variante DMG 5-10-5: la 1ª diagonale costa 1,
@@ -445,6 +446,7 @@ export function setReRenderCallback(fn) { _reRenderCallback = fn; }
 let _cursors      = {};
 let _cursorsMyUid = null; // il proprio riflesso non viene mai mostrato (si ha già il puntatore reale)
 let _cursorLayer  = null;
+let _cursorColors = {};    // uid → colore dei dadi scelto (vince sul colore scritto nel cursore)
 let _lastCursorSend = 0;
 const CURSOR_THROTTLE_MS = 120;
 
@@ -484,10 +486,13 @@ function _renderCursorOverlay() {
     }
     el.style.left = `${x}px`;
     el.style.top  = `${y}px`;
-    const color = typeof c.color === 'string' && HEX_COLOR_RE.test(c.color) ? c.color : 'var(--c-mute)';
-    el.querySelector('.dot').style.background   = color;
+    const sent  = typeof c.color === 'string' && HEX_COLOR_RE.test(c.color) ? c.color : null;
+    const color = _cursorColors[uid] || sent;
+    el.querySelector('.dot').style.background   = color || 'var(--c-mute)';
     const label = el.querySelector('.label');
-    label.style.background = color;
+    label.style.background = color || 'var(--c-mute)';
+    // Inchiostro leggibile sul colore (i colori dei dadi possono essere scuri); senza colore resta quello del CSS
+    label.style.color = color ? inkFor(color) : '';
     label.textContent = typeof c.name === 'string' ? c.name : 'Giocatore';
   }
   layer.querySelectorAll('[data-cursor-uid]').forEach(el => {
@@ -503,9 +508,18 @@ function _renderCursorOverlay() {
 // precedente restavano a schermo in quella nuova.
 export function clearCursors() {
   _cursors      = {};
+  _cursorColors = {};
   _cursorsMyUid = null;
   _cursorLayer?.remove();
   _cursorLayer  = null;
+}
+
+// Colori dei dadi della sessione (dal listener di sessione): ricolora i cursori anche a mouse fermo
+export function setCursorColors(map) {
+  const next = map || {};
+  if (JSON.stringify(next) === JSON.stringify(_cursorColors)) return;
+  _cursorColors = next;
+  _renderCursorOverlay();
 }
 
 export function setCursors(cursorsObj, myUid) {

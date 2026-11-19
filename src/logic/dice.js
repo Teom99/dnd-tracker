@@ -187,3 +187,13 @@ export function inkFor(hex) {
   const L = 0.2126 * r + 0.7152 * g + 0.0722 * b;
   return (L + 0.05) / 0.058 >= 0.93 / (L + 0.05) ? '#1a1410' : '#fbf1dc';
 }
+
+// uid → colore dei dadi (solo valori validi): lo usano i cursori live sulla griglia
+export function diceColorMap(colors) {
+  const out = {};
+  for (const uid of Object.keys(colors || {})) {
+    const c = myDiceColor(colors, uid);
+    if (c) out[uid] = c;
+  }
+  return out;
+}

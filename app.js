@@ -24,7 +24,7 @@ import { num, attr } from './src/utils/sanitize.js';
 import { askConfirm, askText, askChoice } from './src/ui/dialogs.js';
 import * as CombatChrome from './src/ui/CombatChrome.js';
 import * as DiceUI from './src/ui/DiceUI.js';
-import { rollPool, rollMessage, sanitizeRoll, myDiceColor } from './src/logic/dice.js';
+import { rollPool, rollMessage, sanitizeRoll, myDiceColor, diceColorMap } from './src/logic/dice.js';
 import { toolTransition, toolFromState, nextInTurnOrder } from './src/logic/combatChrome.js';
 import { trajectoryClearButtons } from './src/logic/trajectory.js';
 import { updateHomeAuthUI, loadCharacterLibrary, populateJoinPicker, populateCreaturePicker, saveUserSession, loadUserSessions } from './src/views/home.js';
@@ -1615,6 +1615,7 @@ function _startListening() {
 
     UI.renderLogs(data.logs || {});
     DiceUI.setColors(data.diceColors, state.myUid);
+    GridUI.setCursorColors(diceColorMap(data.diceColors));   // cursori degli altri nel colore dei loro dadi
 
     // Popup di riepilogo attacco/cura, visibile a tutti: diff delle voci di
     // log non ancora viste da questo client (nessuna scrittura Firebase qui).
