@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Test — dadi</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background:#0a0c0b; color:#e8e2d2;
+         margin:0; padding:24px 20px 60px; }
+  h1 { font-size:16px; margin:0 0 4px; letter-spacing:.04em; }
+  p.sub { color:#8f8f82; margin:0 0 20px; font-size:12.5px; }
+  h2 { font-size:13px; color:#c9a24a; margin:22px 0 6px; letter-spacing:.08em; text-transform:uppercase; }
+  .t { padding:2px 0 2px 22px; position:relative; }
+  .t::before { position:absolute; left:0; width:16px; }
+  .ok::before  { content:"PASS"; color:#7cc78a; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko::before  { content:"FAIL"; color:#e0685c; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko { color:#e0685c; }
+  .detail { color:#8f8f82; font-size:12px; padding-left:22px; white-space:pre; }
+  #summary { position:fixed; left:0; right:0; bottom:0; padding:12px 20px;
+             background:#161b19; border-top:1px solid #2b3631; font-weight:700; }
+</style>
+</head>
+<body>
+<h1>dice.js — vassoio, tiro, validazione, lancio</h1>
+<p class="sub">Aprila con un server statico: <code>python3 -m http.server</code> → <code>/test/dice.html</code></p>
+<div id="out"></div>
+<div id="summary">✗ modulo non caricato</div>
+
+<script type="module">
+import { addDie, removeDie, poolCount, poolLabel, advApplies, rollPool, critKind, rollFormula,
+         rollMessage, sanitizeRoll, restSlots, throwKeyframes, MAX_DICE,
+         DICE_COLORS, isDiceColor, colorOwner, myDiceColor, applyDiceColorClaim, inkFor } from '../src/logic/dice.js';
+
+const out = document.getElementById('out');
+let pass = 0, fail = 0;
+const group = (name) => { const h = document.createElement('h2'); h.textContent = name; out.append(h); };
+function check(label, got, want) {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  ok ? pass++ : fail++;
+  const d = document.createElement('div');
+  d.className = 't ' + (ok ? 'ok' : 'ko');
+  d.textContent = label;
+  out.append(d);
+  if (!ok) {
+    const e = document.createElement('div');
+    e.className = 'detail';
+    e.textContent = `atteso ${JSON.stringify(want)} · ottenuto ${JSON.stringify(got)}`;
+    out.append(e);
+  }
+}
+// rng deterministico: restituisce in sequenza i valori che danno le facce volute
+const faces = (sides, ...vals) => { let i = 0; return () => (vals[i++] - 1 + 0.5) / sides; };
+const seq = (...xs) => { let i = 0; return () => xs[i++ % xs.length]; };
+
+group('vassoio');
+let p = addDie(addDie(addDie({}, 6), 6), 20);
+check('aggiunge e conta', p, { 6: 2, 20: 1 });
+check('conteggio', poolCount(p), 3);
+check('dado inesistente ignorato', addDie(p, 7), p);
+check('toglie uno', removeDie(p, 6), { 6: 1, 20: 1 });
+check('toglie l\'ultimo → chiave sparisce', removeDie(p, 20), { 6: 2 });
+check('togliere un dado assente non cambia nulla', removeDie(p, 8), p);
+let big = {}; for (let i = 0; i < 30; i++) big = addDie(big, 4);
+check(`tetto di ${MAX_DICE} dadi`, poolCount(big), MAX_DICE);
+check('etichetta ordinata + modificatore', poolLabel({ 20: 1, 6: 2 }, 3), '2d6 + 1d20 + 3');
+check('modificatore negativo', poolLabel({ 8: 1 }, -2), '1d8 − 2');
+check('vassoio vuoto → etichetta vuota', poolLabel({}, 4), '');
+check('vantaggio solo con un d20 singolo', [advApplies({ 20: 1 }), advApplies({ 20: 2 }), advApplies({ 6: 1 }), advApplies({ 20: 1, 6: 1 })], [true, false, false, true]);
+
+group('tiro');
+check('2d6 + 3', rollPool({ 6: 2 }, 3, 'normal', faces(6, 4, 5)), { dice: [{ s: 6, v: 4 }, { s: 6, v: 5 }], mod: 3, adv: 'normal', total: 12 });
+check('vantaggio tiene il più alto', rollPool({ 20: 1 }, 0, 'adv', faces(20, 7, 15)),
+  { dice: [{ s: 20, v: 7, drop: true }, { s: 20, v: 15 }], mod: 0, adv: 'adv', total: 15 });
+check('svantaggio tiene il più basso', rollPool({ 20: 1 }, 2, 'dis', faces(20, 7, 15)),
+  { dice: [{ s: 20, v: 7 }, { s: 20, v: 15, drop: true }], mod: 2, adv: 'dis', total: 9 });
+check('vantaggio ignorato con 2d20', rollPool({ 20: 2 }, 0, 'adv', faces(20, 3, 4)).adv, 'normal');
+check('d100 va da 1 a 100', rollPool({ 100: 1 }, 0, 'normal', () => 0.999).dice[0].v, 100);
+check('rng a 0 → faccia 1', rollPool({ 12: 1 }, 0, 'normal', () => 0).dice[0].v, 1);
+
+group('critici e messaggio');
+check('20 naturale', critKind({ dice: [{ s: 20, v: 20 }] }), 'crit');
+check('1 naturale', critKind({ dice: [{ s: 20, v: 1 }] }), 'fumble');
+check('20 scartato col svantaggio non è critico', critKind({ dice: [{ s: 20, v: 20, drop: true }, { s: 20, v: 9 }] }), null);
+check('20 su più dadi non è critico', critKind({ dice: [{ s: 20, v: 20 }, { s: 6, v: 3 }] }), null);
+check('formula col vantaggio conta un solo d20', rollFormula({ dice: [{ s: 20, v: 3, drop: true }, { s: 20, v: 18 }], mod: 5, adv: 'adv' }), '1d20 + 5 (vantaggio)');
+check('messaggio', rollMessage('Arya', { dice: [{ s: 20, v: 20 }], mod: 3, adv: 'normal', total: 23 }), 'Arya tira 1d20 + 3: 23 — 20 naturale!');
+
+group('validazione da Firebase');
+check('totale ricalcolato, non quello scritto', sanitizeRoll({ dice: [{ s: 6, v: 6 }], mod: 1, total: 999 })?.total, 7);
+check('faccia fuori range → null', sanitizeRoll({ dice: [{ s: 6, v: 7 }] }), null);
+check('dado inventato → null', sanitizeRoll({ dice: [{ s: 3, v: 1 }] }), null);
+check('niente dadi → null', sanitizeRoll({ dice: [] }), null);
+check('assente → null', sanitizeRoll(null), null);
+check('adv sconosciuto → normal', sanitizeRoll({ dice: [{ s: 20, v: 5 }], adv: '<x>' }).adv, 'normal');
+check('modificatore enorme limitato', sanitizeRoll({ dice: [{ s: 4, v: 1 }], mod: 1e9 }).mod, 99);
+
+group('lancio');
+const slots = restSlots(8);
+check('8 dadi → 8 posti', slots.length, 8);
+check('un dado → al centro', restSlots(1)[0].x, 0.5);
+const kf = throwKeyframes({ x: 0.5, y: 0.46 }, seq(0.3, 0.6, 0.2));
+check('primo keyframe a t=0, ultimo a t=1', [kf[0].t, kf.at(-1).t], [0, 1]);
+check('parte fuori dal bordo destro', kf[0].x > 1, true);
+check('finisce esattamente sul posto, a terra e dritto', [kf.at(-1).x, kf.at(-1).y, kf.at(-1).z, kf.at(-1).rot], [0.5, 0.46, 0, 0]);
+check('t crescente', kf.every((k, i) => i === 0 || k.t > kf[i - 1].t), true);
+const peaks = kf.filter(k => k.z > 0).map(k => k.z);
+check('rimbalzi decrescenti dopo il primo picco', peaks.slice(1).every((h, i, a) => i === 0 || h < a[i - 1]), true);
+
+group('colore dei dadi');
+const R = DICE_COLORS[0], B = DICE_COLORS[5];
+const taken = { u1: { color: R, name: 'Arya' } };
+check('colore della palette valido', isDiceColor(R), true);
+check('hex fuori palette rifiutato', isDiceColor('#123456'), false);
+check('valore non hex rifiutato', isDiceColor('red; x'), false);
+check('proprietario del colore', colorOwner(taken, R), 'u1');
+check('il proprio colore non conta come "di un altro"', colorOwner(taken, R, 'u1'), null);
+check('colore libero → null', colorOwner(taken, B), null);
+check('prendere un colore libero', applyDiceColorClaim(taken, 'u2', B, 'Borin'), { u1: { color: R, name: 'Arya' }, u2: { color: B, name: 'Borin' } });
+check('colore di un altro → transazione annullata', applyDiceColorClaim(taken, 'u2', R, 'Borin'), undefined);
+check('cambiare il proprio colore libera il vecchio', applyDiceColorClaim(taken, 'u1', B, 'Arya'), { u1: { color: B, name: 'Arya' } });
+check('lasciare il colore', applyDiceColorClaim(taken, 'u1', null), {});
+check('colore fuori palette → annullata', applyDiceColorClaim({}, 'u1', '#000001', 'x'), undefined);
+check('nodo assente: primo colore', applyDiceColorClaim(null, 'u1', R, 'Arya'), { u1: { color: R, name: 'Arya' } });
+check('mio colore', myDiceColor(taken, 'u1'), R);
+check('mio colore scritto a mano fuori palette → ignorato', myDiceColor({ u1: { color: '#ffffff' } }, 'u1'), null);
+check('inchiostro chiaro su colore scuro', inkFor('#3a3430'), '#fbf1dc');
+check('inchiostro scuro su colore chiaro', inkFor('#b8892b'), '#1a1410');
+check('ogni colore della palette ha un inchiostro', DICE_COLORS.every(c => inkFor(c)), true);
+check('il tiro conserva un colore valido', sanitizeRoll({ dice: [{ s: 6, v: 2 }], color: B }).color, B);
+check('il tiro scarta un colore non valido', 'color' in sanitizeRoll({ dice: [{ s: 6, v: 2 }], color: 'url(x)' }), false);
+
+document.getElementById('summary').textContent =
+  fail ? `✗ ${fail} falliti, ${pass} passati` : `✓ ${pass} passati`;
+</script>
+</body>
+</html>

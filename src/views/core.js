@@ -4,6 +4,7 @@ import { CombatTracker } from '../logic/CombatTracker.js';
 import * as UI           from '../ui/UI.js';
 import { closeAllSheets } from '../ui/dialogs.js';
 import * as GridUI       from '../ui/GridUI.js';
+import * as DiceUI       from '../ui/DiceUI.js';
 import { state }         from '../utils/state.js';
 
 export function initCombatManagers(code) {
@@ -56,6 +57,8 @@ export function exitToHome(errorMessage) {
   const gridContainer = document.getElementById('grid-container');
   if (gridContainer) gridContainer.innerHTML = '';
   GridUI.clearCursors();
+  DiceUI.stop();   // il palco sta su <body>: un tiro in volo non deve finire sulla home
+  DiceUI.setColors({}, null);
   setJoinBusy(false);
   UI.resetScene();
   document.querySelectorAll('.btn-rejoin').forEach(b => { b.disabled = false; });

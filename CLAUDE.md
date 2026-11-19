@@ -18,6 +18,7 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | `styles/character.css` | Scheda personaggio, stat block, slot magia, inventario, level-up |
 | `styles/grid.css` | Griglia SVG, token, muri, movimento, pannello scena |
 | `styles/ship.css` | Pannello nave, ponti, armi, token equipaggio |
+| `styles/dice.css` | Vassoio dei dadi e palco del lancio (volo, rimbalzi, ombra, critici) |
 | `config.js` | `FIREBASE_CONFIG` — da non committare con dati reali |
 | `app.js` | Entry point: event listeners top-level, `_enterCombatView`, `_startListening`, `_rejoinSession` |
 | `src/utils/state.js` | Singleton `state` con tutto lo stato globale (`db`, `auth`, `session`, `myUid`, `myCombatantId`, `snapshot`, ecc.) |
@@ -45,11 +46,13 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | `src/ui/icons.js` | `icon(name, {size, title})` — icone SVG in tinta unita (`currentColor`); a tema da game-icons.net (crediti in `CREDITS.md`), di servizio disegnate a tratto |
 | `src/logic/combatChrome.js` | Logica pura dell'interfaccia di combattimento: `toolTransition`, `toolFromState`, `detailStillValid`, densità iniziativa, `nextInTurnOrder` |
 | `src/logic/visibility.js` | `combatantView` (cosa vede/modifica ciascun utente di ciascun combattente), `healthHintKey/Text` — usata da card e riga iniziativa |
+| `src/logic/dice.js` | Logica pura dei dadi: vassoio (`addDie`/`removeDie`/`poolLabel`), `rollPool` (vantaggio/svantaggio), `critKind`, `rollMessage`, `sanitizeRoll` (tiro letto da Firebase), `restSlots`/`throwKeyframes` (traiettoria del lancio) — test in `test/dice.html` |
+| `src/ui/DiceUI.js` | Vassoio `#dice-pop` (`initTray`, `renderTray`) e palco `#dice-stage` su `<body>` (`play` in coda, `stop`) |
 | `src/logic/gridMath.js` | `footprintOf`, `squareDistance` (puri; GridUI li ri-esporta) |
 | `src/logic/trajectory.js` | `trajectoryEndpoints`, `trajectoryDistance` — freccia di attacco |
 | `src/ui/CombatChrome.js` | Applica `state.ui` a `#view-combat` (attributi `data-*`), menu, pannello laterale, popover; `hydrateIcons` per `data-icon` nel markup statico |
 | `src/logic/combatantRules.js` | Updater puri delle transazioni sul combattente (`applyMaxHp`, `applyFields`) |
-| `test/*.html` | Test in pagina (niente Node): `shapes`, `theme`, `icons`, `combatantRules`, `combatChrome`, `visibility`, `trajectory`, `sheetView`, `homeView`, `dialogs`, `sceneView` + campionario `componenti.html`; servire con `python3 -m http.server` |
+| `test/*.html` | Test in pagina (niente Node): `shapes`, `theme`, `icons`, `combatantRules`, `combatChrome`, `visibility`, `trajectory`, `sheetView`, `homeView`, `dialogs`, `sceneView`, `dice` + campionario `componenti.html`; servire con `python3 -m http.server` |
 | `src/utils/presence.js` | `playerColor(uid)` — colore deterministico per giocatore (hash su palette fissa), usato per lock note e cursori live |
 | `src/logic/homeView.js` | Logica pura della home: `splitSessions` (la più recente = "Riprendi"), `filterLibrary`, `libraryMeta`, `lastSeenLabel` — test in `test/homeView.html` |
 | `src/views/home.js` | Auth UI, libreria personaggi (carte, filtro, conferma di eliminazione in pagina, ingresso rapido), picker join a chip/creature, sessioni utente salvate |
@@ -74,8 +77,10 @@ sessions/{code}/
   paint/{col_row}: "#rrggbb"               (colore libero sulla mappa, disegnabile da chiunque)
   template/  shape (circle|cone|line), originCol, originRow, size (metri), angleDeg, ownerUid
              (un solo template attivo per sessione; null se nessuno)
+  diceColors/{uid}/  color, name          (colore dei dadi di ciascun giocatore, esclusivo: transazione Session.claimDiceColor)
   logs/{logId}/
     message, type, actor, target, amount, createdByUid,
+    roll (solo type 'roll': dice[{s, v, drop?}], mod, adv, total, color?),
     timestamp (serverTimestamp), clientTimestamp
 
 presence/{code}/                           (presenza volatile — NON sotto sessions/, vedi sotto)
@@ -190,6 +195,8 @@ Note: `.indexOn: ["ownerUid"]` serve a `Combatant.findByOwner`. `.read`/`.write`
 
 - Rework "Manuale", tappa 6 (rifinitura): minor delle revisioni 3–5 — focus da tastiera sui rombi degli slot, scheda sbagliata non sincronizzata, tabs della libreria con frecce, stato vuoto con azione, errore di lettura delle sessioni gestito, codice dell'ingresso rapido che non si perde, scudo anti click-through e soglia di 350 ms sul velo dei fogli, focus sulla scena, link `data:` della scena, livello controllato prima della conferma, scheda orfana dopo "Rientra", doppia esecuzione dei calcoli della scheda, keyframe `fc-lvlup-pulse` in `base.css`, vecchio blocco `--cond-color` eliminato
 
+- Dadi: bottone "Dadi" in topbar (master e giocatori) apre il vassoio (d4–d100, fino a 20 dadi, modificatore, vantaggio/svantaggio su un d20 singolo); il lancio si vede a tutti: dadi che volano dal bordo, rimbalzano con ombra a terra, facce che girano e rallentano, totale che conta; 20 naturale oro con onda, 1 naturale rosso che trema; il d20 scartato si spegne; rispetta `prefers-reduced-motion`; ogni giocatore sceglie il colore dei propri dadi da una palette di 10, esclusivo (agli altri appare col lucchetto)
+
 ### Bug noti non ancora risolti
 Nessuno al momento.
 
@@ -197,7 +204,7 @@ Nessuno al momento.
 
 ## Schermata di combattimento (rework "Manuale", tappa 2)
 
-- **Stato di interfaccia locale** in `state.ui` (`tool`, `menuOpen`, `drawer`, `detailId`, `spellsOpen`, `moreOpen`, `initSheetOpen`): mai su Firebase. `CombatChrome.apply()` lo scrive su `#view-combat` come `data-tool/menu/drawer/spells/more/init-sheet/density` e il CSS decide cosa si vede. `apply()` non fa `innerHTML`; va chiamata dopo ogni modifica (usa `CombatChrome.set(patch)`) e in coda al listener di sessione.
+- **Stato di interfaccia locale** in `state.ui` (`tool`, `menuOpen`, `drawer`, `detailId`, `spellsOpen`, `moreOpen`, `initSheetOpen`, `diceOpen`): mai su Firebase. `CombatChrome.apply()` lo scrive su `#view-combat` come `data-tool/menu/drawer/spells/more/init-sheet/density` e il CSS decide cosa si vede. `apply()` non fa `innerHTML`; va chiamata dopo ogni modifica (usa `CombatChrome.set(patch)`) e in coda al listener di sessione.
 - **I nodi si spostano, gli handler no**: ogni comando ha lo stesso `id` e lo stesso handler di prima, cambia dove sta nel markup e quando è visibile. Non rinominare un `id`/`data-action` senza aggiornare il JS.
 - **Aggiungere una voce al menu**: un `<button class="btn btn--ghost menu-item" data-icon="nome"><span class="lbl">Etichetta</span></button>` dentro `#topbar-more` nel gruppo giusto; `CombatChrome.hydrateIcons` mette l'icona. Una voce solo-master va dentro `#master-controls`.
 - **Aggiungere uno strumento alla mappa**: bottone `[data-tool]` in `#grid-tools`, riga `.opt-<nome>` in `#grid-options` (visibile con `#view-combat[data-tool="nome"]`), nome in `TOOLS` e nelle tabelle di `src/logic/combatChrome.js` (`RESET_ON_EXIT`, `toolFromState`), clic gestito da `_selectTool` in `app.js`. Cambiando strumento si annulla ciò che il precedente aveva a metà (`toolTransition`).
@@ -215,7 +222,7 @@ Nessuno al momento.
 - **Nessun alias**: i vocabolari vecchi (`--gold`, `--bone`, `--bg0`, `--line`…) non esistono più. Una variabile non definita vale "nessun valore" in silenzio: se ne aggiungi una nuova, definiscila in `:root` e nel tema notte di `base.css`.
 - **Un solo `.btn--primary` per schermata**; titoli di sezione con `.rule-head`, testate e dock con `.rule-double` / `.rule-double--top`. Campionario in `test/componenti.html`.
 - **Icone**: sempre `icon('nome')` da `src/ui/icons.js`, mai emoji. Nessuna emoji nel progetto (`grep` dei blocchi Unicode emoji = 0 fuori dai commenti). Ogni bottone solo-icona ha `aria-label` e `title`.
-- **Eccezioni note ai letterali**: colori delle condizioni (`CONDITIONS` in `UI.js`), stanze della nave (`ShipUI.js`), palette del disegno sulla mappa (sono dati, non tema) e logo Google.
+- **Eccezioni note ai letterali**: colori delle condizioni (`CONDITIONS` in `UI.js`), stanze della nave (`ShipUI.js`), palette del disegno sulla mappa e dei dadi (`DICE_COLORS` in `src/logic/dice.js`) (sono dati, non tema) e logo Google.
 
 ## Pattern ricorrenti da rispettare
 
@@ -421,6 +428,21 @@ Nessuno al momento.
 - `clientTimestamp` è usato per ordinamento locale quando il server timestamp non è ancora disponibile
 
 ---
+
+### Dadi
+
+**Cosa fa:** Vassoio dei dadi aperto a tutti e lancio animato condiviso.
+
+**File:** `src/logic/dice.js` (pura, testata), `src/ui/DiceUI.js` (vassoio e animazione), `styles/dice.css`, `app.js` (`_rollDice`, diff dei log), `Session.addRollLog`
+
+**Firebase paths:** nessuno dedicato — il tiro è una voce di `sessions/{code}/logs` con `type: 'roll'` e il campo `roll` (bassa frequenza: va bene sotto `sessions/`).
+
+**Invarianti:**
+- Chi tira anima subito in locale (`_rollDice`); gli altri rianimano la voce nel listener di sessione, che salta le voci con `createdByUid === myUid` — mai doppia animazione, nessuna scrittura nel listener
+- Il tiro letto da Firebase passa sempre da `sanitizeRoll` (facce valide, totale ricalcolato), perché chiunque autenticato può scrivere su `sessions/{code}`
+- Il palco `#dice-stage` è figlio di `<body>`, `pointer-events: none` tranne il riquadro del totale (clic = chiudi): non blocca la mappa; i tiri si accodano (massimo 3); `exitToHome` chiama `DiceUI.stop()`
+- Il vassoio si ridisegna solo dalle proprie interazioni (mai dal listener); stato UI in `state.ui.diceOpen` → `#view-combat[data-dice]`. Unica eccezione: `DiceUI.setColors` (chiamata dal listener) riscrive solo la riga `.dice-colors`, mai il campo modificatore
+- **Colore dei dadi esclusivo**: `sessions/{code}/diceColors/{uid} = {color, name}`, scritto solo da `Session.claimDiceColor` con `runTransaction` sull'intero nodo `diceColors` e l'updater puro `applyDiceColorClaim` (annulla se il colore è di un altro uid; `null` libera il proprio; ritoccare il proprio colore lo lascia). Solo colori di `DICE_COLORS` (palette fissa: è un dato, non tema — eccezione ai letterali come la palette del disegno); il colore viaggia nel tiro (`roll.color`, validato da `sanitizeRoll`) e il dado lo legge da `--die-fill`/`--die-ink` (`inkFor` sceglie l'inchiostro col contrasto più alto). Limite accettato: un colore resta di chi l'ha preso anche se esce dalla sessione
 
 ### Notifiche popup
 

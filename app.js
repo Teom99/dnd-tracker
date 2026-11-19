@@ -23,6 +23,8 @@ import { icon } from './src/ui/icons.js';
 import { num, attr } from './src/utils/sanitize.js';
 import { askConfirm, askText, askChoice } from './src/ui/dialogs.js';
 import * as CombatChrome from './src/ui/CombatChrome.js';
+import * as DiceUI from './src/ui/DiceUI.js';
+import { rollPool, rollMessage, sanitizeRoll, myDiceColor } from './src/logic/dice.js';
 import { toolTransition, toolFromState, nextInTurnOrder } from './src/logic/combatChrome.js';
 import { trajectoryClearButtons } from './src/logic/trajectory.js';
 import { updateHomeAuthUI, loadCharacterLibrary, populateJoinPicker, populateCreaturePicker, saveUserSession, loadUserSessions } from './src/views/home.js';
@@ -1521,6 +1523,36 @@ document.getElementById('select-draw-size')?.addEventListener('change', (e) => {
 
 // Il dock (proprio personaggio o soggetto del master). Va ridisegnato anche quando cambia la
 // scheda, non solo a ogni snapshot di sessione: i tiri salvezza contro la morte vivono nella scheda.
+// ── Dadi ──
+// Chi tira vede il lancio subito (niente attesa del giro su Firebase); gli altri lo vedono
+// arrivare come voce 'roll' del diario, rianimata dal listener di sessione.
+function _diceActorName() {
+  if (state.session?.isMaster) return 'Master';
+  return state.snapshot?.combatants?.[state.myCombatantId]?.name || 'Giocatore';
+}
+function _rollDice({ pool, mod, adv }) {
+  if (!state.session?.code) return;
+  const roll  = rollPool(pool, mod, adv);
+  const color = myDiceColor(state.snapshot?.diceColors, state.myUid);
+  if (color) roll.color = color;
+  const actor = _diceActorName();
+  CombatChrome.set({ diceOpen: false });
+  DiceUI.play(roll, actor);
+  state.session.addRollLog(actor, roll, rollMessage(actor, roll))
+    .catch(err => UI.showError('Tiro non condiviso: ' + err.message));
+}
+// Colore dei dadi: esclusivo, prenotato con una transazione (vince chi arriva prima)
+async function _pickDiceColor(color) {
+  if (!state.session?.code) return;
+  try {
+    const ok = await state.session.claimDiceColor(color, _diceActorName());
+    if (!ok) UI.showNotification('Quel colore l\'ha appena preso un altro giocatore.', 'info', 'lock');
+  } catch (err) {
+    UI.showError('Colore non salvato: ' + err.message);
+  }
+}
+DiceUI.initTray({ onRoll: _rollDice, onPickColor: _pickDiceColor });
+
 function _renderMyDock() {
   const data = state.snapshot;
   if (!data) return;
@@ -1580,6 +1612,7 @@ function _startListening() {
     state.snapshot = data;
 
     UI.renderLogs(data.logs || {});
+    DiceUI.setColors(data.diceColors, state.myUid);
 
     // Popup di riepilogo attacco/cura, visibile a tutti: diff delle voci di
     // log non ancora viste da questo client (nessuna scrittura Firebase qui).
@@ -1591,6 +1624,12 @@ function _startListening() {
       for (const [logId, entry] of Object.entries(logs)) {
         if (state.seenLogIds.has(logId)) continue;
         state.seenLogIds.add(logId);
+        // Tiro di un altro: si rianima qui; il proprio è già partito al clic (_rollDice)
+        if (entry.type === 'roll' && entry.createdByUid !== state.myUid) {
+          const roll = sanitizeRoll(entry.roll);
+          if (roll) DiceUI.play(roll, entry.actor);
+          continue;
+        }
         if ((entry.type === 'damage' || entry.type === 'heal') && entry.actor && entry.target) {
           UI.showNotification(entry.message, entry.type, entry.type === 'damage' ? 'sword' : 'heal');
         }

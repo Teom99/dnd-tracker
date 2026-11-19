@@ -23,7 +23,7 @@ function _applyDetailStyle() {
     : '';
 }
 
-const DEFAULT_UI = () => ({ tool: 'move', menuOpen: false, drawer: null, detailId: null, spellsOpen: false, moreOpen: false, initSheetOpen: false });
+const DEFAULT_UI = () => ({ tool: 'move', menuOpen: false, drawer: null, detailId: null, spellsOpen: false, moreOpen: false, initSheetOpen: false, diceOpen: false });
 
 // <el data-icon="nome" [data-icon-size="24"]> → SVG inserito in testa al contenuto
 export function hydrateIcons(root = document) {
@@ -50,6 +50,7 @@ export function apply() {
   v.dataset.drawer = ui.drawer ?? '';
   v.dataset.spells = ui.spellsOpen ? 'open' : '';
   v.dataset.more = ui.moreOpen ? 'open' : '';
+  v.dataset.dice = ui.diceOpen ? 'open' : '';
   v.dataset.initSheet = ui.initSheetOpen ? 'open' : '';
   const density = readDensity();
   v.dataset.density = density;
@@ -64,6 +65,7 @@ export function apply() {
     b.setAttribute('aria-pressed', String(on));
   });
   document.getElementById('btn-menu')?.setAttribute('aria-expanded', String(ui.menuOpen));
+  document.getElementById('btn-dice')?.setAttribute('aria-expanded', String(ui.diceOpen));
   const title = document.getElementById('drawer-title');
   const wanted = DRAWER_TITLES[ui.drawer] ?? '';
   if (title && title.textContent !== wanted) title.textContent = wanted;
@@ -110,6 +112,10 @@ export function init() {
     if (state.ui.spellsOpen && !inPath(e, '#spells-pop, [data-action="dock-spells"]')) set({ spellsOpen: false });
     // "Altro" del dock (telefono): stesso comportamento del popover incantesimi
     if (state.ui.moreOpen && !inPath(e, '#dock-more, [data-action="dock-more"]')) set({ moreOpen: false });
+    // Vassoio dei dadi: il bottone in topbar lo alterna, la X e il clic fuori lo chiudono
+    if (e.target.closest('#btn-dice')) { set({ diceOpen: !state.ui.diceOpen, menuOpen: false }); return; }
+    if (inPath(e, '#dice-pop [data-dice="close"]')) { set({ diceOpen: false }); return; }
+    if (state.ui.diceOpen && !inPath(e, '#dice-pop, #btn-dice')) set({ diceOpen: false });
     // Foglio dell'iniziativa (telefono): si apre dalla striscia del turno, si chiude da X o toccando fuori
     if (e.target.closest('#turn-pill')) { set({ initSheetOpen: true }); return; }
     if (e.target.closest('#btn-init-close, #sheet-dim')) { set({ initSheetOpen: false }); return; }
@@ -123,6 +129,7 @@ export function init() {
     // Esc mentre si scrive (cronaca, campo azione, iniziativa) non deve far sparire il pannello su cui si sta lavorando
     if (e.target?.matches?.('input, textarea, select, [contenteditable]')) return;
     if (state.ui.menuOpen) set({ menuOpen: false });
+    else if (state.ui.diceOpen) set({ diceOpen: false });
     else if (state.ui.spellsOpen) set({ spellsOpen: false });
     else if (state.ui.moreOpen) set({ moreOpen: false });
     else if (state.ui.initSheetOpen) set({ initSheetOpen: false });

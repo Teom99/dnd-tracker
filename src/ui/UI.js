@@ -266,6 +266,7 @@ const LOG_KINDS = {
   damage: { icon: 'sword',  cls: 'log-entry--dmg' },
   heal:   { icon: 'heal',   cls: 'log-entry--heal' },
   turn:   { icon: 'd20',    cls: 'log-entry--turn' },
+  roll:   { icon: 'd20',    cls: 'log-entry--roll' },
   other:  { icon: 'scroll', cls: '' },
 };
 

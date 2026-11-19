@@ -1,0 +1,147 @@
+/* ═══════════════════════════════════════════
+   DADI — vassoio (#dice-pop) e palco del lancio (#dice-stage)
+   Logica in src/logic/dice.js, render in src/ui/DiceUI.js
+═══════════════════════════════════════════ */
+
+/* ── Vassoio: stesso foglio dei popover del dock, ancorato sotto la topbar ── */
+.dice-pop { top: 62px; bottom: auto; left: auto; right: 14px; width: min(340px, calc(100vw - 28px)); max-height: calc(100vh - 90px); }
+
+#view-combat[data-dice="open"] .dice-pop { display: block; }
+
+.dice-picks { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 4px 0 10px; }
+.dice-pick {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 7px 4px 5px; background: var(--c-paper-hi); color: var(--c-text);
+  border: 1px solid var(--c-rule); border-radius: var(--r); cursor: pointer;
+  font: 600 13px var(--f-display); transition: transform .12s ease, border-color .12s, background .12s;
+}
+.dice-pick .die-svg { width: 34px; height: 34px; transition: transform .25s cubic-bezier(.3,1.6,.5,1); }
+.dice-pick:hover:not(:disabled) .die-svg { transform: rotate(-14deg) scale(1.08); }
+.dice-pick:active:not(:disabled) { transform: scale(.94); }
+.dice-pick.on { border-color: var(--c-gold); background: var(--c-paper-lo); }
+.dice-pick:disabled { opacity: .5; cursor: not-allowed; }
+.dice-pick:focus-visible { outline: 2px solid var(--c-gold); outline-offset: 2px; }
+.dice-pick .die-num { font-size: 30px; }
+.dice-count {
+  position: absolute; top: -6px; right: -6px; min-width: 20px; height: 20px; padding: 0 5px;
+  display: grid; place-items: center; border-radius: 10px;
+  background: var(--c-accent); color: var(--c-on-accent); font: 700 12px/1 var(--f-body);
+  animation: dice-count-pop .28s cubic-bezier(.3,1.8,.5,1);
+}
+@keyframes dice-count-pop { from { transform: scale(.3); } to { transform: scale(1); } }
+
+.dice-pool { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; align-items: center; margin-bottom: 10px; }
+.dice-chip { cursor: pointer; font: 600 14px var(--f-body); gap: 4px; }
+.dice-pool .empty-hint { margin: 0; font-size: 14px; }
+
+.dice-row { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+.dice-row .opt-lbl { flex: 1; }
+.dice-row .input--num { width: 62px; min-height: 34px; height: 34px; padding-block: 4px; text-align: center; }
+.dice-adv { display: flex; margin-bottom: 12px; }
+.dice-adv .seg-btn { flex: 1; font-size: 13px; padding: 7px 6px; }
+.dice-adv .seg-btn:disabled { opacity: .45; cursor: not-allowed; }
+.dice-color-row { margin-bottom: 12px; }
+.dice-colors { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+.dice-swatch {
+  width: 25px; height: 25px; border-radius: 50%; padding: 0; cursor: pointer; flex: none;
+  display: grid; place-items: center;
+  background: var(--sw); color: var(--sw-ink); border: 2px solid var(--c-paper);
+  box-shadow: 0 0 0 1px var(--c-rule); transition: transform .15s cubic-bezier(.3,1.6,.5,1), box-shadow .15s;
+}
+.dice-swatch:hover:not(:disabled) { transform: scale(1.15); }
+.dice-swatch:focus-visible { outline: 2px solid var(--c-gold); outline-offset: 2px; }
+.dice-swatch.mine { box-shadow: 0 0 0 2px var(--c-text); transform: scale(1.08); }
+.dice-swatch.mine .ico { animation: dice-count-pop .28s cubic-bezier(.3,1.8,.5,1); }
+/* Preso da un altro: bloccato, sbiadito, col lucchetto */
+.dice-swatch.taken { cursor: not-allowed; opacity: .5; filter: saturate(.55); }
+.dice-foot { display: flex; gap: 8px; align-items: center; }
+
+/* "Tira": azione del vassoio, oro (il bottone primario della schermata resta "Turno successivo") */
+.btn--roll {
+  justify-content: center; gap: 8px; min-height: 42px;
+  background: var(--c-gold); border-color: transparent; color: var(--c-on-accent); font-weight: 700;
+}
+.btn--roll:hover:not(:disabled) .ico { animation: dice-wiggle .5s ease; }
+.btn--roll:disabled { opacity: .5; }
+@keyframes dice-wiggle { 25% { transform: rotate(-18deg); } 60% { transform: rotate(14deg); } 100% { transform: rotate(0); } }
+
+/* ── Forma del dado (vassoio e palco) ── */
+.die-svg { display: block; overflow: visible; }
+.die-body-shape > * { fill: var(--die-fill, var(--c-paper-hi)); stroke: var(--c-heading); stroke-width: 4; stroke-linejoin: round; }
+.die-facets > * { fill: none; stroke: var(--c-rule); stroke-width: 2; stroke-linejoin: round; }
+.die-num { fill: var(--die-ink, var(--c-text)); font-family: var(--f-display); font-weight: 700; dominant-baseline: auto; }
+/* Dado col colore del giocatore (--die-fill/--die-ink da DiceUI.paintVars): spigoli nell'inchiostro, tenui */
+[style*="--die-fill"] .die-facets > * { stroke: color-mix(in srgb, var(--die-ink) 35%, transparent); }
+
+/* ── Palco: sopra la mappa, non blocca i clic (tranne il riquadro del totale) ── */
+.dice-stage { position: fixed; inset: 0; z-index: 70; pointer-events: none; overflow: hidden; display: none; }
+.dice-stage.show { display: block; }
+.dice-stage.leaving { animation: dice-leave .38s ease forwards; }
+@keyframes dice-leave { to { opacity: 0; } }
+
+.die { position: absolute; left: 0; top: 0; width: var(--die); height: var(--die); will-change: transform; }
+.die-body { position: absolute; inset: 0; will-change: transform; transform-origin: 50% 70%; }
+.die-body .die-svg { width: 100%; height: 100%; filter: drop-shadow(0 2px 0 var(--c-shadow)); }
+.die-shadow {
+  position: absolute; left: 8%; right: 8%; bottom: -10%; height: 22%; border-radius: 50%;
+  background: radial-gradient(closest-side, var(--c-shadow), transparent); will-change: transform, opacity;
+}
+.die .die-num { transition: fill .2s; }
+.die.landed .die-body .die-svg { animation: die-thud .32s cubic-bezier(.3,1.6,.5,1); }
+@keyframes die-thud { 0% { transform: scale(1.18); } 100% { transform: scale(1); } }
+
+/* d20 scartato da vantaggio/svantaggio: resta visibile ma si spegne */
+.die.is-drop.landed { transition: opacity .35s .25s, filter .35s .25s; opacity: .38; filter: grayscale(1); }
+
+/* 20 e 1 naturali */
+.die.nat20 .die-body-shape > * { fill: var(--c-gold); stroke: var(--c-heading); }
+.die.nat20 .die-num { fill: var(--c-on-accent); }
+.die.nat20 .die-body { animation: die-glow 1.1s ease-in-out infinite alternate; }
+@keyframes die-glow { from { filter: drop-shadow(0 0 4px var(--c-gold)); } to { filter: drop-shadow(0 0 18px var(--c-gold)); } }
+.die.nat1 .die-body-shape > * { fill: var(--c-foe); stroke: var(--c-text); }
+.die.nat1 .die-num { fill: var(--c-on-accent); }
+.die.nat1 .die-svg { animation: die-thud .32s cubic-bezier(.3,1.6,.5,1), die-shake .5s .3s ease-in-out 2; }
+@keyframes die-shake { 20%, 60% { transform: translateX(-5px) rotate(-4deg); } 40%, 80% { transform: translateX(5px) rotate(4deg); } }
+
+/* Onda d'oro del critico, dal centro del palco */
+.dice-burst {
+  position: absolute; left: 50%; top: 46%; width: 40px; height: 40px; margin: -20px 0 0 -20px;
+  border-radius: 50%; border: 3px solid var(--c-gold);
+  animation: dice-burst .9s cubic-bezier(.1,.7,.3,1) forwards;
+}
+@keyframes dice-burst { from { transform: scale(.4); opacity: 1; } to { transform: scale(14); opacity: 0; } }
+
+/* ── Risultato ── */
+.dice-total {
+  position: absolute; left: 50%; top: 64%; transform: translateX(-50%);
+  pointer-events: auto; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 0;
+  min-width: 170px; padding: 10px 22px 12px;
+  background: var(--c-paper) var(--paper-grain); color: var(--c-text);
+  border: 1px solid var(--c-rule); border-radius: var(--r); box-shadow: 0 12px 30px var(--c-shadow);
+  font-family: var(--f-body);
+  animation: dice-total-in .42s cubic-bezier(.2,1.4,.4,1);
+}
+@keyframes dice-total-in { from { opacity: 0; transform: translate(-50%, 18px) scale(.85); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+.dice-who { font: 600 14px var(--f-display); color: var(--c-heading); letter-spacing: .04em; }
+.dice-sum { font: 700 46px/1.05 var(--f-display); font-variant-numeric: tabular-nums; }
+.dice-formula { font-size: 13.5px; color: var(--c-mute); }
+.dice-tag { margin-top: 4px; font: 700 14px var(--f-display); letter-spacing: .08em; text-transform: uppercase; }
+.dice-stage.is-crit .dice-total { border-color: var(--c-gold); box-shadow: 0 0 0 2px var(--c-gold), 0 12px 30px var(--c-shadow); }
+.dice-stage.is-crit .dice-sum, .dice-stage.is-crit .dice-tag { color: var(--c-gold); }
+.dice-stage.is-fumble .dice-total { border-color: var(--c-foe); }
+.dice-stage.is-fumble .dice-sum, .dice-stage.is-fumble .dice-tag { color: var(--c-foe); }
+
+.log-entry--roll .log-ico { color: var(--c-gold); }
+
+@media (max-width: 600px) {
+  .dice-pop { top: 56px; left: 10px; right: 10px; width: auto; }
+  .dice-total { top: 62%; }
+  .dice-sum { font-size: 38px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .die.landed .die-body .die-svg, .die.nat1 .die-svg, .die.nat20 .die-body,
+  .dice-total, .dice-burst, .dice-count, .btn--roll:hover .ico, .dice-swatch.mine .ico { animation: none !important; }
+  .dice-swatch { transition: none; }
+}

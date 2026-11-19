@@ -63,6 +63,7 @@ const LINE = {
   'eraser':     'M208 432h240M96 336l192-192 112 112-176 176h-80l-48-48z',
   'rect':       'M64 160h384v192H64z',
   'outline':    'M96 96h320v320H96z',
+  'lock':       'M136 232h240v192H136zM184 232v-56a72 72 0 0 1 144 0v56',
 };
 
 // Tracciato grezzo di un'icona piena, per inserirla dentro un SVG già esistente (es. la mappa)

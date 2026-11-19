@@ -51,10 +51,10 @@ function check(label, got, want) {
 const EXPECTED = ['sword','heal','shield','skull','scroll','spellbook','potion','d20','campfire','moon','ship','picture',
   'quill','footprints','blast','arrow-flight','brush','bucket','eraser','wall','monster','paw','star','crown','sun','crescent','dragon',
   'undo','redo','trash','plus','minus','close','menu','more','copy','zoom-in','zoom-out','zoom-reset','chevron','back','check',
-  'edit','eye','eye-off','square','circle','rect','fill','outline'];
+  'edit','eye','eye-off','square','circle','rect','fill','outline','lock'];
 
 group('elenco');
-check('ICON_NAMES contiene esattamente i 50 nomi previsti', [...ICON_NAMES].sort(), [...EXPECTED].sort());
+check('ICON_NAMES contiene esattamente i 51 nomi previsti', [...ICON_NAMES].sort(), [...EXPECTED].sort());
 
 group('ogni icona');
 const bad = { svg: [], color: [], literal: [], draws: [] };

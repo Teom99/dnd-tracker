@@ -1,4 +1,5 @@
 import { applyNextTurn } from '../logic/combatantRules.js';
+import { applyDiceColorClaim } from '../logic/dice.js';
 import { ref, set, get, update, remove, onValue, onDisconnect, runTransaction, push, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import {
   signInAnonymously, signInWithPopup, linkWithPopup, signInWithCredential, GoogleAuthProvider
@@ -282,6 +283,7 @@ export class Session {
       actor: meta.actor ?? null,
       target: meta.target ?? null,
       amount: Number.isFinite(meta.amount) ? meta.amount : null,
+      roll: meta.roll ?? null,
       createdByUid: this.currentUid,
       timestamp: serverTimestamp(),
       clientTimestamp: Date.now()
@@ -306,6 +308,24 @@ export class Session {
       : `${actor} ${verb}${usingPart}${amountPart}`;
 
     await this.addLogEvent(message, type, { actor, target: target ?? null, amount: hasAmount ? amount : null });
+  }
+
+  // Tiro di dadi: voce di diario con il tiro completo, così ogni client lo rianima (app.js)
+  async addRollLog(actor, roll, message) {
+    if (!roll?.dice?.length) return;
+    await this.addLogEvent(message, 'roll', { actor, amount: roll.total, roll });
+  }
+
+  // Colore dei dadi: esclusivo nella sessione. false = già preso da un altro (transazione annullata).
+  async claimDiceColor(color, name) {
+    if (!this.code) return false;
+    const uid = this.currentUid;
+    const { committed } = await runTransaction(
+      ref(this._db, `sessions/${this.code}/diceColors`),
+      (current) => applyDiceColorClaim(current, uid, color, name),
+      { applyLocally: false }
+    );
+    return committed;
   }
 
   async clearLogs() {
