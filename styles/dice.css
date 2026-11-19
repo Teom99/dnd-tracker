@@ -58,9 +58,12 @@
 
 /* "Tira": azione del vassoio, oro (il bottone primario della schermata resta "Turno successivo") */
 .btn--roll {
-  justify-content: center; gap: 8px; min-height: 42px;
+  justify-content: center; gap: 8px; min-height: 42px; padding-inline: 12px;
   background: var(--c-gold); border-color: transparent; color: var(--c-on-accent); font-weight: 700;
 }
+.btn--roll .ico { flex: none; }
+/* Con tanti dadi diversi la formula è lunga: va a capo dentro al bottone (il .btn di base è nowrap) */
+.btn--roll .lbl { min-width: 0; white-space: normal; text-wrap: balance; text-align: center; line-height: 1.25; overflow-wrap: anywhere; }
 .btn--roll:hover:not(:disabled) .ico { animation: dice-wiggle .5s ease; }
 .btn--roll:disabled { opacity: .5; }
 @keyframes dice-wiggle { 25% { transform: rotate(-18deg); } 60% { transform: rotate(14deg); } 100% { transform: rotate(0); } }
