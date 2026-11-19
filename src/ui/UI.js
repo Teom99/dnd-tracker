@@ -52,7 +52,8 @@ function _getNotificationStack() {
   return _notificationStack;
 }
 
-export function showNotification(message, type = 'info', iconName = null) {
+// action = { label, onClick }: un bottone nella notifica (es. "Annulla"); duration in ms.
+export function showNotification(message, type = 'info', iconName = null, { action = null, duration = 3000 } = {}) {
   const stack = _getNotificationStack();
   const notification = document.createElement('div');
   notification.className = `notification notification-${type}`;
@@ -62,13 +63,28 @@ export function showNotification(message, type = 'info', iconName = null) {
   } else {
     notification.textContent = message;
   }
-  stack.appendChild(notification);
-
-  // Rimuovi dopo 3 secondi
-  setTimeout(() => {
+  let gone = false;
+  const dismiss = () => {
+    if (gone) return;
+    gone = true;
     notification.style.animation = 'slideOut 0.3s ease-in';
     setTimeout(() => notification.remove(), 300);
-  }, 3000);
+  };
+  if (action) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn--ghost btn--sm notification-action';
+    btn.innerHTML = icon('undo', { size: 14 });
+    const lbl = document.createElement('span');
+    lbl.className = 'lbl';
+    lbl.textContent = action.label;
+    btn.append(lbl);
+    btn.addEventListener('click', () => { dismiss(); action.onClick(); });
+    notification.append(btn);
+  }
+  stack.appendChild(notification);
+  setTimeout(dismiss, duration);
+  return dismiss;
 }
 
 // Scena in finestra: si apre da sola quando qualcuno carica una scena nuova (mai al primo snapshot,
@@ -267,6 +283,7 @@ const LOG_KINDS = {
   heal:   { icon: 'heal',   cls: 'log-entry--heal' },
   turn:   { icon: 'd20',    cls: 'log-entry--turn' },
   roll:   { icon: 'd20',    cls: 'log-entry--roll' },
+  undo:   { icon: 'undo',   cls: '' },
   other:  { icon: 'scroll', cls: '' },
 };
 
@@ -669,7 +686,7 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       
       if (!sel || sel.size === 0) { _flashError(btn, 'Scegli un bersaglio'); return; }
       if (!amt || amt <= 0)       { _flashError(btn, 'Inserisci una quantità'); return; }
-      sel.forEach(targetId => callbacks.onApplyToTarget(id, targetId, action === 'apply-damage' ? -amt : amt, actionText));
+      callbacks.onApplyToTargets(id, [...sel], action === 'apply-damage' ? -amt : amt, actionText);
       _selectedTargets.delete(id);
       if (input) input.value = '';
       return;
@@ -1028,7 +1045,7 @@ export function openDockActionModal(mode, myId, combatants, callbacks) {
       if (_dockActionSel.size === 0) { _flashError(confirmBtn, 'Scegli un bersaglio'); return; }
       if (!amt || amt <= 0)          { _flashError(confirmBtn, 'Inserisci una quantità'); return; }
       const delta = _dockActionMode === 'damage' ? -amt : amt;
-      _dockActionSel.forEach(tid => _dockActionCb?.onApplyToTarget(_dockActionMyId, tid, delta, actionText));
+      _dockActionCb?.onApplyToTargets(_dockActionMyId, [..._dockActionSel], delta, actionText);
       modal.classList.add('hidden');
     });
   }

@@ -1087,3 +1087,6 @@ button.init-num { cursor: pointer; border-bottom: 1px dashed var(--c-rule); }
 .note-chevron[data-state="open"] svg { transform: rotate(90deg); }
 .fight-card .btn .lbl { font-size: 11px; }
 .notification .ico { vertical-align: -.2em; margin-right: 2px; }
+
+/* Bottone dentro una notifica (es. "Annulla" dopo un danno/cura) */
+.notification-action { display: flex; margin: 6px 0 0 auto; color: var(--c-accent); }

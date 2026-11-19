@@ -42,6 +42,8 @@ export function exitToHome(errorMessage) {
   state.sheetData              = null;
   state.acMap                  = {};
   state.lastKnownHp            = null;
+  state.lastHpAction           = null;
+  refreshUndoHpButton();
   state.selectedCreatureCharId = null;
   state.sheetReturnView        = 'view-combat';
   state.selectedGridTokenId    = null;
@@ -101,4 +103,56 @@ export async function removeCombatant(id) {
 
 export function closeConditionModal() {
   document.getElementById('condition-modal').classList.add('hidden');
+}
+
+// ── Annulla ultimo danno/cura ──────────────────────────────────────────────
+// Locale a ciascun client (come l'undo del disegno): si annulla solo l'ultima applicazione fatta da
+// sé, su tutti i bersagli che aveva colpito. L'annullamento è relativo (applyHpRevert): restituisce
+// il cambio reale e lascia intatti i colpi che altri hanno dato dopo. Un solo livello, niente redo.
+
+function _hpActionSummary(a) {
+  const names = a.entries.map(e => e.name).join(', ');
+  return `${Math.abs(a.delta)} ${a.delta < 0 ? 'danni a' : 'PF di cura a'} ${names}`;
+}
+
+export function rememberHpAction(action) {
+  state.lastHpAction = action?.entries?.length ? action : null;
+  refreshUndoHpButton();
+  if (!state.lastHpAction) return;
+  UI.showNotification(`Applicati ${_hpActionSummary(state.lastHpAction)}`, state.lastHpAction.delta < 0 ? 'damage' : 'heal',
+    state.lastHpAction.delta < 0 ? 'sword' : 'heal',
+    { action: { label: 'Annulla', onClick: undoLastHpAction }, duration: 8000 });
+}
+
+export function refreshUndoHpButton() {
+  const btn = document.getElementById('btn-undo-hp');
+  if (!btn) return;
+  const a = state.lastHpAction;
+  btn.classList.toggle('hidden', !a);
+  btn.title = a ? `Annulla: ${_hpActionSummary(a)}` : '';
+}
+
+let _undoing = false;
+export async function undoLastHpAction() {
+  const a = state.lastHpAction;
+  if (!a || _undoing || !state.combatantManager) return;
+  _undoing = true;
+  state.lastHpAction = null;   // subito: un secondo clic (toast + menu) non annulla due volte
+  refreshUndoHpButton();
+  try {
+    const done = [];
+    for (const e of a.entries) {
+      if (await state.combatantManager.revertHp(e.id, e.change)) done.push(e.name);
+    }
+    if (!done.length) { UI.showNotification('Niente da annullare: i bersagli non sono più in sessione.', 'info', 'undo'); return; }
+    const what = a.delta < 0 ? 'il danno' : 'la cura';
+    await state.session.addLogEvent(`${a.actorName} ha annullato ${what} su ${done.join(', ')}`, 'undo', { actor: a.actorName });
+    UI.showNotification(`Annullato: ${what} su ${done.join(', ')}`, 'info', 'undo');
+  } catch (err) {
+    state.lastHpAction = a;   // non è andato: si può riprovare
+    refreshUndoHpButton();
+    UI.showError('Annullamento non riuscito: ' + (err?.message ?? err), 'error-message-combat');
+  } finally {
+    _undoing = false;
+  }
 }

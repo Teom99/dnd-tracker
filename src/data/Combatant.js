@@ -1,7 +1,7 @@
 import {
   ref, set, get, push, remove, update, runTransaction, query, orderByChild, equalTo
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { applyMaxHp, applyFields } from '../logic/combatantRules.js';
+import { applyMaxHp, applyFields, applyHpDelta, hpChange, applyHpRevert } from '../logic/combatantRules.js';
 
 // Queste transazioni partono dalla sincronizzazione della scheda, spesso PRIMA che il
 // listener di sessione abbia il combattente in cache: la prima esecuzione vede null e
@@ -53,24 +53,33 @@ export class Combatant {
     return newRef.key;
   }
 
+  // Restituisce il cambio reale ({hp, temp} di hpChange, null se nulla è cambiato): serve ad "Annulla".
+  // before/after vengono dall'ultima esecuzione dell'updater, cioè quella che la transazione ha confermato.
   async updateHp(id, delta) {
-    await runTransaction(
+    let before = null, after = null;
+    const { committed } = await runTransaction(
       ref(this._db, `sessions/${this._code}/combatants/${id}`),
       (current) => {
-        if (current == null) return current;
-        const hpMax = current.hpMax ?? 1;
-        if (delta < 0) {
-          const dmg      = -delta;
-          const temp     = current.tempHp ?? 0;
-          const absorbed = Math.min(temp, dmg);
-          current.tempHp    = temp - absorbed;
-          current.hpCurrent = Math.max(0, (current.hpCurrent ?? hpMax) - (dmg - absorbed));
-        } else {
-          current.hpCurrent = Math.max(0, Math.min(hpMax, (current.hpCurrent ?? hpMax) + delta));
-        }
+        if (current == null) { before = after = null; return current; }
+        before = { hpCurrent: current.hpCurrent, tempHp: current.tempHp };
+        applyHpDelta(current, delta);
+        after  = { hpCurrent: current.hpCurrent, tempHp: current.tempHp };
         return current;
       }
     );
+    return committed ? hpChange(before, after) : null;
+  }
+
+  // Annulla un cambio restituito da updateHp (relativo: i colpi di altri arrivati dopo restano).
+  // false se il combattente non esiste più.
+  async revertHp(id, change) {
+    let existed = false;
+    await runTransaction(
+      ref(this._db, `sessions/${this._code}/combatants/${id}`),
+      (current) => { existed = current != null; return applyHpRevert(current, change); },
+      NO_OPTIMISTIC
+    );
+    return existed;
   }
 
   async setInitiative(id, initiative) {

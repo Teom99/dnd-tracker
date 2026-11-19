@@ -43,3 +43,41 @@ export function applyNextTurn(session, aliveIds, expectedTurnId) {
   session.currentTurnId = aliveIds[nextIndex];
   return session;
 }
+
+// Danno (delta < 0) o cura (delta > 0): il danno consuma prima gli HP temporanei, la cura
+// non supera il massimo e niente scende sotto 0. Usato da Combatant.updateHp.
+export function applyHpDelta(current, delta) {
+  if (current == null) return current;
+  const hpMax = current.hpMax ?? 1;
+  const hp    = current.hpCurrent ?? hpMax;
+  if (delta < 0) {
+    const dmg      = -delta;
+    const temp     = current.tempHp ?? 0;
+    const absorbed = Math.min(temp, dmg);
+    current.tempHp    = temp - absorbed;
+    current.hpCurrent = Math.max(0, hp - (dmg - absorbed));
+  } else {
+    current.hpCurrent = Math.max(0, Math.min(hpMax, hp + delta));
+  }
+  return current;
+}
+
+// Quanto ha cambiato davvero un danno/una cura (prima → dopo), al netto di HP temporanei e limiti:
+// 10 danni su un bersaglio a 4 HP valgono -4, non -10. È ciò che "Annulla" deve restituire.
+export function hpChange(before, after) {
+  if (!before || !after) return null;
+  const hp   = (after.hpCurrent ?? 0) - (before.hpCurrent ?? 0);
+  const temp = (after.tempHp ?? 0)    - (before.tempHp ?? 0);
+  return hp === 0 && temp === 0 ? null : { hp, temp };
+}
+
+// Annulla un cambio registrato da hpChange. Relativo, non "torna al valore di prima": se nel frattempo
+// un altro giocatore ha colpito lo stesso bersaglio, il suo colpo resta. HP entro 0..max, temp mai sotto 0.
+// Combattente rimosso: resta rimosso (null). Non tocca i tiri salvezza contro la morte (come le cure normali).
+export function applyHpRevert(current, change) {
+  if (current == null || !change) return current;
+  const hpMax = current.hpMax ?? 1;
+  current.hpCurrent = Math.max(0, Math.min(hpMax, (current.hpCurrent ?? hpMax) - (change.hp ?? 0)));
+  current.tempHp    = Math.max(0, (current.tempHp ?? 0) - (change.temp ?? 0));
+  return current;
+}

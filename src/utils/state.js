@@ -12,6 +12,7 @@ export const state = {
   sheetData:              null,
   acMap:                  {},
   lastKnownHp:            null,
+  lastHpAction:           null, // ultimo danno/cura applicato da QUESTO client: { delta, actorName, entries: [{ id, name, change }] } — per "Annulla", mai su Firebase
   seenLogIds:             null, // Set<string> | null — null finché non è stato processato il primo snapshot di logs
   library:                null,
   selectedJoinCharId:     null,

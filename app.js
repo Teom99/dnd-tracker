@@ -9,7 +9,7 @@ import { CharacterLibrary }  from './src/data/CharacterLibrary.js';
 import * as UI               from './src/ui/UI.js';
 import * as GridUI           from './src/ui/GridUI.js';
 import { state }             from './src/utils/state.js';
-import { initCombatManagers, exitToHome, esc, closeConditionModal, detachSessionListeners, setJoinBusy } from './src/views/core.js';
+import { initCombatManagers, exitToHome, esc, closeConditionModal, detachSessionListeners, setJoinBusy, undoLastHpAction } from './src/views/core.js';
 import { renderGrid, toggleTemplatePlacement, clearTemplate, toggleDrawMode, setDrawColor, clearPaint, setDrawTool, toggleDrawFill, setDrawSize, setDrawShape, undoPaint, redoPaint } from './src/logic/grid.js';
 import { initSheet, makeCallbacks } from './src/views/sheet.js';
 import { LevelUp }   from './src/logic/LevelUp.js';
@@ -787,6 +787,8 @@ document.getElementById('btn-reset').addEventListener('click', async () => {
   await state.tracker.reset();
   await state.session.addLogEvent('Incontro resettato - tutti i combattenti rimossi', 'turn');
 });
+
+document.getElementById('btn-undo-hp').addEventListener('click', () => undoLastHpAction());
 
 document.getElementById('btn-rest-short').addEventListener('click', async () => {
   if (!await askConfirm({ title: 'Riposo breve', text: 'Tutti i giocatori (e i famigli) recuperano metà della loro vita massima.', confirmLabel: 'Riposo breve' })) return;
@@ -1628,6 +1630,11 @@ function _startListening() {
         if (entry.type === 'roll' && entry.createdByUid !== state.myUid) {
           const roll = sanitizeRoll(entry.roll);
           if (roll) DiceUI.play(roll, entry.actor);
+          continue;
+        }
+        // Annullamento di un altro: lo si vede comparire (il proprio ha già la sua notifica)
+        if (entry.type === 'undo' && entry.createdByUid !== state.myUid) {
+          UI.showNotification(entry.message, 'info', 'undo');
           continue;
         }
         if ((entry.type === 'damage' || entry.type === 'heal') && entry.actor && entry.target) {

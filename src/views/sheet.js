@@ -2,7 +2,7 @@ import * as SheetUI      from '../ui/SheetUI.js';
 import * as UI           from '../ui/UI.js';
 import { CharacterSheet } from '../data/CharacterSheet.js';
 import { state }          from '../utils/state.js';
-import { openConditionModal, removeCombatant } from './core.js';
+import { openConditionModal, removeCombatant, rememberHpAction } from './core.js';
 import { askConfirm } from '../ui/dialogs.js';
 import { LevelUp }   from '../logic/LevelUp.js';
 import { LevelUpUI } from '../ui/LevelUpUI.js';
@@ -309,20 +309,27 @@ function _makeCallbacks() {
     onInitiativeChange: (id, val)                         => state.combatantManager.setInitiative(id, val),
     onOpenConditions:   (id)                              => openConditionModal(id, state.snapshot.combatants?.[id]?.conditions),
     onSetAction:        (id, text)                        => state.combatantManager.setAction(id, text),
-    onApplyToTarget:    async (sourceId, targetId, delta, actionText) => {
+    // Un'applicazione = uno o più bersagli con la stessa quantità; diventa l'ultima azione annullabile.
+    onApplyToTargets:   async (sourceId, targetIds, delta, actionText) => {
       const actor  = state.snapshot.combatants?.[sourceId]?.name ?? 'Qualcuno';
-      const target = state.snapshot.combatants?.[targetId]?.name ?? 'bersaglio';
       const using  = actionText || state.snapshot.combatants?.[sourceId]?.currentAction || null;
       const amount = Math.abs(delta);
-      await state.combatantManager.updateHp(targetId, delta);
-      await state.session.addActionLog({ 
-        actor, 
-        target, 
-        action: delta < 0 ? 'ha colpito' : 'ha curato', 
-        amount, 
-        type: delta < 0 ? 'damage' : 'heal',
-        using
-      });
+      const entries = [];
+      for (const targetId of targetIds) {
+        const target = state.snapshot.combatants?.[targetId]?.name ?? 'bersaglio';
+        const change = await state.combatantManager.updateHp(targetId, delta);
+        if (change) entries.push({ id: targetId, name: target, change });
+        await state.session.addActionLog({
+          actor,
+          target,
+          action: delta < 0 ? 'ha colpito' : 'ha curato',
+          amount,
+          type: delta < 0 ? 'damage' : 'heal',
+          using
+        });
+      }
+      const me = state.session.isMaster ? 'Il master' : (state.snapshot.combatants?.[state.myCombatantId]?.name ?? actor);
+      rememberHpAction({ delta, actorName: me, entries });
     },
     onToggleHealthHint: (id, current)                     => state.combatantManager.setHealthHint(id, !current),
     onToggleShowAC:     (id, current)                     => state.combatantManager.setShowAC(id, !current),

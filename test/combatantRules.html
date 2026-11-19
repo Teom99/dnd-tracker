@@ -26,7 +26,7 @@
 <div id="summary">✗ modulo non caricato</div>
 
 <script type="module">
-import { applyMaxHp, applyFields, applyNextTurn } from '../src/logic/combatantRules.js';
+import { applyMaxHp, applyFields, applyNextTurn, applyHpDelta, hpChange, applyHpRevert } from '../src/logic/combatantRules.js';
 
 const out = document.getElementById('out');
 let pass = 0, fail = 0;
@@ -84,6 +84,31 @@ check('corrente null ma atteso "a": annullata', applyNextTurn({ round: 1 }, aliv
 check('senza expectedTurnId (undefined) il vecchio comportamento resta', applyNextTurn({ currentTurnId: 'a', round: 1 }, alive, undefined).currentTurnId, 'b');
 check('corrente non più tra i vivi: riparte dal primo', applyNextTurn({ currentTurnId: 'z', round: 4 }, alive, 'z').currentTurnId, 'a');
 check('sessione nulla: invariata', applyNextTurn(null, alive, 'a'), null);
+
+group('applyHpDelta (danno e cura)');
+const hpt = (c) => c && [c.hpCurrent, c.tempHp ?? 0];
+check('danno semplice', hpt(applyHpDelta({ hpMax: 30, hpCurrent: 20 }, -5)), [15, 0]);
+check('il danno consuma prima i temporanei', hpt(applyHpDelta({ hpMax: 30, hpCurrent: 20, tempHp: 4 }, -6)), [18, 0]);
+check('il danno non scende sotto 0', hpt(applyHpDelta({ hpMax: 30, hpCurrent: 3 }, -10)), [0, 0]);
+check('la cura non supera il massimo', hpt(applyHpDelta({ hpMax: 30, hpCurrent: 25 }, 10)), [30, 0]);
+check('combattente rimosso: resta null', applyHpDelta(null, -5), null);
+
+group('Annulla ultimo danno/cura (hpChange + applyHpRevert)');
+const roundTrip = (c, delta) => {
+  const before = { ...c };
+  const after  = applyHpDelta({ ...c }, delta);
+  return hpt(applyHpRevert({ ...after }, hpChange(before, after)));
+};
+check('annullare un danno torna a prima', roundTrip({ hpMax: 30, hpCurrent: 20 }, -7), [20, 0]);
+check('annullare un danno assorbito dai temporanei li restituisce', roundTrip({ hpMax: 30, hpCurrent: 20, tempHp: 5 }, -8), [20, 5]);
+check('annullare un colpo letale rianima al valore di prima', roundTrip({ hpMax: 30, hpCurrent: 4 }, -10), [4, 0]);
+check('annullare una cura toglie solo quanto curato davvero', roundTrip({ hpMax: 30, hpCurrent: 25 }, 10), [25, 0]);
+check('cambio reale di 10 danni su 4 HP vale -4', hpChange({ hpCurrent: 4 }, { hpCurrent: 0 }), { hp: -4, temp: 0 });
+check('nessun cambio (cura a piena vita): niente da annullare', hpChange({ hpCurrent: 30 }, { hpCurrent: 30 }), null);
+check('il colpo di un altro arrivato dopo resta', hpt(applyHpRevert({ hpMax: 30, hpCurrent: 10 }, { hp: -5, temp: 0 })), [15, 0]);
+check('annullare non supera il massimo se il bersaglio è stato curato nel frattempo', hpt(applyHpRevert({ hpMax: 30, hpCurrent: 28 }, { hp: -5, temp: 0 })), [30, 0]);
+check('annullare una cura non scende sotto 0', hpt(applyHpRevert({ hpMax: 30, hpCurrent: 2 }, { hp: 6, temp: 0 })), [0, 0]);
+check('combattente rimosso nel frattempo: resta rimosso', applyHpRevert(null, { hp: -5, temp: 0 }), null);
 
 document.getElementById('summary').textContent =
   fail === 0 ? `✓ ${pass} test passati` : `✗ ${fail} falliti · ${pass} passati`;

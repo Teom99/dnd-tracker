@@ -197,6 +197,8 @@ Note: `.indexOn: ["ownerUid"]` serve a `Combatant.findByOwner`. `.read`/`.write`
 
 - Dadi: bottone "Dadi" in topbar (master e giocatori) apre il vassoio (d4–d100, fino a 20 dadi, modificatore, vantaggio/svantaggio su un d20 singolo); il lancio si vede a tutti: dadi che volano dal bordo, rimbalzano con ombra a terra, facce che girano e rallentano, totale che conta; 20 naturale oro con onda, 1 naturale rosso che trema; il d20 scartato si spegne; rispetta `prefers-reduced-motion`; ogni giocatore sceglie il colore dei propri dadi da una palette di 10, esclusivo (agli altri appare col lucchetto)
 
+- Annulla ultimo danno/cura: notifica con "Annulla" dopo ogni applicazione + voce di menu `#btn-undo-hp` (vedi Combat tracker)
+
 ### Bug noti non ancora risolti
 Nessuno al momento.
 
@@ -317,6 +319,7 @@ Nessuno al momento.
 - Player KO restano nel turno per death saves; creature KO vengono saltate
 - Visibilità HP: master vede tutto · player vede tutti i PG · creature mostrano solo hint opzionale
 - Death saves inline: 3 successi = revive a 1 HP (scritto via `Combatant.updateHp`)
+- **Annulla ultimo danno/cura** (`undoLastHpAction` in `src/views/core.js`): locale a ciascun client, mai su Firebase (`state.lastHpAction`, azzerato in `exitToHome`), un solo livello, niente redo. Un'applicazione (`onApplyToTargets`, anche multi-bersaglio) registra per ogni bersaglio il cambio **reale** restituito da `Combatant.updateHp` (`hpChange`: 10 danni su 4 HP valgono −4; HP temporanei inclusi). `Combatant.revertHp` lo annulla in modo **relativo** (`applyHpRevert`, testato): i colpi dati da altri nel frattempo restano, limiti 0..max, combattente rimosso non rinasce, death saves non toccati. Scrive una voce di log `type: 'undo'` (gli altri la vedono come notifica). Copre solo danno/cura applicati a bersagli, non riposi, death saves o modifiche inline degli HP
 - `Combatant.restParty(kind)`: `'short'` cura PG+famigli di metà `hpMax` (cap al massimo, additivo); `'long'` li porta a piena vita e azzera `tempHp` (regola 5e: gli HP temporanei si perdono al riposo lungo); scrittura multi-path in un'unica `update()`, non tocca creature/NPC né `deathSaves` (coerente con le cure normali)
 
 ---

@@ -7,13 +7,13 @@
 - FEAT: Mettere un'impostazione attivabile opzionalmente lato master per non vedere la salute precisa dei giocatori. I giocatori possono vedere la salute di ciascuno di loro, il master vede solo quella delle creature ostili e degli NPC (e una stima di quelle dei giocatori).
 - FEAT: Tiro salvezza concentrazione automatico — quando un PG con la condizione "Concentrato" subisce danno, promemoria con la CD calcolata (max(10, danno/2))
 - FEAT: Dado integrato sulla card (d20+mod per iniziativa/attacco/salvezza) col risultato nel log condiviso
-- FEAT: Annulla ultima azione (undo per l'ultimo danno/cura applicato per errore)
 - FEAT: Note private del master su un combattente (tattiche, HP reali), non visibili ai giocatori
 - FEAT: Notifica/vibrazione quando tocca il proprio turno (utile su mobile)
 
 
 ## Fatto
 
+- FEAT: Annulla ultimo danno/cura — dopo ogni applicazione una notifica con "Annulla" (8s) e la voce "Annulla ultimo danno/cura" nel menu; locale a chi l'ha applicato, un livello, su tutti i bersagli colpiti insieme; restituisce il cambio reale (HP temporanei compresi) senza cancellare i colpi dati da altri nel frattempo; voce nel diario e notifica agli altri
 - BUG concorrenza (causa principale): cursori e lock delle note stavano sotto sessions/{code}, e un onValue sul nodo sessione scatta per QUALUNQUE discendente. Risultato: un solo giocatore che muoveva il mouse (scrittura ogni 120ms) faceva rieseguire a tutti l'intera pipeline di render ~8 volte al secondo — griglia SVG distrutta e ricostruita inclusa — e invalidava in continuazione la runTransaction di "Fine Turno" (25 retry e poi fallimento). Spostati su presence/{code}, fuori dal nodo sessione. Richiede la regola "presence" in Console. Sistemato anche onDisconnect dei cursori, che non veniva riarmato cambiando sessione
 - BUG concorrenza: nessun listener Firebase veniva mai staccato (in tutto il progetto non esisteva un off()). _startListening era raggiungibile da 4 punti e setupSheetListener da altri 4, quindi uscire e rientrare accumulava listener: pipeline di render eseguita N volte per snapshot, notifiche di danno duplicate, e N listener di scheda che pubblicavano i valori di N personaggi diversi sullo stesso combattente (causa diretta di "HP max/nome/avatar che tornano indietro"). Azzerato anche lo stato locale che sopravviveva all'uscita, cursori della sessione precedente inclusi
 - BUG: "Resetta incontro" lasciava la mappa rotta in modo permanente — svuotava i combattenti senza cancellare le loro posizioni sulla griglia, e le celle prima occupate restavano bloccate da token invisibili (bloccavano piazzamento e muri) finché non si premeva "Svuota griglia". Ora il reset cancella anche grid/, e il calcolo delle celle occupate ignora le voci orfane
