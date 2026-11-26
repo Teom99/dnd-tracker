@@ -2,7 +2,7 @@ import { icon, iconPath } from './icons.js';
 import { footprintOf, squareDistance, fmtM, validTemplate } from '../logic/gridMath.js';
 import { num, attr, safeImageUrl } from '../utils/sanitize.js';
 import { trajectoryEndpoints, trajectoryDistance } from '../logic/trajectory.js';
-import { combatantView, healthHintText } from '../logic/visibility.js';
+import { combatantView, healthHintText, hpBarSegments } from '../logic/visibility.js';
 import { captureFocusState, restoreFocusState } from '../utils/domPreserve.js';
 import { inkFor } from '../logic/dice.js';
 // Griglia quadrata. 1 cella = 1 m. Dimensioni guidate da gridConfig.
@@ -1081,7 +1081,8 @@ export function renderInitiativeList(container, sortedCombatants, gridPos, myCom
     const hpPct = c.hpMax > 0 ? Math.min(100, Math.max(0, (c.hpCurrent / c.hpMax) * 100)) : 0;
     let bar = '', val = '';
     if (v.showFullHp) {
-      bar = `<span class="init-bar ${INIT_TYPE_CLASS(c)}"><i style="width:${hpPct.toFixed(1)}%"></i></span>`;
+      const seg = hpBarSegments(c.hpCurrent, c.hpMax, c.tempHp);
+      bar = `<span class="init-bar ${INIT_TYPE_CLASS(c)}"><i style="width:${(seg.hp * 100).toFixed(1)}%"></i>${seg.temp > 0 ? `<b class="t" style="width:${(seg.temp * 100).toFixed(1)}%"></b>` : ''}</span>`;
       const temp = num(c.tempHp) > 0 ? `<span class="init-temp" title="Punti ferita temporanei">+${num(c.tempHp)}</span>` : '';
       val = `<span class="init-val">${num(c.hpCurrent)}/${num(c.hpMax)}${temp}</span>`;
     } else if (v.showHint) {

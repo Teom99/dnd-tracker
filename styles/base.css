@@ -416,9 +416,10 @@ img { max-width: 100%; display: block; }
 .hpbar .fill  { background: var(--c-foe); transition: transform .25s ease; }
 .hpbar--ally .fill { background: var(--c-pc); }
 .hpbar--big { height: 11px; }
-.hpbar--temp::after {           /* tacca HP temporanei */
-  content: ""; position: absolute; inset: 0;
-  background: linear-gradient(90deg, transparent calc(100% - 14px), var(--c-ally) calc(100% - 14px));
+.hpbar .temp {                 /* PV temporanei: dall'estremità destra, lunghi quanto i PV temp / HP max */
+  left: auto; right: 0; transform: none;
+  background: var(--c-ally); border-left: 1.5px solid var(--c-paper-hi);
+  transition: width .25s ease;
 }
 
 .hp-text { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 13px; letter-spacing: .03em; }

@@ -21,6 +21,17 @@ export function combatantView(c, myUid, masterUid, acMap = {}) {
   };
 }
 
+// Barra della vita con i PV temporanei: verde = vita attuale, azzurro = PV temporanei ancorati
+// all'estremità destra. La scala è HP max, e si allarga solo se vita + temporanei la superano:
+// così l'azzurro non copre mai la vita. Frazioni 0..1 della barra. Card, dock e iniziativa usano questo.
+export function hpBarSegments(hpCurrent, hpMax, tempHp) {
+  const n = (v) => { const x = Number(v); return Number.isFinite(x) && x > 0 ? x : 0; };
+  const hp = n(hpCurrent), max = n(hpMax), temp = n(tempHp);
+  const scale = Math.max(max, hp + temp);
+  if (scale <= 0) return { hp: 0, temp: 0 };
+  return { hp: Math.min(1, hp / scale), temp: temp / scale };
+}
+
 export function healthHintKey(percent) {
   if (percent === 100) return 'full';
   if (percent >= 75)   return 'good';

@@ -9,11 +9,11 @@
 - FEAT: Dado integrato sulla card (d20+mod per iniziativa/attacco/salvezza) col risultato nel log condiviso
 - FEAT: Note private del master su un combattente (tattiche, HP reali), non visibili ai giocatori
 - FEAT: Notifica/vibrazione quando tocca il proprio turno (utile su mobile)
-- FEAT: PV temporanei visibili nella barra della vita di ogni giocatore — segmento azzurro all'estremità destra della barra, lungo in proporzione ai PV temporanei (dock, card, riga dell'iniziativa)
 
 
 ## Fatto
 
+- FEAT: PV temporanei nella barra della vita — segmento azzurro all'estremità destra, lungo quanto i PV temporanei, su card, dock e riga dell'iniziativa; se vita + temporanei superano gli HP max la barra si allarga, così l'azzurro non copre mai la vita (hpBarSegments)
 - BUG concorrenza: gli editor in linea della card (PV temporanei, HP max, iniziativa, CA) si chiudevano mentre si scriveva se un altro giocatore agiva, salvando la cifra scritta a metà — Chrome emette blur quando list.innerHTML = '' rimuove l'input col focus, e quel blur faceva da conferma. Ora il blur durante il ridisegno è ignorato e l'editor viene ricreato col valore e il cursore (test/inlineEdit.html)
 - BUG: il campo "Temporanei" della scheda scriveva sulla scheda (characters/…/tempHp), ma i danni consumano i PV temporanei del combattente: in sessione quel numero non contava. Ora in sessione mostra e scrive i PV temporanei del combattente
 - FEAT: Annulla ultimo danno/cura — dopo ogni applicazione una notifica con "Annulla" (8s) e la voce "Annulla ultimo danno/cura" nel menu; locale a chi l'ha applicato, un livello, su tutti i bersagli colpiti insieme; restituisce il cambio reale (HP temporanei compresi) senza cancellare i colpi dati da altri nel frattempo; voce nel diario e notifica agli altri

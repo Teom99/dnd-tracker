@@ -26,7 +26,7 @@
 <div id="summary">✗ modulo non caricato</div>
 
 <script type="module">
-import { combatantView, healthHintKey, healthHintText } from '../src/logic/visibility.js';
+import { combatantView, healthHintKey, healthHintText, hpBarSegments } from '../src/logic/visibility.js';
 
 const out = document.getElementById('out');
 let pass = 0, fail = 0;
@@ -83,6 +83,14 @@ check('CA: il proprietario di un PG no (viene dalla scheda)', combatantView(lyra
 check('CA: il proprietario del famiglio sì', combatantView(fiuto, P1, M).canEditAc, true);
 
 group('accenni sulla salute');
+check('senza PV temp la barra è la vita su HP max', hpBarSegments(20, 40, 0), { hp: 0.5, temp: 0 });
+check('vita + temp entro gli HP max: scala invariata', hpBarSegments(25, 40, 10), { hp: 0.625, temp: 0.25 });
+check('vita piena + temp: la barra si allarga, l\'azzurro non copre la vita', hpBarSegments(40, 40, 40), { hp: 0.5, temp: 0.5 });
+check('vita + temp riempiono esattamente la barra', hpBarSegments(30, 40, 10), { hp: 0.75, temp: 0.25 });
+check('KO con PV temp', hpBarSegments(0, 40, 10), { hp: 0, temp: 0.25 });
+check('PV temp assenti o negativi → niente azzurro', [hpBarSegments(20, 40, undefined).temp, hpBarSegments(20, 40, -3).temp], [0, 0]);
+check('valori scritti come testo → si leggono', hpBarSegments('6', '12', '6'), { hp: 0.5, temp: 0.5 });
+check('HP max a 0 e nient\'altro → barra vuota (niente divisione per zero)', hpBarSegments(0, 0, 0), { hp: 0, temp: 0 });
 check('100% → full', healthHintKey(100), 'full');
 check('80% → good', healthHintKey(80), 'good');
 check('60% → hurt', healthHintKey(60), 'hurt');

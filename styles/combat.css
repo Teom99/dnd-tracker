@@ -890,8 +890,9 @@ button.init-num { cursor: pointer; border-bottom: 1px dashed var(--c-rule); }
 .init-av.foe { --c: var(--c-foe); } .init-av.ally { --c: var(--c-ally); } .init-av.dead { --c: var(--c-dead); }
 .init-who { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 .grid-initiative-name { font: 700 15px/1.15 var(--f-body); }
-.init-bar { --c: var(--c-pc); display: block; height: 5px; border-radius: 3px; background: var(--c-track); overflow: hidden; }
+.init-bar { --c: var(--c-pc); position: relative; display: block; height: 5px; border-radius: 3px; background: var(--c-track); overflow: hidden; }
 .init-bar i { display: block; height: 100%; background: var(--c); }
+.init-bar .t { position: absolute; top: 0; right: 0; height: 100%; background: var(--c-ally); border-left: 1.5px solid var(--c-paper-hi); }   /* PV temporanei, dall'estremità destra */
 .init-bar.foe { --c: var(--c-foe); } .init-bar.ally { --c: var(--c-ally); } .init-bar.dead { --c: var(--c-dead); }
 .grid-initiative-meta { flex-direction: column; align-items: flex-end; gap: 1px; }
 .init-temp { color: var(--c-ally); font-weight: 700; margin-left: 4px; }

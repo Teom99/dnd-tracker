@@ -1,5 +1,5 @@
 import { captureFocusState, restoreFocusState } from '../utils/domPreserve.js';
-import { combatantView, healthHintKey, healthHintText } from '../logic/visibility.js';
+import { combatantView, healthHintKey, healthHintText, hpBarSegments } from '../logic/visibility.js';
 import { icon } from './icons.js';
 import { num, attr, safeImageUrl } from '../utils/sanitize.js';
 
@@ -369,6 +369,14 @@ const _prevHp  = new Map(); // combatantId → ultimo hpCurrent visto
 const _hpFlash = new Map(); // combatantId → { dir: 'dmg'|'heal', until: timestamp }
 const HP_FLASH_MS = 2500;   // deve combaciare con la durata di dmg-flash/heal-pulse in base.css
 
+// Barra della vita (.hpbar): vita in verde/rosso, PV temporanei in azzurro all'estremità destra
+const hpBarInner = (c) => {
+  const s = hpBarSegments(c.hpCurrent, c.hpMax, c.tempHp);
+  return `<i class="trail" style="transform:scaleX(${s.hp.toFixed(4)});"></i>
+          <i class="fill"  style="transform:scaleX(${s.hp.toFixed(4)});"></i>
+          ${s.temp > 0 ? `<i class="temp" style="width:${(s.temp * 100).toFixed(2)}%"></i>` : ''}`;
+};
+
 export function renderCombatantList(combatants, currentTurnId, myUid, masterUid, callbacks, acMap = {}, myDeathSaves = null, progressionData = {}, listId = 'combatant-list', emptyMsgId = 'empty-list-msg', allCombatants = null, selectedDockId = null) {
   const list     = document.getElementById(listId);
   const emptyMsg = document.getElementById(emptyMsgId);
@@ -416,7 +424,6 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
     const conditions    = c.conditions ? Object.keys(c.conditions) : [];
     const hpClass       = hpPercent <= 25 ? 'hp-critical' : hpPercent <= 50 ? 'hp-low' : '';
     const tempHp        = c.tempHp ?? 0;
-    const tempHpPercent = c.hpMax > 0 ? Math.min(100, (tempHp / c.hpMax) * 100) : 0;
     const successes     = isOwnCard && isKO ? (myDeathSaves?.successes ?? 0) : 0;
     const failures      = isOwnCard && isKO ? (myDeathSaves?.failures  ?? 0) : 0;
     const turnNumber    = fullList.findIndex(x => x.id === c.id) + 1;
@@ -440,7 +447,6 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
 
     const li = document.createElement('li');
     const isAlly = !isCreature || c.faction === 'good';
-    const hpPct  = c.hpMax > 0 ? Math.min(1, Math.max(0, c.hpCurrent / c.hpMax)) : 0;
 
     // Flash danno/cura: solo se avevamo già visto questa card in precedenza
     // (evita che tutte le card lampeggino al primo caricamento della pagina)
@@ -532,9 +538,8 @@ export function renderCombatantList(combatants, currentTurnId, myUid, masterUid,
       </div>
 
       ${showFullHp ? `
-        <div class="hpbar ${isAlly ? 'hpbar--ally' : ''}${tempHp > 0 ? ' hpbar--temp' : ''}">
-          <i class="trail" style="transform:scaleX(${hpPct.toFixed(4)});"></i>
-          <i class="fill"  style="transform:scaleX(${hpPct.toFixed(4)});"></i>
+        <div class="hpbar ${isAlly ? 'hpbar--ally' : ''}">
+          ${hpBarInner(c)}
         </div>
         <div class="fc-hp">
           <span class="hp-text ${hpClass}">${c.hpCurrent} / ${canEditMaxHp
@@ -870,7 +875,6 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
 
   const c      = combatant;
   const isKO   = c.hpCurrent === 0;
-  const hpPct  = num(c.hpMax) > 0 ? Math.min(1, Math.max(0, num(c.hpCurrent) / num(c.hpMax))) : 0;
   const tempHp = num(c.tempHp);
   const conditions = c.conditions ? Object.keys(c.conditions) : [];
   const condChips  = conditions.map(cond => {
@@ -918,8 +922,7 @@ export function renderPlayerDock(combatant, isActive, progressionData = {}, deat
     <div class="dock-vitals">
       <div style="display:flex;align-items:center;gap:6px;">
         <div class="hpbar hpbar--ally" style="flex:1;height:8px;">
-          <i class="trail" style="transform:scaleX(${hpPct.toFixed(4)});"></i>
-          <i class="fill"  style="transform:scaleX(${hpPct.toFixed(4)});"></i>
+          ${hpBarInner(c)}
         </div>
         <span style="font-size:12px;font-weight:700;color:var(--c-text);font-variant-numeric:tabular-nums;">${num(c.hpCurrent)}<span style="color:var(--c-mute);font-weight:400">/${num(c.hpMax)}</span></span>
         ${tempHp > 0 ? `<span class="chip chip--iron" style="font-size:9px;padding:1px 5px;">+${tempHp}</span>` : ''}
@@ -955,7 +958,6 @@ export function renderMasterDock(combatant) {
 
   const c     = combatant;
   const isKO  = c.hpCurrent === 0;
-  const hpPct = num(c.hpMax) > 0 ? Math.min(1, Math.max(0, num(c.hpCurrent) / num(c.hpMax))) : 0;
   const tempHp = num(c.tempHp);
   const conditions = c.conditions ? Object.keys(c.conditions) : [];
   const condChips  = conditions.map(cond => {
@@ -981,8 +983,7 @@ export function renderMasterDock(combatant) {
     <div class="dock-vitals">
       <div style="display:flex;align-items:center;gap:6px;">
         <div class="hpbar hpbar--ally" style="flex:1;height:8px;">
-          <i class="trail" style="transform:scaleX(${hpPct.toFixed(4)});"></i>
-          <i class="fill"  style="transform:scaleX(${hpPct.toFixed(4)});"></i>
+          ${hpBarInner(c)}
         </div>
         <span style="font-size:12px;font-weight:700;color:var(--c-text);font-variant-numeric:tabular-nums;">${num(c.hpCurrent)}<span style="color:var(--c-mute);font-weight:400">/${num(c.hpMax)}</span></span>
         ${tempHp > 0 ? `<span class="chip chip--iron" style="font-size:9px;padding:1px 5px;">+${tempHp}</span>` : ''}

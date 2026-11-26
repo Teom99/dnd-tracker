@@ -45,7 +45,7 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | `src/utils/theme.js` | Tema chiaro/notte: `resolveTheme`, `initTheme`, `toggleTheme` — `<html data-theme>` + `localStorage['dnd-theme']` |
 | `src/ui/icons.js` | `icon(name, {size, title})` — icone SVG in tinta unita (`currentColor`); a tema da game-icons.net (crediti in `CREDITS.md`), di servizio disegnate a tratto |
 | `src/logic/combatChrome.js` | Logica pura dell'interfaccia di combattimento: `toolTransition`, `toolFromState`, `detailStillValid`, densità iniziativa, `nextInTurnOrder` |
-| `src/logic/visibility.js` | `combatantView` (cosa vede/modifica ciascun utente di ciascun combattente), `healthHintKey/Text` — usata da card e riga iniziativa |
+| `src/logic/visibility.js` | `combatantView` (cosa vede/modifica ciascun utente di ciascun combattente), `healthHintKey/Text`, `hpBarSegments` (vita + PV temporanei nella barra) — usata da card, dock e riga iniziativa |
 | `src/logic/dice.js` | Logica pura dei dadi: vassoio (`addDie`/`removeDie`/`poolLabel`), `rollPool` (vantaggio/svantaggio), `critKind`, `rollMessage`, `sanitizeRoll` (tiro letto da Firebase), `restSlots`/`throwKeyframes` (traiettoria del lancio) — test in `test/dice.html` |
 | `src/ui/DiceUI.js` | Vassoio `#dice-pop` (`initTray`, `renderTray`) e palco `#dice-stage` su `<body>` (`play` in coda, `stop`) |
 | `src/logic/gridMath.js` | `footprintOf`, `squareDistance` (puri; GridUI li ri-esporta) |
@@ -198,6 +198,7 @@ Note: `.indexOn: ["ownerUid"]` serve a `Combatant.findByOwner`. `.read`/`.write`
 - Dadi: bottone "Dadi" in topbar (master e giocatori) apre il vassoio (d4–d100, fino a 20 dadi, modificatore, vantaggio/svantaggio su un d20 singolo); il lancio si vede a tutti: dadi che volano dal bordo, rimbalzano con ombra a terra, facce che girano e rallentano, totale che conta; 20 naturale oro con onda, 1 naturale rosso che trema; il d20 scartato si spegne; rispetta `prefers-reduced-motion`; ogni giocatore sceglie il colore dei propri dadi da una palette di 10, esclusivo (agli altri appare col lucchetto)
 
 - Annulla ultimo danno/cura: notifica con "Annulla" dopo ogni applicazione + voce di menu `#btn-undo-hp` (vedi Combat tracker)
+- PV temporanei nella barra della vita: segmento azzurro (`--c-ally`) ancorato all'estremità destra, lungo quanto i PV temporanei, su card, dock e iniziativa. La scala della barra è HP max e si allarga a vita + temporanei solo se li superano, così l'azzurro non copre mai la vita: una sola funzione pura, `hpBarSegments` in `visibility.js` (testata). Visibile solo a chi vede gli HP (`showFullHp`)
 
 ### Bug noti non ancora risolti
 Nessuno al momento.
