@@ -6,7 +6,7 @@ import { openConditionModal, removeCombatant, rememberHpAction } from './core.js
 import { askConfirm } from '../ui/dialogs.js';
 import { LevelUp }   from '../logic/LevelUp.js';
 import { LevelUpUI } from '../ui/LevelUpUI.js';
-import { readSheetTab, saveSheetTab, SHEET_TABS, xpSyncAction, sheetMatchesCombatant } from '../logic/sheetView.js';
+import { readSheetTab, saveSheetTab, SHEET_TABS, xpSyncAction, sheetMatchesCombatant, tempHpSource } from '../logic/sheetView.js';
 
 let editingInventoryId = null;
 const inventoryCallbacks = {
@@ -180,6 +180,16 @@ function _updateLevelUpButton(data) {
 // Tutto ciò che nella scheda dipende dalla sessione: XP corrente, vita attuale, ispirazione,
 // pulsante di livello. Si richiama a ogni snapshot di sessione (evento dnd:session-update), a ogni
 // snapshot della scheda e all'apertura. Non scrive mai su Firebase.
+// Dove stanno i PV temporanei della scheda aperta: sul combattente in sessione, sulla scheda fuori
+function _tempHpOnCombatant() {
+  const snap = state.snapshot, id = state.myCombatantId;
+  return tempHpSource({
+    inSession: !!(snap && id && state.sheetReturnView === 'view-combat'),
+    combatantCharId: snap?.combatants?.[id]?.charId,
+    sheetCharId: state.myCurrentCharId,
+  }) === 'combatant';
+}
+
 export function refreshSessionDerived() {
   const snap = state.snapshot, id = state.myCombatantId;
   const inSession = !!(snap && id && state.sheetReturnView === 'view-combat');
@@ -191,6 +201,12 @@ export function refreshSessionDerived() {
   });
   SheetUI.updateComputedValues(state.sheetData);
   SheetUI.updateVitals(inSession ? snap.combatants?.[id] : null, { inSession });
+  // In sessione il campo "Temporanei" mostra i PV temporanei del combattente (mai mentre ci si scrive)
+  const tempInput = document.getElementById('sheet-temp-hp');
+  if (tempInput && _tempHpOnCombatant() && tempInput !== document.activeElement) {
+    const t = Math.max(0, parseInt(snap.combatants[id].tempHp) || 0);
+    tempInput.value = t > 0 ? String(t) : '';
+  }
   _updateLevelUpButton(state.sheetData);
   // L'XP in sessione la assegna il master: il campo della scheda mostra quello e non si modifica
   const xpInput = document.querySelector('#view-character [data-path="xp"]');
@@ -488,6 +504,12 @@ export function bindSheetEvents() {
       if (SheetUI.isPopulating()) return;
       const path  = el.dataset.path;
       const value = el.dataset.number !== undefined ? (parseInt(el.value) || 0) : el.value;
+      if (path === 'tempHp' && _tempHpOnCombatant()) {
+        // In sessione si scrivono sul combattente (blur e change arrivano entrambi: si scrive una volta)
+        const cur = Math.max(0, parseInt(state.snapshot.combatants[state.myCombatantId]?.tempHp) || 0);
+        if (Math.max(0, value) !== cur) state.combatantManager.setTempHp(state.myCombatantId, Math.max(0, value));
+        return;
+      }
       state.sheet.setField(path, value);
     };
     el.addEventListener('blur',   save);

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<title>Test — editor in linea</title>
+<style>
+  body { font: 14px/1.5 ui-monospace, Menlo, monospace; background:#0a0c0b; color:#e8e2d2;
+         margin:0; padding:24px 20px 60px; }
+  h1 { font-size:16px; margin:0 0 4px; letter-spacing:.04em; }
+  p.sub { color:#8f8f82; margin:0 0 20px; font-size:12.5px; }
+  h2 { font-size:13px; color:#c9a24a; margin:22px 0 6px; letter-spacing:.08em; text-transform:uppercase; }
+  .t { padding:2px 0 2px 22px; position:relative; }
+  .t::before { position:absolute; left:0; width:16px; }
+  .ok::before  { content:"PASS"; color:#7cc78a; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko::before  { content:"FAIL"; color:#e0685c; font-size:9px; top:4px; letter-spacing:.06em; }
+  .ko { color:#e0685c; }
+  .detail { color:#8f8f82; font-size:12px; padding-left:22px; white-space:pre; }
+  #summary { position:fixed; left:0; right:0; bottom:0; padding:12px 20px;
+             background:#161b19; border-top:1px solid #2b3631; font-weight:700; }
+</style>
+</head>
+<body>
+<h1>UI.js — editor in linea sotto ridisegno concorrente</h1>
+<p class="sub">Un altro giocatore agisce mentre scrivi: la lista si ridisegna. L'editor deve restare, col valore, e non salvare a metà.</p>
+<div id="out"></div>
+<ul id="player-list" style="position:absolute;left:-9999px;width:400px"></ul><p id="empty-players-msg"></p>
+<div id="summary">✗ modulo non caricato</div>
+
+<script type="module">
+import { renderCombatantList } from '../src/ui/UI.js';
+
+const out = document.getElementById('out');
+let pass = 0, fail = 0;
+const group = (name) => { const h = document.createElement('h2'); h.textContent = name; out.append(h); };
+function check(label, got, want) {
+  const ok = JSON.stringify(got) === JSON.stringify(want);
+  ok ? pass++ : fail++;
+  const d = document.createElement('div');
+  d.className = 't ' + (ok ? 'ok' : 'ko');
+  d.textContent = label;
+  out.append(d);
+  if (!ok) {
+    const e = document.createElement('div');
+    e.className = 'detail';
+    e.textContent = `atteso ${JSON.stringify(want)} · ottenuto ${JSON.stringify(got)}`;
+    out.append(e);
+  }
+}
+
+const writes = [];
+const callbacks = new Proxy({
+  onSetTempHp: (id, v) => writes.push(['tempHp', id, v]),
+  onSetMaxHp:  (id, v) => writes.push(['hpMax', id, v]),
+  onInitiativeChange: (id, v) => writes.push(['initiative', id, v]),
+  onSetAc: (id, v) => writes.push(['ac', id, v]),
+}, { get: (t, k) => t[k] ?? (() => {}) });
+
+const me = 'uid-me';
+let hp = 30;
+const hero = () => [{ id: 'c1', name: 'Theoriel', type: 'player', ownerUid: me, charId: 'ch1', initiative: 12, hpMax: 40, hpCurrent: hp, tempHp: 0, armorClass: 14 }];
+const render = () => renderCombatantList(hero(), 'c1', me, 'uid-master', callbacks, {}, null, {}, 'player-list', 'empty-players-msg', null, null);
+const list = document.getElementById('player-list');
+const editor = (field) => list.querySelector(`input[data-edit-field="${field}"]`);
+
+for (const [field, action, typed] of [['tempHp', 'edit-temp-hp', '12'], ['hpMax', 'edit-hp-max', '45'], ['initiative', 'edit-initiative', '17']]) {
+  group(field);
+  writes.length = 0;
+  render();
+  const btn = list.querySelector(`[data-action="${action}"]`);
+  check('il bottone di modifica c\'è', !!btn, true);
+  if (!btn) continue;
+  btn.click();
+  let inp = editor(field);
+  check('si apre l\'editor', !!inp, true);
+  if (!inp) continue;
+  inp.value = typed.slice(0, 1);                       // scrive la prima cifra…
+  inp.dispatchEvent(new Event('input', { bubbles: true }));
+  hp -= 1;                                              // …e intanto un altro giocatore colpisce: snapshot nuovo
+  render();
+  inp = editor(field);
+  check('dopo il ridisegno l\'editor è ancora aperto', !!inp, true);
+  check('nessun salvataggio a metà', writes, []);
+  if (!inp) continue;
+  check('il valore scritto è rimasto', inp.value, typed.slice(0, 1));
+  check('il focus è tornato sull\'editor', document.activeElement === inp, true);
+  inp.value = typed;                                    // finisce di scrivere
+  inp.dispatchEvent(new Event('input', { bubbles: true }));
+  inp.blur();                                           // conferma vera
+  check('alla conferma si salva il valore completo, una volta', writes, [[field, 'c1', Number(typed)]]);
+  check('l\'editor si chiude', !!editor(field), false);
+}
+
+document.getElementById('summary').textContent =
+  fail === 0 ? `✓ ${pass} test passati` : `✗ ${fail} falliti · ${pass} passati`;
+document.getElementById('summary').style.color = fail === 0 ? '#7cc78a' : '#e0685c';
+</script>
+</body>
+</html>

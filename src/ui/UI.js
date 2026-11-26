@@ -766,7 +766,10 @@ function _openInlineNumberEdit(btn, id, field, initialValue, { min, max, placeho
     if (!isNaN(val)) onConfirm(val);
   };
 
-  input.onblur    = confirm;
+  // Chrome emette blur quando l'input viene rimosso da list.innerHTML = '' (ridisegno per un
+  // aggiornamento di un altro giocatore): non è l'utente che ha finito di scrivere. Si ignora,
+  // _activeInlineEdit resta e renderCombatantList ricrea l'editor col valore e il cursore.
+  input.onblur    = () => { if (_rendering) return; confirm(); };
   input.onkeydown = (e) => {
     if (e.key === 'Enter')  { e.preventDefault(); input.blur(); }
     if (e.key === 'Escape') { _activeInlineEdit = null; input.value = String(initialValue); input.blur(); }

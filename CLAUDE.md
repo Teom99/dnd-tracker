@@ -52,7 +52,7 @@ Combat tracker real-time per D&D 5e, condiviso tra master e giocatori durante un
 | `src/logic/trajectory.js` | `trajectoryEndpoints`, `trajectoryDistance` — freccia di attacco |
 | `src/ui/CombatChrome.js` | Applica `state.ui` a `#view-combat` (attributi `data-*`), menu, pannello laterale, popover; `hydrateIcons` per `data-icon` nel markup statico |
 | `src/logic/combatantRules.js` | Updater puri delle transazioni sul combattente (`applyMaxHp`, `applyFields`) |
-| `test/*.html` | Test in pagina (niente Node): `shapes`, `theme`, `icons`, `combatantRules`, `combatChrome`, `visibility`, `trajectory`, `sheetView`, `homeView`, `dialogs`, `sceneView`, `dice` + campionario `componenti.html`; servire con `python3 -m http.server` |
+| `test/*.html` | Test in pagina (niente Node): `shapes`, `theme`, `icons`, `combatantRules`, `combatChrome`, `visibility`, `trajectory`, `sheetView`, `homeView`, `dialogs`, `sceneView`, `dice`, `inlineEdit` + campionario `componenti.html`; servire con `python3 -m http.server` |
 | `src/utils/presence.js` | `playerColor(uid)` — colore deterministico per giocatore (hash su palette fissa), usato per lock note e cursori live |
 | `src/logic/homeView.js` | Logica pura della home: `splitSessions` (la più recente = "Riprendi"), `filterLibrary`, `libraryMeta`, `lastSeenLabel` — test in `test/homeView.html` |
 | `src/views/home.js` | Auth UI, libreria personaggi (carte, filtro, conferma di eliminazione in pagina, ingresso rapido), picker join a chip/creature, sessioni utente salvate |
@@ -242,6 +242,8 @@ Nessuno al momento.
 
 **Scritture concorrenti critiche:** usare `runTransaction` (vedi `Combatant.updateHp`, `Session.nextTurnAtomic`, `CharacterSheet.setSpellSlotsUsed`)
 
+**Un input che salva su `blur` dentro un contenitore ricostruito via `innerHTML`:** Chrome emette `blur`/`focusout` quando `innerHTML = ''` rimuove l'input col focus. Se il `blur` salva o chiude l'editor, un ridisegno concorrente "conferma" un valore scritto a metà e fa sparire l'editor. In `renderCombatantList` il ridisegno è racchiuso dal flag `_rendering`: ogni gestore `blur` della lista deve uscire se è attivo (campo azione e `_openInlineNumberEdit` lo fanno; test in `test/inlineEdit.html`).
+
 **Renderer con `innerHTML` chiamato dal listener Firebase (session o sheet):** se il contenitore include `<input>`/`<textarea>`/`<select>` editabili, avvolgere il rebuild con `captureFocusState`/`restoreFocusState` da `src/utils/domPreserve.js` (vedi `renderCombatantList`, `SheetUI.renderInventory` per l'uso). Senza questo, un update Firebase non correlato (es. un altro giocatore che agisce) cancella focus/testo/scroll di chi sta scrivendo in quel momento — è la causa root del bug "la sessione si resetta quando un altro giocatore interagisce" riapparso più volte in passato.
 
 **Ogni `onValue` va conservato e staccato.** `onValue` restituisce un unsubscriber: va messo in `state._sessionUnsubs` (listener di sessione) o `state._sheetUnsub` (listener di scheda), mai scartato. `_startListening` chiama `detachSessionListeners()` (`src/views/core.js`) in testa e `setupSheetListener` stacca il precedente in testa: così tutti i punti d'ingresso sono coperti da una riga sola, senza doverli enumerare. Senza questo, `_startListening` (raggiungibile da 4 punti: crea / entra / rientra dalla lista / restore all'avvio) e `setupSheetListener` (4 punti: i 3 `initSheet` + `openLibrarySheet`) accumulavano listener: la pipeline di render girava N volte per snapshot, le notifiche arrivavano duplicate, e nel caso della scheda **N listener con le proprie closure `prevAc`/`prevHpMax`/`prevName`/… pubblicavano i valori di N personaggi diversi sullo stesso combattente** — causa diretta di "HP max/nome/avatar che tornano indietro da soli".
@@ -343,6 +345,7 @@ Nessuno al momento.
 **Invarianti:**
 - `setupSheetListener` usa `prevAc`/`prevHpMax` per evitare scritture Firebase inutili a ogni snapshot
 - `setSpellSlotsUsed` usa `runTransaction` per slot incantesimo (scritture concorrenti)
+- **PV temporanei**: in sessione (scheda del proprio combattente, `tempHpSource` in `sheetView.js`) il campo "Temporanei" mostra e scrive `combatants/{id}/tempHp` (`Combatant.setTempHp`), che è quello consumato dai danni; fuori sessione scrive `characters/…/tempHp`
 - `state.sheetReturnView` controlla dove torna il tasto "indietro" (combat o home)
 - `_sheetBound` flag su elementi DOM per evitare listener duplicati su re-render
 - I `data-path` input in `index.html` sono popolati automaticamente da `SheetUI.populateSheet` e scritti su Firebase da `bindSheetEvents`

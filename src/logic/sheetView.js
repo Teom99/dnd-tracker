@@ -73,3 +73,9 @@ export function saveSheetTab(tab) {
 export function sheetMatchesCombatant({ combatantCharId, sheetCharId } = {}) {
   return !!combatantCharId && !!sheetCharId && combatantCharId === sheetCharId;
 }
+
+// PV temporanei: in sessione (scheda del proprio combattente) sono del COMBATTENTE, perché è lì che
+// li consumano i danni (Combatant.updateHp); fuori sessione restano sulla scheda.
+export function tempHpSource({ inSession = false, combatantCharId, sheetCharId } = {}) {
+  return inSession && sheetMatchesCombatant({ combatantCharId, sheetCharId }) ? 'combatant' : 'sheet';
+}

@@ -26,7 +26,7 @@
 <div id="summary">✗ modulo non caricato</div>
 
 <script type="module">
-import { xpProgress, levelUpReady, sheetSubtitle, effectiveXp, xpSyncAction, sheetMatchesCombatant, readSheetTab, saveSheetTab, SHEET_TABS, XP_THRESHOLDS } from '../src/logic/sheetView.js';
+import { xpProgress, levelUpReady, sheetSubtitle, effectiveXp, xpSyncAction, sheetMatchesCombatant, tempHpSource, readSheetTab, saveSheetTab, SHEET_TABS, XP_THRESHOLDS } from '../src/logic/sheetView.js';
 
 const out = document.getElementById('out');
 let pass = 0, fail = 0;
@@ -91,6 +91,12 @@ check('sessione più bassa della scheda: si alza la sessione, la scheda non perd
 check('già allineati: nessuna scrittura (niente cicli)', xpSyncAction({ sessionXp: 900, sheetXp: 900 }), null);
 check('sessione a 0 e scheda con XP: si alza la sessione', xpSyncAction({ sessionXp: 0, sheetXp: 700 }), 'seed');
 check('dato sporco in sessione: non si scrive', xpSyncAction({ sessionXp: 'x', sheetXp: 5 }), null);
+
+group('tempHpSource');
+check('in sessione, scheda del proprio combattente → combattente', tempHpSource({ inSession: true, combatantCharId: 'a', sheetCharId: 'a' }), 'combatant');
+check('in sessione ma scheda di un altro personaggio → scheda', tempHpSource({ inSession: true, combatantCharId: 'a', sheetCharId: 'b' }), 'sheet');
+check('fuori sessione (libreria) → scheda', tempHpSource({ inSession: false, combatantCharId: 'a', sheetCharId: 'a' }), 'sheet');
+check('senza argomenti → scheda', tempHpSource(), 'sheet');
 
 group('sheetMatchesCombatant');
 check('stesso charId', sheetMatchesCombatant({ combatantCharId: 'a', sheetCharId: 'a' }), true);
